@@ -1,0 +1,201 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+async function verifyAdmin(supabase: SupabaseClient<Database>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  return requireAdmin(supabase, user.id);
+}
+
+export async function approveEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Derive creator server-side — never trust client
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  const { error: eventError } = await supabase
+    .from("events")
+    .update({ status: "approved" })
+    .eq("id", eventId);
+
+  if (eventError) return { error: "Event update failed" };
+
+  const { error: profileError } = await supabase.rpc('increment_et_score', {
+    user_id: event.creator_id,
+    delta: 50
+  });
+
+  if (profileError) return { error: "Score update failed" };
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function rejectEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  const reason = formData.get("reason") as string | null;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, title")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  await supabase
+    .from("events")
+    .update({ status: "rejected" })
+    .eq("id", eventId);
+
+  revalidatePath("/admin");
+  return { success: true, creatorId: event.creator_id, title: event.title };
+}
+export async function resolveReportAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+
+  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
+
+  revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function punishCuratorAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+  if (!reportId) return { error: "Missing reportId." };
+
+  // Derive curator from the report — never trust client
+  const { data: report } = await supabase
+    .from("event_reports")
+    .select("curator_id")
+    .eq("id", reportId)
+    .single();
+
+  if (!report?.curator_id) return { error: "Report not found." };
+
+  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  await supabase.rpc('increment_et_score', {
+    user_id: report.curator_id,
+    delta: -150
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Soft Delete: Just update the status to 'deleted'
+  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
+  if (error) throw new Error("Delete failed: " + error.message);
+  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  if (!userId) return { error: "Missing userId." };
+
+  await supabase.from("profiles").delete().eq("id", userId);
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  const newRole = formData.get("role") as string;
+  
+  if (!userId || !newRole) return { error: "Missing required fields." };
+
+  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateEventDetailsAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  const category = formData.get("category") as string;
+  const newStatus = formData.get("status") as string;
+  
+  if (!eventId) return { error: "Missing eventId." };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) return { error: "Event not found." };
+
+  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
+  if (updateError) throw new Error("Update failed: " + updateError.message);
+  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  // Award points if manually changed to approved, deduct if reverted
+  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
+    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: 50 });
+  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
+    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}

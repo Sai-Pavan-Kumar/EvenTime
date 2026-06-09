@@ -1,26 +1,49 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Colors - Light Mode Primary */
+  --color-brand-primary: #6C47FF;
+  --color-brand-accent: #F59E0B;
+  --color-brand-anchor: #005AE0;
+  --color-surface-base: #F5F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F0F0F8;
+  --color-text-primary: #1D1D1F;
+  --color-text-secondary: #86868B;
+
+  /* Typography */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px Base Unit) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
+    @apply bg-surface-base text-text-primary font-sans antialiased;
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  h1, h2, h3, h4, h5, h6 {
+    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
+    @apply font-heading tracking-[-0.02em];
+  }
 }
