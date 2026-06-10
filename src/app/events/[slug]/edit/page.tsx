@@ -14,9 +14,9 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   // Fetch the event to edit
   const { data: event } = await supabase
     .from("events")
-    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, lat, lon, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id")
+    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, lat, lon, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")
     .eq("slug", slug)
-    .single();
+    .single() as any;
 
   if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
   if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
