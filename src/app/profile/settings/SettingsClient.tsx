@@ -13,7 +13,7 @@ export default function SettingsClient({
   profile, 
   categoryCounts = {} 
 }: { 
-  profile: Partial<ProfileRow> & { year_of_studying?: string | null }, 
+  profile: Partial<ProfileRow> & { year_of_studying?: string | null, city?: string | null }, 
   categoryCounts?: Record<string, number> 
 }) {
   const router = useRouter();
