@@ -10,8 +10,6 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
-
-  // Fetch the event to edit
   const { data: event } = await supabase
     .from("events")
     .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, lat, lon, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")

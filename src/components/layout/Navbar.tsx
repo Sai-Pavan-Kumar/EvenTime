@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
 import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
@@ -18,7 +18,7 @@ const calculateCompletion = (profile: any) => {
   return score;
 };
 
-export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profileDetails, setProfileDetails] = useState<any>(null);
@@ -291,6 +291,14 @@ export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centere
     )}
 
     <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </>
-  );
+    </>
+  );
+}
+
+export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+  return (
+    <Suspense fallback={null}>
+      <NavbarInner variant={variant} />
+    </Suspense>
+  );
 }
