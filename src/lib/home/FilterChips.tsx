@@ -5,15 +5,18 @@ import { useRouter } from "next/navigation";
 export interface FilterChipsProps {
   dynamicChips: { name: string; value: string; count?: number }[];
   category?: string;
+  location?: string;
   q?: string;
   branch?: string;
+  paramName?: "category" | "location";
 }
 
-export function FilterChips({ dynamicChips, category, q, branch }: FilterChipsProps) {
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
   const router = useRouter();
   if (!dynamicChips || dynamicChips.length === 0) return null;
 
-  const activeChip = dynamicChips.find(c => c.value === (category || "")) || dynamicChips[0];
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
 
   return (
     <div className="relative flex items-center shrink-0">
@@ -29,20 +32,28 @@ export function FilterChips({ dynamicChips, category, q, branch }: FilterChipsPr
 
       {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
       <select
-        value={category || ""}
+        value={activeVal || ""}
         onChange={(e) => {
           const val = e.target.value;
           const params = new URLSearchParams();
-          if (val) params.set("category", val);
+          
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+            if (location) params.set("location", location);
+          } else {
+            if (category) params.set("category", category);
+            if (val) params.set("location", val);
+          }
+          
           if (q) params.set("q", q);
           if (branch) params.set("branch", branch);
           router.push(params.toString() ? `/?${params.toString()}` : "/");
         }}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
       >
-        {dynamicChips.map((cat) => (
-          <option key={cat.name} value={cat.value}>
-            {cat.name} {typeof cat.count === 'number' ? `(${cat.count})` : ""}
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
           </option>
         ))}
       </select>

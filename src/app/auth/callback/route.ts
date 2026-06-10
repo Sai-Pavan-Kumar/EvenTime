@@ -32,8 +32,17 @@ export async function GET(request: Request) {
       }
     );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return response;
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      if (data.session?.user) {
+        await supabase.from("profiles").upsert({
+          id: data.session.user.id,
+          full_name: data.session.user.user_metadata?.full_name || "",
+          avatar_url: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || ""
+        }, { onConflict: "id" });
+      }
+      return response;
+    }
   }
 
   return NextResponse.redirect(new URL("/login", requestUrl.origin));

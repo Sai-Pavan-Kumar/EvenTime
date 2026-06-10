@@ -1,5 +1,5 @@
 "use client"
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
@@ -27,6 +27,7 @@ export interface HomePageClientProps {
   allEvents: Partial<EventRow>[] | null;
   hasCityEvents: boolean;
   dynamicChips: { name: string; value: string; count?: number }[];
+  dynamicLocationChips?: { name: string; value: string; count?: number }[];
   date?: string;
   eventDates: string[];
   featuredEvents: Partial<EventRow>[];
@@ -35,6 +36,7 @@ export interface HomePageClientProps {
   branch?: string;
   q?: string;
   category?: string;
+  location?: string;
   view?: string;
 }
 
@@ -52,17 +54,45 @@ export function HomePageClient(props: HomePageClientProps) {
     allEvents,
     hasCityEvents,
     dynamicChips,
+    dynamicLocationChips,
     featuredEvents,
     isFallback,
     userProfiles,
     branch,
     q,
     category,
+    location,
     view
   } = props;
 
   // Added ref to control the native <details> dropdown
   const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  // Effect to close the calendar when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
+        detailsRef.current.removeAttribute("open");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Calculate the display text for the date toggle based on the selected 'date' prop
+  let activeDateDisplay = displayToday;
+  if (date) {
+    const [year, month, day] = date.split('-');
+    if (year && month && day) {
+      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const monthIndex = parseInt(month, 10) - 1;
+      const dayNum = parseInt(day, 10);
+      
+      if (monthIndex >= 0 && monthIndex <= 11 && !isNaN(dayNum)) {
+        activeDateDisplay = `${dayNum} ${monthNames[monthIndex]}`;
+      }
+    }
+  }
 
   // Function to close the calendar when a date is selected
   const closeCalendar = () => {
@@ -92,7 +122,15 @@ export function HomePageClient(props: HomePageClientProps) {
             {/* INSTANT DISCOVERY CHIPS */}
             <div className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
               <span className="text-sm font-bold text-slate-500 whitespace-nowrap">Explore:</span>
-              <FilterChips dynamicChips={dynamicChips} category={category} q={q} branch={branch} />
+              <FilterChips dynamicChips={dynamicChips} category={category} location={location} q={q} branch={branch} paramName="category" />
+              
+              {dynamicLocationChips && dynamicLocationChips.length > 0 && (
+                <>
+                  <div className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
+                  <span className="text-sm font-bold text-slate-500 whitespace-nowrap">In:</span>
+                  <FilterChips dynamicChips={dynamicLocationChips} category={category} location={location} q={q} branch={branch} paramName="location" />
+                </>
+              )}
             </div>
 
             {/* DIVIDER */}
@@ -102,7 +140,7 @@ export function HomePageClient(props: HomePageClientProps) {
             <details ref={detailsRef} className="group cursor-pointer shrink-0 relative">
               <summary className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all list-none [&::-webkit-details-marker]:hidden select-none active:scale-95">
                 <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
-                {displayToday}
+                {activeDateDisplay}
               </summary>
               
               {/* CALENDAR STRIP DROPDOWN */}
@@ -154,7 +192,7 @@ export function HomePageClient(props: HomePageClientProps) {
           {user && profile?.role === 'student' && profile?.college_id && !q && !category && (
             <div className="flex overflow-x-auto justify-start md:justify-start gap-3 sm:gap-4 border-b border-slate-200/60 pb-4 mb-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <Link
-                href={{ pathname: "/", query: { ...(branch && { branch }), ...(view && { view }), tab: "around_you" } }}
+                href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "around_you" } }}
                 className={`shrink-0 whitespace-nowrap px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-xs sm:text-sm transition-all border ${
                   activeTab === "around_you"
                     ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-sm"
@@ -164,7 +202,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 Happening Around You
               </Link>
               <Link
-                href={{ pathname: "/", query: { ...(branch && { branch }), ...(view && { view }), tab: "in_college" } }}
+                href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "in_college" } }}
                 className={`shrink-0 whitespace-nowrap px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-xs sm:text-sm transition-all border ${
                   activeTab === "in_college"
                     ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-md shadow-[#6C47FF]/20"
@@ -209,18 +247,25 @@ export function HomePageClient(props: HomePageClientProps) {
                 )}
               </div>
             </div>
-          ) : (activeTab === "around_you" || q || category) ? (
+          ) : (activeTab === "around_you" || q || category || location) ? (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                     <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
-                    {category ? `${category}s` : "Happening Around You"}
+                    {category 
+                      ? `${category}s` 
+                      : !user 
+                        ? "Events Happening" 
+                        : profile?.is_onboarded 
+                          ? "Happening Around You" 
+                          : "Events Near You"}
                   </h2>
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
+                  {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
                   
                   {/* NEW: City Fallback Label */}
-                  {profile?.city && !hasCityEvents && !q && !category && !branch && (
+                  {profile?.city && !hasCityEvents && !q && !category && !branch && !location && (
                     <div className="mt-3 inline-flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                       <MapIcon className="w-3.5 h-3.5 text-amber-500" />
                       <p className="text-xs font-medium text-amber-700">
@@ -233,13 +278,13 @@ export function HomePageClient(props: HomePageClientProps) {
                 {/* FIX: Clean URL parameters builder */}
                 <div className="flex bg-[#F5F5F7] p-1 rounded-xl">
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), view: 'list' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'list' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view !== 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <List className="w-4 h-4" /> List
                   </Link>
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), view: 'map' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'map' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <MapIcon className="w-4 h-4" /> Map
@@ -248,7 +293,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
 
               {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
-              {featuredEvents && featuredEvents.length > 0 && !q && !category && (
+              {featuredEvents && featuredEvents.length > 0 && !q && !category && !location && (
                 <div className="col-span-full mb-10 mt-6">
                   <div className="flex items-center justify-between mb-6 px-2">
                     <h2 className="text-2xl font-black text-slate-900 font-heading">
@@ -313,11 +358,11 @@ export function HomePageClient(props: HomePageClientProps) {
                         
                         const title = isPastDate ? "No past events" : "No exact matches";
                         const message = isPastDate 
-                            ? "There were no events hosted on this date." 
-                            : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                            : category ? `No ${category}s happening right now. But the stage is never empty.` 
-                            : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
-
+                            ? "There were no events hosted on this date." 
+                            : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                            : location ? `No events happening in ${location} right now. But the stage is never empty.`
+                            : category ? `No ${category}s happening right now. But the stage is never empty.` 
+                            : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
                         return (
                           <EmptyState 
                             title={title}

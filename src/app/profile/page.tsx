@@ -57,11 +57,15 @@ Promise<{ tab?: string }>; }) {
     { data: savedEventsData },
     { data: myReportsRaw, error: reportsError }
   ] = await Promise.all([
-    supabase.from("profiles").select("full_name, avatar_url, et_score, college, goals").eq("id", user.id).single(),
-    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured").eq("creator_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("profiles").select("full_name, avatar_url, et_score, college, goals").eq("id", user.id).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
     supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false })
   ]);
+
+  if (!profile) {
+    redirect("/profile/settings");
+  }
 
   // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
   const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
@@ -70,6 +74,13 @@ Promise<{ tab?: string }>; }) {
   if (reportsError) {
     console.error("Error fetching reports:", reportsError);
   }
+
+  // Debugging logs to verify if queries return data or empty arrays due to RLS
+  console.log("--- Profile Page Data Fetch Debug ---");
+  console.log("myEventsRaw:", myEventsRaw);
+  console.log("savedEventsData:", savedEventsData);
+  console.log("myReportsRaw:", myReportsRaw);
+  console.log("-------------------------------------");
 
   const myReports = myReportsRaw as ReportWithEventSlug[] | null;
   const myEvents = myEventsRaw as ProfileEvent[] | null;
@@ -89,19 +100,10 @@ Promise<{ tab?: string }>; }) {
   let totalInterested = 0;
 
   if (myEvents && myEvents.length > 0) {
-    const myEventIds = myEvents.map(ev => ev.id);
-    // FIX: Bypassed TypeScript error using 'as any' since 'event_id' is correct in DB but missing in TS types
-    const [{ data: savesData }, { data: interestedData }] = await Promise.all([
-      supabase.from("saved_events" as any).select("event_id").in("event_id", myEventIds) as any,
-      supabase.from("interested_events" as any).select("event_id").in("event_id", myEventIds) as any
-    ]);
-
     myEvents.forEach(ev => {
-      const eventSaves = savesData?.filter((s: any) => s.event_id === ev.id).length || 0;
-      const eventInterested = interestedData?.filter((i: any) => i.event_id === ev.id).length || 0;
-      
-      ev.saved_events = [{ count: eventSaves }];
-      ev.interested_events = [{ count: eventInterested }];
+      // Extract the aggregated counts returned natively by the Supabase join
+      const eventSaves = ev.saved_events?.[0]?.count || 0;
+      const eventInterested = ev.interested_events?.[0]?.count || 0;
       
       totalSaves += eventSaves;
       totalInterested += eventInterested;

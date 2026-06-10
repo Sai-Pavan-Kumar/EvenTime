@@ -8,13 +8,14 @@ export interface HomePageParams {
   q?: string;
   date?: string;
   category?: string;
+  location?: string;
   view?: string;
   tab?: string;
   show_cal?: string;
 }
 
 export async function fetchHomePageData(searchParams: HomePageParams) {
-  const { branch, q, date, category, view, tab, show_cal } = searchParams;
+  const { branch, q, date, category, location, view, tab, show_cal } = searchParams;
   const supabase = await createClient();
   const activeTab = tab || "around_you";
 
@@ -122,13 +123,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
 
   // Filter past events at DB level instead of JS to prevent scalability crashes
   if (date) {
-    // FIX: Handling inconsistent database date formats ("YYYY-MM-DD" vs "D MMM")
-    const parts = date.split('-');
-    const dNum = parseInt(parts[2] || "0", 10);
-    const dObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, dNum);
-    const shortMonth = dObj.toLocaleDateString('en-US', { month: 'short' });
-    
-    query = query.or(`date_string.eq.${date},date_string.ilike.${dNum} ${shortMonth}%`);
+    // Matches the start of the ISO string (YYYY-MM-DD)
+    query = query.ilike("date_string", `${date}%`);
   } else {
     query = query.gte("date_string", todayStr);
   }
@@ -139,6 +135,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   if (branch) query = query.contains("branch_tags", [branch]);
   
   if (category) query = query.eq("category", category);
+
+  if (location) query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
 
@@ -171,18 +169,18 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     );
   }
 
-  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Filtered past events)
-  const { data: categoryData } = await supabase
-    .from("events")
-    .select("category, date_string")
-    .eq("status", "approved");
-    
-  const activeCategories = Array.from(new Set(categoryData?.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
-  const eventDates = Array.from(new Set(categoryData?.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
+  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
+  const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
+  const activeLocations = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.city).filter(Boolean) as string[]));
+  const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
     
   // Only create the chips array (including 'All') if there are actual categories
   const dynamicChips = activeCategories.length > 0 
     ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat as string }))]
+    : [];
+  
+  const dynamicLocationChips = activeLocations.length > 0
+    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc as string, value: loc as string }))]
     : [];
 
   // NEW: Filter out featured events for the top scrolling section
@@ -193,7 +191,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   let isFallback = false;
 
   // If user searched/filtered and found nothing, fetch some virtual events
-  if ((!allEvents || allEvents.length === 0) && (q || category || branch)) {
+  if ((!allEvents || allEvents.length === 0) && (q || category || location || branch)) {
     isFallback = true;
     let virtualQuery = supabase
       .from("events")
@@ -224,12 +222,14 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     allEvents,
     hasCityEvents,
     dynamicChips,
+    dynamicLocationChips,
     featuredEvents,
     isFallback,
     userProfiles,
     branch,
     q,
     category,
+    location,
     view
   };
 }

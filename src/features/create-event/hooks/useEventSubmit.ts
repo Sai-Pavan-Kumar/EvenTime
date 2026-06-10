@@ -85,6 +85,7 @@ export function useEventSubmit() {
       }
 
       if (isEditing && eventId) {
+        console.log("[useEventSubmit] Updating event with creator_id:", user.id);
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
         
         if (error) throw error; // ← check error FIRST
@@ -96,6 +97,7 @@ export function useEventSubmit() {
           .eq("status", "pending");
           
       } else {
+        console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
         const { error } = await supabase.from("events").insert([{ ...finalPayload, slug: uniqueSlug, creator_id: user.id }]);
         if (error) throw error;
       }

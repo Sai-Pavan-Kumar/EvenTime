@@ -15,6 +15,7 @@ import { EventCard } from "@/app/events/EventCard";
 import type { EventRow } from "@/types";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client"; 
+import { Navbar } from "@/components/layout/Navbar";
 
 export interface EventUIProps {
   event: Partial<EventRow> & { 
@@ -185,37 +186,30 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
 
   return (
     <main className="min-h-screen bg-white pb-32">
-      {/* Sticky Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4 flex justify-between items-center">
-        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors z-10 w-9">
-          <ArrowLeft className="w-5 h-5 text-slate-900" />
-        </button>
-        
-        {/* Added Logo Container Centered */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <Image src="/logo.png" alt="EvenTime Logo" width={32} height={32} className="w-8 h-8 rounded-lg" />
-            <span className="font-heading font-black text-xl text-slate-900 tracking-tight hidden sm:block">
-              EvenTime
-            </span>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2 z-10">
-          <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
-            <Flag className="w-5 h-5" />
-          </button>
-          <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <Share2 className="w-5 h-5 text-slate-900" />
-          </button>
-        </div>
-      </nav>
+      {/* Shared Navbar */}
+      <Navbar />
 
       {/* Unified Layout Container */}
       <div className="max-w-5xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
         
+        {/* Sub-header Actions */}
+        <div className="flex justify-between items-center w-full">
+          <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+              <Flag className="w-5 h-5" />
+            </button>
+            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-slate-900" />
+            </button>
+          </div>
+        </div>
+
         {/* 1. Hero Image (Forced Banner Shape - Top Cropped, Bottom Visible) */}
-        <div className="relative w-full h-[250px] sm:h-[300px] md:h-[400px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
+        <div className="relative w-full h-[200px] sm:h-[240px] md:h-[300px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
           {imageUrl ? (
             <Image 
               src={imageUrl} 

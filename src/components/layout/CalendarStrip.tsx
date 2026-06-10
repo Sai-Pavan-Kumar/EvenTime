@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   format, 
   isSameDay, 
@@ -13,7 +13,8 @@ import {
   addMonths, 
   subMonths, 
   isSameMonth,
-  parseISO
+  parseISO,
+  differenceInCalendarDays
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -22,7 +23,14 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
   const searchParams = useSearchParams();
   const selectedDateParam = searchParams.get("date");
   
-  const today = new Date();
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
   
   // Initialize view to the selected date's month, or current month
   const [currentMonth, setCurrentMonth] = useState(
@@ -31,30 +39,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
 
   const handleDateClick = (date: Date) => {
     const standardDateStr = format(date, "yyyy-MM-dd");
-    
-    // Check if the DB has this date under a different format (like "7 JUN") and pass THAT exactly to avoid "No Matches"
-    let queryDateStr = standardDateStr;
-    const matchedDbDate = eventDates.find(ds => {
-      if (!ds) return false;
-      if (ds === standardDateStr) return true;
-      try {
-        const safeDs = ds.includes('-') && ds.length === 10 ? ds.replace(/-/g, '/') : ds;
-        const d = new Date(safeDs);
-        if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-        
-        // Match inconsistent non-standard DB text strings (e.g. "7 JUN")
-        const currentYearDate = new Date(`${ds} ${today.getFullYear()}`);
-        if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-        return false;
-      } catch {
-        return false;
-      }
-    });
-
-    if (matchedDbDate) {
-      queryDateStr = matchedDbDate;
-    }
+    const queryDateStr = standardDateStr;
 
     const currentQ = searchParams.get("q");
     const currentBranch = searchParams.get("branch");
@@ -121,8 +106,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
           const dateStr = format(date, "yyyy-MM-dd");
           
           // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr || 
-             (selectedDateParam && eventDates.some(ds => ds === selectedDateParam && isSameDay(new Date(`${ds} ${today.getFullYear()}`), date)));
+          const isSelected = selectedDateParam === dateStr;
              
           const isToday = isSameDay(date, today);
           const isCurrentMonth = isSameMonth(date, currentMonth);
@@ -130,17 +114,21 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
           // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
           const hasEvent = eventDates.some(ds => {
             if (!ds) return false;
-            // Direct match for simple formats
-            if (ds === dateStr) return true;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
             
             try {
-              // Safely convert full ISO strings to exact local days
-              const safeDs = ds.includes('-') && ds.length === 10 ? ds.replace(/-/g, '/') : ds;
-              const d = new Date(safeDs);
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
               if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
 
-              // Ensure dots show up for non-standard formats like "7 JUN"
-              const currentYearDate = new Date(`${ds} ${today.getFullYear()}`);
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
               if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
 
               return false;
@@ -152,6 +140,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
           return (
             <button
               key={dateStr}
+              suppressHydrationWarning
               onClick={() => handleDateClick(date)}
               className={`
                 relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
@@ -165,9 +154,30 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
               {format(date, "d")}
               
               {/* Event Indicator Dot */}
-              {hasEvent && (
-                <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? "bg-white" : "bg-amber-500"}`} />
-              )}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? "bg-white" : "bg-amber-500"}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-red-500";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
             </button>
           );
         })}

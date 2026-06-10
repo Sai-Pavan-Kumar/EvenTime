@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Heart } from "lucide-react";
 
 // --- Custom SVG Icons to replace missing Lucide Brand Icons ---
@@ -26,9 +27,7 @@ export function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="bg-[#6C47FF] p-2 rounded-xl flex items-center justify-center">
-                <span className="text-white font-black text-xl leading-none">ET</span>
-              </div>
+              <Image src="/logo.png" alt="EvenTime Logo" width={40} height={40} className="rounded-xl" />
               <h3 className="text-2xl font-black text-[#6C47FF] font-heading tracking-tight">EvenTime</h3>
             </div>
             <p className="text-[#6C47FF]/70 text-sm font-medium">
