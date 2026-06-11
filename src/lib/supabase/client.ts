@@ -1,9 +1,14 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
 
+// Shared instance to ensure all components listen to the exact same auth state
+let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | undefined;
+
 // This creates a secure connection to Supabase from the browser with a 30-day session expiry configuration
 export function createClient() {
-   return createBrowserClient<Database>(
+  if (supabaseClient) return supabaseClient;
+
+  supabaseClient = createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -15,4 +20,6 @@ export function createClient() {
       }
     }
   );
+
+  return supabaseClient;
 }

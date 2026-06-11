@@ -58,6 +58,20 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
       }
     };
 
+    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+      
+      setUser(user);
+      if (user) {
+        fetchProfile(user.id);
+      } else if (mounted) {
+        setIsLoading(false);
+      }
+    };
+    initUser();
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       
