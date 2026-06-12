@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
 import { MiniCalendar, DrumColumn, LocationSearch, ConfidenceField } from "./SharedUI";
 import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
+import { CITIES } from "@/lib/constants/cities";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -245,6 +246,23 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
              </button>
            </div>
            
+           {/* NEW: City selector (drives map/city grouping & discovery filters) */}
+           {!data.isOnline && (
+             <div className="space-y-2">
+               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">City <span className="text-red-500">*</span></label>
+               <select
+                 value={data.city || ""}
+                 onChange={e => updateData({ city: e.target.value })}
+                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+               >
+                 <option value="" disabled>Select City</option>
+                 {CITIES.map(c => (
+                   <option key={c} value={c}>{c}</option>
+                 ))}
+               </select>
+             </div>
+           )}
+
            {/* Point 4: Location Search strictly visible ONLY if offline */}
            {!data.isOnline ? (
              <LocationSearch value={data.location} onChange={(val, lat, lon) => updateData({ location: val, lat, lon })} />

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
 import { createCollegeAction } from "@/app/profile/action"; // NEW: Import Server Action
+import { CITIES } from "@/lib/constants/cities";
 import { toast } from "sonner"; // NEW: Added toast import
 import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
@@ -182,7 +183,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                     className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
                   >
                     <option value="" disabled>Select Location</option>
-                    {["Ahmedabad","Bengaluru","Bhopal","Chennai","Coimbatore","Guntur","Gurugram","Hyderabad","Indore","Jaipur","Kakinada","Kanpur","Karimnagar","Khammam","Kochi","Kolkata","Lucknow","Mangaluru","Mumbai","Mysuru","Nagpur","New Delhi","Nizamabad","Noida","Pune","Thiruvananthapuram","Tirupati","Vijayawada","Visakhapatnam","Warangal"].map(loc => (
+                    {CITIES.map(loc => (
                       <option key={loc} value={loc}>{loc}</option>
                     ))}
                   </select>

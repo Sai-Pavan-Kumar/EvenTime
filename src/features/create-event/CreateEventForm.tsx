@@ -33,6 +33,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     selectedAudience: initialData?.target_audience || [],
     description: initialData?.description || "",
     location: initialData?.location || "",
+    city: initialData?.city || "",
     selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
     fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
     collegeBranch: initialData?.college_branch || "",
@@ -91,6 +92,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       end_date_string: eventData.hasEndTime && eventData.endDate ? eventData.endDate.toISOString() : null,
       date_string: eventData.selectedDate?.toISOString() ?? "",
       location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
       is_virtual: eventData.isOnline,
       lat: eventData.isOnline ? null : eventData.lat, 
       lon: eventData.isOnline ? null : eventData.lon,
@@ -110,7 +112,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }, isEditing, initialData?.id);
   };
 
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || eventData.location);
+  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
 
   return (
     <div className="max-w-3xl mx-auto w-full">

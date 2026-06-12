@@ -205,5 +205,5 @@ export const CATEGORY_CONFIG: Record<string, {
 export const getCategoryConfig = (category: string) => {
   if (!category) return CATEGORY_CONFIG['default'];
   const key = category.toLowerCase().trim().replace(/\s+/g, '-');
-  return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default'];
+  return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
 };

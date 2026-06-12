@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock } from "lucide-react";
@@ -190,7 +191,7 @@ export default function SettingsClient({
                   className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
                 />
                 <datalist id="city-list">
-                  {["Ahmedabad","Bengaluru","Bhopal","Chennai","Coimbatore","Guntur","Gurugram","Hyderabad","Indore","Jaipur","Kakinada","Kanpur","Karimnagar","Khammam","Kochi","Kolkata","Lucknow","Mangaluru","Mumbai","Mysuru","Nagpur","New Delhi","Nizamabad","Noida","Pune","Thiruvananthapuram","Tirupati","Vijayawada","Visakhapatnam","Warangal"].map(loc => (
+                  {CITIES.map(loc => (
                     <option key={loc} value={loc} />
                   ))}
                 </datalist>

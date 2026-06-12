@@ -6,7 +6,6 @@ import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import { CalendarStrip } from "@/components/layout/CalendarStrip";
 import Link from "next/link";
 import { Sparkles, CalendarDays, Search, Map as MapIcon, List, SearchX, ArrowRight, X } from "lucide-react";
-import EventsMapWrapper from "@/components/map/EventsMapWrapper";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";
@@ -14,6 +13,7 @@ import { HeroSection } from "./HeroSection";
 import { FilterChips } from "./FilterChips";
 import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
+import { CityGrid } from "./CityGrid";
 
 // Interface for all the props passed down from the server orchestrator
 export interface HomePageClientProps {
@@ -333,10 +333,9 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               )}
 
-              {/* FIX: Wrapped the Map in a large, responsive container so it isn't tiny */}
               {view === 'map' ? (
-                <div className="w-full h-[600px] md:h-[500px] rounded-[32px] overflow-hidden border border-slate-200 mt-6 animate-in fade-in duration-500">
-                  <EventsMapWrapper events={allEvents && allEvents.length > 0 ? (allEvents as Partial<EventRow>[]) : fallbackEvents} />
+                <div className="w-full mt-6 animate-in fade-in duration-500">
+                 <CityGrid events={allEvents && allEvents.length > 0 ? (allEvents as Partial<EventRow>[]) : fallbackEvents} />
                 </div>
               ) : (
                 <div className="w-full">
