@@ -4,7 +4,6 @@ import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
 
 // NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
 export async function proxy(request: NextRequest) {
-  console.log('🔥 PROXY RUNNING:', request.nextUrl.pathname);
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -20,19 +19,13 @@ export async function proxy(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-  request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-  response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-  response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-},
-remove(name: string, options: CookieOptions) {
-  request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-  response = NextResponse.next({
-    request: { headers: request.headers },
-  });
-  response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-},
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
       },
     }
   );
