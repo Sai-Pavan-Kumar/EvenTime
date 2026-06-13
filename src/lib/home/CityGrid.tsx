@@ -57,20 +57,16 @@ export function CityGrid({ events }: CityGridProps) {
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
             />
-
-            {/* Event count badge */}
-            <div className="absolute bottom-3 left-3 z-10">
-              <span className="bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-widest shadow-sm flex items-center gap-1.5">
-                <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-                {count} {count === 1 ? "Event" : "Events"}
-              </span>
-            </div>
           </div>
 
           <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
             <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
               {city}
             </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
           </div>
         </Link>
       ))}

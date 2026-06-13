@@ -28,8 +28,9 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const dd = String(today.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-
+  const cutoff = new Date(today);
+cutoff.setDate(cutoff.getDate() - 1);
+const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
   // 1. Fetch user session and profile for onboarding check
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -42,7 +43,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
 
   // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, lat, lon";
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
 
   if (user) {
     // FIX: Removed 'as any' from the select statement
@@ -114,7 +115,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   }
 
   // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, lat, lon";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
 
   let query = supabase
     .from("events")
