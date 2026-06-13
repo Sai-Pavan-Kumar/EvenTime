@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
-import { MiniCalendar, DrumColumn, LocationSearch, ConfidenceField } from "./SharedUI";
+import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
 import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
 import { useEffect, useState } from "react";
@@ -240,36 +240,26 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         
         <div className="space-y-4">
            <div className="flex justify-between items-center">
-             <label className="text-sm font-semibold text-slate-700">Location <span className="text-red-500">*</span></label>
+             <label className="text-sm font-semibold text-slate-700">Event Location <span className="text-red-500">*</span></label>
              <button type="button" onClick={() => updateData({ isOnline: !data.isOnline })} className={`text-xs font-bold px-3 py-1.5 rounded-full ${data.isOnline ? "bg-[#1D1D1F] text-white" : "bg-white text-slate-600 border"}`}>
                {data.isOnline ? "Virtual Event" : "Switch to Virtual"}
              </button>
            </div>
-           
-           {/* NEW: City selector (drives map/city grouping & discovery filters) */}
-           {!data.isOnline && (
-             <div className="space-y-2">
-               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">City <span className="text-red-500">*</span></label>
-               <select
-                 value={data.city || ""}
-                 onChange={e => updateData({ city: e.target.value })}
-                 className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
-               >
-                 <option value="" disabled>Select City</option>
-                 {CITIES.map(c => (
-                   <option key={c} value={c}>{c}</option>
-                 ))}
-               </select>
-             </div>
-           )}
 
-           {/* Point 4: Location Search strictly visible ONLY if offline */}
            {!data.isOnline ? (
-             <LocationSearch value={data.location} onChange={(val, lat, lon) => updateData({ location: val, lat, lon })} />
+             <select
+               value={data.city || ""}
+               onChange={e => updateData({ city: e.target.value, location: e.target.value })}
+               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+             >
+               <option value="" disabled>Select City</option>
+               {CITIES.map(c => (
+                 <option key={c} value={c}>{c}</option>
+               ))}
+             </select>
            ) : (
              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-[#6C47FF]" /> Virtual Event</div>
            )}
-
            {/* FREE / PAID */}
            <div className="pt-6">
              <label className="block text-sm font-semibold text-slate-700 mb-3">Pricing</label>

@@ -48,8 +48,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
     endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
     endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    lat: (initialData?.lat || null) as number | null,
-    lon: (initialData?.lon || null) as number | null,
     isOnline: initialData?.is_virtual || false,
     isFree: initialData?.is_free ?? true,
     price: initialData?.price?.toString() || "",
@@ -80,6 +78,13 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
   const { isSubmitting, submitEvent } = useEventSubmit();
 
+   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
+  useEffect(() => {
+    if (isEditing && initialData?.registration_link) {
+      extraction.handleLinkInput(initialData.registration_link);
+    }
+  }, []);
+
   const handleSubmit = () => {
     submitEvent({
       title: eventData.title,
@@ -94,8 +99,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       location: eventData.isOnline ? "Virtual Event" : eventData.location,
       city: eventData.isOnline ? "online" : eventData.city,
       is_virtual: eventData.isOnline,
-      lat: eventData.isOnline ? null : eventData.lat, 
-      lon: eventData.isOnline ? null : eventData.lon,
       is_free: eventData.isFree,
       price: eventData.isFree ? 0 : Number(eventData.price),
       registration_link: eventData.regLink,
