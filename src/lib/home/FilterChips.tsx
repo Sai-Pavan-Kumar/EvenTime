@@ -47,7 +47,7 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
           
           if (q) params.set("q", q);
           if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/");
+          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
         }}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
       >

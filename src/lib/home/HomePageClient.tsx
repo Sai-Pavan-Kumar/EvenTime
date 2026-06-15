@@ -30,6 +30,7 @@ export interface HomePageClientProps {
   dynamicLocationChips?: { name: string; value: string; count?: number }[];
   date?: string;
   eventDates: string[];
+  allEventDates: string[];
   featuredEvents: Partial<EventRow>[];
   isFallback: boolean;
   userProfiles: Partial<ProfileRow>[];
@@ -48,6 +49,7 @@ export function HomePageClient(props: HomePageClientProps) {
     displayToday,
     date,
     eventDates,
+    allEventDates,
     personalizedEvents,
     collegeEvents,
     fallbackEvents,
@@ -146,7 +148,7 @@ export function HomePageClient(props: HomePageClientProps) {
               {/* CALENDAR STRIP DROPDOWN */}
               <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[360px] animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
                 <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
-                  <CalendarStrip eventDates={eventDates} onDateSelect={closeCalendar} />
+                  <CalendarStrip eventDates={allEventDates} onDateSelect={closeCalendar} />
                   <div className="text-center pb-1 pt-3 border-t border-slate-50/50 mt-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
                       <X className="w-3 h-3" /> Click Date button to close

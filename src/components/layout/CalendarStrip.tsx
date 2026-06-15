@@ -158,7 +158,9 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
                 // Hydration Matcher: Render the default amber dot during Server-Side Rendering
                 // This perfectly matches your Next.js server cache so React doesn't crash.
                 if (!isMounted) {
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${isSelected ? "bg-white" : "bg-amber-500"}`} />;
+                  const ssrDiff = differenceInCalendarDays(date, today);
+                  const ssrColor = isSelected ? "bg-white" : ssrDiff < 0 ? "bg-black" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
                 }
 
                 const diff = differenceInCalendarDays(date, today);
@@ -167,7 +169,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
                 if (isSelected) {
                   dotColor = "bg-white";
                 } else if (diff < 0) {
-                  dotColor = "bg-red-500";
+                  dotColor = "bg-black";
                 } else if (diff >= 0 && diff <= 3) {
                   dotColor = "bg-orange-500";
                 } else {

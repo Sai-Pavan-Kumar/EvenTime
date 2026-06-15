@@ -50,7 +50,7 @@ export default async function LeaderboardPage() {
 
         {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
         {topThree.length > 0 ? (
-          <div className="relative grid grid-cols-3 items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10">
+          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
             {/* Ambient Celebratory Glow */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
 

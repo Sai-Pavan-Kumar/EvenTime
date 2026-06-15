@@ -10,7 +10,7 @@ export interface CityGridProps {
 }
 
 // Maps a city name to its image path in /public/cities
-// Expecting files like /cities/Hyderabad.jpg, /cities/New Delhi.jpg etc.
+// Expecting files like /cities/Hyderabad.png, /cities/New Delhi.pngg etc.
 // Falls back to a default image if a specific city image is missing. 
 const getCityImage = (city: string) => `/cities/${city}.png`;
 
@@ -56,6 +56,7 @@ export function CityGrid({ events }: CityGridProps) {
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.png'; }}
             />
           </div>
 
