@@ -125,23 +125,13 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-slate-700">Who is it for? <span className="text-red-500">*</span></label>
               <select 
-                onChange={(e) => {
-                  if (!data.selectedAudience.includes(e.target.value)) {
-                    updateData({ selectedAudience: [...data.selectedAudience, e.target.value] });
-                  }
-                }}
+                value={data.selectedAudience[0] || ""}
+                onChange={(e) => updateData({ selectedAudience: [e.target.value] })}
                 className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
               >
                 <option value="" disabled>Select audience</option>
                 {audienceOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {data.selectedAudience.map((aud: string) => (
-                  <span key={aud} className="px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full text-xs font-bold flex items-center gap-1.5">
-                    {aud} <button type="button" onClick={() => updateData({ selectedAudience: data.selectedAudience.filter((a: string) => a !== aud) })} className="hover:text-red-500">×</button>
-                  </span>
-                ))}
-              </div>
             </div>
           )}
           </div>
