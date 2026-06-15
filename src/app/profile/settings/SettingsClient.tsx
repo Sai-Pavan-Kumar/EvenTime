@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import type { ProfileRow } from "@/types";
@@ -14,7 +14,7 @@ export default function SettingsClient({
   profile, 
   categoryCounts = {} 
 }: { 
-  profile: Partial<ProfileRow> & { year_of_studying?: string | null, city?: string | null }, 
+  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
   categoryCounts?: Record<string, number> 
 }) {
   const router = useRouter();
@@ -26,18 +26,26 @@ export default function SettingsClient({
   // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [username, setUsername] = useState(profile?.username || "");
-  const [city, setCity] = useState(profile?.city || "");
-  const [role, setRole] = useState(() => {
-    if (!profile?.role) return "";
-    if (profile.role === "student") return "Student";
-    return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
+  const [userType, setUserType] = useState(() => {
+    if (!(profile as any)?.user_type) return "";
+    const ut = (profile as any).user_type as string;
+    if (ut === "student") return "Student";
+    return ut.charAt(0).toUpperCase() + ut.slice(1);
   });
   
   // States for Education Logic
   const [college, setCollege] = useState(profile?.college || "");
   const [branch, setBranch] = useState(profile?.branch || "");
-  const [yearOfStudying, setYearOfStudying] = useState(profile?.year_of_studying || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
+
+  const toggleCity = (cityName: string) => {
+    if (selectedCities.includes(cityName)) {
+      setSelectedCities(selectedCities.filter(c => c !== cityName));
+    } else if (selectedCities.length < 3) {
+      setSelectedCities([...selectedCities, cityName]);
+    }
+  };
 
   // State for Goals Selection
   const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
@@ -45,16 +53,8 @@ export default function SettingsClient({
   const toggleGoal = (goal: string) => {
     if (selectedGoals.includes(goal)) {
       setSelectedGoals(selectedGoals.filter(g => g !== goal));
-    } else {
+    } else if (selectedGoals.length < 6) {
       setSelectedGoals([...selectedGoals, goal]);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedGoals.length === categoriesList.length) {
-      setSelectedGoals([]);
-    } else {
-      setSelectedGoals([...categoriesList]);
     }
   };
 
@@ -64,40 +64,26 @@ export default function SettingsClient({
     
     const formData = new FormData(e.currentTarget);
     
-    // Structured update payload
-    const updatePayload = {
-      fullName,
-      username,
-      city,
-      college: role === "Student" ? college : null,
-      branch: role === "Student" ? branch : null,
-      year_of_studying: role === "Student" ? yearOfStudying : null,
-      graduation_year: role === "Student" ? year : null,
-      role: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: selectedGoals,
-    };
-
-    // Inject state variables directly into FormData. 
+    // Inject state variables directly into FormData.
     // This is strictly required because `disabled` inputs are normally omitted from form submissions.
-    formData.set("fullName", updatePayload.fullName);
-    formData.set("username", updatePayload.username);
-    formData.set("city", updatePayload.city);
-    formData.set("role", updatePayload.role);
+    formData.set("fullName", fullName);
+    formData.set("username", username);
+    formData.set("user_type", userType.toLowerCase());
+    formData.set("preferred_cities", JSON.stringify(selectedCities));
     
-    if (updatePayload.college) formData.set("college", updatePayload.college);
+    if (userType === "Student" && college) formData.set("college", college);
     else formData.delete("college");
     
-    if (updatePayload.branch) formData.set("branch", updatePayload.branch);
+    if (userType === "Student" && branch) formData.set("branch", branch);
     else formData.delete("branch");
 
-    if (updatePayload.year_of_studying) formData.set("yearOfStudying", updatePayload.year_of_studying);
-    else formData.delete("yearOfStudying");
+    formData.delete("yearOfStudying");
     
-    if (updatePayload.graduation_year) formData.set("graduationYear", updatePayload.graduation_year);
+    if (userType === "Student" && year) formData.set("graduationYear", year);
     else formData.delete("graduationYear");
     
     formData.delete("goals");
-    formData.append("goals", JSON.stringify(updatePayload.goals));
+    formData.append("goals", JSON.stringify(selectedGoals));
 
     const result = await updateProfileSettings(formData);
     
@@ -178,30 +164,53 @@ export default function SettingsClient({
                 <p className="text-xs text-slate-400 mt-2 ml-1">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
               </div>
 
-              {/* Editable: City Dropdown */}
+              {/* Editable: City Multi-Select (max 3) */}
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Event Cities</label>
-                <input 
-                  type="text"
-                  list="city-list"
-                  value={city} 
-                  onChange={e => setCity(e.target.value)} 
-                  required
-                  placeholder="Choose cities you'd like to discover events in"
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
-                />
-                <datalist id="city-list">
-                  {CITIES.map(loc => (
-                    <option key={loc} value={loc} />
-                  ))}
-                </datalist>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Event Cities <span className="text-slate-300 font-normal normal-case">(pick up to 3)</span>
+                </label>
+                {selectedCities.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedCities.map(c => (
+                      <span key={c} className="inline-flex items-center gap-1.5 bg-[#1D1D1F] text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                        {c}
+                        <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(loc => {
+                    const isSelected = selectedCities.includes(loc);
+                    const isDisabled = !isSelected && selectedCities.length >= 3;
+                    return (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => toggleCity(loc)}
+                        disabled={isDisabled}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                          isSelected
+                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                            : isDisabled
+                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What are you</label>
                 <select 
-                  value={role} 
-                  onChange={e => setRole(e.target.value)} 
+                  value={userType} 
+                  onChange={e => setUserType(e.target.value)} 
                   required
                   disabled={isLocked}
                   className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -219,7 +228,7 @@ export default function SettingsClient({
 
           {/* Education Context */}
           <AnimatePresence>
-            {role === "Student" && (
+            {userType === "Student" && (
               <motion.div 
                 initial={{ opacity: 0, height: 0 }} 
                 animate={{ opacity: 1, height: "auto" }} 
@@ -244,7 +253,7 @@ export default function SettingsClient({
                       list="college-list"
                       value={college}
                       onChange={e => setCollege(e.target.value)}
-                      required={role === "Student"}
+                      required={userType === "Student"}
                       disabled={isLocked}
                       placeholder="Type to search your college"
                       className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -258,7 +267,7 @@ export default function SettingsClient({
                     </datalist>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
                       <input 
@@ -266,7 +275,7 @@ export default function SettingsClient({
                         list="branch-list"
                         value={branch}
                         onChange={e => setBranch(e.target.value)}
-                        required={role === "Student"}
+                        required={userType === "Student"}
                         disabled={isLocked}
                         placeholder="Type to search"
                         className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -279,27 +288,11 @@ export default function SettingsClient({
                       </datalist>
                     </div>
                     <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Studying</label>
-                      <select 
-                        value={yearOfStudying}
-                        onChange={e => setYearOfStudying(e.target.value)}
-                        required={role === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="" disabled>Select</option>
-                        {["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-                    <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
                       <select 
                         value={year}
                         onChange={e => setYear(e.target.value)}
-                        required={role === "Student"}
+                        required={userType === "Student"}
                         disabled={isLocked}
                         className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                       >
@@ -325,15 +318,11 @@ export default function SettingsClient({
                 </div>
                 <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
               </div>
-              <button 
-                type="button" 
-                onClick={handleSelectAll} 
-                className="text-xs font-bold text-brand hover:underline px-2 py-1 bg-brand/5 rounded-md"
-              >
-                {selectedGoals.length === categoriesList.length ? "Deselect All" : "Select All"}
-              </button>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                {selectedGoals.length}/6
+              </span>
             </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">Select categories you are interested in.</p>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">Select up to 6 categories you are interested in.</p>
 
             <div className="flex flex-wrap gap-2.5">
               {categoriesList.map((goal) => {

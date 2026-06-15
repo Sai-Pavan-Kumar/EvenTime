@@ -81,36 +81,36 @@ public/card-backgrounds/tech-event.png
 public/card-backgrounds/wellness-event.png
 public/card-backgrounds/women-event.png
 public/card-backgrounds/workshop.png
-public/cities/Ahmedabad.png
-public/cities/Bengaluru.png
-public/cities/Bhopal.png
-public/cities/Chennai.png
-public/cities/Coimbatore.png
-public/cities/Guntur.png
-public/cities/Gurugram.png
-public/cities/Hyderabad.png
-public/cities/Indore.png
-public/cities/Jaipur.png
-public/cities/Kakinada.png
-public/cities/Kanpur.png
-public/cities/Karimnagar.png
-public/cities/Khammam.png
-public/cities/Kochi.png
-public/cities/Kolkata.png
-public/cities/Lucknow.png
-public/cities/Mangaluru.png
-public/cities/Mumbai.png
-public/cities/Mysuru.png
-public/cities/Nagpur.png
-public/cities/New-Delhi.png
-public/cities/Nizambad.png
-public/cities/Noida.png
-public/cities/Pune.png
-public/cities/Thiruvananthapuram.png
-public/cities/Tirupati.png
-public/cities/Vijayawada.png
-public/cities/Visakhapatnam.png
-public/cities/Warangal.png
+public/cities/ahmedabad.webp
+public/cities/bengaluru.webp
+public/cities/bhopal.webp
+public/cities/chennai.webp
+public/cities/coimbatore.webp
+public/cities/guntur.webp
+public/cities/gurugram.webp
+public/cities/hyderabad.webp
+public/cities/indore.webp
+public/cities/jaipur.webp
+public/cities/kakinada.webp
+public/cities/kanpur.webp
+public/cities/karimnagar.webp
+public/cities/khammam.webp
+public/cities/kochi.webp
+public/cities/kolkata.webp
+public/cities/lucknow.webp
+public/cities/mangaluru.webp
+public/cities/mumbai.webp
+public/cities/mysuru.webp
+public/cities/nagpur.webp
+public/cities/new-delhi.webp
+public/cities/nizambad.webp
+public/cities/noida.webp
+public/cities/pune.webp
+public/cities/thiruvananthapuram.webp
+public/cities/tirupati.webp
+public/cities/vijayawada.webp
+public/cities/visakhapatnam.webp
+public/cities/warangal.webp
 public/empty-alerts.png
 public/empty-category.png
 public/empty-profile.png
@@ -3152,240 +3152,6 @@ export default function LeaderboardLoading() {
 }
 </file>
 
-<file path="src/app/leaderboard/page.tsx">
-import { Navbar } from "@/components/layout/Navbar";
-import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
-import Link from "next/link";
-import { Trophy, Crown, Medal, Award, Info, Sparkles, ArrowRight, Share2 } from "lucide-react";
-
-export const revalidate = 0;
-
-const getTierInfo = (score: number) => {
-  if (score >= 901) return { name: "Elite Legend", bg: "bg-amber-100", text: "text-amber-600", border: "border-amber-400" };
-  if (score >= 501) return { name: "Expert Curator", bg: "bg-purple-100", text: "text-purple-600", border: "border-purple-400" };
-  if (score >= 201) return { name: "Rising Star", bg: "bg-blue-100", text: "text-blue-600", border: "border-blue-400" };
-  return { name: "Rookie", bg: "bg-slate-100", text: "text-slate-600", border: "border-slate-300" };
-};
-
-export default async function LeaderboardPage() {
-  const supabase = await createClient();
-  
-  const { data: leaders } = await supabase
-    .from("leaderboard_view")
-    .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
-    .order("et_score", { ascending: false })
-    .limit(50);
-
-  const topThree = leaders?.slice(0, 3) || [];
-  const restOfLeaders = leaders?.slice(3) || [];
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
-
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center mb-16 space-y-4">
-          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-2">
-            <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-16 h-16 rounded-[24px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-xl shadow-amber-500/20 flex items-center justify-center rotate-3 hover:rotate-0 transition-transform duration-500">
-              <Crown className="w-8 h-8 text-amber-500 drop-shadow-md" />
-            </div>
-          </div>
-          <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-[#1D1D1F] tracking-tight">
-            Top Curators
-          </h1>
-          <p className="text-[#86868B] font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2">
-            Ranked by trust, impact, and consistency. 
-            <span className="inline-flex items-center gap-1 text-xs bg-slate-200 px-2 py-1 rounded-full text-slate-600 cursor-help" title="Base Score (100) + Profile Completion (25) + Events (50) + Saves (5)">
-              <Info className="w-3 h-3" /> How ET Score works
-            </span>
-          </p>
-        </div>
-
-        {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
-        {topThree.length > 0 ? (
-          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
-            {/* Ambient Celebratory Glow */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
-
-            {/* RANK 2 */}
-            <div className="flex flex-col items-center justify-self-end w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700">
-              {topThree[1] && (
-                <>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
-                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={96} height={96} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Medal className="w-3 h-3" /> #2
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-[#6C47FF] transition-colors">
-                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[1].full_name || 'Curator')}&score=${topThree[1].et_score || 0}&rank=2&image=${encodeURIComponent(topThree[1].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-slate-300/60 drop-shadow-sm">2</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* RANK 1 (ALWAYS ABSOLUTE CENTER) */}
-            <div className="flex flex-col items-center justify-self-center w-full max-w-[180px] z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
-              {topThree[0] && (
-                <>
-                  {/* Subtle Winner Glow */}
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-400/30 blur-2xl rounded-full -z-10" />
-                  <Crown className="w-8 h-8 text-amber-500 mb-2 drop-shadow-md" />
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
-                      <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
-                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={144} height={144} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" /> #1
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
-                    <h3 className="font-heading font-extrabold text-[#1D1D1F] text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
-                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
-                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
-                  </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[0].full_name || 'Curator')}&score=${topThree[0].et_score || 0}&rank=1&image=${encodeURIComponent(topThree[0].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
-                    <Share2 className="w-3.5 h-3.5" /> Share Victory
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
-                    <span className="text-5xl md:text-6xl font-black text-amber-400/50 drop-shadow-sm">1</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* RANK 3 */}
-            <div className="flex flex-col items-center justify-self-start w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700 delay-300">
-              {topThree[2] && (
-                <>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
-                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={96} height={96} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Award className="w-3 h-3" /> #3
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-[#6C47FF] transition-colors">
-                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[2].full_name || 'Curator')}&score=${topThree[2].et_score || 0}&rank=3&image=${encodeURIComponent(topThree[2].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-16 md:h-20 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
-                  </div>
-                </>
-              )}
-            </div>  
-          </div>
-        ) : (
-          /* EMPTY STATE - NO CURATORS YET */
-          <div className="flex flex-col items-center justify-center bg-white rounded-[40px] p-10 md:p-16 border border-slate-200 shadow-xl shadow-slate-200/40 max-w-2xl mx-auto relative overflow-hidden mb-20">
-             <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-amber-400/10 rounded-full blur-3xl animate-pulse" />
-             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-[#6C47FF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-             
-             <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
-               <div className="w-20 h-20 bg-amber-50 border border-amber-100 rounded-[24px] flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500">
-                 <Sparkles className="w-10 h-10 text-amber-500" />
-               </div>
-               <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
-                 The Throne is Empty
-               </h3>
-               <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-                 There are currently no events posted on the platform. Be the first to start curating and claim the #1 spot on the leaderboard.
-               </p>
-               <Link href="/events/new" className="bg-[#1D1D1F] hover:bg-black text-white px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
-                 Start Curating <ArrowRight className="w-4 h-4" />
-               </Link>
-             </div>
-          </div>
-        )}
-
-        {/* LIST VIEW FOR RANKS 4+ */}
-        {restOfLeaders.length > 0 && (
-          <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
-            <div className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-widest">
-              <div className="w-12 text-center">Rank</div>
-              <div>Curator</div>
-              <div className="w-32 text-right pr-4">ET Score</div>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-              {restOfLeaders.map((user, index) => {
-                const rank = index + 4;
-                const tier = getTierInfo(user.et_score || 0);
-
-                return (
-                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-[#F5F5F7] transition-colors">
-                    <div className="w-12 text-center font-heading font-bold text-lg text-slate-400">
-                      #{rank}
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Link href={`/${user.username || user.user_id}`} className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-white hover:opacity-80 transition-opacity">
-                        <Image src={user.avatar_url || "/window.svg"} alt={user.full_name || "Curator"} width={48} height={48} className="object-cover" />
-                      </Link>
-                      <div>
-                        <Link href={`/${user.username || user.user_id}`} className="hover:underline decoration-[#6C47FF]">
-                          <h4 className="font-bold text-[#1D1D1F] text-sm md:text-base hover:text-[#6C47FF] transition-colors">{user.full_name}</h4>
-                        </Link>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${tier.bg} ${tier.text} ${tier.border} border`}>
-                            {tier.name}
-                          </span>
-                          <span className="text-xs text-slate-500 hidden sm:inline-block">• {user.events_posted} Events • {user.impact_saves} Saves</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="w-32 text-right pr-4">
-                      <span className="font-heading font-black text-[#1D1D1F] text-xl">{user.et_score}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/loading.tsx">
 // File: src/app/loading.tsx
 import { Navbar } from "@/components/layout/Navbar";
@@ -3846,43 +3612,57 @@ export async function updateProfileSettings(formData: FormData) {
     return { error: "Please login to update settings." };
   }
 
-  // SERVER-SIDE SECURITY CHECK: Prevent malicious role injection
-  if (formData.has("role")) {
-    console.warn(`Security Warning: User ${user.id} attempted to inject a role via settings.`);
-    return { error: "Unauthorized field manipulation detected." };
-  }
-
-  // Extract data from the form
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();
   const college = formData.get("college") as string;
   const branch = formData.get("branch") as string;
   const graduationYear = formData.get("graduationYear") as string;
+  const user_type = formData.get("user_type") as string;
 
-  // Input Validation (H-4 Fix)
+  const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
+  if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
+    return { error: "Please select what you are." };
+  }
+
+  // Validate username
   const USERNAME_REGEX = /^[a-z0-9_.-]{3,30}$/;
   if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
   if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
   if (college && college.length > 200) return { error: "College name too long." };
   if (branch && branch.length > 100) return { error: "Branch name too long." };
-  
-  // Goals is passed as a stringified JSON array
+
+  // Parse preferred_cities (array, max 3)
+  const citiesString = formData.get("preferred_cities") as string;
+  let preferred_cities: string[] = [];
+  if (citiesString) {
+    try {
+      const parsed = JSON.parse(citiesString);
+      if (!Array.isArray(parsed)) throw new Error();
+      preferred_cities = parsed
+        .filter((c): c is string => typeof c === "string" && c.length > 0)
+        .slice(0, 3);
+    } catch {
+      return { error: "Invalid cities format." };
+    }
+  }
+
+  // Parse goals (categories, max 6)
   const goalsString = formData.get("goals") as string;
   let goals: string[] = [];
-  
   if (goalsString) {
     try {
       const parsed = JSON.parse(goalsString);
       if (!Array.isArray(parsed)) throw new Error();
       goals = parsed
         .filter((g): g is string => typeof g === "string")
-        .slice(0, 10)                  // max 10 goals
-        .map(g => g.slice(0, 50));     // max 50 chars each
+        .slice(0, 6)
+        .map(g => g.slice(0, 50));
     } catch {
       return { error: "Invalid goals format." };
     }
   }
 
+  // Check username uniqueness
   const { data: existingUser } = await supabase
     .from("profiles")
     .select("id")
@@ -3893,18 +3673,21 @@ export async function updateProfileSettings(formData: FormData) {
   if (existingUser) {
     return { error: "This username is already taken. Please choose another." };
   }
-  
-  // Update the profiles table
+
+  const isStudent = user_type.toLowerCase() === "student";
+
   const { error } = await supabase
     .from("profiles")
     .update({
-      username: username,
+      username,
       full_name: fullName,
-      college: college,
-      branch: branch,
-      graduation_year: graduationYear,
-      goals: goals,
-      is_onboarded: true, // Auto-sync onboarding status!
+      user_type: user_type.toLowerCase(),
+      preferred_cities,
+      college: isStudent ? college : null,
+      branch: isStudent ? branch : null,
+      graduation_year: isStudent ? graduationYear : null,
+      goals,
+      is_onboarded: true,
     })
     .eq("id", user.id);
 
@@ -3913,7 +3696,6 @@ export async function updateProfileSettings(formData: FormData) {
     return { error: "Failed to update profile. Please try again." };
   }
 
-  // Refresh both pages to show new data immediately
   revalidatePath("/profile");
   revalidatePath("/profile/settings");
 
@@ -3937,7 +3719,7 @@ export default async function SettingsPage() {
   // Fetch existing profile data (Added year_of_studying)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, username, city, role, college, branch, graduation_year, year_of_studying, goals, is_onboarded")
+    .select("id, full_name, username, preferred_cities, role, user_type, college, branch, graduation_year, goals, is_onboarded")
     .eq("id", user.id)
     .single();
 
@@ -6155,7 +5937,9 @@ export type Database = {
           graduation_year: string | null
           id: string
           is_onboarded: boolean | null
+          preferred_cities: string[] | null
           role: string | null
+          user_type: string | null
           updated_at: string | null
           username: string | null
         }
@@ -6172,8 +5956,10 @@ export type Database = {
           graduation_year?: string | null
           id: string
           is_onboarded?: boolean | null
+          preferred_cities?: string[] | null
           role?: string | null
           updated_at?: string | null
+          user_type?: string | null
           username?: string | null
         }
         Update: {
@@ -6189,8 +5975,10 @@ export type Database = {
           graduation_year?: string | null
           id?: string
           is_onboarded?: boolean | null
+          preferred_cities?: string[] | null
           role?: string | null
           updated_at?: string | null
+          user_type?: string | null
           username?: string | null
         }
         Relationships: [
@@ -7731,59 +7519,6 @@ export default async function EventPage({
 }
 </file>
 
-<file path="src/app/globals.css">
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@theme {
-  /* Colors - Light Mode Primary */
-  --color-brand-primary: #6C47FF;
-  --color-brand-accent: #F59E0B;
-  --color-brand-anchor: #005AE0;
-  --color-surface-base: #F5F5F7;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #F0F0F8;
-  --color-text-primary: #1D1D1F;
-  --color-text-secondary: #86868B;
-
-  /* Typography */
-  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-
-  /* Spacing (4px Base Unit) */
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-}
-
-@layer base {
-  body {
-    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
-    @apply bg-surface-base text-text-primary font-sans antialiased;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
-    @apply font-heading tracking-[-0.02em];
-  }
-}
-</file>
-
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -7862,6 +7597,240 @@ export default function RootLayout({
         <Toaster />
       </body>
     </html>
+  );
+}
+</file>
+
+<file path="src/app/leaderboard/page.tsx">
+import { Navbar } from "@/components/layout/Navbar";
+import { createClient } from "@/lib/supabase/server";
+import Image from "next/image";
+import Link from "next/link";
+import { Trophy, Crown, Medal, Award, Info, Sparkles, ArrowRight, Share2 } from "lucide-react";
+
+export const revalidate = 0;
+
+const getTierInfo = (score: number) => {
+  if (score >= 901) return { name: "Elite Legend", bg: "bg-amber-100", text: "text-amber-600", border: "border-amber-400" };
+  if (score >= 501) return { name: "Expert Curator", bg: "bg-purple-100", text: "text-purple-600", border: "border-purple-400" };
+  if (score >= 201) return { name: "Rising Star", bg: "bg-blue-100", text: "text-blue-600", border: "border-blue-400" };
+  return { name: "Rookie", bg: "bg-slate-100", text: "text-slate-600", border: "border-slate-300" };
+};
+
+export default async function LeaderboardPage() {
+  const supabase = await createClient();
+  
+  const { data: leaders } = await supabase
+    .from("leaderboard_view")
+    .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
+    .order("et_score", { ascending: false })
+    .limit(50);
+
+  const topThree = leaders?.slice(0, 3) || [];
+  const restOfLeaders = leaders?.slice(3) || [];
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <Navbar />
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-16 space-y-4">
+          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-2">
+            <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-2xl animate-pulse" />
+            <div className="relative w-16 h-16 rounded-[24px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-xl shadow-amber-500/20 flex items-center justify-center rotate-3 hover:rotate-0 transition-transform duration-500">
+              <Crown className="w-8 h-8 text-amber-500 drop-shadow-md" />
+            </div>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-[#1D1D1F] tracking-tight">
+            Top Curators
+          </h1>
+          <p className="text-[#86868B] font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2">
+            Ranked by trust, impact, and consistency. 
+            <span className="inline-flex items-center gap-1 text-xs bg-slate-200 px-2 py-1 rounded-full text-slate-600 cursor-help" title="Base Score (100) + Profile Completion (25) + Events (50) + Saves (5)">
+              <Info className="w-3 h-3" /> How ET Score works
+            </span>
+          </p>
+        </div>
+
+        {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
+        {topThree.length > 0 ? (
+          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
+            {/* Ambient Celebratory Glow */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
+
+            {/* RANK 2 */}
+            <div className="flex flex-col items-center justify-self-end w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700">
+              {topThree[1] && (
+                <>
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
+                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
+                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={96} height={96} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                      <Medal className="w-3 h-3" /> #2
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-[#6C47FF] transition-colors">
+                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
+                    <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
+                  </div>
+                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[1].full_name || 'Curator')}&score=${topThree[1].et_score || 0}&rank=2&image=${encodeURIComponent(topThree[1].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                    <Share2 className="w-3 h-3" /> Share
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                    <span className="text-4xl md:text-5xl font-black text-slate-300/60 drop-shadow-sm">2</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* RANK 1 (ALWAYS ABSOLUTE CENTER) */}
+            <div className="flex flex-col items-center justify-self-center w-full max-w-[180px] z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
+              {topThree[0] && (
+                <>
+                  {/* Subtle Winner Glow */}
+                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-400/30 blur-2xl rounded-full -z-10" />
+                  <Crown className="w-8 h-8 text-amber-500 mb-2 drop-shadow-md" />
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
+                      <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
+                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={144} height={144} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
+                      <Trophy className="w-3.5 h-3.5" /> #1
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
+                    <h3 className="font-heading font-extrabold text-[#1D1D1F] text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
+                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
+                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
+                  </div>
+                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[0].full_name || 'Curator')}&score=${topThree[0].et_score || 0}&rank=1&image=${encodeURIComponent(topThree[0].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
+                    <Share2 className="w-3.5 h-3.5" /> Share Victory
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
+                    <span className="text-5xl md:text-6xl font-black text-amber-400/50 drop-shadow-sm">1</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* RANK 3 */}
+            <div className="flex flex-col items-center justify-self-start w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700 delay-300">
+              {topThree[2] && (
+                <>
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
+                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
+                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={96} height={96} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                      <Award className="w-3 h-3" /> #3
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-[#6C47FF] transition-colors">
+                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
+                    <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
+                  </div>
+                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[2].full_name || 'Curator')}&score=${topThree[2].et_score || 0}&rank=3&image=${encodeURIComponent(topThree[2].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                    <Share2 className="w-3 h-3" /> Share
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-16 md:h-20 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                    <span className="text-4xl md:text-5xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
+                  </div>
+                </>
+              )}
+            </div>  
+          </div>
+        ) : (
+          /* EMPTY STATE - NO CURATORS YET */
+          <div className="flex flex-col items-center justify-center bg-white rounded-[40px] p-10 md:p-16 border border-slate-200 shadow-xl shadow-slate-200/40 max-w-2xl mx-auto relative overflow-hidden mb-20">
+             <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-amber-400/10 rounded-full blur-3xl animate-pulse" />
+             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-[#6C47FF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+             
+             <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
+               <div className="w-20 h-20 bg-amber-50 border border-amber-100 rounded-[24px] flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500">
+                 <Sparkles className="w-10 h-10 text-amber-500" />
+               </div>
+               <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
+                 The Throne is Empty
+               </h3>
+               <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+                 There are currently no events posted on the platform. Be the first to start curating and claim the #1 spot on the leaderboard.
+               </p>
+               <Link href="/events/new" className="bg-[#1D1D1F] hover:bg-black text-white px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
+                 Start Curating <ArrowRight className="w-4 h-4" />
+               </Link>
+             </div>
+          </div>
+        )}
+
+        {/* LIST VIEW FOR RANKS 4+ */}
+        {restOfLeaders.length > 0 && (
+          <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-widest">
+              <div className="w-12 text-center">Rank</div>
+              <div>Curator</div>
+              <div className="w-32 text-right pr-4">ET Score</div>
+            </div>
+            
+            <div className="divide-y divide-slate-100">
+              {restOfLeaders.map((user, index) => {
+                const rank = index + 4;
+                const tier = getTierInfo(user.et_score || 0);
+
+                return (
+                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-[#F5F5F7] transition-colors">
+                    <div className="w-12 text-center font-heading font-bold text-lg text-slate-400">
+                      #{rank}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <Link href={`/${user.username || user.user_id}`} className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-white hover:opacity-80 transition-opacity">
+                        <Image src={user.avatar_url || "/window.svg"} alt={user.full_name || "Curator"} width={48} height={48} className="object-cover" />
+                      </Link>
+                      <div>
+                        <Link href={`/${user.username || user.user_id}`} className="hover:underline decoration-[#6C47FF]">
+                          <h4 className="font-bold text-[#1D1D1F] text-sm md:text-base hover:text-[#6C47FF] transition-colors">{user.full_name}</h4>
+                        </Link>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${tier.bg} ${tier.text} ${tier.border} border`}>
+                            {tier.name}
+                          </span>
+                          <span className="text-xs text-slate-500 hidden sm:inline-block">• {user.events_posted} Events • {user.impact_saves} Saves</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-32 text-right pr-4">
+                      <span className="font-heading font-black text-[#1D1D1F] text-xl">{user.et_score}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
 </file>
@@ -8307,198 +8276,6 @@ Promise<{ tab?: string }>; }) {
         </div>
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { 
-  format, 
-  isSameDay, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  addMonths, 
-  subMonths, 
-  isSameMonth,
-  parseISO,
-  differenceInCalendarDays
-} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-      // Deselect if clicked again (Goes back to default future events)
-      router.push(`/?${params.toString()}`, { scroll: false });
-    } else {
-      params.set("date", queryDateStr);
-      router.push(`/?${params.toString()}`, { scroll: false });
-    }
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrDiff = differenceInCalendarDays(date, today);
-                  const ssrColor = isSelected ? "bg-white" : ssrDiff < 0 ? "bg-black" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 </file>
@@ -9284,150 +9061,6 @@ export const COOKIE_OPTIONS = {
 };
 </file>
 
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-// Maps a city name to its image path in /public/cities
-// Expecting files like /cities/Hyderabad.png, /cities/New Delhi.pngg etc.
-// Falls back to a default image if a specific city image is missing. 
-const getCityImage = (city: string) => `/cities/${city}.png`;
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <Image
-              src={getCityImage(city)}
-              alt={city}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.png'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          const val = e.target.value;
-          const params = new URLSearchParams();
-          
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-            if (location) params.set("location", location);
-          } else {
-            if (category) params.set("category", category);
-            if (val) params.set("location", val);
-          }
-          
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/supabase/client.ts">
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
@@ -9453,6 +9086,59 @@ export function createClient() {
   );
 
   return supabaseClient;
+}
+</file>
+
+<file path="src/app/globals.css">
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Colors - Light Mode Primary */
+  --color-brand-primary: #6C47FF;
+  --color-brand-accent: #F59E0B;
+  --color-brand-anchor: #005AE0;
+  --color-surface-base: #F5F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F0F0F8;
+  --color-text-primary: #1D1D1F;
+  --color-text-secondary: #86868B;
+
+  /* Typography */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px Base Unit) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  body {
+    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
+    @apply bg-surface-base text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
+    @apply font-heading tracking-[-0.02em];
+  }
 }
 </file>
 
@@ -9485,7 +9171,7 @@ import { useState } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import type { ProfileRow } from "@/types";
@@ -9495,7 +9181,7 @@ export default function SettingsClient({
   profile, 
   categoryCounts = {} 
 }: { 
-  profile: Partial<ProfileRow> & { year_of_studying?: string | null, city?: string | null }, 
+  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
   categoryCounts?: Record<string, number> 
 }) {
   const router = useRouter();
@@ -9507,18 +9193,26 @@ export default function SettingsClient({
   // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [username, setUsername] = useState(profile?.username || "");
-  const [city, setCity] = useState(profile?.city || "");
-  const [role, setRole] = useState(() => {
-    if (!profile?.role) return "";
-    if (profile.role === "student") return "Student";
-    return profile.role.charAt(0).toUpperCase() + profile.role.slice(1);
+  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
+  const [userType, setUserType] = useState(() => {
+    if (!(profile as any)?.user_type) return "";
+    const ut = (profile as any).user_type as string;
+    if (ut === "student") return "Student";
+    return ut.charAt(0).toUpperCase() + ut.slice(1);
   });
   
   // States for Education Logic
   const [college, setCollege] = useState(profile?.college || "");
   const [branch, setBranch] = useState(profile?.branch || "");
-  const [yearOfStudying, setYearOfStudying] = useState(profile?.year_of_studying || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
+
+  const toggleCity = (cityName: string) => {
+    if (selectedCities.includes(cityName)) {
+      setSelectedCities(selectedCities.filter(c => c !== cityName));
+    } else if (selectedCities.length < 3) {
+      setSelectedCities([...selectedCities, cityName]);
+    }
+  };
 
   // State for Goals Selection
   const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
@@ -9526,16 +9220,8 @@ export default function SettingsClient({
   const toggleGoal = (goal: string) => {
     if (selectedGoals.includes(goal)) {
       setSelectedGoals(selectedGoals.filter(g => g !== goal));
-    } else {
+    } else if (selectedGoals.length < 6) {
       setSelectedGoals([...selectedGoals, goal]);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedGoals.length === categoriesList.length) {
-      setSelectedGoals([]);
-    } else {
-      setSelectedGoals([...categoriesList]);
     }
   };
 
@@ -9545,40 +9231,26 @@ export default function SettingsClient({
     
     const formData = new FormData(e.currentTarget);
     
-    // Structured update payload
-    const updatePayload = {
-      fullName,
-      username,
-      city,
-      college: role === "Student" ? college : null,
-      branch: role === "Student" ? branch : null,
-      year_of_studying: role === "Student" ? yearOfStudying : null,
-      graduation_year: role === "Student" ? year : null,
-      role: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: selectedGoals,
-    };
-
-    // Inject state variables directly into FormData. 
+    // Inject state variables directly into FormData.
     // This is strictly required because `disabled` inputs are normally omitted from form submissions.
-    formData.set("fullName", updatePayload.fullName);
-    formData.set("username", updatePayload.username);
-    formData.set("city", updatePayload.city);
-    formData.set("role", updatePayload.role);
+    formData.set("fullName", fullName);
+    formData.set("username", username);
+    formData.set("user_type", userType.toLowerCase());
+    formData.set("preferred_cities", JSON.stringify(selectedCities));
     
-    if (updatePayload.college) formData.set("college", updatePayload.college);
+    if (userType === "Student" && college) formData.set("college", college);
     else formData.delete("college");
     
-    if (updatePayload.branch) formData.set("branch", updatePayload.branch);
+    if (userType === "Student" && branch) formData.set("branch", branch);
     else formData.delete("branch");
 
-    if (updatePayload.year_of_studying) formData.set("yearOfStudying", updatePayload.year_of_studying);
-    else formData.delete("yearOfStudying");
+    formData.delete("yearOfStudying");
     
-    if (updatePayload.graduation_year) formData.set("graduationYear", updatePayload.graduation_year);
+    if (userType === "Student" && year) formData.set("graduationYear", year);
     else formData.delete("graduationYear");
     
     formData.delete("goals");
-    formData.append("goals", JSON.stringify(updatePayload.goals));
+    formData.append("goals", JSON.stringify(selectedGoals));
 
     const result = await updateProfileSettings(formData);
     
@@ -9659,30 +9331,53 @@ export default function SettingsClient({
                 <p className="text-xs text-slate-400 mt-2 ml-1">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
               </div>
 
-              {/* Editable: City Dropdown */}
+              {/* Editable: City Multi-Select (max 3) */}
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Event Cities</label>
-                <input 
-                  type="text"
-                  list="city-list"
-                  value={city} 
-                  onChange={e => setCity(e.target.value)} 
-                  required
-                  placeholder="Choose cities you'd like to discover events in"
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
-                />
-                <datalist id="city-list">
-                  {CITIES.map(loc => (
-                    <option key={loc} value={loc} />
-                  ))}
-                </datalist>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Event Cities <span className="text-slate-300 font-normal normal-case">(pick up to 3)</span>
+                </label>
+                {selectedCities.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {selectedCities.map(c => (
+                      <span key={c} className="inline-flex items-center gap-1.5 bg-[#1D1D1F] text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                        {c}
+                        <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(loc => {
+                    const isSelected = selectedCities.includes(loc);
+                    const isDisabled = !isSelected && selectedCities.length >= 3;
+                    return (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => toggleCity(loc)}
+                        disabled={isDisabled}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                          isSelected
+                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                            : isDisabled
+                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What are you</label>
                 <select 
-                  value={role} 
-                  onChange={e => setRole(e.target.value)} 
+                  value={userType} 
+                  onChange={e => setUserType(e.target.value)} 
                   required
                   disabled={isLocked}
                   className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -9700,7 +9395,7 @@ export default function SettingsClient({
 
           {/* Education Context */}
           <AnimatePresence>
-            {role === "Student" && (
+            {userType === "Student" && (
               <motion.div 
                 initial={{ opacity: 0, height: 0 }} 
                 animate={{ opacity: 1, height: "auto" }} 
@@ -9725,7 +9420,7 @@ export default function SettingsClient({
                       list="college-list"
                       value={college}
                       onChange={e => setCollege(e.target.value)}
-                      required={role === "Student"}
+                      required={userType === "Student"}
                       disabled={isLocked}
                       placeholder="Type to search your college"
                       className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -9739,7 +9434,7 @@ export default function SettingsClient({
                     </datalist>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
                       <input 
@@ -9747,7 +9442,7 @@ export default function SettingsClient({
                         list="branch-list"
                         value={branch}
                         onChange={e => setBranch(e.target.value)}
-                        required={role === "Student"}
+                        required={userType === "Student"}
                         disabled={isLocked}
                         placeholder="Type to search"
                         className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
@@ -9760,27 +9455,11 @@ export default function SettingsClient({
                       </datalist>
                     </div>
                     <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Studying</label>
-                      <select 
-                        value={yearOfStudying}
-                        onChange={e => setYearOfStudying(e.target.value)}
-                        required={role === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="" disabled>Select</option>
-                        {["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year"].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-                    <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
                       <select 
                         value={year}
                         onChange={e => setYear(e.target.value)}
-                        required={role === "Student"}
+                        required={userType === "Student"}
                         disabled={isLocked}
                         className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                       >
@@ -9806,15 +9485,11 @@ export default function SettingsClient({
                 </div>
                 <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
               </div>
-              <button 
-                type="button" 
-                onClick={handleSelectAll} 
-                className="text-xs font-bold text-brand hover:underline px-2 py-1 bg-brand/5 rounded-md"
-              >
-                {selectedGoals.length === categoriesList.length ? "Deselect All" : "Select All"}
-              </button>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                {selectedGoals.length}/6
+              </span>
             </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">Select categories you are interested in.</p>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">Select up to 6 categories you are interested in.</p>
 
             <div className="flex flex-wrap gap-2.5">
               {categoriesList.map((goal) => {
@@ -9864,6 +9539,198 @@ export default function SettingsClient({
         </form>
       </div>
     </main>
+  );
+}
+</file>
+
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { 
+  format, 
+  isSameDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  addMonths, 
+  subMonths, 
+  isSameMonth,
+  parseISO,
+  differenceInCalendarDays
+} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+      // Deselect if clicked again (Goes back to default future events)
+      router.push(`/?${params.toString()}`, { scroll: false });
+    } else {
+      params.set("date", queryDateStr);
+      router.push(`/?${params.toString()}`, { scroll: false });
+    }
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrDiff = differenceInCalendarDays(date, today);
+                  const ssrColor = isSelected ? "bg-white" : ssrDiff < 0 ? "bg-black" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 </file>
@@ -10673,6 +10540,222 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 }
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+// Maps a city name to its image path in /public/cities
+// Expecting files like /cities/Hyderabad.webp, /cities/New Delhi.webp etc.
+// Falls back to a default image if a specific city image is missing. 
+const getCityImage = (city: string) => `/cities/${city}.webp`;
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={{ pathname: "/", query: { location: city, view: "list" } }}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <Image
+              src={getCityImage(city)}
+              alt={city}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          const val = e.target.value;
+          const params = new URLSearchParams();
+          
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+            if (location) params.set("location", location);
+          } else {
+            if (category) params.set("category", category);
+            if (val) params.set("location", val);
+          }
+          
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
+              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
+              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
+</file>
+
 <file path="src/lib/home/fetchHomePageData.ts">
 import { createClient } from "@/lib/supabase/server";
 import { getMatchLabel } from "@/lib/events/match";
@@ -11331,78 +11414,6 @@ export function HomePageClient(props: HomePageClientProps) {
     </main>
   );
 }
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
-              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/events/[slug]/edit/page.tsx">
