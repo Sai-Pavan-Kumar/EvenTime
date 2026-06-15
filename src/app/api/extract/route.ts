@@ -20,6 +20,7 @@ interface ExtractionResult extends ExtractedEvent {
   confidence: number;
   isTrusted: boolean;
   finalDomain: string;
+  finalUrl: string;
   message: string;
 }
 
@@ -274,7 +275,7 @@ export async function POST(request: Request) {
   const EMPTY_RESULT: ExtractionResult = {
     title: "", description: "", image: "", date: "",
     location: "", confidence: 0, isTrusted: false,
-    finalDomain: "", message: "",
+    finalDomain: "", finalUrl: "", message: "",
   };
 
   try {
@@ -377,6 +378,7 @@ export async function POST(request: Request) {
       confidence,
       isTrusted,
       finalDomain: hostname,
+      finalUrl,
       message: confidence < 0.8
         ? "Some event details could not be extracted. Please review and fill in the missing fields."
         : "Event details extracted successfully.",

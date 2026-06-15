@@ -3598,167 +3598,6 @@ export default function ProfileLoading() {
 }
 </file>
 
-<file path="src/app/profile/settings/actions.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
-
-export async function updateProfileSettings(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Please login to update settings." };
-  }
-
-  const fullName = formData.get("fullName") as string;
-  const username = (formData.get("username") as string).toLowerCase().trim();
-  const college = formData.get("college") as string;
-  const branch = formData.get("branch") as string;
-  const graduationYear = formData.get("graduationYear") as string;
-  const user_type = formData.get("user_type") as string;
-
-  const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
-  if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
-    return { error: "Please select what you are." };
-  }
-
-  // Validate username
-  const USERNAME_REGEX = /^[a-z0-9_.-]{3,30}$/;
-  if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
-  if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
-  if (college && college.length > 200) return { error: "College name too long." };
-  if (branch && branch.length > 100) return { error: "Branch name too long." };
-
-  // Parse preferred_cities (array, max 3)
-  const citiesString = formData.get("preferred_cities") as string;
-  let preferred_cities: string[] = [];
-  if (citiesString) {
-    try {
-      const parsed = JSON.parse(citiesString);
-      if (!Array.isArray(parsed)) throw new Error();
-      preferred_cities = parsed
-        .filter((c): c is string => typeof c === "string" && c.length > 0)
-        .slice(0, 3);
-    } catch {
-      return { error: "Invalid cities format." };
-    }
-  }
-
-  // Parse goals (categories, max 6)
-  const goalsString = formData.get("goals") as string;
-  let goals: string[] = [];
-  if (goalsString) {
-    try {
-      const parsed = JSON.parse(goalsString);
-      if (!Array.isArray(parsed)) throw new Error();
-      goals = parsed
-        .filter((g): g is string => typeof g === "string")
-        .slice(0, 6)
-        .map(g => g.slice(0, 50));
-    } catch {
-      return { error: "Invalid goals format." };
-    }
-  }
-
-  // Check username uniqueness
-  const { data: existingUser } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("username", username)
-    .neq("id", user.id)
-    .single();
-
-  if (existingUser) {
-    return { error: "This username is already taken. Please choose another." };
-  }
-
-  const isStudent = user_type.toLowerCase() === "student";
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      username,
-      full_name: fullName,
-      user_type: user_type.toLowerCase(),
-      preferred_cities,
-      college: isStudent ? college : null,
-      branch: isStudent ? branch : null,
-      graduation_year: isStudent ? graduationYear : null,
-      goals,
-      is_onboarded: true,
-    })
-    .eq("id", user.id);
-
-  if (error) {
-    console.error("Settings Update Error: ", error);
-    return { error: "Failed to update profile. Please try again." };
-  }
-
-  revalidatePath("/profile");
-  revalidatePath("/profile/settings");
-
-  return { success: true };
-}
-</file>
-
-<file path="src/app/profile/settings/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import SettingsClient from "./SettingsClient";
-
-export const dynamic = "force-dynamic";
-
-export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // Fetch existing profile data (Added year_of_studying)
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, username, preferred_cities, role, user_type, college, branch, graduation_year, goals, is_onboarded")
-    .eq("id", user.id)
-    .single();
-
-  // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
-  const { data: activeEvents } = await supabase
-    .from("events")
-    .select("category")
-    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
-    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
-
-  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
-  const categoryCounts: Record<string, number> = {};
-  if (activeEvents) {
-    activeEvents.forEach(event => {
-      if (event.category) {
-        let cats: string[] = [];
-        if (Array.isArray(event.category)) {
-          cats = event.category;
-        } else if (typeof event.category === 'string') {
-          try {
-            const parsed = JSON.parse(event.category);
-            cats = Array.isArray(parsed) ? parsed : [event.category];
-          } catch {
-            cats = [event.category];
-          }
-        }
-        cats.forEach(c => {
-          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
-        });
-      }
-    });
-  }
-
-  // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
-}
-</file>
-
 <file path="src/app/robots.ts">
 import { MetadataRoute } from "next";
 
@@ -5563,637 +5402,6 @@ export function parseEventDateString(dateStr: string): Date | null {
     return null;
   }
 }
-</file>
-
-<file path="src/types/database.ts">
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
-
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
-  public: {
-    Tables: {
-      colleges: {
-        Row: {
-          id: string
-          logo_url: string | null
-          name: string
-          slug: string | null
-          state: string | null
-          theme_color: string | null
-          website: string | null
-        }
-        Insert: {
-          id?: string
-          logo_url?: string | null
-          name: string
-          slug?: string | null
-          state?: string | null
-          theme_color?: string | null
-          website?: string | null
-        }
-        Update: {
-          id?: string
-          logo_url?: string | null
-          name?: string
-          slug?: string | null
-          state?: string | null
-          theme_color?: string | null
-          website?: string | null
-        }
-        Relationships: []
-      }
-      event_reports: {
-        Row: {
-          created_at: string
-          curator_id: string | null
-          event_id: string | null
-          id: string
-          reason: string
-          reporter_id: string | null
-          status: string | null
-        }
-        Insert: {
-          created_at?: string
-          curator_id?: string | null
-          event_id?: string | null
-          id?: string
-          reason: string
-          reporter_id?: string | null
-          status?: string | null
-        }
-        Update: {
-          created_at?: string
-          curator_id?: string | null
-          event_id?: string | null
-          id?: string
-          reason?: string
-          reporter_id?: string | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "event_reports_curator_id_fkey"
-            columns: ["curator_id"]
-            isOneToOne: false
-            referencedRelation: "leaderboard_view"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "event_reports_curator_id_fkey"
-            columns: ["curator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reports_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_reports_reporter_id_fkey"
-            columns: ["reporter_id"]
-            isOneToOne: false
-            referencedRelation: "leaderboard_view"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "event_reports_reporter_id_fkey"
-            columns: ["reporter_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      events: {
-        Row: {
-          admin_notes: string | null
-          banner_url: string | null
-          branch_tags: string[] | null
-          category: string
-          city: string | null
-          college_id: string | null
-          created_at: string | null
-          creator_id: string | null
-          date_string: string
-          description: string | null
-          end_date_string: string | null
-          end_time: string | null
-          external_link: string | null
-          goal_tags: string[] | null
-          id: string
-          image_url: string | null
-          is_college_exclusive: boolean | null
-          is_featured: boolean | null
-          is_free: boolean | null
-          is_virtual: boolean | null
-          lat: number | null
-          location: string | null
-          lon: number | null
-          organizer_name: string
-          poster_url: string | null
-          price: number | null
-          prizes: string | null
-          registration_deadline: string | null
-          registration_link: string | null
-          slug: string | null
-          start_time: string | null
-          status: string | null
-          target_audience: string[] | null
-          team_size: string | null
-          title: string
-          website: string | null
-        }
-        Insert: {
-          admin_notes?: string | null
-          banner_url?: string | null
-          branch_tags?: string[] | null
-          category: string
-          city?: string | null
-          college_id?: string | null
-          created_at?: string | null
-          creator_id?: string | null
-          date_string: string
-          description?: string | null
-          end_date_string?: string | null
-          end_time?: string | null
-          external_link?: string | null
-          goal_tags?: string[] | null
-          id?: string
-          image_url?: string | null
-          is_college_exclusive?: boolean | null
-          is_featured?: boolean | null
-          is_free?: boolean | null
-          is_virtual?: boolean | null
-          lat?: number | null
-          location?: string | null
-          lon?: number | null
-          organizer_name: string
-          poster_url?: string | null
-          price?: number | null
-          prizes?: string | null
-          registration_deadline?: string | null
-          registration_link?: string | null
-          slug?: string | null
-          start_time?: string | null
-          status?: string | null
-          target_audience?: string[] | null
-          team_size?: string | null
-          title: string
-          website?: string | null
-        }
-        Update: {
-          admin_notes?: string | null
-          banner_url?: string | null
-          branch_tags?: string[] | null
-          category?: string
-          city?: string | null
-          college_id?: string | null
-          created_at?: string | null
-          creator_id?: string | null
-          date_string?: string
-          description?: string | null
-          end_date_string?: string | null
-          end_time?: string | null
-          external_link?: string | null
-          goal_tags?: string[] | null
-          id?: string
-          image_url?: string | null
-          is_college_exclusive?: boolean | null
-          is_featured?: boolean | null
-          is_free?: boolean | null
-          is_virtual?: boolean | null
-          lat?: number | null
-          location?: string | null
-          lon?: number | null
-          organizer_name?: string
-          poster_url?: string | null
-          price?: number | null
-          prizes?: string | null
-          registration_deadline?: string | null
-          registration_link?: string | null
-          slug?: string | null
-          start_time?: string | null
-          status?: string | null
-          target_audience?: string[] | null
-          team_size?: string | null
-          title?: string
-          website?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "events_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "leaderboard_view"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "events_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      followers: {
-        Row: {
-          created_at: string
-          curator_id: string | null
-          follower_id: string | null
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          curator_id?: string | null
-          follower_id?: string | null
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          curator_id?: string | null
-          follower_id?: string | null
-          id?: string
-        }
-        Relationships: []
-      }
-      interested_events: {
-        Row: {
-          created_at: string
-          event_id: string
-          id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          event_id: string
-          id?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: string
-          id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "interested_events_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      interested_users: {
-        Row: {
-          created_at: string
-          event_id: string | null
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "interested_users_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_feedback: {
-        Row: {
-          created_at: string
-          id: string
-          message: string
-          status: string | null
-          type: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          message: string
-          status?: string | null
-          type: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          message?: string
-          status?: string | null
-          type?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          branch: string | null
-          college: string | null
-          college_id: string | null
-          elo_rating: number | null
-          email: string | null
-          et_score: number | null
-          full_name: string | null
-          goals: string[] | null
-          graduation_year: string | null
-          id: string
-          is_onboarded: boolean | null
-          preferred_cities: string[] | null
-          role: string | null
-          user_type: string | null
-          updated_at: string | null
-          username: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          branch?: string | null
-          college?: string | null
-          college_id?: string | null
-          elo_rating?: number | null
-          email?: string | null
-          et_score?: number | null
-          full_name?: string | null
-          goals?: string[] | null
-          graduation_year?: string | null
-          id: string
-          is_onboarded?: boolean | null
-          preferred_cities?: string[] | null
-          role?: string | null
-          updated_at?: string | null
-          user_type?: string | null
-          username?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          branch?: string | null
-          college?: string | null
-          college_id?: string | null
-          elo_rating?: number | null
-          email?: string | null
-          et_score?: number | null
-          full_name?: string | null
-          goals?: string[] | null
-          graduation_year?: string | null
-          id?: string
-          is_onboarded?: boolean | null
-          preferred_cities?: string[] | null
-          role?: string | null
-          updated_at?: string | null
-          user_type?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      saved_events: {
-        Row: {
-          created_at: string
-          event_id: string | null
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_id?: string | null
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "saved_events_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      verified_domains: {
-        Row: {
-          created_at: string | null
-          domain_name: string
-          id: string
-        }
-        Insert: {
-          created_at?: string | null
-          domain_name: string
-          id?: string
-        }
-        Update: {
-          created_at?: string | null
-          domain_name?: string
-          id?: string
-        }
-        Relationships: []
-      }
-    }
-    Views: {
-      leaderboard_view: {
-        Row: {
-          avatar_url: string | null
-          base_score: number | null
-          branch: string | null
-          college: string | null
-          et_score: number | null
-          events_posted: number | null
-          full_name: string | null
-          impact_saves: number | null
-          user_id: string | null
-          username: string | null
-        }
-        Relationships: []
-      }
-    }
-    Functions: {
-      delete_old_trashed_events: { Args: never; Returns: undefined }
-      increment_et_score: {
-        Args: { delta: number; user_id: string }
-        Returns: undefined
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
 </file>
 
 <file path="src/types/index.ts">
@@ -8280,6 +7488,167 @@ Promise<{ tab?: string }>; }) {
 }
 </file>
 
+<file path="src/app/profile/settings/actions.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+
+export async function updateProfileSettings(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Please login to update settings." };
+  }
+
+  const fullName = formData.get("fullName") as string;
+  const username = (formData.get("username") as string).toLowerCase().trim();
+  const college = formData.get("college") as string;
+  const branch = formData.get("branch") as string;
+  const graduationYear = formData.get("graduationYear") as string;
+  const user_type = formData.get("user_type") as string;
+
+  const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
+  if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
+    return { error: "Please select what you are." };
+  }
+
+  // Validate username
+  const USERNAME_REGEX = /^[a-z0-9_.-]{3,30}$/;
+  if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
+  if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
+  if (college && college.length > 200) return { error: "College name too long." };
+  if (branch && branch.length > 100) return { error: "Branch name too long." };
+
+  // Parse preferred_cities (array, max 3)
+  const citiesString = formData.get("preferred_cities") as string;
+  let preferred_cities: string[] = [];
+  if (citiesString) {
+    try {
+      const parsed = JSON.parse(citiesString);
+      if (!Array.isArray(parsed)) throw new Error();
+      preferred_cities = parsed
+        .filter((c): c is string => typeof c === "string" && c.length > 0)
+        .slice(0, 3);
+    } catch {
+      return { error: "Invalid cities format." };
+    }
+  }
+
+  // Parse goals (categories, max 6)
+  const goalsString = formData.get("goals") as string;
+  let goals: string[] = [];
+  if (goalsString) {
+    try {
+      const parsed = JSON.parse(goalsString);
+      if (!Array.isArray(parsed)) throw new Error();
+      goals = parsed
+        .filter((g): g is string => typeof g === "string")
+        .slice(0, 6)
+        .map(g => g.slice(0, 50));
+    } catch {
+      return { error: "Invalid goals format." };
+    }
+  }
+
+  // Check username uniqueness
+  const { data: existingUser } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .neq("id", user.id)
+    .single();
+
+  if (existingUser) {
+    return { error: "This username is already taken. Please choose another." };
+  }
+
+  const isStudent = user_type.toLowerCase() === "student";
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      username,
+      full_name: fullName,
+      user_type: user_type.toLowerCase(),
+      preferred_cities,
+      college: isStudent ? college : null,
+      branch: isStudent ? branch : null,
+      graduation_year: isStudent ? graduationYear : null,
+      goals,
+      is_onboarded: true,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Settings Update Error: ", error);
+    return { error: "Failed to update profile. Please try again." };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/settings");
+
+  return { success: true };
+}
+</file>
+
+<file path="src/app/profile/settings/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import SettingsClient from "./SettingsClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  // Fetch existing profile data (Added year_of_studying)
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, preferred_cities, role, user_type, college, branch, graduation_year, goals, is_onboarded")
+    .eq("id", user.id)
+    .single();
+
+  // NEW: Fetch active events to calculate counts per category
+  const today = new Date().toISOString();
+  const { data: activeEvents } = await supabase
+    .from("events")
+    .select("category")
+    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
+    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
+
+  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
+  const categoryCounts: Record<string, number> = {};
+  if (activeEvents) {
+    activeEvents.forEach(event => {
+      if (event.category) {
+        let cats: string[] = [];
+        if (Array.isArray(event.category)) {
+          cats = event.category;
+        } else if (typeof event.category === 'string') {
+          try {
+            const parsed = JSON.parse(event.category);
+            cats = Array.isArray(parsed) ? parsed : [event.category];
+          } catch {
+            cats = [event.category];
+          }
+        }
+        cats.forEach(c => {
+          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  // Cast profile to any to bypass strict Typescript errors until global types are updated
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+}
+</file>
+
 <file path="src/components/layout/Footer.tsx">
 import Link from "next/link";
 import Image from "next/image";
@@ -9089,6 +8458,637 @@ export function createClient() {
 }
 </file>
 
+<file path="src/types/database.ts">
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      colleges: {
+        Row: {
+          id: string
+          logo_url: string | null
+          name: string
+          slug: string | null
+          state: string | null
+          theme_color: string | null
+          website: string | null
+        }
+        Insert: {
+          id?: string
+          logo_url?: string | null
+          name: string
+          slug?: string | null
+          state?: string | null
+          theme_color?: string | null
+          website?: string | null
+        }
+        Update: {
+          id?: string
+          logo_url?: string | null
+          name?: string
+          slug?: string | null
+          state?: string | null
+          theme_color?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      event_reports: {
+        Row: {
+          created_at: string
+          curator_id: string | null
+          event_id: string | null
+          id: string
+          reason: string
+          reporter_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          curator_id?: string | null
+          event_id?: string | null
+          id?: string
+          reason: string
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          curator_id?: string | null
+          event_id?: string | null
+          id?: string
+          reason?: string
+          reporter_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_reports_curator_id_fkey"
+            columns: ["curator_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "event_reports_curator_id_fkey"
+            columns: ["curator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "event_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          admin_notes: string | null
+          banner_url: string | null
+          branch_tags: string[] | null
+          category: string
+          city: string | null
+          college_id: string | null
+          created_at: string | null
+          creator_id: string | null
+          date_string: string
+          description: string | null
+          end_date_string: string | null
+          end_time: string | null
+          external_link: string | null
+          goal_tags: string[] | null
+          id: string
+          image_url: string | null
+          is_college_exclusive: boolean | null
+          is_featured: boolean | null
+          is_free: boolean | null
+          is_virtual: boolean | null
+          lat: number | null
+          location: string | null
+          lon: number | null
+          organizer_name: string
+          poster_url: string | null
+          price: number | null
+          prizes: string | null
+          registration_deadline: string | null
+          registration_link: string | null
+          slug: string | null
+          start_time: string | null
+          status: string | null
+          target_audience: string[] | null
+          team_size: string | null
+          title: string
+          website: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          banner_url?: string | null
+          branch_tags?: string[] | null
+          category: string
+          city?: string | null
+          college_id?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          date_string: string
+          description?: string | null
+          end_date_string?: string | null
+          end_time?: string | null
+          external_link?: string | null
+          goal_tags?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_college_exclusive?: boolean | null
+          is_featured?: boolean | null
+          is_free?: boolean | null
+          is_virtual?: boolean | null
+          lat?: number | null
+          location?: string | null
+          lon?: number | null
+          organizer_name: string
+          poster_url?: string | null
+          price?: number | null
+          prizes?: string | null
+          registration_deadline?: string | null
+          registration_link?: string | null
+          slug?: string | null
+          start_time?: string | null
+          status?: string | null
+          target_audience?: string[] | null
+          team_size?: string | null
+          title: string
+          website?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          banner_url?: string | null
+          branch_tags?: string[] | null
+          category?: string
+          city?: string | null
+          college_id?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          date_string?: string
+          description?: string | null
+          end_date_string?: string | null
+          end_time?: string | null
+          external_link?: string | null
+          goal_tags?: string[] | null
+          id?: string
+          image_url?: string | null
+          is_college_exclusive?: boolean | null
+          is_featured?: boolean | null
+          is_free?: boolean | null
+          is_virtual?: boolean | null
+          lat?: number | null
+          location?: string | null
+          lon?: number | null
+          organizer_name?: string
+          poster_url?: string | null
+          price?: number | null
+          prizes?: string | null
+          registration_deadline?: string | null
+          registration_link?: string | null
+          slug?: string | null
+          start_time?: string | null
+          status?: string | null
+          target_audience?: string[] | null
+          team_size?: string | null
+          title?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "leaderboard_view"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      followers: {
+        Row: {
+          created_at: string
+          curator_id: string | null
+          follower_id: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          curator_id?: string | null
+          follower_id?: string | null
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          curator_id?: string | null
+          follower_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      interested_events: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interested_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interested_users: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interested_users_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          status: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          status?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          branch: string | null
+          college: string | null
+          college_id: string | null
+          elo_rating: number | null
+          email: string | null
+          et_score: number | null
+          full_name: string | null
+          goals: string[] | null
+          graduation_year: string | null
+          id: string
+          is_onboarded: boolean | null
+          preferred_cities: string[] | null
+          role: string | null
+          user_type: string | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          branch?: string | null
+          college?: string | null
+          college_id?: string | null
+          elo_rating?: number | null
+          email?: string | null
+          et_score?: number | null
+          full_name?: string | null
+          goals?: string[] | null
+          graduation_year?: string | null
+          id: string
+          is_onboarded?: boolean | null
+          preferred_cities?: string[] | null
+          role?: string | null
+          updated_at?: string | null
+          user_type?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          branch?: string | null
+          college?: string | null
+          college_id?: string | null
+          elo_rating?: number | null
+          email?: string | null
+          et_score?: number | null
+          full_name?: string | null
+          goals?: string[] | null
+          graduation_year?: string | null
+          id?: string
+          is_onboarded?: boolean | null
+          preferred_cities?: string[] | null
+          role?: string | null
+          updated_at?: string | null
+          user_type?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_college_id_fkey"
+            columns: ["college_id"]
+            isOneToOne: false
+            referencedRelation: "colleges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_events: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verified_domains: {
+        Row: {
+          created_at: string | null
+          domain_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          domain_name: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          domain_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      leaderboard_view: {
+        Row: {
+          avatar_url: string | null
+          base_score: number | null
+          branch: string | null
+          college: string | null
+          et_score: number | null
+          events_posted: number | null
+          full_name: string | null
+          impact_saves: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
+    }
+    Functions: {
+      delete_old_trashed_events: { Args: never; Returns: undefined }
+      increment_et_score: {
+        Args: { delta: number; user_id: string }
+        Returns: undefined
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
+</file>
+
 <file path="src/app/globals.css">
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -9162,6 +9162,821 @@ export default async function Home({
   // Pass the returned props directly into our separated Client UI component
   return <HomePageClient {...data} />;
 }
+</file>
+
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { 
+  format, 
+  isSameDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  addMonths, 
+  subMonths, 
+  isSameMonth,
+  parseISO,
+  differenceInCalendarDays
+} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+      // Deselect if clicked again (Goes back to default future events)
+      router.push(`/?${params.toString()}`, { scroll: false });
+    } else {
+      params.set("date", queryDateStr);
+      router.push(`/?${params.toString()}`, { scroll: false });
+    }
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/layout/Navbar.tsx">
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
+import Image from "next/image"; 
+import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { FeedbackModal } from "./FeedbackModal";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import type { AuthUser } from "@/types";
+
+const calculateCompletion = (profile: any) => {
+  if (!profile) return 0;
+  let score = 0;
+  if (profile.avatar_url) score += 25;
+  if (profile.college) score += 25;
+  if (profile.goals) score += 50;
+  return score;
+};
+
+function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+  const [supabase] = useState(() => createClient());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profileDetails, setProfileDetails] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [imgError, setImgError] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams(); const pathname = usePathname();
+
+  const handleProtectedAction = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setShowAuthModal(true);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("role, avatar_url, college, goals")
+          .eq("id", userId)
+          .single();
+        
+        if (mounted && !error && profile) {
+          setIsAdmin(profile.role === "admin");
+          setProfileDetails(profile);
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+      }
+    };
+
+    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+      
+      setUser(user);
+      if (user) {
+        fetchProfile(user.id);
+      } else if (mounted) {
+        setIsLoading(false);
+      }
+    };
+    initUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      } else {
+        setIsAdmin(false);
+        setProfileDetails(null);
+      }
+      
+      if (mounted) setIsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchQuery(q);
+    else setSearchQuery("");
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push(`/`);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+  };
+
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const completionPercent = calculateCompletion(profileDetails);
+
+  return (
+    <>
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-4 relative">
+          
+          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
+            <Link href="/" className="shrink-0 flex items-center gap-2">
+              <div className="w-9 h-9 relative shrink-0"> 
+                <Image src="/logo.png" alt="logo" fill sizes="100px" className="object-contain" priority />
+              </div>
+              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
+                <span className="text-[#6C47FF]">Even</span>
+                <span className="text-[#1D1D1F]">Time</span>
+              </span>
+            </Link>
+          </div>
+
+          {variant !== 'centered' && (
+            <>
+              <form onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search hackathons, meetups..."
+                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                />
+              </form>
+              
+              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
+            
+            <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+              <MapPin className="w-4 h-4 shrink-0" /> Map
+            </Link>
+
+            <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
+              <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
+            </Link>
+
+            {isAdmin && (
+              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
+                <Settings className="w-4 h-4 shrink-0" /> Admin
+              </Link>
+            )}
+
+            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
+              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
+            </Link>
+
+            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
+              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
+                <Bug className="w-4 h-4" />
+              </button>
+
+              {isLoading ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
+                  <div className="w-9 h-9 rounded-full bg-slate-100" />
+                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
+                </div>
+              ) : user ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
+                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+                    </svg>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
+                      {avatarUrl && !imgError ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt="Profile" 
+                          className="object-cover w-full h-full"
+                          referrerPolicy="no-referrer"
+                          onError={() => setImgError(true)}
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
+                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
+          </>
+          )}
+
+        </div>
+      </div>
+    </nav>
+
+    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
+  <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto w-full">
+    
+    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <Home className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
+    </Link>
+    
+    <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <MapPin className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
+    </Link>
+
+    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform relative">
+      <div className="absolute -top-5 bg-[#6C47FF] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(108,71,255,0.4)] border-[3px] border-white">
+        <Plus className="w-6 h-6" />
+      </div>
+    </Link>
+
+    <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <Trophy className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
+    </Link>
+
+    {isLoading ? (
+     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
+       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
+       <div className="w-6 h-2 bg-slate-200 rounded-full" />
+     </div>
+     ) : user ? (
+      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <div className="relative w-7 h-7 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+          </svg>
+          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
+            {avatarUrl && !imgError ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile" 
+                className="object-cover w-full h-full"
+                referrerPolicy="no-referrer"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <User className="w-3.5 h-3.5" />
+            )}
+          </div>
+        </div>
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
+      </Link>
+    ) : (
+      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <User className="w-5 h-5" />
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
+      </Link>
+    )}
+
+  </div>
+</div>
+
+    {/* NEW: Auth Modal Overlay for Guest Users */}
+    {showAuthModal && (
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+            <Plus className="w-6 h-6 text-text-primary" />
+          </div>
+          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
+          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+              Cancel
+            </button>
+            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+    </>
+  );
+}
+
+export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+  return (
+    <Suspense fallback={null}>
+      <NavbarInner variant={variant} />
+    </Suspense>
+  );
+}
+</file>
+
+<file path="src/features/create-event/CreateEventForm.tsx">
+"use client";
+
+import { useState, useEffect, SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { FieldStatus, CreateEventFormProps } from "./types";
+import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+
+// Hooks
+import { useEventExtraction } from "./hooks/useEventExtraction";
+import { useImageCrop } from "./hooks/useImageCrop";
+import { useEventSubmit } from "./hooks/useEventSubmit";
+
+// New 2-Step Components
+import { StepMandatory } from "./components/StepMandatory";
+import { StepFeatured } from "./components/StepFeatured";
+
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+}
+
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
+  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const supabase = createClient();
+
+  // Unified State Object
+  const [eventData, setEventData] = useState({
+    regLink: initialData?.registration_link || "",
+    isTrustedDomain: true,
+    title: initialData?.title || "",
+    category: initialData?.category || "",
+    isCreatingNewCategory: false,
+    selectedAudience: initialData?.target_audience || [],
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    city: initialData?.city || "",
+    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
+    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
+    collegeBranch: initialData?.college_branch || "",
+    collegeYear: initialData?.college_year || "",
+    collegeOnly: initialData?.college_only || false,
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
+    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
+    hasEndTime: !!initialData?.end_time,
+    hasEndDate: !!initialData?.end_date_string,
+    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
+    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
+    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
+    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
+    isOnline: initialData?.is_virtual || false,
+    isFree: initialData?.is_free ?? true,
+    price: initialData?.price?.toString() || "",
+    // Step 2 Adv/Featured
+    isFeatured: initialData?.is_featured || false,
+    organizer: initialData?.organizer_name || "",
+    prizes: initialData?.prizes || "",
+    teamSize: initialData?.team_size || "",
+    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
+    website: initialData?.website || ""
+  });
+
+  const updateData = (updates: Partial<typeof eventData>) => {
+    setEventData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  const extraction = useEventExtraction({ 
+    setTitle: (v) => updateData({ title: v }), 
+    setDescription: (v) => updateData({ description: v }), 
+    setLocation: (v) => updateData({ location: v }), 
+    setSelectedDate: (v) => updateData({ selectedDate: v }), 
+    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
+    initialLink: initialData?.registration_link ?? undefined 
+  });
+  
+  const crop = useImageCrop(initialData?.poster_url ?? undefined);
+  const { isSubmitting, submitEvent } = useEventSubmit();
+
+   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
+  useEffect(() => {
+    if (isEditing && initialData?.registration_link) {
+      extraction.handleLinkInput(initialData.registration_link);
+    }
+  }, []);
+
+  const handleSubmit = () => {
+    submitEvent({
+      title: eventData.title,
+      category: eventData.category,
+      organizer_name: eventData.organizer,
+      description: eventData.description,
+      target_audience: eventData.selectedAudience,
+      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
+      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
+      end_date_string: eventData.hasEndTime && eventData.endDate ? eventData.endDate.toISOString() : null,
+      date_string: eventData.selectedDate?.toISOString() ?? "",
+      location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
+      is_virtual: eventData.isOnline,
+      is_free: eventData.isFree,
+      price: eventData.isFree ? 0 : Number(eventData.price),
+      registration_link: eventData.regLink,
+      prizes: eventData.prizes,
+      team_size: eventData.teamSize,
+      website: eventData.website,
+      is_featured: eventData.isFeatured,
+      status: eventData.isTrustedDomain ? "approved" : "pending",
+      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
+      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
+      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
+      imageFile: crop.imageFile, 
+      previewUrl: crop.previewUrl
+    }, isEditing, initialData?.id);
+  };
+
+  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="mb-10 text-center">
+        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
+          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+        </h1>
+        <p className="text-slate-500 text-sm">
+          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        </p>
+      </div>
+
+      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepMandatory 
+              data={eventData} 
+              updateData={updateData} 
+              isCollegeCategory={isCollegeCategory}
+              extraction={extraction}
+              onNext={() => {
+                if (isAdminFeatureEnabled) setStep(1);
+                else handleSubmit(); // Skip straight to submit if feature is off
+              }}
+              isValid={Boolean(step0Valid)}
+              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
+              onSubmit={handleSubmit}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+            />
+          )}
+          {step === 1 && (
+            <StepFeatured 
+              data={eventData} 
+              updateData={updateData} 
+              crop={crop}
+              onBack={() => setStep(0)} 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          const val = e.target.value;
+          const params = new URLSearchParams();
+          
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+            if (location) params.set("location", location);
+          } else {
+            if (category) params.set("category", category);
+            if (val) params.set("location", val);
+          }
+          
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
+              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
+              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/profile/settings/SettingsClient.tsx">
@@ -9543,519 +10358,6 @@ export default function SettingsClient({
 }
 </file>
 
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { 
-  format, 
-  isSameDay, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  addMonths, 
-  subMonths, 
-  isSameMonth,
-  parseISO,
-  differenceInCalendarDays
-} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-      // Deselect if clicked again (Goes back to default future events)
-      router.push(`/?${params.toString()}`, { scroll: false });
-    } else {
-      params.set("date", queryDateStr);
-      router.push(`/?${params.toString()}`, { scroll: false });
-    }
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrDiff = differenceInCalendarDays(date, today);
-                  const ssrColor = isSelected ? "bg-white" : ssrDiff < 0 ? "bg-black" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/components/layout/Navbar.tsx">
-"use client";
-
-import { useEffect, useState, Suspense } from "react";
-import Link from "next/link";
-import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { FeedbackModal } from "./FeedbackModal";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { AuthUser } from "@/types";
-
-const calculateCompletion = (profile: any) => {
-  if (!profile) return 0;
-  let score = 0;
-  if (profile.avatar_url) score += 25;
-  if (profile.college) score += 25;
-  if (profile.goals) score += 50;
-  return score;
-};
-
-function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
-  const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profileDetails, setProfileDetails] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [imgError, setImgError] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams(); const pathname = usePathname();
-
-  const handleProtectedAction = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      setShowAuthModal(true);
-    }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("role, avatar_url, college, goals")
-          .eq("id", userId)
-          .single();
-        
-        if (mounted && !error && profile) {
-          setIsAdmin(profile.role === "admin");
-          setProfileDetails(profile);
-        }
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-
-    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
-    const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      
-      setUser(user);
-      if (user) {
-        fetchProfile(user.id);
-      } else if (mounted) {
-        setIsLoading(false);
-      }
-    };
-    initUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setIsAdmin(false);
-        setProfileDetails(null);
-      }
-      
-      if (mounted) setIsLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setSearchQuery(q);
-    else setSearchQuery("");
-  }, [searchParams]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      router.push(`/`);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-  };
-
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
-  const completionPercent = calculateCompletion(profileDetails);
-
-  return (
-    <>
-    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-4 relative">
-          
-          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
-            <Link href="/" className="shrink-0 flex items-center gap-2">
-              <div className="w-9 h-9 relative shrink-0"> 
-                <Image src="/logo.png" alt="logo" fill sizes="100px" className="object-contain" priority />
-              </div>
-              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
-                <span className="text-[#6C47FF]">Even</span>
-                <span className="text-[#1D1D1F]">Time</span>
-              </span>
-            </Link>
-          </div>
-
-          {variant !== 'centered' && (
-            <>
-              <form onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search hackathons, meetups..."
-                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                />
-              </form>
-              
-              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
-            
-            <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
-              <MapPin className="w-4 h-4 shrink-0" /> Map
-            </Link>
-
-            <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
-              <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
-            </Link>
-
-            {isAdmin && (
-              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
-                <Settings className="w-4 h-4 shrink-0" /> Admin
-              </Link>
-            )}
-
-            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
-              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
-            </Link>
-
-            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
-              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
-                <Bug className="w-4 h-4" />
-              </button>
-
-              {isLoading ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
-                  <div className="w-9 h-9 rounded-full bg-slate-100" />
-                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
-                </div>
-              ) : user ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
-                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
-                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-                    </svg>
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
-                      {avatarUrl && !imgError ? (
-                        <img 
-                          src={avatarUrl} 
-                          alt="Profile" 
-                          className="object-cover w-full h-full"
-                          referrerPolicy="no-referrer"
-                          onError={() => setImgError(true)}
-                        />
-                      ) : (
-                        <User className="w-4 h-4 text-slate-400" />
-                      )}
-                    </div>
-                  </Link>
-                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
-                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-          </>
-          )}
-
-        </div>
-      </div>
-    </nav>
-
-    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
-  <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto w-full">
-    
-    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Home className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
-    </Link>
-    
-    <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <MapPin className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
-    </Link>
-
-    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform relative">
-      <div className="absolute -top-5 bg-[#6C47FF] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(108,71,255,0.4)] border-[3px] border-white">
-        <Plus className="w-6 h-6" />
-      </div>
-    </Link>
-
-    <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Trophy className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
-    </Link>
-
-    {isLoading ? (
-     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
-       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
-       <div className="w-6 h-2 bg-slate-200 rounded-full" />
-     </div>
-     ) : user ? (
-      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <div className="relative w-7 h-7 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-          </svg>
-          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
-            {avatarUrl && !imgError ? (
-              <img 
-                src={avatarUrl} 
-                alt="Profile" 
-                className="object-cover w-full h-full"
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <User className="w-3.5 h-3.5" />
-            )}
-          </div>
-        </div>
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
-      </Link>
-    ) : (
-      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <User className="w-5 h-5" />
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
-      </Link>
-    )}
-
-  </div>
-</div>
-
-    {/* NEW: Auth Modal Overlay for Guest Users */}
-    {showAuthModal && (
-      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-            <Plus className="w-6 h-6 text-text-primary" />
-          </div>
-          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
-          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
-          <div className="flex gap-3">
-            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
-              Cancel
-            </button>
-            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    )}
-
-    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </>
-  );
-}
-
-export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
-  return (
-    <Suspense fallback={null}>
-      <NavbarInner variant={variant} />
-    </Suspense>
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepMandatory.tsx">
 "use client";
 
@@ -10184,23 +10486,13 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-slate-700">Who is it for? <span className="text-red-500">*</span></label>
               <select 
-                onChange={(e) => {
-                  if (!data.selectedAudience.includes(e.target.value)) {
-                    updateData({ selectedAudience: [...data.selectedAudience, e.target.value] });
-                  }
-                }}
+                value={data.selectedAudience[0] || ""}
+                onChange={(e) => updateData({ selectedAudience: [e.target.value] })}
                 className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
               >
                 <option value="" disabled>Select audience</option>
                 {audienceOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {data.selectedAudience.map((aud: string) => (
-                  <span key={aud} className="px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full text-xs font-bold flex items-center gap-1.5">
-                    {aud} <button type="button" onClick={() => updateData({ selectedAudience: data.selectedAudience.filter((a: string) => a !== aud) })} className="hover:text-red-500">×</button>
-                  </span>
-                ))}
-              </div>
             </div>
           )}
           </div>
@@ -10374,172 +10666,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 }
 </file>
 
-<file path="src/features/create-event/CreateEventForm.tsx">
-"use client";
-
-import { useState, useEffect, SetStateAction } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-
-// Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
-import { useImageCrop } from "./hooks/useImageCrop";
-import { useEventSubmit } from "./hooks/useEventSubmit";
-
-// New 2-Step Components
-import { StepMandatory } from "./components/StepMandatory";
-import { StepFeatured } from "./components/StepFeatured";
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
-}
-
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
-  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
-  const supabase = createClient();
-
-  // Unified State Object
-  const [eventData, setEventData] = useState({
-    regLink: initialData?.registration_link || "",
-    isTrustedDomain: true,
-    title: initialData?.title || "",
-    category: initialData?.category || "",
-    isCreatingNewCategory: false,
-    selectedAudience: initialData?.target_audience || [],
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
-    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
-    collegeBranch: initialData?.college_branch || "",
-    collegeYear: initialData?.college_year || "",
-    collegeOnly: initialData?.college_only || false,
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
-    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
-    hasEndTime: !!initialData?.end_time,
-    hasEndDate: !!initialData?.end_date_string,
-    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
-    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
-    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
-    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    isOnline: initialData?.is_virtual || false,
-    isFree: initialData?.is_free ?? true,
-    price: initialData?.price?.toString() || "",
-    // Step 2 Adv/Featured
-    isFeatured: initialData?.is_featured || false,
-    organizer: initialData?.organizer_name || "",
-    prizes: initialData?.prizes || "",
-    teamSize: initialData?.team_size || "",
-    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
-    website: initialData?.website || ""
-  });
-
-  const updateData = (updates: Partial<typeof eventData>) => {
-    setEventData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined 
-  });
-  
-  const crop = useImageCrop(initialData?.poster_url ?? undefined);
-  const { isSubmitting, submitEvent } = useEventSubmit();
-
-   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
-  useEffect(() => {
-    if (isEditing && initialData?.registration_link) {
-      extraction.handleLinkInput(initialData.registration_link);
-    }
-  }, []);
-
-  const handleSubmit = () => {
-    submitEvent({
-      title: eventData.title,
-      category: eventData.category,
-      organizer_name: eventData.organizer,
-      description: eventData.description,
-      target_audience: eventData.selectedAudience,
-      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
-      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? eventData.endDate.toISOString() : null,
-      date_string: eventData.selectedDate?.toISOString() ?? "",
-      location: eventData.isOnline ? "Virtual Event" : eventData.location,
-      city: eventData.isOnline ? "online" : eventData.city,
-      is_virtual: eventData.isOnline,
-      is_free: eventData.isFree,
-      price: eventData.isFree ? 0 : Number(eventData.price),
-      registration_link: eventData.regLink,
-      prizes: eventData.prizes,
-      team_size: eventData.teamSize,
-      website: eventData.website,
-      is_featured: eventData.isFeatured,
-      status: eventData.isTrustedDomain ? "approved" : "pending",
-      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
-      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
-      imageFile: crop.imageFile, 
-      previewUrl: crop.previewUrl
-    }, isEditing, initialData?.id);
-  };
-
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
-
-  return (
-    <div className="max-w-3xl mx-auto w-full">
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
-        </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
-        </p>
-      </div>
-
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepMandatory 
-              data={eventData} 
-              updateData={updateData} 
-              isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); // Skip straight to submit if feature is off
-              }}
-              isValid={Boolean(step0Valid)}
-              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
-              onSubmit={handleSubmit}
-              isAdminFeatureEnabled={isAdminFeatureEnabled}
-            />
-          )}
-          {step === 1 && (
-            <StepFeatured 
-              data={eventData} 
-              updateData={updateData} 
-              crop={crop}
-              onBack={() => setStep(0)} 
-              onSubmit={handleSubmit} 
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/CityGrid.tsx">
 "use client";
 
@@ -10617,143 +10743,6 @@ export function CityGrid({ events }: CityGridProps) {
     </div>
   );
 }
-</file>
-
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          const val = e.target.value;
-          const params = new URLSearchParams();
-          
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-            if (location) params.set("location", location);
-          } else {
-            if (category) params.set("category", category);
-            if (val) params.set("location", val);
-          }
-          
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
-              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
 </file>
 
 <file path="src/lib/home/fetchHomePageData.ts">

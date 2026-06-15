@@ -67,6 +67,10 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       }
       if (data.location) setLocation(data.location);
 
+      if (data.finalUrl && data.finalUrl !== val) {
+        setRegLink(data.finalUrl);
+      }
+
       const isHigh = confidence >= 0.8;
       setFieldStatus({
         title: data.title ? (isHigh ? "success" : "warning") : "idle",
