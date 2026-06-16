@@ -10,12 +10,20 @@ export default async function SettingsPage() {
 
   if (!user) redirect("/login");
 
-  // Fetch existing profile data (Added year_of_studying)
+  // Fetch existing profile data
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, username, preferred_cities, role, user_type, college, branch, graduation_year, goals, is_onboarded")
+    .select("id, full_name, username, preferred_cities, user_type, college, branch, graduation_year, goals, is_onboarded")
     .eq("id", user.id)
     .single();
+
+  // Fetch college names from colleges table for the datalist
+  const { data: collegesData } = await supabase
+    .from("colleges")
+    .select("name")
+    .order("name", { ascending: true });
+
+  const collegeNames = collegesData?.map(c => c.name) ?? [];
 
   // NEW: Fetch active events to calculate counts per category
   const today = new Date().toISOString();
@@ -49,5 +57,5 @@ export default async function SettingsPage() {
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} collegeNames={collegeNames} />;
 }

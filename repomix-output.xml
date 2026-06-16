@@ -1626,403 +1626,6 @@ export default async function AdminUsersPage() {
 }
 </file>
 
-<file path="src/app/api/extract/route.ts">
-import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
-import { createClient } from "@/lib/supabase/server";
-import { isIP } from "net";
-import dns from "dns/promises";
-
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
-
-interface ExtractedEvent {
-  title: string;
-  description: string;
-  image: string;
-  date: string;
-  location: string;
-}
-
-interface ExtractionResult extends ExtractedEvent {
-  confidence: number;
-  isTrusted: boolean;
-  finalDomain: string;
-  message: string;
-}
-
-type ExtractorFn = ($: cheerio.CheerioAPI, jsonLd: Record<string, unknown> | null) => ExtractedEvent;
-
-// ─────────────────────────────────────────────
-// BLOCKED PLATFORMS (no point fetching these)
-// ─────────────────────────────────────────────
-
-const BLOCKED_DOMAINS = ["instagram.com", "whatsapp.com", "wa.me", "facebook.com"];
-
-// ─────────────────────────────────────────────
-// CONFIDENCE SCORING
-// Higher weight = more reliable signal for an event page
-// ─────────────────────────────────────────────
-
-function scoreConfidence(event: ExtractedEvent): number {
-  let score = 0;
-  if (event.title)       score += 0.40;
-  if (event.date)        score += 0.30;
-  if (event.location)    score += 0.20;
-  if (event.description) score += 0.10;
-  return parseFloat(score.toFixed(2));
-}
-
-// ─────────────────────────────────────────────
-// SHARED HELPERS
-// ─────────────────────────────────────────────
-
-function safeStr(value: unknown): string {
-  if (typeof value === "string") return value.replace(/\n/g, " ").trim();
-  return "";
-}
-
-/** Pull common OG/Twitter/title tags — used as fallback by all extractors */
-function extractOgBase($: cheerio.CheerioAPI): ExtractedEvent {
-  return {
-    title:       safeStr($('meta[property="og:title"]').attr("content") ?? $("title").text()),
-    description: safeStr($('meta[property="og:description"]').attr("content") ?? $('meta[name="description"]').attr("content")),
-    image:       safeStr($('meta[property="og:image"]').attr("content") ?? $('meta[name="twitter:image"]').attr("content")),
-    date:        "",
-    location:    "",
-  };
-}
-
-/** Pull startDate + location from a JSON-LD Event object */
-function extractFromJsonLd(jsonLd: Record<string, unknown> | null): { date: string; location: string } {
-  if (!jsonLd) return { date: "", location: "" };
-
-  const date = safeStr(
-    (jsonLd["startDate"] as string) ??
-    ((jsonLd["eventSchedule"] as Record<string, unknown>)?.[0] as Record<string, unknown>)?.["startDate"]
-  );
-
-  const locationObj = jsonLd["location"] as Record<string, unknown> | undefined;
-  const location = safeStr(
-    (locationObj?.["name"] as string) ??
-    ((locationObj?.["address"] as Record<string, unknown>)?.["streetAddress"] as string) ??
-    (locationObj?.["address"] as string)
-  );
-
-  return { date, location };
-}
-
-// ─────────────────────────────────────────────
-// PLATFORM-SPECIFIC EXTRACTORS
-// ─────────────────────────────────────────────
-
-/** Luma: relies heavily on JSON-LD for date/location */
-const extractFromLuma: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-  return { ...base, date, location };
-};
-
-/** Eventbrite: JSON-LD first, OG fallback */
-const extractFromEventbrite: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-
-  // Eventbrite puts a clean date in a specific data attribute sometimes
-  const domDate = safeStr($('time[datetime]').attr("datetime"));
-  const domLocation = safeStr($('[class*="location-info__address"]').first().text());
-
-  return {
-    ...base,
-    date:     date || domDate,
-    location: location || domLocation,
-  };
-};
-
-/** Meetup: JSON-LD first, then their DOM selectors */
-const extractFromMeetup: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-
-  const domDate     = safeStr($('time').attr("datetime"));
-  const domLocation = safeStr($('[data-testid="venue-name-link"]').first().text() ?? $('[class*="venueDisplay"]').first().text());
-
-  return {
-    ...base,
-    date:     date || domDate,
-    location: location || domLocation,
-  };
-};
-
-/** Devfolio: OG tags + their specific class selectors */
-const extractFromDevfolio: ExtractorFn = ($, _jsonLd) => {
-  const base = extractOgBase($);
-  const title = base.title || safeStr($(".hackathon-title").text()) || safeStr($("h1").first().text());
-  const description = base.description || safeStr($(".hackathon-tagline").text());
-  const date     = safeStr($('[class*="date"]').first().text());
-  const location = safeStr($('[class*="location"]').first().text());
-  return { ...base, title, description, date, location };
-};
-
-/** Unstop: OG tags + h1 fallback */
-const extractFromUnstop: ExtractorFn = ($, _jsonLd) => {
-  const base = extractOgBase($);
-  const title = base.title || safeStr($("h1").first().text());
-  return { ...base, title };
-};
-
-/** Townscript: OG tags + JSON-LD */
-const extractFromTownscript: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-  return { ...base, date, location };
-};
-
-/** BookMyShow / Insider (insider.in): OG + JSON-LD */
-const extractFromBMS: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-  return { ...base, date, location };
-};
-
-/** Generic fallback: used for all other verified platforms */
-const extractGeneric: ExtractorFn = ($, jsonLd) => {
-  const base = extractOgBase($);
-  const { date, location } = extractFromJsonLd(jsonLd);
-  return { ...base, date, location };
-};
-
-// ─────────────────────────────────────────────
-// STRATEGY MAP  (domain substring → extractor)
-// ─────────────────────────────────────────────
-
-const EXTRACTOR_MAP: Array<{ match: string; fn: ExtractorFn }> = [
-  { match: "lu.ma",          fn: extractFromLuma },
-  { match: "luma.com",       fn: extractFromLuma },
-  { match: "eventbrite.com", fn: extractFromEventbrite },
-  { match: "meetup.com",     fn: extractFromMeetup },
-  { match: "devfolio.co",    fn: extractFromDevfolio },
-  { match: "unstop.com",     fn: extractFromUnstop },
-  { match: "townscript.com", fn: extractFromTownscript },
-  { match: "bookmyshow.com", fn: extractFromBMS },
-  { match: "insider.in",     fn: extractFromBMS },
-  // All other verified platforms use the generic extractor
-  { match: "skillenza.com",  fn: extractGeneric },
-  { match: "allevents.in",   fn: extractGeneric },
-  { match: "goavo.ai",       fn: extractGeneric },
-  { match: "meraevents.com", fn: extractGeneric },
-  { match: "eventsframe.com",fn: extractGeneric },
-  { match: "ticketleap.com", fn: extractGeneric },
-  { match: "ticketbud.com",  fn: extractGeneric },
-  { match: "airmeet.com",    fn: extractGeneric },
-  { match: "zoho.com",       fn: extractGeneric },
-  { match: "hubilo.com",     fn: extractGeneric },
-  { match: "10times.com",    fn: extractGeneric },
-  { match: "eventcombo.com", fn: extractGeneric },
-  { match: "eventzilla.net", fn: extractGeneric },
-  { match: "ticketfairy.com",fn: extractGeneric },
-  { match: "socio.events",   fn: extractGeneric },
-  { match: "eventcreate.com",fn: extractGeneric },
-  { match: "splashthat.com", fn: extractGeneric },
-  { match: "eventtia.com",   fn: extractGeneric },
-];
-
-function getExtractor(hostname: string): ExtractorFn {
-  const entry = EXTRACTOR_MAP.find(({ match }) => hostname.includes(match));
-  return entry ? entry.fn : extractGeneric;
-}
-
-// ─────────────────────────────────────────────
-// SAFE JSON-LD PARSER
-// ─────────────────────────────────────────────
-
-function parseJsonLd(html: string): Record<string, unknown> | null {
-  try {
-    // Load just the script tag from the full HTML
-    const $ = cheerio.load(html);
-    const raw = $('script[type="application/ld+json"]').first().html();
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // JSON-LD can be an array; unwrap if needed
-    return Array.isArray(parsed) ? parsed[0] : parsed;
-  } catch {
-    return null;
-  }
-}
-
-// ─────────────────────────────────────────────
-// SSRF PROTECTION
-// ─────────────────────────────────────────────
-
-async function isSafeUrl(rawUrl: string): Promise<boolean> {
-  let parsed: URL;
-  try { parsed = new URL(rawUrl); } catch { return false; }
-  
-  // Only allow http/https
-  if (!["http:", "https:"].includes(parsed.protocol)) return false;
-  
-  // Resolve hostname to IP and block private ranges
-  let address: string;
-  try {
-    const result = await dns.lookup(parsed.hostname);
-    address = result.address;
-  } catch { return false; }
-  
-  // Block loopback, private, link-local, metadata ranges
-  const BLOCKED = [
-    /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
-  ];
-  return !BLOCKED.some((re) => re.test(address));
-}
-
-// ─────────────────────────────────────────────
-// RATE LIMITING
-// ─────────────────────────────────────────────
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(key: string, maxPerMinute = 5): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= maxPerMinute) return false;
-  entry.count++;
-  return true;
-}
-
-// ─────────────────────────────────────────────
-// ROUTE HANDLER
-// ─────────────────────────────────────────────
-
-export async function POST(request: Request) {
-  const EMPTY_RESULT: ExtractionResult = {
-    title: "", description: "", image: "", date: "",
-    location: "", confidence: 0, isTrusted: false,
-    finalDomain: "", message: "",
-  };
-
-  try {
-    // Auth check
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "Unauthorized" }, { status: 401 });
-    }
-
-    // Extract client IP for rate limiting
-    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
-    if (!checkRateLimit(clientIp, 5)) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
-    }
-
-    // URL validation
-    const { url } = await request.json();
-    if (!url) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "URL is required" }, { status: 400 });
-    }
-
-    // SSRF validation
-    if (!(await isSafeUrl(url))) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
-    }
-
-    // Block unsupported platforms before fetching
-    const isBlocked = BLOCKED_DOMAINS.some((d) => url.includes(d));
-    if (isBlocked) {
-      return NextResponse.json({
-        ...EMPTY_RESULT,
-        message: "This platform (Instagram/WhatsApp/Facebook) does not allow automatic event extraction. Please enter event details manually.",
-      }, { status: 422 });
-    }
-
-    // Fetch with 8-second timeout
-    let res: Response;
-    try {
-      res = await fetch(url, {
-        signal: AbortSignal.timeout(8000),
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      });
-    } catch (err) {
-      const isTimeout = err instanceof Error && err.name === "TimeoutError";
-      return NextResponse.json({
-        ...EMPTY_RESULT,
-        message: isTimeout
-          ? "The event page took too long to respond. Please try again or enter details manually."
-          : "Could not reach the event page. Check the URL and try again.",
-      }, { status: 504 });
-    }
-
-    const finalUrl = res.url;
-    
-    const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
-    const reader = res.body?.getReader();
-    const chunks: Uint8Array[] = [];
-    let totalBytes = 0;
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        totalBytes += value.length;
-        if (totalBytes > MAX_BODY_BYTES) {
-          reader.cancel();
-          return NextResponse.json({ ...EMPTY_RESULT, message: "Page too large to extract." }, { status: 422 });
-        }
-        chunks.push(value);
-      }
-    }
-    const html = new TextDecoder().decode(Buffer.concat(chunks));
-
-    // Parse hostname
-    const parsedUrl = new URL(finalUrl);
-    let hostname = parsedUrl.hostname.toLowerCase();
-    if (hostname.startsWith("www.")) hostname = hostname.slice(4);
-
-    // Trusted domain check
-    const { data: trustedDomain } = await supabase
-      .from("verified_domains")
-      .select("domain_name")
-      .eq("domain_name", hostname)
-      .maybeSingle();
-    const isTrusted = !!trustedDomain;
-
-    // Parse HTML + JSON-LD
-    const $ = cheerio.load(html);
-    const jsonLd = parseJsonLd(html);
-
-    // Pick and run the right extractor
-    const extractor = getExtractor(hostname);
-    const extracted = extractor($, jsonLd);
-
-    // Score confidence
-    const confidence = scoreConfidence(extracted);
-
-    const result: ExtractionResult = {
-      ...extracted,
-      confidence,
-      isTrusted,
-      finalDomain: hostname,
-      message: confidence < 0.8
-        ? "Some event details could not be extracted. Please review and fill in the missing fields."
-        : "Event details extracted successfully.",
-    };
-
-    return NextResponse.json(result);
-
-  } catch (error) {
-    console.error("Extraction error:", error);
-    return NextResponse.json({
-      ...EMPTY_RESULT,
-      message: "An unexpected error occurred while extracting event data.",
-    }, { status: 500 });
-  }
-}
-</file>
-
 <file path="src/app/api/og/leaderboard/route.tsx">
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
@@ -4730,130 +4333,6 @@ export const mins = ["00", "15", "30", "45"];
 export const ampms = ["AM", "PM"];
 </file>
 
-<file path="src/features/create-event/hooks/useDuplicateCheck.ts">
-import { createClient } from "@/lib/supabase/client";
-
-export function useDuplicateCheck() {
-  const supabase = createClient();
-  
-  const checkDuplicateLink = async (link: string) => {
-    const { data } = await supabase.from("events").select("id, title").eq("registration_link", link).single();
-    return data;
-  };
-
-  return { checkDuplicateLink };
-}
-</file>
-
-<file path="src/features/create-event/hooks/useEventExtraction.ts">
-import { useState } from "react";
-import { useDuplicateCheck } from "./useDuplicateCheck";
-import type { EventRow } from "@/types";
-import type { FieldStatus } from "../types";
-
-interface ExtractionProps {
-  setTitle: (t: string) => void;
-  setDescription: (d: string) => void;
-  setLocation: (l: string) => void;
-  setSelectedDate: (d: Date) => void;
-  setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
-  initialLink?: string;
-}
-
-export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink }: ExtractionProps) {
-  const [regLink, setRegLink] = useState(initialLink || "");
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [linkDuplicateError, setLinkDuplicateError] = useState("");
-  const [extractError, setExtractError] = useState("");
-  const [isTrusted, setIsTrusted] = useState(false);
-  const [trustWarning, setTrustWarning] = useState("");
-  const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
-  
-  const { checkDuplicateLink } = useDuplicateCheck();
-
-  const handleLinkInput = async (val: string) => {
-    setRegLink(val);
-    setLinkDuplicateError("");
-    setExtractError("");
-
-    if (!val) {
-      setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
-      setFieldStatus({ title: "idle", description: "idle", location: "idle" });
-      return;
-    }
-    if (!val.startsWith("http")) return;
-
-    setIsExtracting(true);
-    try {
-      const existing = await checkDuplicateLink(val);
-      if (existing) {
-        setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
-        setIsExtracting(false); return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: val }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      const data = await res.json();
-
-      const confidence: number = data.confidence ?? 0;
-      setExtractionConfidence(confidence);
-
-      if (data.title) setTitle(data.title);
-      if (data.description) setDescription(data.description);
-      if (data.date) {
-        const parsedDate = new Date(data.date);
-        if (!isNaN(parsedDate.getTime())) setSelectedDate(parsedDate);
-      }
-      if (data.location) setLocation(data.location);
-
-      const isHigh = confidence >= 0.8;
-      setFieldStatus({
-        title: data.title ? (isHigh ? "success" : "warning") : "idle",
-        description: data.description ? (isHigh ? "success" : "warning") : "idle",
-        location: data.location ? (isHigh ? "success" : "warning") : "idle",
-      });
-
-      setIsTrusted(data.isTrusted === true);
-      if (data.isTrusted === false) {
-        setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
-      } else {
-        setTrustWarning("");
-      }
-
-      if (!data.title) {
-        setExtractError("Could not fetch details, please enter manually");
-      }
-    } catch (err) {
-      setExtractError("Could not fetch details, please enter manually");
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const handleSkipLink = (setStep: (s: number) => void) => {
-    setRegLink("");
-    setLinkDuplicateError("");
-    setExtractError("");
-    setTrustWarning("");
-    setStep(1);
-  };
-
-  return {
-    regLink, setRegLink, isExtracting, linkDuplicateError, extractError,
-    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink
-  };
-}
-</file>
-
 <file path="src/features/create-event/hooks/useImageCrop.ts">
 import { useState } from "react";
 import { toast } from "sonner";
@@ -5969,6 +5448,405 @@ export default async function AdminDashboard() {
       </div>
     </main>
   );
+}
+</file>
+
+<file path="src/app/api/extract/route.ts">
+import { NextResponse } from "next/server";
+import * as cheerio from "cheerio";
+import { createClient } from "@/lib/supabase/server";
+import { isIP } from "net";
+import dns from "dns/promises";
+
+// ─────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────
+
+interface ExtractedEvent {
+  title: string;
+  description: string;
+  image: string;
+  date: string;
+  location: string;
+}
+
+interface ExtractionResult extends ExtractedEvent {
+  confidence: number;
+  isTrusted: boolean;
+  finalDomain: string;
+  finalUrl: string;
+  message: string;
+}
+
+type ExtractorFn = ($: cheerio.CheerioAPI, jsonLd: Record<string, unknown> | null) => ExtractedEvent;
+
+// ─────────────────────────────────────────────
+// BLOCKED PLATFORMS (no point fetching these)
+// ─────────────────────────────────────────────
+
+const BLOCKED_DOMAINS = ["instagram.com", "whatsapp.com", "wa.me", "facebook.com"];
+
+// ─────────────────────────────────────────────
+// CONFIDENCE SCORING
+// Higher weight = more reliable signal for an event page
+// ─────────────────────────────────────────────
+
+function scoreConfidence(event: ExtractedEvent): number {
+  let score = 0;
+  if (event.title)       score += 0.40;
+  if (event.date)        score += 0.30;
+  if (event.location)    score += 0.20;
+  if (event.description) score += 0.10;
+  return parseFloat(score.toFixed(2));
+}
+
+// ─────────────────────────────────────────────
+// SHARED HELPERS
+// ─────────────────────────────────────────────
+
+function safeStr(value: unknown): string {
+  if (typeof value === "string") return value.replace(/\n/g, " ").trim();
+  return "";
+}
+
+/** Pull common OG/Twitter/title tags — used as fallback by all extractors */
+function extractOgBase($: cheerio.CheerioAPI): ExtractedEvent {
+  return {
+    title:       safeStr($('meta[property="og:title"]').attr("content") ?? $("title").text()),
+    description: safeStr($('meta[property="og:description"]').attr("content") ?? $('meta[name="description"]').attr("content")),
+    image:       safeStr($('meta[property="og:image"]').attr("content") ?? $('meta[name="twitter:image"]').attr("content")),
+    date:        "",
+    location:    "",
+  };
+}
+
+/** Pull startDate + location from a JSON-LD Event object */
+function extractFromJsonLd(jsonLd: Record<string, unknown> | null): { date: string; location: string } {
+  if (!jsonLd) return { date: "", location: "" };
+
+  const date = safeStr(
+    (jsonLd["startDate"] as string) ??
+    ((jsonLd["eventSchedule"] as Record<string, unknown>)?.[0] as Record<string, unknown>)?.["startDate"]
+  );
+
+  const locationObj = jsonLd["location"] as Record<string, unknown> | undefined;
+  const location = safeStr(
+    (locationObj?.["name"] as string) ??
+    ((locationObj?.["address"] as Record<string, unknown>)?.["streetAddress"] as string) ??
+    (locationObj?.["address"] as string)
+  );
+
+  return { date, location };
+}
+
+// ─────────────────────────────────────────────
+// PLATFORM-SPECIFIC EXTRACTORS
+// ─────────────────────────────────────────────
+
+/** Luma: relies heavily on JSON-LD for date/location */
+const extractFromLuma: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+  return { ...base, date, location };
+};
+
+/** Eventbrite: JSON-LD first, OG fallback */
+const extractFromEventbrite: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+
+  // Eventbrite puts a clean date in a specific data attribute sometimes
+  const domDate = safeStr($('time[datetime]').attr("datetime"));
+  const domLocation = safeStr($('[class*="location-info__address"]').first().text());
+
+  return {
+    ...base,
+    date:     date || domDate,
+    location: location || domLocation,
+  };
+};
+
+/** Meetup: JSON-LD first, then their DOM selectors */
+const extractFromMeetup: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+
+  const domDate     = safeStr($('time').attr("datetime"));
+  const domLocation = safeStr($('[data-testid="venue-name-link"]').first().text() ?? $('[class*="venueDisplay"]').first().text());
+
+  return {
+    ...base,
+    date:     date || domDate,
+    location: location || domLocation,
+  };
+};
+
+/** Devfolio: OG tags + their specific class selectors */
+const extractFromDevfolio: ExtractorFn = ($, _jsonLd) => {
+  const base = extractOgBase($);
+  const title = base.title || safeStr($(".hackathon-title").text()) || safeStr($("h1").first().text());
+  const description = base.description || safeStr($(".hackathon-tagline").text());
+  const date     = safeStr($('[class*="date"]').first().text());
+  const location = safeStr($('[class*="location"]').first().text());
+  return { ...base, title, description, date, location };
+};
+
+/** Unstop: OG tags + h1 fallback */
+const extractFromUnstop: ExtractorFn = ($, _jsonLd) => {
+  const base = extractOgBase($);
+  const title = base.title || safeStr($("h1").first().text());
+  return { ...base, title };
+};
+
+/** Townscript: OG tags + JSON-LD */
+const extractFromTownscript: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+  return { ...base, date, location };
+};
+
+/** BookMyShow / Insider (insider.in): OG + JSON-LD */
+const extractFromBMS: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+  return { ...base, date, location };
+};
+
+/** Generic fallback: used for all other verified platforms */
+const extractGeneric: ExtractorFn = ($, jsonLd) => {
+  const base = extractOgBase($);
+  const { date, location } = extractFromJsonLd(jsonLd);
+  return { ...base, date, location };
+};
+
+// ─────────────────────────────────────────────
+// STRATEGY MAP  (domain substring → extractor)
+// ─────────────────────────────────────────────
+
+const EXTRACTOR_MAP: Array<{ match: string; fn: ExtractorFn }> = [
+  { match: "lu.ma",          fn: extractFromLuma },
+  { match: "luma.com",       fn: extractFromLuma },
+  { match: "eventbrite.com", fn: extractFromEventbrite },
+  { match: "meetup.com",     fn: extractFromMeetup },
+  { match: "devfolio.co",    fn: extractFromDevfolio },
+  { match: "unstop.com",     fn: extractFromUnstop },
+  { match: "townscript.com", fn: extractFromTownscript },
+  { match: "bookmyshow.com", fn: extractFromBMS },
+  { match: "insider.in",     fn: extractFromBMS },
+  // All other verified platforms use the generic extractor
+  { match: "skillenza.com",  fn: extractGeneric },
+  { match: "allevents.in",   fn: extractGeneric },
+  { match: "goavo.ai",       fn: extractGeneric },
+  { match: "meraevents.com", fn: extractGeneric },
+  { match: "eventsframe.com",fn: extractGeneric },
+  { match: "ticketleap.com", fn: extractGeneric },
+  { match: "ticketbud.com",  fn: extractGeneric },
+  { match: "airmeet.com",    fn: extractGeneric },
+  { match: "zoho.com",       fn: extractGeneric },
+  { match: "hubilo.com",     fn: extractGeneric },
+  { match: "10times.com",    fn: extractGeneric },
+  { match: "eventcombo.com", fn: extractGeneric },
+  { match: "eventzilla.net", fn: extractGeneric },
+  { match: "ticketfairy.com",fn: extractGeneric },
+  { match: "socio.events",   fn: extractGeneric },
+  { match: "eventcreate.com",fn: extractGeneric },
+  { match: "splashthat.com", fn: extractGeneric },
+  { match: "eventtia.com",   fn: extractGeneric },
+];
+
+function getExtractor(hostname: string): ExtractorFn {
+  const entry = EXTRACTOR_MAP.find(({ match }) => hostname.includes(match));
+  return entry ? entry.fn : extractGeneric;
+}
+
+// ─────────────────────────────────────────────
+// SAFE JSON-LD PARSER
+// ─────────────────────────────────────────────
+
+function parseJsonLd(html: string): Record<string, unknown> | null {
+  try {
+    // Load just the script tag from the full HTML
+    const $ = cheerio.load(html);
+    const raw = $('script[type="application/ld+json"]').first().html();
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    // JSON-LD can be an array; unwrap if needed
+    return Array.isArray(parsed) ? parsed[0] : parsed;
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// SSRF PROTECTION
+// ─────────────────────────────────────────────
+
+async function isSafeUrl(rawUrl: string): Promise<boolean> {
+  let parsed: URL;
+  try { parsed = new URL(rawUrl); } catch { return false; }
+  
+  // Only allow http/https
+  if (!["http:", "https:"].includes(parsed.protocol)) return false;
+  
+  // Resolve hostname to IP and block private ranges
+  let address: string;
+  try {
+    const result = await dns.lookup(parsed.hostname);
+    address = result.address;
+  } catch { return false; }
+  
+  // Block loopback, private, link-local, metadata ranges
+  const BLOCKED = [
+    /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
+    /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
+  ];
+  return !BLOCKED.some((re) => re.test(address));
+}
+
+// ─────────────────────────────────────────────
+// RATE LIMITING
+// ─────────────────────────────────────────────
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(key: string, maxPerMinute = 5): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= maxPerMinute) return false;
+  entry.count++;
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// ROUTE HANDLER
+// ─────────────────────────────────────────────
+
+export async function POST(request: Request) {
+  const EMPTY_RESULT: ExtractionResult = {
+    title: "", description: "", image: "", date: "",
+    location: "", confidence: 0, isTrusted: false,
+    finalDomain: "", finalUrl: "", message: "",
+  };
+
+  try {
+    // Auth check
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Extract client IP for rate limiting
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
+    if (!checkRateLimit(clientIp, 5)) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
+    }
+
+    // URL validation
+    const { url } = await request.json();
+    if (!url) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "URL is required" }, { status: 400 });
+    }
+
+    // SSRF validation
+    if (!(await isSafeUrl(url))) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
+    }
+
+    // Block unsupported platforms before fetching
+    const isBlocked = BLOCKED_DOMAINS.some((d) => url.includes(d));
+    if (isBlocked) {
+      return NextResponse.json({
+        ...EMPTY_RESULT,
+        message: "This platform (Instagram/WhatsApp/Facebook) does not allow automatic event extraction. Please enter event details manually.",
+      }, { status: 422 });
+    }
+
+    // Fetch with 8-second timeout
+    let res: Response;
+    try {
+      res = await fetch(url, {
+        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+      });
+    } catch (err) {
+      const isTimeout = err instanceof Error && err.name === "TimeoutError";
+      return NextResponse.json({
+        ...EMPTY_RESULT,
+        message: isTimeout
+          ? "The event page took too long to respond. Please try again or enter details manually."
+          : "Could not reach the event page. Check the URL and try again.",
+      }, { status: 504 });
+    }
+
+    const finalUrl = res.url;
+    
+    const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
+    const reader = res.body?.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalBytes = 0;
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.length;
+        if (totalBytes > MAX_BODY_BYTES) {
+          reader.cancel();
+          return NextResponse.json({ ...EMPTY_RESULT, message: "Page too large to extract." }, { status: 422 });
+        }
+        chunks.push(value);
+      }
+    }
+    const html = new TextDecoder().decode(Buffer.concat(chunks));
+
+    // Parse hostname
+    const parsedUrl = new URL(finalUrl);
+    let hostname = parsedUrl.hostname.toLowerCase();
+    if (hostname.startsWith("www.")) hostname = hostname.slice(4);
+
+    // Trusted domain check
+    const { data: trustedDomain } = await supabase
+      .from("verified_domains")
+      .select("domain_name")
+      .eq("domain_name", hostname)
+      .maybeSingle();
+    const isTrusted = !!trustedDomain;
+
+    // Parse HTML + JSON-LD
+    const $ = cheerio.load(html);
+    const jsonLd = parseJsonLd(html);
+
+    // Pick and run the right extractor
+    const extractor = getExtractor(hostname);
+    const extracted = extractor($, jsonLd);
+
+    // Score confidence
+    const confidence = scoreConfidence(extracted);
+
+    const result: ExtractionResult = {
+      ...extracted,
+      confidence,
+      isTrusted,
+      finalDomain: hostname,
+      finalUrl,
+      message: confidence < 0.8
+        ? "Some event details could not be extracted. Please review and fill in the missing fields."
+        : "Event details extracted successfully.",
+    };
+
+    return NextResponse.json(result);
+
+  } catch (error) {
+    console.error("Extraction error:", error);
+    return NextResponse.json({
+      ...EMPTY_RESULT,
+      message: "An unexpected error occurred while extracting event data.",
+    }, { status: 500 });
+  }
 }
 </file>
 
@@ -8093,6 +7971,119 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 }
 </file>
 
+<file path="src/features/create-event/hooks/useEventExtraction.ts">
+import { useState } from "react";
+import { useDuplicateCheck } from "./useDuplicateCheck";
+import type { EventRow } from "@/types";
+import type { FieldStatus } from "../types";
+
+interface ExtractionProps {
+  setTitle: (t: string) => void;
+  setDescription: (d: string) => void;
+  setLocation: (l: string) => void;
+  setSelectedDate: (d: Date) => void;
+  setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
+  initialLink?: string;
+}
+
+export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink }: ExtractionProps) {
+  const [regLink, setRegLink] = useState(initialLink || "");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [linkDuplicateError, setLinkDuplicateError] = useState("");
+  const [extractError, setExtractError] = useState("");
+  const [isTrusted, setIsTrusted] = useState(false);
+  const [trustWarning, setTrustWarning] = useState("");
+  const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
+  
+  const { checkDuplicateLink } = useDuplicateCheck();
+
+  const handleLinkInput = async (val: string) => {
+    setRegLink(val);
+    setLinkDuplicateError("");
+    setExtractError("");
+
+    if (!val) {
+      setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
+      setFieldStatus({ title: "idle", description: "idle", location: "idle" });
+      return;
+    }
+    if (!val.startsWith("http")) return;
+
+    setIsExtracting(true);
+    try {
+      const existing = await checkDuplicateLink(val);
+      if (existing) {
+        setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
+        setIsExtracting(false); return;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: val }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      const confidence: number = data.confidence ?? 0;
+      setExtractionConfidence(confidence);
+
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.date) {
+        const parsedDate = new Date(data.date);
+        if (!isNaN(parsedDate.getTime())) setSelectedDate(parsedDate);
+      }
+      if (data.location) setLocation(data.location);
+
+      if (data.finalUrl && data.finalUrl !== val) {
+        setRegLink(data.finalUrl);
+      }
+
+      const isHigh = confidence >= 0.8;
+      setFieldStatus({
+        title: data.title ? (isHigh ? "success" : "warning") : "idle",
+        description: data.description ? (isHigh ? "success" : "warning") : "idle",
+        location: data.location ? (isHigh ? "success" : "warning") : "idle",
+      });
+
+      setIsTrusted(data.isTrusted === true);
+      if (data.isTrusted === false) {
+        setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
+      } else {
+        setTrustWarning("");
+      }
+
+      if (!data.title) {
+        setExtractError("Could not fetch details, please enter manually");
+      }
+    } catch (err) {
+      setExtractError("Could not fetch details, please enter manually");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleSkipLink = (setStep: (s: number) => void) => {
+    setRegLink("");
+    setLinkDuplicateError("");
+    setExtractError("");
+    setTrustWarning("");
+    setStep(1);
+  };
+
+  return {
+    regLink, setRegLink, isExtracting, linkDuplicateError, extractError,
+    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink
+  };
+}
+</file>
+
 <file path="src/features/create-event/hooks/useEventSubmit.ts">
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -9164,197 +9155,6 @@ export default async function Home({
 }
 </file>
 
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { 
-  format, 
-  isSameDay, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  addMonths, 
-  subMonths, 
-  isSameMonth,
-  parseISO,
-  differenceInCalendarDays
-} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-      // Deselect if clicked again (Goes back to default future events)
-      router.push(`/?${params.toString()}`, { scroll: false });
-    } else {
-      params.set("date", queryDateStr);
-      router.push(`/?${params.toString()}`, { scroll: false });
-    }
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/components/layout/Navbar.tsx">
 "use client";
 
@@ -9839,6 +9639,38 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       </div>
     </div>
   );
+}
+</file>
+
+<file path="src/features/create-event/hooks/useDuplicateCheck.ts">
+import { createClient } from "@/lib/supabase/client";
+
+export function useDuplicateCheck() {
+  const supabase = createClient();
+  
+  const checkDuplicateLink = async (link: string) => {
+    let normalized = link;
+    try {
+      const url = new URL(link);
+      const host = url.hostname.replace(/^www\./, "");
+      normalized = `${host}${url.pathname}`.replace(/\/$/, "");
+    } catch {
+      // invalid URL, fall back to raw link
+    }
+
+    // Most event platforms embed a unique numeric event ID in the URL
+    // (e.g. meetup.com/.../events/315052580/). Match on that number first -
+    // it catches the same event regardless of path/query differences.
+    const idMatches = link.match(/\d{5,}/g);
+    const eventId = idMatches ? idMatches.reduce((a, b) => (b.length > a.length ? b : a), "") : null;
+
+    const pattern = eventId ? `%${eventId}%` : `${normalized}%`;
+
+    const { data } = await supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1).maybeSingle();
+    return data;
+  };
+
+  return { checkDuplicateLink };
 }
 </file>
 
@@ -10354,6 +10186,197 @@ export default function SettingsClient({
         </form>
       </div>
     </main>
+  );
+}
+</file>
+
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { 
+  format, 
+  isSameDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  addMonths, 
+  subMonths, 
+  isSameMonth,
+  parseISO,
+  differenceInCalendarDays
+} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+      // Deselect if clicked again (Goes back to default future events)
+      router.push(`/?${params.toString()}`, { scroll: false });
+    } else {
+      params.set("date", queryDateStr);
+      router.push(`/?${params.toString()}`, { scroll: false });
+    }
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 </file>

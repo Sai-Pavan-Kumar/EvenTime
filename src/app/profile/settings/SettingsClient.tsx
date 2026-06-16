@@ -9,13 +9,16 @@ import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import type { ProfileRow } from "@/types";
 import { categoriesList } from "@/features/create-event/constants"; // Imported the single source of truth
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 
 export default function SettingsClient({ 
   profile, 
-  categoryCounts = {} 
+  categoryCounts = {},
+  collegeNames = []
 }: { 
   profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number> 
+  categoryCounts?: Record<string, number>,
+  collegeNames?: string[]
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -261,9 +264,9 @@ export default function SettingsClient({
                     {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
                     <p className="text-[10px] text-slate-400 mt-1.5 ml-1">If your college is not in the list, please type the correct full name.</p>
                     <datalist id="college-list">
-                      <option value="JNTU" />
-                      <option value="CBIT" />
-                      <option value="Vasavi" />
+                      {collegeNames.map(name => (
+                        <option key={name} value={name} />
+                      ))}
                     </datalist>
                   </div>
                   
@@ -282,9 +285,9 @@ export default function SettingsClient({
                       />
                       {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
                       <datalist id="branch-list">
-                        <option value="CSE" />
-                        <option value="ECE" />
-                        <option value="IT" />
+                        {INDIAN_COLLEGE_BRANCHES.map(b => (
+                          <option key={b} value={b} />
+                        ))}
                       </datalist>
                     </div>
                     <div className="relative">
