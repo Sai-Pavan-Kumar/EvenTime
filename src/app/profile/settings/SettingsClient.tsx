@@ -1,24 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
-import type { ProfileRow } from "@/types";
-import { categoriesList } from "@/features/create-event/constants"; // Imported the single source of truth
+import { createClient } from "@/lib/supabase/client";
+import type { ProfileRow, CollegeRow } from "@/types";
+import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { createCollegeAction } from "@/app/profile/action";
 
 export default function SettingsClient({ 
   profile, 
-  categoryCounts = {},
-  collegeNames = []
+  categoryCounts = {}
 }: { 
   profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number>,
-  collegeNames?: string[]
+  categoryCounts?: Record<string, number>
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +41,55 @@ export default function SettingsClient({
   const [college, setCollege] = useState(profile?.college || "");
   const [branch, setBranch] = useState(profile?.branch || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
+
+  // College search dropdown states
+  const supabase = createClient();
+  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
+  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  // Branch search dropdown states
+  const [branchSearchQuery, setBranchSearchQuery] = useState(profile?.branch || "");
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+
+  // Load colleges from Supabase on mount
+  useEffect(() => {
+    async function loadColleges() {
+      const { data } = await supabase
+        .from("colleges")
+        .select("id, name, state")
+        .order("name", { ascending: true });
+      if (data) setCollegesList(data as CollegeRow[]);
+    }
+    loadColleges();
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowCollegeDropdown(false);
+      setShowBranchDropdown(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const result = await createCollegeAction(name);
+    if (result.data && !result.error) {
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setCollegeSearchQuery(result.data.name);
+    } else {
+      toast.error("Failed to add college. Please try again.");
+    }
+    setIsCreatingCollege(false);
+    setShowCollegeDropdown(false);
+  };
 
   const toggleCity = (cityName: string) => {
     if (selectedCities.includes(cityName)) {
@@ -75,9 +124,11 @@ export default function SettingsClient({
     formData.set("preferred_cities", JSON.stringify(selectedCities));
     
     if (userType === "Student" && college) formData.set("college", college);
+    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
     else formData.delete("college");
     
     if (userType === "Student" && branch) formData.set("branch", branch);
+    else if (userType === "Student" && branchSearchQuery) formData.set("branch", branchSearchQuery);
     else formData.delete("branch");
 
     formData.delete("yearOfStudying");
@@ -249,46 +300,107 @@ export default function SettingsClient({
                 </div>
 
                 <div className="space-y-5">
-                  <div className="relative">
+                  {/* College Search Dropdown */}
+                  <div className="relative" onClick={e => e.stopPropagation()}>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
-                    <input 
-                      type="text" 
-                      list="college-list"
-                      value={college}
-                      onChange={e => setCollege(e.target.value)}
-                      required={userType === "Student"}
-                      disabled={isLocked}
-                      placeholder="Type to search your college"
-                      className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    />
-                    {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-                    <p className="text-[10px] text-slate-400 mt-1.5 ml-1">If your college is not in the list, please type the correct full name.</p>
-                    <datalist id="college-list">
-                      {collegeNames.map(name => (
-                        <option key={name} value={name} />
-                      ))}
-                    </datalist>
+                    {isLocked ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={college}
+                          disabled
+                          className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                        />
+                        <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Type to search your college"
+                          value={collegeSearchQuery}
+                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
+                          onFocus={() => setShowCollegeDropdown(true)}
+                          className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                        />
+                        {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                            {collegesList
+                              .filter(item => item.name.toLowerCase().includes(collegeSearchQuery.toLowerCase()))
+                              .slice(0, 30)
+                              .map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
+                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
+                                >
+                                  <span>🏢 {item.name}</span>
+                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
+                                </button>
+                              ))}
+                            {!collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateCollege(collegeSearchQuery)}
+                                disabled={isCreatingCollege}
+                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
+                              >
+                                {isCreatingCollege
+                                  ? <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+                                  : <Sparkles className="w-4 h-4" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Can't find your college? It will be added automatically.</p>
+                      </>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="relative">
+                    {/* Branch Search Dropdown */}
+                    <div className="relative" onClick={e => e.stopPropagation()}>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
-                      <input 
-                        type="text" 
-                        list="branch-list"
-                        value={branch}
-                        onChange={e => setBranch(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        placeholder="Type to search"
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-                      <datalist id="branch-list">
-                        {INDIAN_COLLEGE_BRANCHES.map(b => (
-                          <option key={b} value={b} />
-                        ))}
-                      </datalist>
+                      {isLocked ? (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={branch}
+                            disabled
+                            className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                          />
+                          <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            placeholder="Type to search (e.g. CSE)"
+                            value={branchSearchQuery}
+                            onChange={e => { setBranchSearchQuery(e.target.value); setBranch(""); setShowBranchDropdown(true); }}
+                            onFocus={() => setShowBranchDropdown(true)}
+                            className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                          />
+                          {showBranchDropdown && branchSearchQuery.trim().length > 0 && (
+                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                              {INDIAN_COLLEGE_BRANCHES
+                                .filter(b => b.toLowerCase().includes(branchSearchQuery.toLowerCase()))
+                                .map(b => (
+                                  <button
+                                    key={b}
+                                    type="button"
+                                    onClick={() => { setBranch(b); setBranchSearchQuery(b); setShowBranchDropdown(false); }}
+                                    className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none"
+                                  >
+                                    {b}
+                                  </button>
+                                ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                     <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>

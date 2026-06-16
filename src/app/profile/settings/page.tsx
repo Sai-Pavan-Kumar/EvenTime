@@ -17,13 +17,7 @@ export default async function SettingsPage() {
     .eq("id", user.id)
     .single();
 
-  // Fetch college names from colleges table for the datalist
-  const { data: collegesData } = await supabase
-    .from("colleges")
-    .select("name")
-    .order("name", { ascending: true });
-
-  const collegeNames = collegesData?.map(c => c.name) ?? [];
+  // College list is fetched client-side in SettingsClient for better search UX
 
   // NEW: Fetch active events to calculate counts per category
   const today = new Date().toISOString();
@@ -57,5 +51,5 @@ export default async function SettingsPage() {
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} collegeNames={collegeNames} />;
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
 }
