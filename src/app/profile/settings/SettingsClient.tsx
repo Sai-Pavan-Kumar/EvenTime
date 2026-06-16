@@ -43,7 +43,6 @@ export default function SettingsClient({
   const [year, setYear] = useState(profile?.graduation_year || "");
 
   // College search dropdown states
-  const supabase = createClient();
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
   const [collegeId, setCollegeId] = useState<string | null>(null);
@@ -57,6 +56,7 @@ export default function SettingsClient({
   // Load colleges from Supabase on mount
   useEffect(() => {
     async function loadColleges() {
+      const supabase = createClient();
       const { data } = await supabase
         .from("colleges")
         .select("id, name, state")
@@ -68,12 +68,13 @@ export default function SettingsClient({
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowCollegeDropdown(false);
-      setShowBranchDropdown(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
+      if (!target.closest("[data-branch-dropdown]")) setShowBranchDropdown(false);
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCreateCollege = async (name: string) => {
@@ -301,7 +302,7 @@ export default function SettingsClient({
 
                 <div className="space-y-5">
                   {/* College Search Dropdown */}
-                  <div className="relative" onClick={e => e.stopPropagation()}>
+                  <div className="relative" data-college-dropdown>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
                     {isLocked ? (
                       <div className="relative">
@@ -361,7 +362,8 @@ export default function SettingsClient({
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Branch Search Dropdown */}
-                    <div className="relative" onClick={e => e.stopPropagation()}>
+                    <div className="relative" data-branch-dropdown>
+
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
                       {isLocked ? (
                         <div className="relative">
@@ -487,5 +489,6 @@ export default function SettingsClient({
         </form>
       </div>
     </main>
+
   );
 }

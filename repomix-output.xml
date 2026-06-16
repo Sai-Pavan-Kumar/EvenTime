@@ -9099,70 +9099,6 @@ export default async function Home({
 }
 </file>
 
-<file path="src/app/profile/settings/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import SettingsClient from "./SettingsClient";
-
-export const dynamic = "force-dynamic";
-
-export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // Fetch existing profile data
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, username, preferred_cities, user_type, college, branch, graduation_year, goals, is_onboarded")
-    .eq("id", user.id)
-    .single();
-
-  // Fetch college names from colleges table for the datalist
-  const { data: collegesData } = await supabase
-    .from("colleges")
-    .select("name")
-    .order("name", { ascending: true });
-
-  const collegeNames = collegesData?.map(c => c.name) ?? [];
-
-  // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
-  const { data: activeEvents } = await supabase
-    .from("events")
-    .select("category")
-    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
-    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
-
-  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
-  const categoryCounts: Record<string, number> = {};
-  if (activeEvents) {
-    activeEvents.forEach(event => {
-      if (event.category) {
-        let cats: string[] = [];
-        if (Array.isArray(event.category)) {
-          cats = event.category;
-        } else if (typeof event.category === 'string') {
-          try {
-            const parsed = JSON.parse(event.category);
-            cats = Array.isArray(parsed) ? parsed : [event.category];
-          } catch {
-            cats = [event.category];
-          }
-        }
-        cats.forEach(c => {
-          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
-        });
-      }
-    });
-  }
-
-  // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} collegeNames={collegeNames} />;
-}
-</file>
-
 <file path="src/components/layout/Navbar.tsx">
 "use client";
 
@@ -9785,6 +9721,64 @@ const nextConfig: NextConfig = {
 
 // NEW: Export the configuration wrapped with PWA
 export default withPWA(nextConfig);
+</file>
+
+<file path="src/app/profile/settings/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import SettingsClient from "./SettingsClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  // Fetch existing profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, preferred_cities, user_type, college, branch, graduation_year, goals, is_onboarded")
+    .eq("id", user.id)
+    .single();
+
+  // College list is fetched client-side in SettingsClient for better search UX
+
+  // NEW: Fetch active events to calculate counts per category
+  const today = new Date().toISOString();
+  const { data: activeEvents } = await supabase
+    .from("events")
+    .select("category")
+    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
+    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
+
+  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
+  const categoryCounts: Record<string, number> = {};
+  if (activeEvents) {
+    activeEvents.forEach(event => {
+      if (event.category) {
+        let cats: string[] = [];
+        if (Array.isArray(event.category)) {
+          cats = event.category;
+        } else if (typeof event.category === 'string') {
+          try {
+            const parsed = JSON.parse(event.category);
+            cats = Array.isArray(parsed) ? parsed : [event.category];
+          } catch {
+            cats = [event.category];
+          }
+        }
+        cats.forEach(c => {
+          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  // Cast profile to any to bypass strict Typescript errors until global types are updated
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+}
 </file>
 
 <file path="src/components/layout/CalendarStrip.tsx">
@@ -11064,28 +11058,65 @@ export function HomePageClient(props: HomePageClientProps) {
 }
 </file>
 
+<file path="src/app/events/[slug]/edit/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import { CreateEventForm } from "@/features/create-event/CreateEventForm";
+
+// We will build the modified CreateEventForm to handle edits in the next step
+export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")
+    .eq("slug", slug)
+    .single() as any;
+
+  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
+  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
+
+  // Inside your EditEventPage return
+return (
+  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
+    {/* Clean Apple-style Header */}
+    <div className="max-w-2xl mx-auto mb-10">
+       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
+       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
+    </div>
+    
+    <CreateEventForm initialData={event} isEditing={true} />
+  </main>
+);
+}
+</file>
+
 <file path="src/app/profile/settings/SettingsClient.tsx">
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
-import type { ProfileRow } from "@/types";
-import { categoriesList } from "@/features/create-event/constants"; // Imported the single source of truth
+import { createClient } from "@/lib/supabase/client";
+import type { ProfileRow, CollegeRow } from "@/types";
+import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { createCollegeAction } from "@/app/profile/action";
 
 export default function SettingsClient({ 
   profile, 
-  categoryCounts = {},
-  collegeNames = []
+  categoryCounts = {}
 }: { 
   profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number>,
-  collegeNames?: string[]
+  categoryCounts?: Record<string, number>
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -11108,6 +11139,55 @@ export default function SettingsClient({
   const [college, setCollege] = useState(profile?.college || "");
   const [branch, setBranch] = useState(profile?.branch || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
+
+  // College search dropdown states
+  const supabase = createClient();
+  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
+  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  // Branch search dropdown states
+  const [branchSearchQuery, setBranchSearchQuery] = useState(profile?.branch || "");
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+
+  // Load colleges from Supabase on mount
+  useEffect(() => {
+    async function loadColleges() {
+      const { data } = await supabase
+        .from("colleges")
+        .select("id, name, state")
+        .order("name", { ascending: true });
+      if (data) setCollegesList(data as CollegeRow[]);
+    }
+    loadColleges();
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowCollegeDropdown(false);
+      setShowBranchDropdown(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const result = await createCollegeAction(name);
+    if (result.data && !result.error) {
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setCollegeSearchQuery(result.data.name);
+    } else {
+      toast.error("Failed to add college. Please try again.");
+    }
+    setIsCreatingCollege(false);
+    setShowCollegeDropdown(false);
+  };
 
   const toggleCity = (cityName: string) => {
     if (selectedCities.includes(cityName)) {
@@ -11142,9 +11222,11 @@ export default function SettingsClient({
     formData.set("preferred_cities", JSON.stringify(selectedCities));
     
     if (userType === "Student" && college) formData.set("college", college);
+    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
     else formData.delete("college");
     
     if (userType === "Student" && branch) formData.set("branch", branch);
+    else if (userType === "Student" && branchSearchQuery) formData.set("branch", branchSearchQuery);
     else formData.delete("branch");
 
     formData.delete("yearOfStudying");
@@ -11316,46 +11398,107 @@ export default function SettingsClient({
                 </div>
 
                 <div className="space-y-5">
-                  <div className="relative">
+                  {/* College Search Dropdown */}
+                  <div className="relative" onClick={e => e.stopPropagation()}>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
-                    <input 
-                      type="text" 
-                      list="college-list"
-                      value={college}
-                      onChange={e => setCollege(e.target.value)}
-                      required={userType === "Student"}
-                      disabled={isLocked}
-                      placeholder="Type to search your college"
-                      className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    />
-                    {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-                    <p className="text-[10px] text-slate-400 mt-1.5 ml-1">If your college is not in the list, please type the correct full name.</p>
-                    <datalist id="college-list">
-                      {collegeNames.map(name => (
-                        <option key={name} value={name} />
-                      ))}
-                    </datalist>
+                    {isLocked ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={college}
+                          disabled
+                          className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                        />
+                        <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Type to search your college"
+                          value={collegeSearchQuery}
+                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
+                          onFocus={() => setShowCollegeDropdown(true)}
+                          className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                        />
+                        {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                            {collegesList
+                              .filter(item => item.name.toLowerCase().includes(collegeSearchQuery.toLowerCase()))
+                              .slice(0, 30)
+                              .map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
+                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
+                                >
+                                  <span>🏢 {item.name}</span>
+                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
+                                </button>
+                              ))}
+                            {!collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateCollege(collegeSearchQuery)}
+                                disabled={isCreatingCollege}
+                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
+                              >
+                                {isCreatingCollege
+                                  ? <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
+                                  : <Sparkles className="w-4 h-4" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Can't find your college? It will be added automatically.</p>
+                      </>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div className="relative">
+                    {/* Branch Search Dropdown */}
+                    <div className="relative" onClick={e => e.stopPropagation()}>
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
-                      <input 
-                        type="text" 
-                        list="branch-list"
-                        value={branch}
-                        onChange={e => setBranch(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        placeholder="Type to search"
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      />
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-                      <datalist id="branch-list">
-                        {INDIAN_COLLEGE_BRANCHES.map(b => (
-                          <option key={b} value={b} />
-                        ))}
-                      </datalist>
+                      {isLocked ? (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={branch}
+                            disabled
+                            className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                          />
+                          <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            placeholder="Type to search (e.g. CSE)"
+                            value={branchSearchQuery}
+                            onChange={e => { setBranchSearchQuery(e.target.value); setBranch(""); setShowBranchDropdown(true); }}
+                            onFocus={() => setShowBranchDropdown(true)}
+                            className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                          />
+                          {showBranchDropdown && branchSearchQuery.trim().length > 0 && (
+                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                              {INDIAN_COLLEGE_BRANCHES
+                                .filter(b => b.toLowerCase().includes(branchSearchQuery.toLowerCase()))
+                                .map(b => (
+                                  <button
+                                    key={b}
+                                    type="button"
+                                    onClick={() => { setBranch(b); setBranchSearchQuery(b); setShowBranchDropdown(false); }}
+                                    className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none"
+                                  >
+                                    {b}
+                                  </button>
+                                ))}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                     <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
@@ -11442,44 +11585,8 @@ export default function SettingsClient({
         </form>
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/app/events/[slug]/edit/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
-import { CreateEventForm } from "@/features/create-event/CreateEventForm";
-
-// We will build the modified CreateEventForm to handle edits in the next step
-export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")
-    .eq("slug", slug)
-    .single() as any;
-
-  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
-  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
-
-  // Inside your EditEventPage return
-return (
-  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
-    {/* Clean Apple-style Header */}
-    <div className="max-w-2xl mx-auto mb-10">
-       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
-       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
-    </div>
     
-    <CreateEventForm initialData={event} isEditing={true} />
-  </main>
-);
+  );
 }
 </file>
 
