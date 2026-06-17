@@ -5,7 +5,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { FieldStatus, CreateEventFormProps } from "./types";
 import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-
+function toLocalDateString(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 // Hooks
 import { useEventExtraction } from "./hooks/useEventExtraction";
 import { useImageCrop } from "./hooks/useImageCrop";
@@ -94,8 +96,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       target_audience: eventData.selectedAudience,
       start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
       end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? eventData.endDate.toISOString() : null,
-      date_string: eventData.selectedDate?.toISOString() ?? "",
+      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
       location: eventData.isOnline ? "Virtual Event" : eventData.location,
       city: eventData.isOnline ? "online" : eventData.city,
       is_virtual: eventData.isOnline,
