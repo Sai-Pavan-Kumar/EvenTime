@@ -57,10 +57,11 @@ export default function SettingsClient({
   useEffect(() => {
     async function loadColleges() {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("colleges")
         .select("id, name, state")
         .order("name", { ascending: true });
+      if (error) console.error("Colleges fetch error:", error);
       if (data) setCollegesList(data as CollegeRow[]);
     }
     loadColleges();

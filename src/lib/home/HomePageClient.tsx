@@ -280,13 +280,13 @@ export function HomePageClient(props: HomePageClientProps) {
                 {/* FIX: Clean URL parameters builder */}
                 <div className="flex bg-[#F5F5F7] p-1 rounded-xl">
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'list' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'list' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view !== 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <List className="w-4 h-4" /> List
                   </Link>
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'map' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'map' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <MapIcon className="w-4 h-4" /> Map

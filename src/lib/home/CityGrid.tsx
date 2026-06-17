@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import type { EventRow } from "@/types";
@@ -50,12 +49,10 @@ export function CityGrid({ events }: CityGridProps) {
           className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
         >
           <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <Image
+            <img
               src={getCityImage(city)}
               alt={city}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
             />
           </div>
