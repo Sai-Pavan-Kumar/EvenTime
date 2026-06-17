@@ -3,15 +3,12 @@
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
 
 export interface CityGridProps {
   events: Partial<EventRow>[];
 }
 
-// Maps a city name to its image path in /public/cities
-// Expecting files like /cities/Hyderabad.webp, /cities/New Delhi.webp etc.
-// Falls back to a default image if a specific city image is missing. 
-const getCityImage = (city: string) => `/cities/${city}.webp`;
 
 export function CityGrid({ events }: CityGridProps) {
   // Group events by city and count them
@@ -50,7 +47,7 @@ export function CityGrid({ events }: CityGridProps) {
         >
           <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
             <img
-              src={getCityImage(city)}
+              src={getCityConfig(city).backgroundImage}
               alt={city}
               className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
               onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
