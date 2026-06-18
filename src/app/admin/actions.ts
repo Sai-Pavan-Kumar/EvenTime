@@ -225,7 +225,11 @@ export async function toggleLeaderboardAction(formData: FormData) {
 
   const enabled = formData.get("enabled") === "true";
 
-  await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle leaderboard failed:", error);
+    return { error: "Failed to update setting." };
+  }
 
   revalidatePath("/admin");
   revalidatePath("/");

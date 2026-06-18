@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Trash2, Shield, User as UserIcon, GraduationCap } from "lucide-react";
+import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { deleteUserAction, updateUserRoleAction } from "../actions";
 
@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
   // Fetch all profiles
   const { data: users, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, avatar_url, college, branch, role, et_score");
+    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals");
 
   if (error) {
     console.error("Error fetching users:", error.message || JSON.stringify(error));
@@ -61,7 +61,9 @@ export default async function AdminUsersPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">College & Branch</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User Type</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Interested Cities</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Categories</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Role</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">ET Score</th>
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
@@ -89,21 +91,31 @@ export default async function AdminUsersPage() {
                         </div>
                       </td>
 
-                      {/* College Info */}
+                      {/* User Type */}
                       <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          {profile.college ? (
-                            <>
-                              <span className="text-sm font-bold text-slate-700 flex items-center gap-1.5 line-clamp-1">
-                                <GraduationCap className="w-4 h-4 text-slate-400 shrink-0" />
-                                {profile.college}
-                              </span>
-                              {profile.branch && <span className="text-xs font-medium text-slate-400 mt-0.5">{profile.branch}</span>}
-                            </>
-                          ) : (
-                            <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                          )}
-                        </div>
+                        {profile.user_type ? (
+                          <span className="text-sm font-bold text-slate-700 whitespace-normal break-words">{profile.user_type}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
+                      </td>
+
+                      {/* Interested Cities */}
+                      <td className="px-6 py-4">
+                        {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
+                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.preferred_cities.join(", ")}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
+                      </td>
+
+                      {/* Categories */}
+                      <td className="px-6 py-4">
+                        {profile.goals && profile.goals.length > 0 ? (
+                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.goals.join(", ")}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
                       </td>
 
                       {/* Role Badge */}
@@ -166,7 +178,7 @@ export default async function AdminUsersPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
                       No users found
                     </td>
                   </tr>

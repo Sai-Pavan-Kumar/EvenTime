@@ -68,7 +68,7 @@ export default async function AdminDashboard() {
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("college").not("college", "is", null),
-    supabase.from("platform_feedback").select("id, type, message, created_at, profiles:user_id(full_name)").order("created_at", { ascending: false }).limit(20),
+    supabase.from("platform_feedback").select("id, type, message, created_at, user_id").order("created_at", { ascending: false }).limit(20),
     supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
 
