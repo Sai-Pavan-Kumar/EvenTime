@@ -21,68 +21,63 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-slate-200 py-6 sm:py-10 w-full mt-auto">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10 mb-6 sm:mb-12">
-          {/* Brand Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Image src="/logo.png" alt="EvenTime Logo" width={40} height={40} className="rounded-xl" />
-              <h3 className="text-2xl font-black text-[#6C47FF] font-heading tracking-tight">EvenTime</h3>
-            </div>
-            <p className="text-[#6C47FF]/70 text-sm font-medium">
-              Your event search struggles end here.
-            </p>
-          </div>
+    <footer className="bg-[#0F0F13] w-full mt-auto py-12 px-6">
+      <div className="max-w-sm mx-auto flex flex-col items-center text-center gap-8">
 
-          {/* Queries Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">For any Queries</h4>
-            <ul className="space-y-3">
-              <li>
-                <a href="#" className="flex items-center gap-2 text-[#6C47FF]/80 hover:text-[#6C47FF] transition-colors text-sm font-medium">
-                  <div className="bg-[#6C47FF]/10 p-1.5 rounded-md">
-                    <InstagramIcon className="w-4 h-4 text-[#6C47FF]" />
-                  </div>
-                  Message us on Instagram
-                </a>
-              </li>
-              <li>
-                <div className="flex items-center gap-2 text-[#6C47FF]/80 text-sm font-medium">
-                  <div className="bg-pink-50 p-1.5 rounded-md">
-                    <MapPin className="w-4 h-4 text-pink-500" />
-                  </div>
-                  Hyderabad, India
-                </div>
-              </li>
-            </ul>
+        {/* Brand */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-xl" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              Even<span className="text-[#6C47FF]">Time</span>
+            </h3>
           </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+        </div>
 
-          {/* Social Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">Join the Family</h4>
-            <div className="flex items-center gap-4">
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <InstagramIcon className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <YoutubeIcon className="w-5 h-5" />
-              </a>
-            </div>
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="flex flex-col items-center justify-center space-y-6 pt-8 border-t border-[#6C47FF]/10">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6C47FF] border-2 border-[#6C47FF]/10 px-5 py-2.5 rounded-full hover:bg-[#6C47FF]/5 transition-colors cursor-default">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by 
-            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs ml-1">SB</span> 
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-white/10" />
+
+        {/* Made with love */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-white border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs">SB</span>
             The SurfBoard
           </div>
-          <p className="text-xs font-medium text-[#6C47FF]/50">
+          <p className="text-xs font-medium text-white/30">
             © {new Date().getFullYear()} EvenTime. All rights reserved.
           </p>
         </div>
+
       </div>
     </footer>
   );
