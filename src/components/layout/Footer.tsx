@@ -21,13 +21,13 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 
 export function Footer() {
   return (
-    <footer className="bg-[#0F0F13] w-full mt-auto py-12 px-6">
-      <div className="max-w-sm mx-auto flex flex-col items-center text-center gap-8">
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="max-w-5xl mx-auto flex flex-col items-center text-center gap-8">
 
         {/* Brand */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-xl" />
+            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
               Even<span className="text-[#6C47FF]">Time</span>
             </h3>
@@ -70,7 +70,7 @@ export function Footer() {
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2 text-sm font-bold text-white border border-white/10 px-5 py-2.5 rounded-full">
             Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs">SB</span>
+            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
             The SurfBoard
           </div>
           <p className="text-xs font-medium text-white/30">
