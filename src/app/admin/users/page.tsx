@@ -18,10 +18,11 @@ export default async function AdminUsersPage() {
   const isAdmin = await requireAdmin(supabase, user.id);
   if (!isAdmin) redirect("/");
 
-  // Fetch all profiles
+  // Fetch all profiles (exclude soft-deleted users, they're in the 30-day trash)
   const { data: users, error } = await supabase
     .from("profiles")
-    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals");
+    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
+    .is("deleted_at", null);
 
   if (error) {
     console.error("Error fetching users:", error.message || JSON.stringify(error));

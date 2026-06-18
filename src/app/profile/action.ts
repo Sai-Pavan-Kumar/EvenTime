@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export async function deleteEventAction(formData: FormData) {
   const supabase = await createClient();
@@ -23,35 +22,10 @@ export async function deleteEventAction(formData: FormData) {
     
   if (event?.creator_id !== user.id) return { error: "Unauthorized" };
   
-  // Delete the associated image from Cloudflare R2
-  if (event?.poster_url) {
-    try {
-      const url = new URL(event.poster_url);
-      const key = url.pathname.substring(1); // Extract path without the leading slash
-
-      // Only attempt to delete if it matches your R2 folder structure to avoid failing on external fallback images
-      if (key.startsWith("events/")) {
-        const s3Client = new S3Client({
-          region: "auto",
-          endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-          credentials: {
-            accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
-            secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
-          },
-        });
-
-        await s3Client.send(new DeleteObjectCommand({
-          Bucket: process.env.R2_BUCKET_NAME,
-          Key: key,
-        }));
-      }
-    } catch (err) {
-      // Log the error but don't block the database deletion if R2 fails
-      console.error("Failed to delete image from R2:", err);
-    }
-  }
-
-  await supabase.from("events").delete().eq("id", eventId);
+  // Soft delete: just mark the event, move it to the 30-day trash.
+  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
+  // since the event can still be viewed/restored from trash before then.
+  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
   redirect("/profile");
 }
 

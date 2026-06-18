@@ -1,5 +1,6 @@
 "use client"
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
@@ -66,6 +67,51 @@ export function HomePageClient(props: HomePageClientProps) {
     location,
     view
   } = props;
+
+  // Local copies of the server-fetched event lists, so we can remove an event
+  // instantly (without a full page refresh) when it gets deleted/rejected elsewhere.
+  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState(personalizedEvents);
+  const [liveCollegeEvents, setLiveCollegeEvents] = useState(collegeEvents);
+  const [liveFallbackEvents, setLiveFallbackEvents] = useState(fallbackEvents);
+  const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
+  const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
+
+  // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
+  useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
+  useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
+  useEffect(() => { setLiveFallbackEvents(fallbackEvents); }, [fallbackEvents]);
+  useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
+  useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
+
+  // Realtime: listen for any event becoming non-approved (rejected/deleted) and
+  // instantly remove it from whatever list it's currently shown in.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("home-events-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "events" },
+        (payload) => {
+          const newRow = payload.new as { id?: string; status?: string } | null;
+          const oldRow = payload.old as { id?: string } | null;
+          const removedId = payload.eventType === "DELETE"
+            ? oldRow?.id
+            : (newRow?.status && newRow.status !== "approved" ? newRow.id : null);
+
+          if (!removedId) return;
+
+          setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveFallbackEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
+          setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   // Added ref to control the native <details> dropdown
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -172,9 +218,9 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               </div>
               
-              {personalizedEvents.length > 0 ? (
-                <EventGrid 
-                  events={personalizedEvents} 
+              {livePersonalizedEvents.length > 0 ? (
+                <EventGrid 
+                  events={livePersonalizedEvents}
                   gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
                   isFeatured={true}
                   user={user}
@@ -231,9 +277,9 @@ export function HomePageClient(props: HomePageClientProps) {
                   <p className="text-[#E5E5EA] font-medium text-sm sm:text-base mt-2">Exclusive updates curated inside your college environment framework safely</p>
                 </div>
 
-                {collegeEvents.length > 0 ? (
-                  <EventGrid 
-                    events={collegeEvents} 
+                {liveCollegeEvents.length > 0 ? (
+                  <EventGrid 
+                    events={liveCollegeEvents}
                     gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
                     defaultMatchLabel="College Exclusive"
                     defaultImage="/window.svg"
@@ -279,7 +325,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
 
               {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
-              {featuredEvents && featuredEvents.length > 0 && !q && !category && !location && (
+              {liveFeaturedEvents && liveFeaturedEvents.length > 0 && !q && !category && !location && (
                 <div className="col-span-full mb-10 mt-6">
                   <div className="flex items-center justify-between mb-6 px-2">
                     <h2 className="text-2xl font-black text-slate-900 font-heading">
@@ -296,7 +342,7 @@ export function HomePageClient(props: HomePageClientProps) {
                   {/* Horizontal Scroll Container - FIX: Hid scrollbars here too */}
                     <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
                     {/* FIX: Added (event: Partial<EventRow>) type */}
-                    {featuredEvents.map((event: Partial<EventRow>) => (
+                    {liveFeaturedEvents.map((event: Partial<EventRow>) => (
                       <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
                         <EventCard 
                           id={event.id as string}
@@ -321,14 +367,14 @@ export function HomePageClient(props: HomePageClientProps) {
 
               {(
                 <div className="w-full">
-                  {allEvents && allEvents.length > 0 ? (
+                  {liveAllEvents && liveAllEvents.length > 0 ? (
                     (() => {
                       // Split only when no filters/date selected
                       const shouldSplit = !date && !q && !category && !location && !branch;
                       if (!shouldSplit) {
                         return (
                           <EventGrid
-                            events={allEvents}
+                            events={liveAllEvents}
                             profile={profile}
                             user={user}
                             useMatchLogic={true}
@@ -340,13 +386,13 @@ export function HomePageClient(props: HomePageClientProps) {
                       const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
                       const threeDaysLater = new Date(todayMidnight); threeDaysLater.setDate(threeDaysLater.getDate() + 3);
                       const threeDayStr = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth()+1).padStart(2,'0')}-${String(threeDaysLater.getDate()).padStart(2,'0')}`;
-                      const next3 = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
-                      const upcoming = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
+                      const next3 = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
+                      const upcoming = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
                       // If one bucket is empty, show single list
                       if (next3.length === 0 || upcoming.length === 0) {
                         return (
                           <EventGrid
-                            events={allEvents}
+                            events={liveAllEvents}
                             profile={profile}
                             user={user}
                             useMatchLogic={true}
@@ -411,7 +457,7 @@ export function HomePageClient(props: HomePageClientProps) {
                     
 
                       {/* Fallback Events (Virtual/Online) */}
-                      {isFallback && fallbackEvents.length > 0 && (
+                      {isFallback && liveFallbackEvents.length > 0 && (
                         <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
                           <div className="flex items-center gap-4 mb-8">
                             <div className="h-px bg-slate-200 flex-1" />
@@ -422,7 +468,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           </div>
 
                           <EventGrid 
-                            events={fallbackEvents} 
+                            events={liveFallbackEvents}
                             gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                             defaultMatchLabel="Recommended Virtual"
                             user={user}

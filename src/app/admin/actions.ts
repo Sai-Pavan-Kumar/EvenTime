@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -159,8 +160,17 @@ export async function deleteUserAction(formData: FormData) {
   const userId = formData.get("userId") as string;
   if (!userId) return { error: "Missing userId." };
 
-  await supabase.from("profiles").delete().eq("id", userId);
-  
+  // Soft delete: mark the row, then ban login immediately.
+  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) return { error: "Failed to delete user." };
+
+  const adminClient = createAdminClient();
+  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
+
   revalidatePath("/admin");
   revalidatePath("/admin/users");
   return { success: true };
@@ -232,6 +242,7 @@ export async function toggleLeaderboardAction(formData: FormData) {
   }
 
   revalidatePath("/admin");
+
   revalidatePath("/");
   revalidatePath("/leaderboard");
   return { success: true };
