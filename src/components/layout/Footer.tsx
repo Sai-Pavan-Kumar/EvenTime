@@ -22,14 +22,14 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 export function Footer() {
   return (
     <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="max-w-5xl mx-auto flex flex-col items-center text-center gap-8">
+      <div className="w-full mx-auto flex flex-col items-center text-center gap-8">
 
         {/* Brand */}
         <div className="flex flex-col items-center gap-2">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
-              Even<span className="text-[#6C47FF]">Time</span>
+              EvenTime
             </h3>
           </div>
           <p className="text-white/40 text-sm font-medium">

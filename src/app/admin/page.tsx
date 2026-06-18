@@ -4,7 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction } from "./actions";
+import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction } from "./actions";
 import { requireAdmin } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
@@ -52,18 +52,27 @@ export default async function AdminDashboard() {
     await punishCuratorAction(formData);
   }
 
+  async function handleToggleLeaderboard(formData: FormData) {
+    "use server";
+    await toggleLeaderboardAction(formData);
+  }
+
   // 1. Fetch Global Dashboard Analytics
   const [
     { count: totalUsers },
     { count: totalEvents },
     { data: collegesData },
-    { data: platformFeedback }
+    { data: platformFeedback },
+    { data: appSettings }
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("college").not("college", "is", null),
-    supabase.from("platform_feedback").select("id, type, message, created_at, profiles:user_id(full_name)").order("created_at", { ascending: false }).limit(20)
+    supabase.from("platform_feedback").select("id, type, message, created_at, profiles:user_id(full_name)").order("created_at", { ascending: false }).limit(20),
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
+
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
 
   // Calculate top performing colleges
   const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
@@ -107,9 +116,25 @@ export default async function AdminDashboard() {
       <Navbar />
       
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Admin Control</h1>
-          <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
+        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Admin Control</h1>
+            <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
+          </div>
+
+          <form action={handleToggleLeaderboard}>
+            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
+            <button
+              type="submit"
+              className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${
+                leaderboardEnabled
+                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                  : "bg-slate-200 text-slate-500 hover:bg-slate-300"
+              }`}
+            >
+              Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
+            </button>
+          </form>
         </div>
 
         {/* Stats Grid */}

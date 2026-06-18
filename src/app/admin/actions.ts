@@ -37,9 +37,9 @@ export async function approveEventAction(formData: FormData) {
 
   if (eventError) return { error: "Event update failed" };
 
-  const { error: profileError } = await supabase.rpc('increment_et_score', {
-    user_id: event.creator_id,
-    delta: 50
+  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
+    p_user_id: event.creator_id,
+    p_event_id: eventId
   });
 
   if (profileError) return { error: "Score update failed" };
@@ -94,16 +94,34 @@ export async function punishCuratorAction(formData: FormData) {
   const reportId = formData.get("reportId") as string;
   if (!reportId) return { error: "Missing reportId." };
 
-  // Derive curator from the report — never trust client
+  // Derive curator and event from the report — never trust client
   const { data: report } = await supabase
     .from("event_reports")
-    .select("curator_id")
+    .select("curator_id, event_id")
     .eq("id", reportId)
     .single();
 
-  if (!report?.curator_id) return { error: "Report not found." };
+  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
 
   await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
+  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  const { data: allReports } = await supabase
+    .from("event_reports")
+    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .eq("event_id", report.event_id);
+
+  const trustedReporterIds = new Set(
+    (allReports || [])
+      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
+      .map((r: any) => r.reporter_id)
+  );
+
+  if (trustedReporterIds.size < 5) {
+    revalidatePath("/admin");
+    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
+  }
 
   await supabase.rpc('increment_et_score', {
     user_id: report.curator_id,
@@ -190,12 +208,27 @@ export async function updateEventDetailsAction(formData: FormData) {
   
   // Award points if manually changed to approved, deduct if reverted
   if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: 50 });
+    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
   } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
     await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
   }
 
   revalidatePath("/admin");
   revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function toggleLeaderboardAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/leaderboard");
   return { success: true };
 }

@@ -28,6 +28,7 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
   const [imgError, setImgError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams(); const pathname = usePathname();
 
@@ -100,6 +101,17 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
     else setSearchQuery("");
   }, [searchParams]);
 
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("leaderboard_enabled")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLeaderboardEnabled(data.leaderboard_enabled);
+      });
+  }, [supabase]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -154,9 +166,11 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
               <MapPin className="w-4 h-4 shrink-0" /> Map
             </Link>
 
-            <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
-              <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
-            </Link>
+            {leaderboardEnabled && (
+              <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
+                <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
+              </Link>
+            )}
 
             {isAdmin && (
               <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
@@ -236,10 +250,12 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
       </div>
     </Link>
 
-    <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Trophy className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
-    </Link>
+    {leaderboardEnabled && (
+      <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <Trophy className="w-5 h-5" />
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
+      </Link>
+    )}
 
     {isLoading ? (
      <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">

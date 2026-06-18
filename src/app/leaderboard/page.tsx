@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, Sparkles, ArrowRight, Share2 } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export const revalidate = 0;
 
@@ -15,7 +16,17 @@ const getTierInfo = (score: number) => {
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
-  
+
+  const { data: settings } = await supabase
+    .from("app_settings")
+    .select("leaderboard_enabled")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (settings && settings.leaderboard_enabled === false) {
+    redirect("/");
+  }
+
   const { data: leaders } = await supabase
     .from("leaderboard_view")
     .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")

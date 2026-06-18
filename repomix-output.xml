@@ -126,6 +126,7 @@ public/llms.txt
 public/logo.png
 public/manifest.json
 public/next.svg
+public/sb-logo.png
 public/vercel.svg
 public/window.svg
 README.md
@@ -639,9 +640,9 @@ export async function approveEventAction(formData: FormData) {
 
   if (eventError) return { error: "Event update failed" };
 
-  const { error: profileError } = await supabase.rpc('increment_et_score', {
-    user_id: event.creator_id,
-    delta: 50
+  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
+    p_user_id: event.creator_id,
+    p_event_id: eventId
   });
 
   if (profileError) return { error: "Score update failed" };
@@ -696,16 +697,34 @@ export async function punishCuratorAction(formData: FormData) {
   const reportId = formData.get("reportId") as string;
   if (!reportId) return { error: "Missing reportId." };
 
-  // Derive curator from the report — never trust client
+  // Derive curator and event from the report — never trust client
   const { data: report } = await supabase
     .from("event_reports")
-    .select("curator_id")
+    .select("curator_id, event_id")
     .eq("id", reportId)
     .single();
 
-  if (!report?.curator_id) return { error: "Report not found." };
+  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
 
   await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
+  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  const { data: allReports } = await supabase
+    .from("event_reports")
+    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .eq("event_id", report.event_id);
+
+  const trustedReporterIds = new Set(
+    (allReports || [])
+      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
+      .map((r: any) => r.reporter_id)
+  );
+
+  if (trustedReporterIds.size < 5) {
+    revalidatePath("/admin");
+    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
+  }
 
   await supabase.rpc('increment_et_score', {
     user_id: report.curator_id,
@@ -792,7 +811,7 @@ export async function updateEventDetailsAction(formData: FormData) {
   
   // Award points if manually changed to approved, deduct if reverted
   if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: 50 });
+    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
   } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
     await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
   }
@@ -8515,6 +8534,218 @@ export const Constants = {
 } as const
 </file>
 
+<file path="src/app/globals.css">
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Colors - Light Mode Primary */
+  --color-brand-primary: #6C47FF;
+  --color-brand-accent: #F59E0B;
+  --color-brand-anchor: #005AE0;
+  --color-surface-base: #F5F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F0F0F8;
+  --color-text-primary: #1D1D1F;
+  --color-text-secondary: #86868B;
+
+  /* Typography */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px Base Unit) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  body {
+    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
+    @apply bg-surface-base text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
+    @apply font-heading tracking-[-0.02em];
+  }
+}
+</file>
+
+<file path="src/app/page.tsx">
+import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
+import { HomePageClient } from "@/lib/home/HomePageClient";
+
+export const dynamic = "force-dynamic"; 
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
+}) {
+  // Await the params before passing them
+  const params = await searchParams;
+  
+  // Fetch all the heavily lifted data securely from the backend logic
+  const data = await fetchHomePageData(params);
+  
+  // Pass the returned props directly into our separated Client UI component
+  return <HomePageClient {...data} />;
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          const val = e.target.value;
+          const params = new URLSearchParams();
+          
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+            if (location) params.set("location", location);
+          } else {
+            if (category) params.set("category", category);
+            if (val) params.set("location", val);
+          }
+          
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
+              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
+              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
+</file>
+
 <file path="src/app/events/[slug]/EventClientUI.tsx">
 "use client";
 
@@ -8726,8 +8957,8 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
           </div>
         </div>
 
-        {/* 1. Hero Image — 16:9 ratio, full image always visible */}
-        <div className="relative w-full aspect-video bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
+        {/* 1. Hero Image — fixed height, full image visible without cropping */}
+        <div className="relative w-full h-[280px] sm:h-[360px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
           {imageUrl ? (
             <Image 
               src={imageUrl} 
@@ -9019,310 +9250,6 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
     </main>
   );
 }
-</file>
-
-<file path="src/app/globals.css">
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@theme {
-  /* Colors - Light Mode Primary */
-  --color-brand-primary: #6C47FF;
-  --color-brand-accent: #F59E0B;
-  --color-brand-anchor: #005AE0;
-  --color-surface-base: #F5F5F7;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #F0F0F8;
-  --color-text-primary: #1D1D1F;
-  --color-text-secondary: #86868B;
-
-  /* Typography */
-  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-
-  /* Spacing (4px Base Unit) */
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-}
-
-@layer base {
-  body {
-    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
-    @apply bg-surface-base text-text-primary font-sans antialiased;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
-    @apply font-heading tracking-[-0.02em];
-  }
-}
-</file>
-
-<file path="src/app/page.tsx">
-import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
-import { HomePageClient } from "@/lib/home/HomePageClient";
-
-export const dynamic = "force-dynamic"; 
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
-}) {
-  // Await the params before passing them
-  const params = await searchParams;
-  
-  // Fetch all the heavily lifted data securely from the backend logic
-  const data = await fetchHomePageData(params);
-  
-  // Pass the returned props directly into our separated Client UI component
-  return <HomePageClient {...data} />;
-}
-</file>
-
-<file path="src/components/layout/Footer.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
-
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
-
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
-
-export function Footer() {
-  return (
-    <footer className="bg-white border-t border-slate-200 py-6 sm:py-10 w-full mt-auto">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10 mb-6 sm:mb-12">
-          {/* Brand Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Image src="/logo.png" alt="EvenTime Logo" width={40} height={40} className="rounded-xl" />
-              <h3 className="text-2xl font-black text-[#6C47FF] font-heading tracking-tight">EvenTime</h3>
-            </div>
-            <p className="text-[#6C47FF]/70 text-sm font-medium">
-              Your event search struggles end here.
-            </p>
-          </div>
-
-          {/* Queries Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">For any Queries</h4>
-            <ul className="space-y-3">
-              <li>
-                <a href="#" className="flex items-center gap-2 text-[#6C47FF]/80 hover:text-[#6C47FF] transition-colors text-sm font-medium">
-                  <div className="bg-[#6C47FF]/10 p-1.5 rounded-md">
-                    <InstagramIcon className="w-4 h-4 text-[#6C47FF]" />
-                  </div>
-                  Message us on Instagram
-                </a>
-              </li>
-              <li>
-                <div className="flex items-center gap-2 text-[#6C47FF]/80 text-sm font-medium">
-                  <div className="bg-pink-50 p-1.5 rounded-md">
-                    <MapPin className="w-4 h-4 text-pink-500" />
-                  </div>
-                  Hyderabad, India
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">Join the Family</h4>
-            <div className="flex items-center gap-4">
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <InstagramIcon className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <YoutubeIcon className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="flex flex-col items-center justify-center space-y-6 pt-8 border-t border-[#6C47FF]/10">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6C47FF] border-2 border-[#6C47FF]/10 px-5 py-2.5 rounded-full hover:bg-[#6C47FF]/5 transition-colors cursor-default">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by 
-            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs ml-1">SB</span> 
-            The SurfBoard
-          </div>
-          <p className="text-xs font-medium text-[#6C47FF]/50">
-            © {new Date().getFullYear()} EvenTime. All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-</file>
-
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          const val = e.target.value;
-          const params = new URLSearchParams();
-          
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-            if (location) params.set("location", location);
-          } else {
-            if (category) params.set("category", category);
-            if (val) params.set("location", val);
-          }
-          
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
-              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/profile/settings/page.tsx">
@@ -10490,6 +10417,93 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 }
 </file>
 
+<file path="src/components/layout/Footer.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
+
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
+
+export function Footer() {
+  return (
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="w-full mx-auto flex flex-col items-center text-center gap-8">
+
+        {/* Brand */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              EvenTime
+            </h3>
+          </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+        </div>
+
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
+          </div>
+        </div>
+
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-white/10" />
+
+        {/* Made with love */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-white border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            The SurfBoard
+          </div>
+          <p className="text-xs font-medium text-white/30">
+            © {new Date().getFullYear()} EvenTime. All rights reserved.
+          </p>
+        </div>
+
+      </div>
+    </footer>
+  );
+}
+</file>
+
 <file path="src/features/create-event/CreateEventForm.tsx">
 "use client";
 
@@ -10776,7 +10790,7 @@ import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import { CalendarStrip } from "@/components/layout/CalendarStrip";
 import Link from "next/link";
-import { Sparkles, CalendarDays, Search, Map as MapIcon, List, SearchX, ArrowRight, X } from "lucide-react";
+import { Sparkles, CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight, X } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";
@@ -11047,22 +11061,6 @@ export function HomePageClient(props: HomePageClientProps) {
                     </div>
                   )}
                 </div>
-                
-                {/* FIX: Clean URL parameters builder */}
-                <div className="flex bg-[#F5F5F7] p-1 rounded-xl">
-                  <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'list' } }} 
-                    className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view !== 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                  >
-                    <List className="w-4 h-4" /> List
-                  </Link>
-                  <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'map' } }} 
-                    className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                  >
-                    <MapIcon className="w-4 h-4" /> Map
-                  </Link>
-                </div>
               </div>
 
               {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
@@ -11106,21 +11104,70 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               )}
 
-              {view === 'map' ? (
-                <div className="w-full mt-6 animate-in fade-in duration-500">
-                 <CityGrid events={allEvents && allEvents.length > 0 ? (allEvents as Partial<EventRow>[]) : fallbackEvents} />
-                </div>
-              ) : (
+              {(
                 <div className="w-full">
-                  {allEvents && allEvents.length > 0 ? (
-                    <EventGrid 
-                      events={allEvents} 
-                      profile={profile} 
-                      user={user} 
-                      useMatchLogic={true} 
-                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                      isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
-                    />
+                  {allEvents && allEvents.length > 0 ? (
+                    (() => {
+                      // Split only when no filters/date selected
+                      const shouldSplit = !date && !q && !category && !location && !branch;
+                      if (!shouldSplit) {
+                        return (
+                          <EventGrid
+                            events={allEvents}
+                            profile={profile}
+                            user={user}
+                            useMatchLogic={true}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                          />
+                        );
+                      }
+                      const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+                      const threeDaysLater = new Date(todayMidnight); threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+                      const threeDayStr = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth()+1).padStart(2,'0')}-${String(threeDaysLater.getDate()).padStart(2,'0')}`;
+                      const next3 = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
+                      const upcoming = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
+                      // If one bucket is empty, show single list
+                      if (next3.length === 0 || upcoming.length === 0) {
+                        return (
+                          <EventGrid
+                            events={allEvents}
+                            profile={profile}
+                            user={user}
+                            useMatchLogic={true}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          />
+                        );
+                      }
+                      return (
+                        <div className="space-y-14">
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
+                              ⚡ Next 3 Days
+                            </h3>
+                            <EventGrid
+                              events={next3}
+                              profile={profile}
+                              user={user}
+                              useMatchLogic={true}
+                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            />
+                          </div>
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
+                              🗓️ Upcoming
+                            </h3>
+                            <EventGrid
+                              events={upcoming}
+                              profile={profile}
+                              user={user}
+                              useMatchLogic={true}
+                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()
                   ) : (
                     // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
                     <div className="col-span-full">
