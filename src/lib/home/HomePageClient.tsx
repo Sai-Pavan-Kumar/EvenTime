@@ -146,7 +146,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </summary>
               
               {/* CALENDAR STRIP DROPDOWN */}
-              <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[360px] animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
+              <div className="absolute right-0 mt-4 w-[min(calc(100vw-2rem),360px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
                 <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
                   <CalendarStrip eventDates={allEventDates} onDateSelect={closeCalendar} />
                   <div className="text-center pb-1 pt-3 border-t border-slate-50/50 mt-2">
@@ -343,12 +343,13 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div className="w-full">
                   {allEvents && allEvents.length > 0 ? (
                     <EventGrid 
-                      events={allEvents} 
-                      profile={profile} 
-                      user={user} 
-                      useMatchLogic={true} 
-                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    />
+                      events={allEvents} 
+                      profile={profile} 
+                      user={user} 
+                      useMatchLogic={true} 
+                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                    />
                   ) : (
                     // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
                     <div className="col-span-full">

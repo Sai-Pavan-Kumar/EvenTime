@@ -185,7 +185,7 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
   };
 
   return (
-    <main className="min-h-screen bg-white pb-32">
+    <main className="min-h-screen bg-white pb-40">
       {/* Shared Navbar */}
       <Navbar />
 
@@ -208,14 +208,14 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
           </div>
         </div>
 
-        {/* 1. Hero Image (Forced Banner Shape - Top Cropped, Bottom Visible) */}
-        <div className="relative w-full h-[200px] sm:h-[240px] md:h-[300px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
+        {/* 1. Hero Image — 16:9 ratio, full image always visible */}
+        <div className="relative w-full aspect-video bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
           {imageUrl ? (
             <Image 
               src={imageUrl} 
               alt={safeTitle} 
               fill 
-              className="object-cover object-bottom" 
+              className="object-contain object-center bg-slate-50" 
               priority 
             />
           ) : null}
@@ -330,7 +330,7 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
       </div>
 
       {/* Mobile Floating Bottom Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 z-40 flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <button 
           onClick={handleInterestedClick}
           disabled={isLoadingInterest || isCuratorOrAdmin}

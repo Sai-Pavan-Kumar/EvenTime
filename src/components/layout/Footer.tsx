@@ -21,9 +21,9 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 
 export function Footer() {
   return (
-    <footer className="bg-white border-t border-slate-200 py-12 w-full mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
+    <footer className="bg-white border-t border-slate-200 py-6 sm:py-10 w-full mt-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10 mb-6 sm:mb-12">
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">

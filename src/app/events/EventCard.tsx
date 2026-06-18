@@ -27,6 +27,8 @@
     isGuest?: boolean; // NEW: Global auth check
     onSaveToggle?: (id: string) => Promise<void>;
     layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
   }
 
   export function EventCard({
@@ -47,6 +49,8 @@
     isGuest = false, // NEW
     onSaveToggle,
     layout,
+    isPastDateView = false,
+    userRole,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
     const [isSaving, setIsSaving] = useState(false);
@@ -112,7 +116,9 @@
     }
 
     useEffect(() => {
-      if (layout) { // Only run auto-hide logic if 'layout' prop is true (used in Grid)
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
         const checkDate = parseEventDateString(date);
         if (checkDate) {
           const today = new Date();
@@ -124,7 +130,7 @@
           }
         }
       }
-    }, [date, layout]);
+    }, [date, layout, isPastDateView, userRole]);
     
     // --- NEW: TEMPLATE ENGINE LOGIC ---
     // Added a fallback to prevent crashes if the category is not found

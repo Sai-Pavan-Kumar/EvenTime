@@ -197,6 +197,7 @@ src/features/create-event/hooks/useImageCrop.ts
 src/features/create-event/types.ts
 src/lib/auth/permissions.ts
 src/lib/category-config.ts
+src/lib/city-config.ts
 src/lib/constants/branches.ts
 src/lib/constants/cities.ts
 src/lib/constants/cookies.ts
@@ -4449,6 +4450,84 @@ export async function requireAdmin(supabase: SupabaseClient, userId: string): Pr
   const role = await getUserRole(supabase, userId);
   return Boolean(role === "admin");
 }
+</file>
+
+<file path="src/lib/city-config.ts">
+export const CITY_CONFIG: Record<string, {
+  backgroundImage: string;
+  accentColor: string;
+}> = {
+  'hyderabad': {
+    backgroundImage: '/cities/hyderabad.webp',
+    accentColor: '#6C47FF',
+  },
+  'bangalore': {
+    backgroundImage: '/cities/bangalore.webp',
+    accentColor: '#0EA5E9',
+  },
+  'bengaluru': {
+    backgroundImage: '/cities/bangalore.webp', // same image, alias
+    accentColor: '#0EA5E9',
+  },
+  'mumbai': {
+    backgroundImage: '/cities/mumbai.webp',
+    accentColor: '#F59E0B',
+  },
+  'delhi': {
+    backgroundImage: '/cities/delhi.webp',
+    accentColor: '#EF4444',
+  },
+  'new-delhi': {
+    backgroundImage: '/cities/delhi.webp', // alias
+    accentColor: '#EF4444',
+  },
+  'chennai': {
+    backgroundImage: '/cities/chennai.webp',
+    accentColor: '#10B981',
+  },
+  'pune': {
+    backgroundImage: '/cities/pune.webp',
+    accentColor: '#8B5CF6',
+  },
+  'kolkata': {
+    backgroundImage: '/cities/kolkata.webp',
+    accentColor: '#F97316',
+  },
+  'jaipur': {
+    backgroundImage: '/cities/jaipur.webp',
+    accentColor: '#EC4899',
+  },
+  'ahmedabad': {
+    backgroundImage: '/cities/ahmedabad.webp',
+    accentColor: '#14B8A6',
+  },
+  'kochi': {
+    backgroundImage: '/cities/kochi.webp',
+    accentColor: '#22C55E',
+  },
+  'visakhapatnam': {
+    backgroundImage: '/cities/vizag.webp', // alias
+    accentColor: '#3B82F6',
+  },
+  'coimbatore': {
+    backgroundImage: '/cities/coimbatore.webp',
+    accentColor: '#A855F7',
+  },
+  'nizamabad': {
+    backgroundImage: '/cities/nizamabad.webp',
+    accentColor: '#6C47FF',
+  },
+  'online': {
+    backgroundImage: '/cities/online.webp',
+    accentColor: '#6366F1',
+  },
+};
+
+export const getCityConfig = (city: string) => {
+  if (!city) return CITY_CONFIG['default'] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
+  return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+};
 </file>
 
 <file path="src/lib/constants/branches.ts">
@@ -9420,172 +9499,6 @@ export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centere
 }
 </file>
 
-<file path="src/features/create-event/CreateEventForm.tsx">
-"use client";
-
-import { useState, useEffect, SetStateAction } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-
-// Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
-import { useImageCrop } from "./hooks/useImageCrop";
-import { useEventSubmit } from "./hooks/useEventSubmit";
-
-// New 2-Step Components
-import { StepMandatory } from "./components/StepMandatory";
-import { StepFeatured } from "./components/StepFeatured";
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
-}
-
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
-  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
-  const supabase = createClient();
-
-  // Unified State Object
-  const [eventData, setEventData] = useState({
-    regLink: initialData?.registration_link || "",
-    isTrustedDomain: true,
-    title: initialData?.title || "",
-    category: initialData?.category || "",
-    isCreatingNewCategory: false,
-    selectedAudience: initialData?.target_audience || [],
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
-    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
-    collegeBranch: initialData?.college_branch || "",
-    collegeYear: initialData?.college_year || "",
-    collegeOnly: initialData?.college_only || false,
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
-    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
-    hasEndTime: !!initialData?.end_time,
-    hasEndDate: !!initialData?.end_date_string,
-    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
-    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
-    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
-    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    isOnline: initialData?.is_virtual || false,
-    isFree: initialData?.is_free ?? true,
-    price: initialData?.price?.toString() || "",
-    // Step 2 Adv/Featured
-    isFeatured: initialData?.is_featured || false,
-    organizer: initialData?.organizer_name || "",
-    prizes: initialData?.prizes || "",
-    teamSize: initialData?.team_size || "",
-    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
-    website: initialData?.website || ""
-  });
-
-  const updateData = (updates: Partial<typeof eventData>) => {
-    setEventData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined 
-  });
-  
-  const crop = useImageCrop(initialData?.poster_url ?? undefined);
-  const { isSubmitting, submitEvent } = useEventSubmit();
-
-   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
-  useEffect(() => {
-    if (isEditing && initialData?.registration_link) {
-      extraction.handleLinkInput(initialData.registration_link);
-    }
-  }, []);
-
-  const handleSubmit = () => {
-    submitEvent({
-      title: eventData.title,
-      category: eventData.category,
-      organizer_name: eventData.organizer,
-      description: eventData.description,
-      target_audience: eventData.selectedAudience,
-      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
-      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? eventData.endDate.toISOString() : null,
-      date_string: eventData.selectedDate?.toISOString() ?? "",
-      location: eventData.isOnline ? "Virtual Event" : eventData.location,
-      city: eventData.isOnline ? "online" : eventData.city,
-      is_virtual: eventData.isOnline,
-      is_free: eventData.isFree,
-      price: eventData.isFree ? 0 : Number(eventData.price),
-      registration_link: eventData.regLink,
-      prizes: eventData.prizes,
-      team_size: eventData.teamSize,
-      website: eventData.website,
-      is_featured: eventData.isFeatured,
-      status: eventData.isTrustedDomain ? "approved" : "pending",
-      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
-      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
-      imageFile: crop.imageFile, 
-      previewUrl: crop.previewUrl
-    }, isEditing, initialData?.id);
-  };
-
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
-
-  return (
-    <div className="max-w-3xl mx-auto w-full">
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
-        </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
-        </p>
-      </div>
-
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepMandatory 
-              data={eventData} 
-              updateData={updateData} 
-              isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); // Skip straight to submit if feature is off
-              }}
-              isValid={Boolean(step0Valid)}
-              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
-              onSubmit={handleSubmit}
-              isAdminFeatureEnabled={isAdminFeatureEnabled}
-            />
-          )}
-          {step === 1 && (
-            <StepFeatured 
-              data={eventData} 
-              updateData={updateData} 
-              crop={crop}
-              onBack={() => setStep(0)} 
-              onSubmit={handleSubmit} 
-              isSubmitting={isSubmitting}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/FilterChips.tsx">
 "use client";
 
@@ -10319,85 +10232,6 @@ export function useDuplicateCheck() {
 }
 </file>
 
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-// Maps a city name to its image path in /public/cities
-// Expecting files like /cities/Hyderabad.webp, /cities/New Delhi.webp etc.
-// Falls back to a default image if a specific city image is missing. 
-const getCityImage = (city: string) => `/cities/${city}.webp`;
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <Image
-              src={getCityImage(city)}
-              alt={city}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/fetchHomePageData.ts">
 import { createClient } from "@/lib/supabase/server";
 import { getMatchLabel } from "@/lib/events/match";
@@ -10643,6 +10477,174 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     location,
     view
   };
+}
+</file>
+
+<file path="src/features/create-event/CreateEventForm.tsx">
+"use client";
+
+import { useState, useEffect, SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { FieldStatus, CreateEventFormProps } from "./types";
+import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+function toLocalDateString(d: Date) { 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Hooks
+import { useEventExtraction } from "./hooks/useEventExtraction";
+import { useImageCrop } from "./hooks/useImageCrop";
+import { useEventSubmit } from "./hooks/useEventSubmit";
+
+// New 2-Step Components
+import { StepMandatory } from "./components/StepMandatory";
+import { StepFeatured } from "./components/StepFeatured";
+
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+}
+
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
+  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const supabase = createClient();
+
+  // Unified State Object
+  const [eventData, setEventData] = useState({
+    regLink: initialData?.registration_link || "",
+    isTrustedDomain: true,
+    title: initialData?.title || "",
+    category: initialData?.category || "",
+    isCreatingNewCategory: false,
+    selectedAudience: initialData?.target_audience || [],
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    city: initialData?.city || "",
+    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
+    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
+    collegeBranch: initialData?.college_branch || "",
+    collegeYear: initialData?.college_year || "",
+    collegeOnly: initialData?.college_only || false,
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
+    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
+    hasEndTime: !!initialData?.end_time,
+    hasEndDate: !!initialData?.end_date_string,
+    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
+    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
+    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
+    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
+    isOnline: initialData?.is_virtual || false,
+    isFree: initialData?.is_free ?? true,
+    price: initialData?.price?.toString() || "",
+    // Step 2 Adv/Featured
+    isFeatured: initialData?.is_featured || false,
+    organizer: initialData?.organizer_name || "",
+    prizes: initialData?.prizes || "",
+    teamSize: initialData?.team_size || "",
+    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
+    website: initialData?.website || ""
+  });
+
+  const updateData = (updates: Partial<typeof eventData>) => {
+    setEventData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  const extraction = useEventExtraction({ 
+    setTitle: (v) => updateData({ title: v }), 
+    setDescription: (v) => updateData({ description: v }), 
+    setLocation: (v) => updateData({ location: v }), 
+    setSelectedDate: (v) => updateData({ selectedDate: v }), 
+    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
+    initialLink: initialData?.registration_link ?? undefined 
+  });
+  
+  const crop = useImageCrop(initialData?.poster_url ?? undefined);
+  const { isSubmitting, submitEvent } = useEventSubmit();
+
+   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
+  useEffect(() => {
+    if (isEditing && initialData?.registration_link) {
+      extraction.handleLinkInput(initialData.registration_link);
+    }
+  }, []);
+
+  const handleSubmit = () => {
+    submitEvent({
+      title: eventData.title,
+      category: eventData.category,
+      organizer_name: eventData.organizer,
+      description: eventData.description,
+      target_audience: eventData.selectedAudience,
+      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
+      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
+      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
+      location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
+      is_virtual: eventData.isOnline,
+      is_free: eventData.isFree,
+      price: eventData.isFree ? 0 : Number(eventData.price),
+      registration_link: eventData.regLink,
+      prizes: eventData.prizes,
+      team_size: eventData.teamSize,
+      website: eventData.website,
+      is_featured: eventData.isFeatured,
+      status: eventData.isTrustedDomain ? "approved" : "pending",
+      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
+      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
+      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
+      imageFile: crop.imageFile, 
+      previewUrl: crop.previewUrl
+    }, isEditing, initialData?.id);
+  };
+
+  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="mb-10 text-center">
+        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
+          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+        </h1>
+        <p className="text-slate-500 text-sm">
+          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        </p>
+      </div>
+
+      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepMandatory 
+              data={eventData} 
+              updateData={updateData} 
+              isCollegeCategory={isCollegeCategory}
+              extraction={extraction}
+              onNext={() => {
+                if (isAdminFeatureEnabled) setStep(1);
+                else handleSubmit(); // Skip straight to submit if feature is off
+              }}
+              isValid={Boolean(step0Valid)}
+              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
+              onSubmit={handleSubmit}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+            />
+          )}
+          {step === 1 && (
+            <StepFeatured 
+              data={eventData} 
+              updateData={updateData} 
+              crop={crop}
+              onBack={() => setStep(0)} 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -10929,13 +10931,13 @@ export function HomePageClient(props: HomePageClientProps) {
                 {/* FIX: Clean URL parameters builder */}
                 <div className="flex bg-[#F5F5F7] p-1 rounded-xl">
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'list' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'list' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view !== 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <List className="w-4 h-4" /> List
                   </Link>
                   <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), view: 'map' } }} 
+                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'map' } }} 
                     className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
                   >
                     <MapIcon className="w-4 h-4" /> Map
@@ -11095,6 +11097,79 @@ return (
 }
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={{ pathname: "/", query: { location: city, view: "list" } }}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/profile/settings/SettingsClient.tsx">
 "use client";
 
@@ -11141,7 +11216,6 @@ export default function SettingsClient({
   const [year, setYear] = useState(profile?.graduation_year || "");
 
   // College search dropdown states
-  const supabase = createClient();
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
   const [collegeId, setCollegeId] = useState<string | null>(null);
@@ -11155,10 +11229,12 @@ export default function SettingsClient({
   // Load colleges from Supabase on mount
   useEffect(() => {
     async function loadColleges() {
-      const { data } = await supabase
+      const supabase = createClient();
+      const { data, error } = await supabase
         .from("colleges")
         .select("id, name, state")
         .order("name", { ascending: true });
+      if (error) console.error("Colleges fetch error:", error);
       if (data) setCollegesList(data as CollegeRow[]);
     }
     loadColleges();
@@ -11166,12 +11242,13 @@ export default function SettingsClient({
 
   // Close dropdowns when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setShowCollegeDropdown(false);
-      setShowBranchDropdown(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
+      if (!target.closest("[data-branch-dropdown]")) setShowBranchDropdown(false);
     };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCreateCollege = async (name: string) => {
@@ -11399,7 +11476,7 @@ export default function SettingsClient({
 
                 <div className="space-y-5">
                   {/* College Search Dropdown */}
-                  <div className="relative" onClick={e => e.stopPropagation()}>
+                  <div className="relative" data-college-dropdown>
                     <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
                     {isLocked ? (
                       <div className="relative">
@@ -11459,7 +11536,8 @@ export default function SettingsClient({
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     {/* Branch Search Dropdown */}
-                    <div className="relative" onClick={e => e.stopPropagation()}>
+                    <div className="relative" data-branch-dropdown>
+
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
                       {isLocked ? (
                         <div className="relative">
@@ -11585,7 +11663,7 @@ export default function SettingsClient({
         </form>
       </div>
     </main>
-    
+
   );
 }
 </file>

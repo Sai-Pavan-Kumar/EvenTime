@@ -13,6 +13,7 @@ export interface EventGridProps {
   useMatchLogic?: boolean;
   gridClass?: string;
   defaultImage?: string;
+  isPastDateView?: boolean;
 }
 
 export function EventGrid({
@@ -23,7 +24,8 @@ export function EventGrid({
   defaultMatchLabel,
   useMatchLogic = false,
   gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop"
+  defaultImage = "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop",
+  isPastDateView = false,
 }: EventGridProps) {
 
   // Applying horizontal scrolling strip conditionally based on isFeatured status
@@ -57,6 +59,8 @@ export function EventGrid({
             interestedCount={0}
             isGuest={!user}
             layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
           />
         );
       })}
