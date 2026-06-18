@@ -5,7 +5,7 @@ import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import { CalendarStrip } from "@/components/layout/CalendarStrip";
 import Link from "next/link";
-import { Sparkles, CalendarDays, Search, Map as MapIcon, List, SearchX, ArrowRight, X } from "lucide-react";
+import { Sparkles, CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight, X } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";
@@ -276,22 +276,6 @@ export function HomePageClient(props: HomePageClientProps) {
                     </div>
                   )}
                 </div>
-                
-                {/* FIX: Clean URL parameters builder */}
-                <div className="flex bg-[#F5F5F7] p-1 rounded-xl">
-                  <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'list' } }} 
-                    className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view !== 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                  >
-                    <List className="w-4 h-4" /> List
-                  </Link>
-                  <Link 
-                    href={{ pathname: "/", query: { ...(branch && { branch }), ...(q && { q }), ...(category && { category }), ...(location && { location }), ...(props.activeTab && props.activeTab !== "around_you" && { tab: props.activeTab }), view: 'map' } }} 
-                    className={`px-4 py-2 text-sm font-bold rounded-lg flex items-center gap-2 transition-all ${view === 'map' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"}`}
-                  >
-                    <MapIcon className="w-4 h-4" /> Map
-                  </Link>
-                </div>
               </div>
 
               {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
@@ -335,21 +319,70 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               )}
 
-              {view === 'map' ? (
-                <div className="w-full mt-6 animate-in fade-in duration-500">
-                 <CityGrid events={allEvents && allEvents.length > 0 ? (allEvents as Partial<EventRow>[]) : fallbackEvents} />
-                </div>
-              ) : (
+              {(
                 <div className="w-full">
-                  {allEvents && allEvents.length > 0 ? (
-                    <EventGrid 
-                      events={allEvents} 
-                      profile={profile} 
-                      user={user} 
-                      useMatchLogic={true} 
-                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                      isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
-                    />
+                  {allEvents && allEvents.length > 0 ? (
+                    (() => {
+                      // Split only when no filters/date selected
+                      const shouldSplit = !date && !q && !category && !location && !branch;
+                      if (!shouldSplit) {
+                        return (
+                          <EventGrid
+                            events={allEvents}
+                            profile={profile}
+                            user={user}
+                            useMatchLogic={true}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                          />
+                        );
+                      }
+                      const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
+                      const threeDaysLater = new Date(todayMidnight); threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+                      const threeDayStr = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth()+1).padStart(2,'0')}-${String(threeDaysLater.getDate()).padStart(2,'0')}`;
+                      const next3 = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
+                      const upcoming = (allEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
+                      // If one bucket is empty, show single list
+                      if (next3.length === 0 || upcoming.length === 0) {
+                        return (
+                          <EventGrid
+                            events={allEvents}
+                            profile={profile}
+                            user={user}
+                            useMatchLogic={true}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          />
+                        );
+                      }
+                      return (
+                        <div className="space-y-14">
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
+                              ⚡ Next 3 Days
+                            </h3>
+                            <EventGrid
+                              events={next3}
+                              profile={profile}
+                              user={user}
+                              useMatchLogic={true}
+                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            />
+                          </div>
+                          <div className="space-y-6">
+                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
+                              🗓️ Upcoming
+                            </h3>
+                            <EventGrid
+                              events={upcoming}
+                              profile={profile}
+                              user={user}
+                              useMatchLogic={true}
+                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            />
+                          </div>
+                        </div>
+                      );
+                    })()
                   ) : (
                     // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
                     <div className="col-span-full">

@@ -208,8 +208,8 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
           </div>
         </div>
 
-        {/* 1. Hero Image — 16:9 ratio, full image always visible */}
-        <div className="relative w-full aspect-video bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
+        {/* 1. Hero Image — fixed height, full image visible without cropping */}
+        <div className="relative w-full h-[280px] sm:h-[360px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
           {imageUrl ? (
             <Image 
               src={imageUrl} 

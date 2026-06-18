@@ -2243,360 +2243,6 @@ export default function EventLoading() {
 }
 </file>
 
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-      setIsSaving(true);
-      setSavedState(!savedState); // optimistic update
-      
-      if (onSaveToggle) {
-        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > eventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      } else if (diffDays === 0) {
-        statusLabel = "Live Today";
-        statusColor = "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30";
-      } else if (diffDays === 1) {
-        statusLabel = "Tomorrow";
-        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
-      } else if (diffDays > 1 && diffDays <= 3) {
-        statusLabel = "Starting Soon";
-        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
-      }
-    }
-
-    useEffect(() => {
-      if (layout) { // Only run auto-hide logic if 'layout' prop is true (used in Grid)
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > checkDate.getTime();
-          
-          if (pastDate || pastTime) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] ${diffDays !== null && diffDays <= 3 && diffDays >= 0 ? 'border-red-500' : 'border-transparent'} shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                  {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      <Sparkles className="w-3 h-3" /> Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NEW: Auth Modal Overlay */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
-            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
-              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Bookmark className="w-6 h-6 text-brand" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
-              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
-                Sign In
-              </Link>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-</file>
-
 <file path="src/app/events/new/page.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { CreateEventForm } from "@/features/create-event/CreateEventForm";
@@ -4805,75 +4451,6 @@ export function EmptyState({
 }
 </file>
 
-<file path="src/lib/home/EventGrid.tsx">
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop"
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/HeroSection.tsx">
 "use client";
 
@@ -5981,512 +5558,6 @@ export async function GET(request: Request) {
 }
 </file>
 
-<file path="src/app/events/[slug]/EventClientUI.tsx">
-"use client";
-
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, 
-  CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2
-} from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { submitReportAction } from "../report-actions";
-import { getCategoryConfig } from "@/lib/category-config";
-import { EventCard } from "@/app/events/EventCard";
-import type { EventRow } from "@/types";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client"; 
-import { Navbar } from "@/components/layout/Navbar";
-
-export interface EventUIProps {
-  event: Partial<EventRow> & { 
-    same_college_interested_count?: number; 
-  };
-  similarEvents?: Partial<EventRow>[];
-}
-
-export default function EventClientUI({ event, similarEvents = [] }: EventUIProps) {
-  const router = useRouter();
-  const supabase = createClient(); 
-  
-  // Share Modal States
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  
-  // Report Modal States
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [isReported, setIsReported] = useState(false);
-
-  // Auth & Interested States
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isInterested, setIsInterested] = useState(false);
-  const [isLoadingInterest, setIsLoadingInterest] = useState(true); 
-  const [localInterestCount, setLocalInterestCount] = useState(event.same_college_interested_count || 0); 
-  const [currentUser, setCurrentUser] = useState<any>(null); // Added state to track user
-  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false); // Added state to block curators/admins
-
-  // Safe variables to prevent TypeScript 'undefined' errors
-  const safeTitle = event.title ?? "Event Details";
-  const safeCategory = event.category ?? "General";
-  const safeOrganizer = event.organizer_name ?? "Unknown Organizer";
-  const safeRegistrationLink = event.registration_link ?? "#";
-  const safeId = event.id ?? "";
-  const safeCreatorId = event.creator_id ?? "";
-
-  // Compute the cover photo URL once
-  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
-
-  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
-
-  const eventUrl = typeof window !== 'undefined' ? window.location.href : "";
-  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
-
-  // --- RECTIFIED: Fetch initial state & Check Role using strictly Supabase Auth ---
-  useEffect(() => {
-    const fetchInitialState = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setIsLoadingInterest(false);
-          return;
-        }
-
-        setCurrentUser(user);
-
-        // 1. Check if user is the Curator OR an Admin
-        let isAdmin = false;
-        if (user.id !== safeCreatorId) {
-          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-          isAdmin = profile?.role === 'admin';
-        }
-
-        if (user.id === safeCreatorId || isAdmin) {
-          setIsCuratorOrAdmin(true);
-          setIsLoadingInterest(false);
-          return; // Stop here, no need to query interested_events for them
-        }
-
-        // 2. Fetch the interest state for normal users
-        if (safeId) {
-          const { data, error } = await supabase
-            .from("interested_events" as any)
-            .select("id")
-            .eq("event_id", safeId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-
-          if (data && !error) {
-            setIsInterested(true);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching interest state:", err);
-      } finally {
-        setIsLoadingInterest(false);
-      }
-    };
-
-    fetchInitialState();
-  }, [safeId, safeCreatorId, supabase]);
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(eventUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const downloadStory = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(storyImageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${safeTitle.replace(/\s+/g, '-')}-Story.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err) {
-      console.error("Failed to download image", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // --- RECTIFIED: Removed document.cookie check. Relies on the fetched currentUser. ---
-  const handleInterestedClick = async () => {
-    if (isLoadingInterest) return;
-
-    // Check robust auth state rather than fragile cookies
-    if (!currentUser) {
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    // Do nothing if they are the creator or admin
-    if (isCuratorOrAdmin) return;
-
-    // Optimistic UI Update
-    const previousState = isInterested;
-    setIsInterested(!previousState);
-    setLocalInterestCount(prev => !previousState ? prev + 1 : Math.max(0, prev - 1));
-
-    try {
-      if (!previousState) {
-        // Was false, now true -> Insert
-        const { error } = await supabase
-          .from("interested_events" as any)
-          .insert({ event_id: safeId, user_id: currentUser.id })
-          .select(); // Appended .select() to forcefully surface hidden RLS errors
-        
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      } else {
-        // Was true, now false -> Delete
-        const { error } = await supabase
-          .from("interested_events" as any)
-          .delete()
-          .eq("event_id", safeId)
-          .eq("user_id", currentUser.id);
-          
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      }
-    } catch (error: any) {
-      console.error("Failed to update interest status:", error.message || error);
-      
-      // Revert Optimistic UI on failure
-      setIsInterested(previousState);
-      setLocalInterestCount(prev => previousState ? prev + 1 : Math.max(0, prev - 1));
-      
-      // Explicitly alert the exact DB error so you know what is failing in Supabase
-      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-white pb-32">
-      {/* Shared Navbar */}
-      <Navbar />
-
-      {/* Unified Layout Container */}
-      <div className="max-w-5xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
-        
-        {/* Sub-header Actions */}
-        <div className="flex justify-between items-center w-full">
-          <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-slate-900" />
-          </button>
-          
-          <div className="flex items-center gap-2">
-            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
-              <Flag className="w-5 h-5" />
-            </button>
-            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-              <Share2 className="w-5 h-5 text-slate-900" />
-            </button>
-          </div>
-        </div>
-
-        {/* 1. Hero Image (Forced Banner Shape - Top Cropped, Bottom Visible) */}
-        <div className="relative w-full h-[200px] sm:h-[240px] md:h-[300px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
-          {imageUrl ? (
-            <Image 
-              src={imageUrl} 
-              alt={safeTitle} 
-              fill 
-              className="object-cover object-bottom" 
-              priority 
-            />
-          ) : null}
-        </div>
-
-        {/* 2. Event Details Content */}
-        <div className="space-y-10">
-          
-          {/* Title & Header Section */}
-          <div className="space-y-4">
-            <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
-              {safeCategory}
-            </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
-              {safeTitle}
-            </h1>
-            <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
-
-            {/* Global Interest Label - Updated to show total interested count */}
-          {localInterestCount > 0 ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full mt-2 animate-in fade-in duration-300">
-            <span className="text-orange-500 text-lg">🔥</span>
-           <p className="text-orange-700 font-bold text-sm">
-            {localInterestCount} {localInterestCount === 1 ? "person is" : "people are"} interested in this event
-          </p>
-         </div>
-         ) : null}
-          </div>
-
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex gap-4">
-            <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2">
-              Register <ExternalLink className="w-4 h-4" />
-            </a>
-            <button 
-              onClick={handleInterestedClick}
-              disabled={isLoadingInterest || isCuratorOrAdmin}
-              className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                isCuratorOrAdmin 
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                  : isInterested 
-                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
-                    : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-              }`}
-            >
-              {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
-            </button>
-          </div>
-
-          {/* Logistics Card */}
-          <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Date & Time */}
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                <CalendarDays className="w-5 h-5 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Date & Time</p>
-                <p className="text-[14px] font-bold text-slate-900">{displayDate}</p>
-                <p className="text-xs text-slate-500 font-medium">{event.start_time || "TBA"}</p>
-              </div>
-            </div>
-
-            {/* Location */}
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Location</p>
-                <p className="text-[14px] font-bold text-slate-900 truncate max-w-[200px]">
-                  {event.is_virtual ? "Online Platform" : event.location}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-900">About Event</h2>
-            <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
-              {event.description}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Similar Events Section */}
-        {similarEvents && similarEvents.length > 0 && (
-          <div className="pt-10 border-t border-slate-100 mt-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Events</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {similarEvents.map((simEvent) => (
-                <EventCard 
-                  key={simEvent.id}
-                  id={simEvent.id!}
-                  slug={simEvent.slug || simEvent.id!}
-                  title={simEvent.title || "Untitled Event"}
-                  category={simEvent.category || "General"}
-                  date={simEvent.date_string || "TBA"}
-                  city={simEvent.location || simEvent.city || "Online"}
-                  imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.organizer_name || "Organizer"}
-                  isFree={simEvent.is_free ?? false}
-                  audience={simEvent.target_audience ?? []}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Floating Bottom Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-md border-t border-slate-200 z-40 flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <button 
-          onClick={handleInterestedClick}
-          disabled={isLoadingInterest || isCuratorOrAdmin}
-          className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-            isCuratorOrAdmin 
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-              : isInterested 
-                ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
-                : "bg-slate-100 text-slate-900"
-          }`}
-        >
-          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
-        </button>
-        <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-          Register <ExternalLink className="w-4 h-4" />
-        </a>
-      </div>
-
-      {/* --- THE AUTH MODAL --- */}
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
-            >
-              <button 
-                onClick={() => setIsAuthModalOpen(false)} 
-                className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Users className="w-7 h-7 text-slate-600" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
-              <div className="flex gap-3">
-                <button 
-                  onClick={() => setIsAuthModalOpen(false)} 
-                  className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} 
-                  className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors"
-                >
-                  Sign In
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- THE SHARE MODAL --- */}
-      <AnimatePresence>
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-slate-100">
-                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
-                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
-                <div className="relative w-full aspect-[9/16] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
-                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
-                </div>
-
-                <div className="flex flex-col gap-3 w-full">
-                  <button 
-                    onClick={downloadStory}
-                    disabled={isDownloading}
-                    className="w-full bg-[#1D1D1F] hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70"
-                  >
-                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
-                  </button>
-
-                  <button 
-                    onClick={copyLink}
-                    className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
-                  >
-                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    {isCopied ? "Link Copied!" : "Copy Event Link"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* --- THE REPORT MODAL --- */}
-      <AnimatePresence>
-        {isReportModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
-            
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
-            >
-              <div className="p-6 text-center border-b border-slate-100 relative">
-                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                  <AlertTriangle className="w-6 h-6 text-red-500" />
-                </div>
-                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
-                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
-              </div>
-
-              <div className="p-6">
-                {isReported ? (
-                  <div className="text-center py-4">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                    <p className="font-bold text-slate-900">Report Submitted</p>
-                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
-                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
-                  </div>
-                ) : (
-                  <form action={async (formData) => {
-                    await submitReportAction(formData);
-                    setIsReported(true);
-                  }} className="flex flex-col gap-3">
-                    <input type="hidden" name="eventId" value={safeId} />
-                    <input type="hidden" name="curatorId" value={safeCreatorId} />
-                    
-                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
-                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
-                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
-                        </div>
-                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
-                      </label>
-                    ))}
-
-                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
-                      Submit Report
-                    </button>
-                  </form>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/events/[slug]/page.tsx">
 import { Metadata } from "next";
 import { createClient as createServerClient } from "@/lib/supabase/server";
@@ -6682,6 +5753,366 @@ export default async function EventPage({
     </>
   );
 }
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+      setIsSaving(true);
+      setSavedState(!savedState); // optimistic update
+      
+      if (onSaveToggle) {
+        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > eventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      } else if (diffDays === 0) {
+        statusLabel = "Live Today";
+        statusColor = "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30";
+      } else if (diffDays === 1) {
+        statusLabel = "Tomorrow";
+        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
+      } else if (diffDays > 1 && diffDays <= 3) {
+        statusLabel = "Starting Soon";
+        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
+      }
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          const pastTime = today.getTime() > checkDate.getTime();
+          
+          if (pastDate || pastTime) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] ${diffDays !== null && diffDays <= 3 && diffDays >= 0 ? 'border-red-500' : 'border-transparent'} shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.png') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                  {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      <Sparkles className="w-3 h-3" /> Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* NEW: Auth Modal Overlay */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
+            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
+              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Bookmark className="w-6 h-6 text-brand" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
+              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
+                Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 </file>
 
 <file path="src/app/layout.tsx">
@@ -7550,98 +6981,6 @@ export async function updateProfileSettings(formData: FormData) {
 }
 </file>
 
-<file path="src/components/layout/Footer.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
-
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
-
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
-
-export function Footer() {
-  return (
-    <footer className="bg-white border-t border-slate-200 py-12 w-full mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
-          {/* Brand Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Image src="/logo.png" alt="EvenTime Logo" width={40} height={40} className="rounded-xl" />
-              <h3 className="text-2xl font-black text-[#6C47FF] font-heading tracking-tight">EvenTime</h3>
-            </div>
-            <p className="text-[#6C47FF]/70 text-sm font-medium">
-              Your event search struggles end here.
-            </p>
-          </div>
-
-          {/* Queries Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">For any Queries</h4>
-            <ul className="space-y-3">
-              <li>
-                <a href="#" className="flex items-center gap-2 text-[#6C47FF]/80 hover:text-[#6C47FF] transition-colors text-sm font-medium">
-                  <div className="bg-[#6C47FF]/10 p-1.5 rounded-md">
-                    <InstagramIcon className="w-4 h-4 text-[#6C47FF]" />
-                  </div>
-                  Message us on Instagram
-                </a>
-              </li>
-              <li>
-                <div className="flex items-center gap-2 text-[#6C47FF]/80 text-sm font-medium">
-                  <div className="bg-pink-50 p-1.5 rounded-md">
-                    <MapPin className="w-4 h-4 text-pink-500" />
-                  </div>
-                  Hyderabad, India
-                </div>
-              </li>
-            </ul>
-          </div>
-
-          {/* Social Section */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-bold text-[#6C47FF]">Join the Family</h4>
-            <div className="flex items-center gap-4">
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <InstagramIcon className="w-5 h-5" />
-              </a>
-              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
-                <YoutubeIcon className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="flex flex-col items-center justify-center space-y-6 pt-8 border-t border-[#6C47FF]/10">
-          <div className="flex items-center gap-2 text-sm font-bold text-[#6C47FF] border-2 border-[#6C47FF]/10 px-5 py-2.5 rounded-full hover:bg-[#6C47FF]/5 transition-colors cursor-default">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by 
-            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs ml-1">SB</span> 
-            The SurfBoard
-          </div>
-          <p className="text-xs font-medium text-[#6C47FF]/50">
-            © {new Date().getFullYear()} EvenTime. All rights reserved.
-          </p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-</file>
-
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -8444,6 +7783,79 @@ export const COOKIE_OPTIONS = {
 };
 </file>
 
+<file path="src/lib/home/EventGrid.tsx">
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/supabase/client.ts">
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
@@ -9103,6 +8515,512 @@ export const Constants = {
 } as const
 </file>
 
+<file path="src/app/events/[slug]/EventClientUI.tsx">
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, 
+  CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2
+} from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { submitReportAction } from "../report-actions";
+import { getCategoryConfig } from "@/lib/category-config";
+import { EventCard } from "@/app/events/EventCard";
+import type { EventRow } from "@/types";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client"; 
+import { Navbar } from "@/components/layout/Navbar";
+
+export interface EventUIProps {
+  event: Partial<EventRow> & { 
+    same_college_interested_count?: number; 
+  };
+  similarEvents?: Partial<EventRow>[];
+}
+
+export default function EventClientUI({ event, similarEvents = [] }: EventUIProps) {
+  const router = useRouter();
+  const supabase = createClient(); 
+  
+  // Share Modal States
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Report Modal States
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReported, setIsReported] = useState(false);
+
+  // Auth & Interested States
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
+  const [isLoadingInterest, setIsLoadingInterest] = useState(true); 
+  const [localInterestCount, setLocalInterestCount] = useState(event.same_college_interested_count || 0); 
+  const [currentUser, setCurrentUser] = useState<any>(null); // Added state to track user
+  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false); // Added state to block curators/admins
+
+  // Safe variables to prevent TypeScript 'undefined' errors
+  const safeTitle = event.title ?? "Event Details";
+  const safeCategory = event.category ?? "General";
+  const safeOrganizer = event.organizer_name ?? "Unknown Organizer";
+  const safeRegistrationLink = event.registration_link ?? "#";
+  const safeId = event.id ?? "";
+  const safeCreatorId = event.creator_id ?? "";
+
+  // Compute the cover photo URL once
+  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
+
+  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
+
+  const eventUrl = typeof window !== 'undefined' ? window.location.href : "";
+  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
+
+  // --- RECTIFIED: Fetch initial state & Check Role using strictly Supabase Auth ---
+  useEffect(() => {
+    const fetchInitialState = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setIsLoadingInterest(false);
+          return;
+        }
+
+        setCurrentUser(user);
+
+        // 1. Check if user is the Curator OR an Admin
+        let isAdmin = false;
+        if (user.id !== safeCreatorId) {
+          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+          isAdmin = profile?.role === 'admin';
+        }
+
+        if (user.id === safeCreatorId || isAdmin) {
+          setIsCuratorOrAdmin(true);
+          setIsLoadingInterest(false);
+          return; // Stop here, no need to query interested_events for them
+        }
+
+        // 2. Fetch the interest state for normal users
+        if (safeId) {
+          const { data, error } = await supabase
+            .from("interested_events" as any)
+            .select("id")
+            .eq("event_id", safeId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (data && !error) {
+            setIsInterested(true);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching interest state:", err);
+      } finally {
+        setIsLoadingInterest(false);
+      }
+    };
+
+    fetchInitialState();
+  }, [safeId, safeCreatorId, supabase]);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(eventUrl);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const downloadStory = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(storyImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeTitle.replace(/\s+/g, '-')}-Story.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error("Failed to download image", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // --- RECTIFIED: Removed document.cookie check. Relies on the fetched currentUser. ---
+  const handleInterestedClick = async () => {
+    if (isLoadingInterest) return;
+
+    // Check robust auth state rather than fragile cookies
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // Do nothing if they are the creator or admin
+    if (isCuratorOrAdmin) return;
+
+    // Optimistic UI Update
+    const previousState = isInterested;
+    setIsInterested(!previousState);
+    setLocalInterestCount(prev => !previousState ? prev + 1 : Math.max(0, prev - 1));
+
+    try {
+      if (!previousState) {
+        // Was false, now true -> Insert
+        const { error } = await supabase
+          .from("interested_events" as any)
+          .insert({ event_id: safeId, user_id: currentUser.id })
+          .select(); // Appended .select() to forcefully surface hidden RLS errors
+        
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      } else {
+        // Was true, now false -> Delete
+        const { error } = await supabase
+          .from("interested_events" as any)
+          .delete()
+          .eq("event_id", safeId)
+          .eq("user_id", currentUser.id);
+          
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      }
+    } catch (error: any) {
+      console.error("Failed to update interest status:", error.message || error);
+      
+      // Revert Optimistic UI on failure
+      setIsInterested(previousState);
+      setLocalInterestCount(prev => previousState ? prev + 1 : Math.max(0, prev - 1));
+      
+      // Explicitly alert the exact DB error so you know what is failing in Supabase
+      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-white pb-40">
+      {/* Shared Navbar */}
+      <Navbar />
+
+      {/* Unified Layout Container */}
+      <div className="max-w-5xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
+        
+        {/* Sub-header Actions */}
+        <div className="flex justify-between items-center w-full">
+          <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+              <Flag className="w-5 h-5" />
+            </button>
+            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-slate-900" />
+            </button>
+          </div>
+        </div>
+
+        {/* 1. Hero Image — 16:9 ratio, full image always visible */}
+        <div className="relative w-full aspect-video bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
+          {imageUrl ? (
+            <Image 
+              src={imageUrl} 
+              alt={safeTitle} 
+              fill 
+              className="object-contain object-center bg-slate-50" 
+              priority 
+            />
+          ) : null}
+        </div>
+
+        {/* 2. Event Details Content */}
+        <div className="space-y-10">
+          
+          {/* Title & Header Section */}
+          <div className="space-y-4">
+            <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
+              {safeCategory}
+            </span>
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
+              {safeTitle}
+            </h1>
+            <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
+
+            {/* Global Interest Label - Updated to show total interested count */}
+          {localInterestCount > 0 ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full mt-2 animate-in fade-in duration-300">
+            <span className="text-orange-500 text-lg">🔥</span>
+           <p className="text-orange-700 font-bold text-sm">
+            {localInterestCount} {localInterestCount === 1 ? "person is" : "people are"} interested in this event
+          </p>
+         </div>
+         ) : null}
+          </div>
+
+          {/* Desktop Action Buttons */}
+          <div className="hidden md:flex gap-4">
+            <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2">
+              Register <ExternalLink className="w-4 h-4" />
+            </a>
+            <button 
+              onClick={handleInterestedClick}
+              disabled={isLoadingInterest || isCuratorOrAdmin}
+              className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                isCuratorOrAdmin 
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                  : isInterested 
+                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
+                    : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+              }`}
+            >
+              {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
+            </button>
+          </div>
+
+          {/* Logistics Card */}
+          <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Date & Time */}
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                <CalendarDays className="w-5 h-5 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Date & Time</p>
+                <p className="text-[14px] font-bold text-slate-900">{displayDate}</p>
+                <p className="text-xs text-slate-500 font-medium">{event.start_time || "TBA"}</p>
+              </div>
+            </div>
+
+            {/* Location */}
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Location</p>
+                <p className="text-[14px] font-bold text-slate-900 truncate max-w-[200px]">
+                  {event.is_virtual ? "Online Platform" : event.location}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-slate-900">About Event</h2>
+            <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
+              {event.description}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Similar Events Section */}
+        {similarEvents && similarEvents.length > 0 && (
+          <div className="pt-10 border-t border-slate-100 mt-12">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Events</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {similarEvents.map((simEvent) => (
+                <EventCard 
+                  key={simEvent.id}
+                  id={simEvent.id!}
+                  slug={simEvent.slug || simEvent.id!}
+                  title={simEvent.title || "Untitled Event"}
+                  category={simEvent.category || "General"}
+                  date={simEvent.date_string || "TBA"}
+                  city={simEvent.location || simEvent.city || "Online"}
+                  imageUrl={simEvent.poster_url || "/window.svg"}
+                  organizerName={simEvent.organizer_name || "Organizer"}
+                  isFree={simEvent.is_free ?? false}
+                  audience={simEvent.target_audience ?? []}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile Floating Bottom Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <button 
+          onClick={handleInterestedClick}
+          disabled={isLoadingInterest || isCuratorOrAdmin}
+          className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+            isCuratorOrAdmin 
+              ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+              : isInterested 
+                ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
+                : "bg-slate-100 text-slate-900"
+          }`}
+        >
+          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
+        </button>
+        <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+          Register <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+
+      {/* --- THE AUTH MODAL --- */}
+      <AnimatePresence>
+        {isAuthModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
+            >
+              <button 
+                onClick={() => setIsAuthModalOpen(false)} 
+                className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Users className="w-7 h-7 text-slate-600" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setIsAuthModalOpen(false)} 
+                  className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} 
+                  className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors"
+                >
+                  Sign In
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- THE SHARE MODAL --- */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-5 border-b border-slate-100">
+                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
+                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
+                <div className="relative w-full aspect-[9/16] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
+                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
+                </div>
+
+                <div className="flex flex-col gap-3 w-full">
+                  <button 
+                    onClick={downloadStory}
+                    disabled={isDownloading}
+                    className="w-full bg-[#1D1D1F] hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70"
+                  >
+                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
+                  </button>
+
+                  <button 
+                    onClick={copyLink}
+                    className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+                  >
+                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? "Link Copied!" : "Copy Event Link"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* --- THE REPORT MODAL --- */}
+      <AnimatePresence>
+        {isReportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 text-center border-b border-slate-100 relative">
+                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
+                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
+              </div>
+
+              <div className="p-6">
+                {isReported ? (
+                  <div className="text-center py-4">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                    <p className="font-bold text-slate-900">Report Submitted</p>
+                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
+                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
+                  </div>
+                ) : (
+                  <form action={async (formData) => {
+                    await submitReportAction(formData);
+                    setIsReported(true);
+                  }} className="flex flex-col gap-3">
+                    <input type="hidden" name="eventId" value={safeId} />
+                    <input type="hidden" name="curatorId" value={safeCreatorId} />
+                    
+                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
+                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
+                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                        </div>
+                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
+                      </label>
+                    ))}
+
+                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
+                      Submit Report
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/globals.css">
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -9178,323 +9096,94 @@ export default async function Home({
 }
 </file>
 
-<file path="src/components/layout/Navbar.tsx">
-"use client";
-
-import { useEffect, useState, Suspense } from "react";
+<file path="src/components/layout/Footer.tsx">
 import Link from "next/link";
-import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { FeedbackModal } from "./FeedbackModal";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { AuthUser } from "@/types";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
 
-const calculateCompletion = (profile: any) => {
-  if (!profile) return 0;
-  let score = 0;
-  if (profile.avatar_url) score += 25;
-  if (profile.college) score += 25;
-  if (profile.goals) score += 50;
-  return score;
-};
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
 
-function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
-  const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profileDetails, setProfileDetails] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [imgError, setImgError] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams(); const pathname = usePathname();
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
 
-  const handleProtectedAction = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      setShowAuthModal(true);
-    }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("role, avatar_url, college, goals")
-          .eq("id", userId)
-          .single();
-        
-        if (mounted && !error && profile) {
-          setIsAdmin(profile.role === "admin");
-          setProfileDetails(profile);
-        }
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-
-    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
-    const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      
-      setUser(user);
-      if (user) {
-        fetchProfile(user.id);
-      } else if (mounted) {
-        setIsLoading(false);
-      }
-    };
-    initUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setIsAdmin(false);
-        setProfileDetails(null);
-      }
-      
-      if (mounted) setIsLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setSearchQuery(q);
-    else setSearchQuery("");
-  }, [searchParams]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      router.push(`/`);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-  };
-
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
-  const completionPercent = calculateCompletion(profileDetails);
-
+export function Footer() {
   return (
-    <>
-    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-4 relative">
-          
-          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
-            <Link href="/" className="shrink-0 flex items-center gap-2">
-              <div className="w-9 h-9 relative shrink-0"> 
-                <Image src="/logo.png" alt="logo" fill sizes="100px" className="object-contain" priority />
-              </div>
-              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
-                <span className="text-[#6C47FF]">Even</span>
-                <span className="text-[#1D1D1F]">Time</span>
-              </span>
-            </Link>
+    <footer className="bg-white border-t border-slate-200 py-6 sm:py-10 w-full mt-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 sm:gap-10 mb-6 sm:mb-12">
+          {/* Brand Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <Image src="/logo.png" alt="EvenTime Logo" width={40} height={40} className="rounded-xl" />
+              <h3 className="text-2xl font-black text-[#6C47FF] font-heading tracking-tight">EvenTime</h3>
+            </div>
+            <p className="text-[#6C47FF]/70 text-sm font-medium">
+              Your event search struggles end here.
+            </p>
           </div>
 
-          {variant !== 'centered' && (
-            <>
-              <form onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search hackathons, meetups..."
-                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                />
-              </form>
-              
-              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
-            
-            <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
-              <MapPin className="w-4 h-4 shrink-0" /> Map
-            </Link>
-
-            <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
-              <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
-            </Link>
-
-            {isAdmin && (
-              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
-                <Settings className="w-4 h-4 shrink-0" /> Admin
-              </Link>
-            )}
-
-            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
-              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
-            </Link>
-
-            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
-              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
-                <Bug className="w-4 h-4" />
-              </button>
-
-              {isLoading ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
-                  <div className="w-9 h-9 rounded-full bg-slate-100" />
-                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
+          {/* Queries Section */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-bold text-[#6C47FF]">For any Queries</h4>
+            <ul className="space-y-3">
+              <li>
+                <a href="#" className="flex items-center gap-2 text-[#6C47FF]/80 hover:text-[#6C47FF] transition-colors text-sm font-medium">
+                  <div className="bg-[#6C47FF]/10 p-1.5 rounded-md">
+                    <InstagramIcon className="w-4 h-4 text-[#6C47FF]" />
+                  </div>
+                  Message us on Instagram
+                </a>
+              </li>
+              <li>
+                <div className="flex items-center gap-2 text-[#6C47FF]/80 text-sm font-medium">
+                  <div className="bg-pink-50 p-1.5 rounded-md">
+                    <MapPin className="w-4 h-4 text-pink-500" />
+                  </div>
+                  Hyderabad, India
                 </div>
-              ) : user ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
-                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
-                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-                    </svg>
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
-                      {avatarUrl && !imgError ? (
-                        <img 
-                          src={avatarUrl} 
-                          alt="Profile" 
-                          className="object-cover w-full h-full"
-                          referrerPolicy="no-referrer"
-                          onError={() => setImgError(true)}
-                        />
-                      ) : (
-                        <User className="w-4 h-4 text-slate-400" />
-                      )}
-                    </div>
-                  </Link>
-                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
-                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
-                  Sign In
-                </Link>
-              )}
+              </li>
+            </ul>
+          </div>
+
+          {/* Social Section */}
+          <div className="space-y-4">
+            <h4 className="text-lg font-bold text-[#6C47FF]">Join the Family</h4>
+            <div className="flex items-center gap-4">
+              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
+                <InstagramIcon className="w-5 h-5" />
+              </a>
+              <a href="#" className="w-12 h-12 rounded-full border-2 border-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF] hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] transition-all duration-300">
+                <YoutubeIcon className="w-5 h-5" />
+              </a>
             </div>
           </div>
-          </>
-          )}
+        </div>
 
+        {/* Bottom Bar */}
+        <div className="flex flex-col items-center justify-center space-y-6 pt-8 border-t border-[#6C47FF]/10">
+          <div className="flex items-center gap-2 text-sm font-bold text-[#6C47FF] border-2 border-[#6C47FF]/10 px-5 py-2.5 rounded-full hover:bg-[#6C47FF]/5 transition-colors cursor-default">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by 
+            <span className="bg-[#6C47FF] text-white px-2 py-0.5 rounded text-xs ml-1">SB</span> 
+            The SurfBoard
+          </div>
+          <p className="text-xs font-medium text-[#6C47FF]/50">
+            © {new Date().getFullYear()} EvenTime. All rights reserved.
+          </p>
         </div>
       </div>
-    </nav>
-
-    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)]">
-  <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto w-full">
-    
-    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Home className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
-    </Link>
-    
-    <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <MapPin className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
-    </Link>
-
-    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform relative">
-      <div className="absolute -top-5 bg-[#6C47FF] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(108,71,255,0.4)] border-[3px] border-white">
-        <Plus className="w-6 h-6" />
-      </div>
-    </Link>
-
-    <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Trophy className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
-    </Link>
-
-    {isLoading ? (
-     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
-       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
-       <div className="w-6 h-2 bg-slate-200 rounded-full" />
-     </div>
-     ) : user ? (
-      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <div className="relative w-7 h-7 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-          </svg>
-          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
-            {avatarUrl && !imgError ? (
-              <img 
-                src={avatarUrl} 
-                alt="Profile" 
-                className="object-cover w-full h-full"
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <User className="w-3.5 h-3.5" />
-            )}
-          </div>
-        </div>
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
-      </Link>
-    ) : (
-      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <User className="w-5 h-5" />
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
-      </Link>
-    )}
-
-  </div>
-</div>
-
-    {/* NEW: Auth Modal Overlay for Guest Users */}
-    {showAuthModal && (
-      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-            <Plus className="w-6 h-6 text-text-primary" />
-          </div>
-          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
-          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
-          <div className="flex gap-3">
-            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
-              Cancel
-            </button>
-            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    )}
-
-    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </>
-  );
-}
-
-export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
-  return (
-    <Suspense fallback={null}>
-      <NavbarInner variant={variant} />
-    </Suspense>
+    </footer>
   );
 }
 </file>
@@ -9881,6 +9570,327 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
         })}
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="src/components/layout/Navbar.tsx">
+"use client";
+
+import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
+import Image from "next/image"; 
+import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { FeedbackModal } from "./FeedbackModal";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import type { AuthUser } from "@/types";
+
+const calculateCompletion = (profile: any) => {
+  if (!profile) return 0;
+  let score = 0;
+  if (profile.avatar_url) score += 25;
+  if (profile.college) score += 25;
+  if (profile.goals) score += 50;
+  return score;
+};
+
+function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+  const [supabase] = useState(() => createClient());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profileDetails, setProfileDetails] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [imgError, setImgError] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams(); const pathname = usePathname();
+
+  const handleProtectedAction = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setShowAuthModal(true);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("role, avatar_url, college, goals")
+          .eq("id", userId)
+          .single();
+        
+        if (mounted && !error && profile) {
+          setIsAdmin(profile.role === "admin");
+          setProfileDetails(profile);
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+      }
+    };
+
+    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+      
+      setUser(user);
+      if (user) {
+        fetchProfile(user.id);
+      } else if (mounted) {
+        setIsLoading(false);
+      }
+    };
+    initUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      } else {
+        setIsAdmin(false);
+        setProfileDetails(null);
+      }
+      
+      if (mounted) setIsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchQuery(q);
+    else setSearchQuery("");
+  }, [searchParams]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push(`/`);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+  };
+
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const completionPercent = calculateCompletion(profileDetails);
+
+  return (
+    <>
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-4 relative">
+          
+          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
+            <Link href="/" className="shrink-0 flex items-center gap-2">
+              <div className="w-9 h-9 relative shrink-0"> 
+                <Image src="/logo.png" alt="logo" fill sizes="100px" className="object-contain" priority />
+              </div>
+              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
+                <span className="text-[#6C47FF]">Even</span>
+                <span className="text-[#1D1D1F]">Time</span>
+              </span>
+            </Link>
+          </div>
+
+          {variant !== 'centered' && (
+            <>
+              <form onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search hackathons, meetups..."
+                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                />
+              </form>
+              
+              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
+            
+            <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+              <MapPin className="w-4 h-4 shrink-0" /> Map
+            </Link>
+
+            <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
+              <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
+            </Link>
+
+            {isAdmin && (
+              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
+                <Settings className="w-4 h-4 shrink-0" /> Admin
+              </Link>
+            )}
+
+            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
+              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
+            </Link>
+
+            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
+              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
+                <Bug className="w-4 h-4" />
+              </button>
+
+              {isLoading ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
+                  <div className="w-9 h-9 rounded-full bg-slate-100" />
+                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
+                </div>
+              ) : user ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
+                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+                    </svg>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
+                      {avatarUrl && !imgError ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt="Profile" 
+                          className="object-cover w-full h-full"
+                          referrerPolicy="no-referrer"
+                          onError={() => setImgError(true)}
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
+                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
+          </>
+          )}
+
+        </div>
+      </div>
+    </nav>
+
+    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
+  <div className="flex justify-between items-center h-16 px-6 max-w-md mx-auto w-full">
+    
+    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <Home className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
+    </Link>
+    
+    <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <MapPin className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
+    </Link>
+
+    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform relative">
+      <div className="absolute -top-5 bg-[#6C47FF] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(108,71,255,0.4)] border-[3px] border-white">
+        <Plus className="w-6 h-6" />
+      </div>
+    </Link>
+
+    <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <Trophy className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
+    </Link>
+
+    {isLoading ? (
+     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
+       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
+       <div className="w-6 h-2 bg-slate-200 rounded-full" />
+     </div>
+     ) : user ? (
+      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <div className="relative w-7 h-7 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+          </svg>
+          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
+            {avatarUrl && !imgError ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile" 
+                className="object-cover w-full h-full"
+                referrerPolicy="no-referrer"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <User className="w-3.5 h-3.5" />
+            )}
+          </div>
+        </div>
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
+      </Link>
+    ) : (
+      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <User className="w-5 h-5" />
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
+      </Link>
+    )}
+
+  </div>
+</div>
+
+    {/* NEW: Auth Modal Overlay for Guest Users */}
+    {showAuthModal && (
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+            <Plus className="w-6 h-6 text-text-primary" />
+          </div>
+          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
+          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+              Cancel
+            </button>
+            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+    </>
+  );
+}
+
+export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+  return (
+    <Suspense fallback={null}>
+      <NavbarInner variant={variant} />
+    </Suspense>
   );
 }
 </file>
@@ -10648,6 +10658,116 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 }
 </file>
 
+<file path="src/app/events/[slug]/edit/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import { CreateEventForm } from "@/features/create-event/CreateEventForm";
+
+// We will build the modified CreateEventForm to handle edits in the next step
+export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")
+    .eq("slug", slug)
+    .single() as any;
+
+  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
+  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
+
+  // Inside your EditEventPage return
+return (
+  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
+    {/* Clean Apple-style Header */}
+    <div className="max-w-2xl mx-auto mb-10">
+       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
+       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
+    </div>
+    
+    <CreateEventForm initialData={event} isEditing={true} />
+  </main>
+);
+}
+</file>
+
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={{ pathname: "/", query: { location: city, view: "list" } }}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/HomePageClient.tsx">
 "use client"
 import { useRef, useEffect } from "react";
@@ -10797,7 +10917,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </summary>
               
               {/* CALENDAR STRIP DROPDOWN */}
-              <div className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-[360px] animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
+              <div className="absolute right-0 mt-4 w-[min(calc(100vw-2rem),360px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
                 <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
                   <CalendarStrip eventDates={allEventDates} onDateSelect={closeCalendar} />
                   <div className="text-center pb-1 pt-3 border-t border-slate-50/50 mt-2">
@@ -10994,12 +11114,13 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div className="w-full">
                   {allEvents && allEvents.length > 0 ? (
                     <EventGrid 
-                      events={allEvents} 
-                      profile={profile} 
-                      user={user} 
-                      useMatchLogic={true} 
-                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    />
+                      events={allEvents} 
+                      profile={profile} 
+                      user={user} 
+                      useMatchLogic={true} 
+                      gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                      isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                    />
                   ) : (
                     // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
                     <div className="col-span-full">
@@ -11056,116 +11177,6 @@ export function HomePageClient(props: HomePageClientProps) {
         
         </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/app/events/[slug]/edit/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
-import { CreateEventForm } from "@/features/create-event/CreateEventForm";
-
-// We will build the modified CreateEventForm to handle edits in the next step
-export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-  const { data: event } = await supabase
-    .from("events")
-    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only")
-    .eq("slug", slug)
-    .single() as any;
-
-  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
-  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
-
-  // Inside your EditEventPage return
-return (
-  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
-    {/* Clean Apple-style Header */}
-    <div className="max-w-2xl mx-auto mb-10">
-       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
-       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
-    </div>
-    
-    <CreateEventForm initialData={event} isEditing={true} />
-  </main>
-);
-}
-</file>
-
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
   );
 }
 </file>
