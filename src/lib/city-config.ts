@@ -6,24 +6,16 @@ export const CITY_CONFIG: Record<string, {
     backgroundImage: '/cities/hyderabad.webp',
     accentColor: '#6C47FF',
   },
-  'bangalore': {
-    backgroundImage: '/cities/bangalore.webp',
-    accentColor: '#0EA5E9',
-  },
-  'bengaluru': {
-    backgroundImage: '/cities/bangalore.webp', // same image, alias
+   'bengaluru': {
+    backgroundImage: '/cities/bengaluru.webp', 
     accentColor: '#0EA5E9',
   },
   'mumbai': {
     backgroundImage: '/cities/mumbai.webp',
     accentColor: '#F59E0B',
   },
-  'delhi': {
-    backgroundImage: '/cities/delhi.webp',
-    accentColor: '#EF4444',
-  },
   'new-delhi': {
-    backgroundImage: '/cities/delhi.webp', // alias
+    backgroundImage: '/cities/new-delhi.webp', 
     accentColor: '#EF4444',
   },
   'chennai': {
@@ -51,8 +43,8 @@ export const CITY_CONFIG: Record<string, {
     accentColor: '#22C55E',
   },
   'visakhapatnam': {
-    backgroundImage: '/cities/vizag.webp', // alias
-    accentColor: '#3B82F6',
+    backgroundImage: '/cities/visakhapatnam.webp', 
+    accentColor: '#6366F1',
   },
   'coimbatore': {
     backgroundImage: '/cities/coimbatore.webp',
@@ -66,6 +58,74 @@ export const CITY_CONFIG: Record<string, {
     backgroundImage: '/cities/online.webp',
     accentColor: '#6366F1',
   },
+  'bhopal': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#3B82F6',
+  },
+  'guntur': {
+    backgroundImage: '/cities/guntur.webp', 
+    accentColor: '#6366F1',
+  },
+  'gurugram': {
+    backgroundImage: '/cities/gurugram.webp', 
+    accentColor: '#6366F1',
+  },
+  'indore': {
+    backgroundImage: '/cities/indore.webp', 
+    accentColor: '#6366F1',
+  },
+  'kakinada': {
+    backgroundImage: '/cities/kakinada.webp', 
+    accentColor: '#6366F1',
+  },
+  'kanpur': {
+    backgroundImage: '/cities/kanpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'karimnagar': {
+    backgroundImage: '/cities/karimnagar.webp', 
+    accentColor: '#6366F1',
+  },
+  'khammam': {
+    backgroundImage: '/cities/khammam.webp', 
+    accentColor: '#6366F1',
+  },
+  'lucknow': {
+    backgroundImage: '/cities/lucknow.webp', 
+    accentColor: '#6366F1',
+  },
+  'mangaluru': {
+    backgroundImage: '/cities/mangaluru.webp', 
+    accentColor: '#6366F1',
+  },
+  'mysuru': {
+    backgroundImage: '/cities/mysuru.webp', 
+    accentColor: '#6366F1',
+  },
+  'nagpur': {
+    backgroundImage: '/cities/nagpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'noida': {
+    backgroundImage: '/cities/noida.webp', 
+    accentColor: '#6366F1',
+  },
+  'thiruvananthapuram': {
+    backgroundImage: '/cities/thiruvananthapuram.webp', 
+    accentColor: '#6366F1',
+  },
+  'tirupati': {
+    backgroundImage: '/cities/tirupati.webp', 
+    accentColor: '#6366F1',
+  },
+  'vijayawada': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#6366F1',
+  },
+  'warangal': {
+    backgroundImage: '/cities/vijayawada.webp', 
+    accentColor: '#6366F1',
+  },
 };
 
 export const getCityConfig = (city: string) => {
@@ -73,3 +133,6 @@ export const getCityConfig = (city: string) => {
   const key = city.toLowerCase().trim().replace(/\s+/g, '-');
   return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
 };
+
+
+
