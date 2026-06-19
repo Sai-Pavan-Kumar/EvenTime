@@ -388,43 +388,39 @@ export function HomePageClient(props: HomePageClientProps) {
                       const threeDayStr = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth()+1).padStart(2,'0')}-${String(threeDaysLater.getDate()).padStart(2,'0')}`;
                       const next3 = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
                       const upcoming = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
-                      // If one bucket is empty, show single list
-                      if (next3.length === 0 || upcoming.length === 0) {
-                        return (
-                          <EventGrid
-                            events={liveAllEvents}
-                            profile={profile}
-                            user={user}
-                            useMatchLogic={true}
-                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                          />
-                        );
-                      }
                       return (
                         <div className="space-y-6">
                           <div className="flex items-center gap-3">
-                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
-                              Next 3 Days
-                            </span>
-                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm font-bold">
-                              Upcoming
-                            </span>
+                            {next3.length > 0 && (
+                              <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
+                                Next 3 Days
+                              </span>
+                            )}
+                            {upcoming.length > 0 && (
+                              <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm font-bold">
+                                Upcoming
+                              </span>
+                            )}
                           </div>
                           <div className="space-y-10">
-                            <EventGrid
-                              events={next3}
-                              profile={profile}
-                              user={user}
-                              useMatchLogic={true}
-                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            />
-                            <EventGrid
-                              events={upcoming}
-                              profile={profile}
-                              user={user}
-                              useMatchLogic={true}
-                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            />
+                            {next3.length > 0 && (
+                              <EventGrid
+                                events={next3}
+                                profile={profile}
+                                user={user}
+                                useMatchLogic={true}
+                                gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                              />
+                            )}
+                            {upcoming.length > 0 && (
+                              <EventGrid
+                                events={upcoming}
+                                profile={profile}
+                                user={user}
+                                useMatchLogic={true}
+                                gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                              />
+                            )}
                           </div>
                         </div>
                       );
