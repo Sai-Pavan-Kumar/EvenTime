@@ -172,7 +172,6 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
   const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
-  const activeLocations = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.city).filter(Boolean) as string[]));
   const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
 
   // Fetch ALL approved event dates (unfiltered by date param) so calendar dots persist after date selection
@@ -182,6 +181,14 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     .eq("status", "approved");
 
   const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
+
+  // Fetch ALL approved event cities (unfiltered by location param) so the location dropdown always shows every city
+  const { data: allCityRows } = await supabase
+    .from("events")
+    .select("city")
+    .eq("status", "approved");
+
+  const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
     
   // Only create the chips array (including 'All') if there are actual categories
   const dynamicChips = activeCategories.length > 0 
