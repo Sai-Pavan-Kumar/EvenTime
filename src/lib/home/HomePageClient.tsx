@@ -383,27 +383,41 @@ export function HomePageClient(props: HomePageClientProps) {
                           />
                         );
                       }
-                      const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
-                      const threeDaysLater = new Date(todayMidnight); threeDaysLater.setDate(threeDaysLater.getDate() + 3);
-                      const threeDayStr = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth()+1).padStart(2,'0')}-${String(threeDaysLater.getDate()).padStart(2,'0')}`;
-                      const next3 = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string <= threeDayStr);
-                      const upcoming = (liveAllEvents as Partial<EventRow>[]).filter(e => e.date_string && e.date_string > threeDayStr);
+                      const todayMidnight = new Date();
+                      todayMidnight.setHours(0, 0, 0, 0);
+
+                      const formatDate = (d: Date) => {
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                      };
+
+                      const todayStr = formatDate(todayMidnight);
+
+                      const threeDaysLater = new Date(todayMidnight);
+                      threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+                      const threeDayStr = formatDate(threeDaysLater);
+
+                      // Next 3 days logic: Must be >= today AND <= 3 days from today
+                      const next3 = (liveAllEvents as Partial<EventRow>[]).filter(
+                        (e) => e.date_string && e.date_string >= todayStr && e.date_string <= threeDayStr
+                      );
+                      
+                      // Upcoming logic: Strictly > 3 days from today
+                      const upcoming = (liveAllEvents as Partial<EventRow>[]).filter(
+                        (e) => e.date_string && e.date_string > threeDayStr
+                      );
+
                       return (
-                        <div className="space-y-6">
-                          <div className="flex items-center gap-3">
-                            {next3.length > 0 && (
-                              <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
-                                Next 3 Days
-                              </span>
-                            )}
-                            {upcoming.length > 0 && (
-                              <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm font-bold">
-                                Upcoming
-                              </span>
-                            )}
-                          </div>
-                          <div className="space-y-10">
-                            {next3.length > 0 && (
+                        <div className="space-y-10">
+                          {next3.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center">
+                                <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-[#F3E8FF] text-[#6C47FF] text-sm font-bold border border-violet-100 shadow-sm">
+                                  Next 3 Days
+                                </span>
+                              </div>
                               <EventGrid
                                 events={next3}
                                 profile={profile}
@@ -411,11 +425,20 @@ export function HomePageClient(props: HomePageClientProps) {
                                 useMatchLogic={true}
                                 gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                               />
-                            )}
-                            {next3.length > 0 && upcoming.length > 0 && (
-                              <div className="h-px bg-slate-200 w-full" />
-                            )}
-                            {upcoming.length > 0 && (
+                            </div>
+                          )}
+
+                          {next3.length > 0 && upcoming.length > 0 && (
+                            <div className="h-px bg-slate-200 w-full" />
+                          )}
+
+                          {upcoming.length > 0 && (
+                            <div className="space-y-4">
+                              <div className="flex items-center">
+                                <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm font-bold border border-slate-200 shadow-sm">
+                                  Upcoming
+                                </span>
+                              </div>
                               <EventGrid
                                 events={upcoming}
                                 profile={profile}
@@ -423,8 +446,8 @@ export function HomePageClient(props: HomePageClientProps) {
                                 useMatchLogic={true}
                                 gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                               />
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })()
