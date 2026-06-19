@@ -103,7 +103,7 @@
       if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
-       }
+        }  }
 
     useEffect(() => {
       // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
