@@ -401,11 +401,11 @@ export function HomePageClient(props: HomePageClientProps) {
                         );
                       }
                       return (
-                        <div className="space-y-14">
-                          <div className="space-y-6">
-                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
-                              ⚡ Next 3 Days
-                            </h3>
+                        <div className="space-y-10">
+                          <div className="space-y-5">
+                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-violet-100 text-violet-700 text-sm font-bold">
+                              Next 3 Days
+                            </span>
                             <EventGrid
                               events={next3}
                               profile={profile}
@@ -414,10 +414,10 @@ export function HomePageClient(props: HomePageClientProps) {
                               gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                             />
                           </div>
-                          <div className="space-y-6">
-                            <h3 className="text-xl font-heading font-black text-slate-900 flex items-center gap-2">
-                              🗓️ Upcoming
-                            </h3>
+                          <div className="space-y-5">
+                            <span className="inline-flex items-center px-4 py-1.5 rounded-full bg-slate-100 text-slate-700 text-sm font-bold">
+                              Upcoming
+                            </span>
                             <EventGrid
                               events={upcoming}
                               profile={profile}

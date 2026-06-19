@@ -103,17 +103,7 @@
       if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
-      } else if (diffDays === 0) {
-        statusLabel = "Live Today";
-        statusColor = "bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/30";
-      } else if (diffDays === 1) {
-        statusLabel = "Tomorrow";
-        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
-      } else if (diffDays > 1 && diffDays <= 3) {
-        statusLabel = "Starting Soon";
-        statusColor = "bg-amber-500 text-white shadow-md shadow-amber-500/20";
-      }
-    }
+       }
 
     useEffect(() => {
       // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
@@ -183,7 +173,7 @@
               exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
               animate={{}}
               transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] ${diffDays !== null && diffDays <= 3 && diffDays >= 0 ? 'border-red-500' : 'border-transparent'} shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
             >
 
               
