@@ -2,7 +2,7 @@
 
   import Image from "next/image";
   import Link from "next/link";
-  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee } from "lucide-react";
+  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
   import { useState, useEffect } from "react";
   import { format, differenceInCalendarDays } from "date-fns";
   import { motion, AnimatePresence } from "framer-motion";
@@ -279,6 +279,13 @@
                     </>
                   )}
                 </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{city}</span>
+                  </div>
+                )}
 
                 <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
                   <span className="flex items-center gap-1 shrink-0">
