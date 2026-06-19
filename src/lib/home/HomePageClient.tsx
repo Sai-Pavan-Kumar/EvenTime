@@ -168,10 +168,10 @@ export function HomePageClient(props: HomePageClientProps) {
         </div>
 
         {/* COMBINED DISCOVERY PILL - Moved out of the relative div to parent scope for sticky to work */}
-        <div className="sticky top-[80px] -mt-8 z-40 mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-4 w-max max-w-[90vw] mb-10">
+        <div className="sticky top-[80px] -mt-8 z-40 mx-auto bg-white/95 backdrop-blur-md rounded-[28px] sm:rounded-full shadow-lg border border-slate-200 px-4 py-3 sm:py-2 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-[92vw] sm:w-max sm:max-w-[90vw] mb-10">
             
             {/* INSTANT DISCOVERY CHIPS */}
-            <div className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center justify-center gap-1.5 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
               <span className="text-sm font-bold text-slate-500 whitespace-nowrap">Explore:</span>
               <FilterChips dynamicChips={dynamicChips} category={category} location={location} q={q} branch={branch} paramName="category" />
               
@@ -185,7 +185,7 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
 
             {/* DIVIDER */}
-            <div className="h-6 w-px bg-slate-300 shrink-0" />
+            <div className="hidden sm:block h-6 w-px bg-slate-300 shrink-0" />
 
             {/* DATE TOGGLE (Right Corner) */}
             <details ref={detailsRef} className="group cursor-pointer shrink-0 relative">
@@ -266,7 +266,14 @@ export function HomePageClient(props: HomePageClientProps) {
           )}
 
           {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
-          {activeTab === "in_college" && user && profile?.role === 'student' && profile?.college_id && !q && !category ? (
+          {view === "map" ? (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
+                <MapIcon className="w-6 h-6 text-[#6C47FF]" /> Explore by City
+              </h2>
+              <CityGrid events={liveAllEvents || []} />
+            </div>
+          ) : activeTab === "in_college" && user && profile?.role === 'student' && profile?.college_id && !q && !category ? (
             <div className="bg-[#6C47FF] rounded-[40px] p-8 sm:p-12 shadow-xl relative overflow-hidden transition-all duration-300">
               {/* FIX: Made decorative blobs responsive so they don't break mobile layout width */}
               <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
