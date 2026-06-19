@@ -22,10 +22,12 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 export function Footer() {
   return (
     <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="w-full mx-auto flex flex-col items-center text-center gap-8">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+
+        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
 
         {/* Brand */}
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-2 lg:items-start">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
@@ -38,7 +40,7 @@ export function Footer() {
         </div>
 
         {/* For any Queries */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 lg:items-start">
           <h4 className="text-base font-bold text-white">For any Queries</h4>
           <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
             <InstagramIcon className="w-4 h-4" />
@@ -51,7 +53,7 @@ export function Footer() {
         </div>
 
         {/* Join the Family */}
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4 lg:items-start">
           <h4 className="text-base font-bold text-white">Join the Family</h4>
           <div className="flex items-center gap-4">
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
@@ -63,20 +65,22 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="w-full h-px bg-white/10" />
+        </div>
 
-        {/* Made with love */}
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-white border border-white/10 px-5 py-2.5 rounded-full">
+        {/* Divider with pill sitting on it */}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="w-full h-px bg-white/10" />
+          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
             Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
             <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
             The SurfBoard
           </div>
-          <p className="text-xs font-medium text-white/30">
-            © {new Date().getFullYear()} EvenTime. All rights reserved.
-          </p>
         </div>
+
+        {/* Copyright */}
+        <p className="text-xs font-medium text-white/30 -mt-2">
+          © {new Date().getFullYear()} EvenTime. All rights reserved.
+        </p>
 
       </div>
     </footer>
