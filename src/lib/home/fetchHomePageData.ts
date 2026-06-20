@@ -129,8 +129,9 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   if (location) {
     query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
-  } else {
-    // No explicit location filter? Scope to ALL the user's chosen cities, but always let virtual/online events through
+  } else if (!date) {
+    // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
+    // When a specific date IS picked, skip city scoping so past/other-city events on that date still show.
     const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
     query = query.or(`${cityFilterList},is_virtual.eq.true`);
   }
