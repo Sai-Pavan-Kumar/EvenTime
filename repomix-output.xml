@@ -11638,7 +11638,8 @@ export function HomePageClient(props: HomePageClientProps) {
   };
 
   // Merge "For You" + "Happening Around You" into one feed: personalized when no filters active, else all events
-  const showPersonalized = !!(user && profile?.is_onboarded && !q && !category && !location && !date);
+  const hasPersonalizedResults = livePersonalizedEvents.length > 0;
+  const showPersonalized = !!(user && profile?.is_onboarded && !q && !category && !location && !date && hasPersonalizedResults);
   const gridSource = showPersonalized ? livePersonalizedEvents : liveAllEvents;
 
   return (

@@ -23,7 +23,9 @@ export interface HomePageClientProps {
   activeTab: string;
   displayToday: string;
   personalizedEvents: (Partial<EventRow> & { matchReason?: string })[];
+  aroundYouEvents: Partial<EventRow>[];
   collegeEvents: Partial<EventRow>[];
+  otherCollegeEvents: Partial<EventRow>[];
   fallbackEvents: Partial<EventRow>[];
   allEvents: Partial<EventRow>[] | null;
   hasCityEvents: boolean;
@@ -52,7 +54,9 @@ export function HomePageClient(props: HomePageClientProps) {
     eventDates,
     allEventDates,
     personalizedEvents,
+    aroundYouEvents,
     collegeEvents,
+    otherCollegeEvents,
     fallbackEvents,
     allEvents,
     hasCityEvents,
@@ -71,14 +75,22 @@ export function HomePageClient(props: HomePageClientProps) {
   // Local copies of the server-fetched event lists, so we can remove an event
   // instantly (without a full page refresh) when it gets deleted/rejected elsewhere.
   const [livePersonalizedEvents, setLivePersonalizedEvents] = useState(personalizedEvents);
+  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState(aroundYouEvents);
   const [liveCollegeEvents, setLiveCollegeEvents] = useState(collegeEvents);
+  const [liveOtherCollegeEvents, setLiveOtherCollegeEvents] = useState(otherCollegeEvents);
   const [liveFallbackEvents, setLiveFallbackEvents] = useState(fallbackEvents);
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
+
+  // Pill toggles: which sub-feed is active inside each section
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you'>('for_you');
+  const [activeCollegePill, setActiveCollegePill] = useState<'mine' | 'other'>('mine');
   
   // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
   useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
+  useEffect(() => { setLiveAroundYouEvents(aroundYouEvents); }, [aroundYouEvents]);
   useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
+  useEffect(() => { setLiveOtherCollegeEvents(otherCollegeEvents); }, [otherCollegeEvents]);
   useEffect(() => { setLiveFallbackEvents(fallbackEvents); }, [fallbackEvents]);
   useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
@@ -102,7 +114,9 @@ export function HomePageClient(props: HomePageClientProps) {
           if (!removedId) return;
 
           setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveAroundYouEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveOtherCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveFallbackEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
           setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
@@ -149,10 +163,15 @@ export function HomePageClient(props: HomePageClientProps) {
     }
   };
 
-  // Merge "For You" + "Happening Around You" into one feed: personalized when no filters active, else all events
-  const hasPersonalizedResults = livePersonalizedEvents.length > 0;
-  const showPersonalized = !!(user && profile?.is_onboarded && !q && !category && !location && !date && hasPersonalizedResults);
-  const gridSource = showPersonalized ? livePersonalizedEvents : liveAllEvents;
+  // No filters active = passive browsing mode → show pill-based feed. Any filter active → show liveAllEvents directly.
+  const noFiltersActive = !q && !category && !location && !date;
+  const hasForYou = livePersonalizedEvents.length > 0;
+  const showFeedPills = !!(user && profile?.is_onboarded && hasForYou && noFiltersActive);
+  const gridSource = !noFiltersActive
+    ? liveAllEvents
+    : showFeedPills
+      ? (activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
+      : liveAroundYouEvents;
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
@@ -211,33 +230,7 @@ export function HomePageClient(props: HomePageClientProps) {
            </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
-         {/* PREMIUM HYPER-LOCAL TAB LAYER SEPARATION CONTROL - STRICTLY STUDENTS ONLY */}
-          {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
-            <div className="flex overflow-x-auto justify-start md:justify-start gap-3 sm:gap-4 border-b border-slate-200/60 pb-4 mb-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-              <Link
-                href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "around_you" } }}
-                className={`shrink-0 whitespace-nowrap px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-xs sm:text-sm transition-all border ${
-                  activeTab === "around_you"
-                    ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-sm"
-                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                }`}
-              >
-                Happening Around You
-              </Link>
-              <Link
-                href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "in_college" } }}
-                className={`shrink-0 whitespace-nowrap px-5 sm:px-6 py-2.5 sm:py-3 rounded-full font-bold text-xs sm:text-sm transition-all border ${
-                  activeTab === "in_college"
-                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-md shadow-[#6C47FF]/20"
-                    : "bg-white text-[#6C47FF] border-slate-200 hover:bg-[#6C47FF]/5"
-                }`}
-              >
-                🏥 Happening in College
-              </Link>
-            </div>
-          )}
-
-          {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
+         {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
           {view === "map" ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
@@ -245,7 +238,10 @@ export function HomePageClient(props: HomePageClientProps) {
               </h2>
               <CityGrid events={liveAllEvents || []} />
             </div>
-          ) : activeTab === "in_college" && user && profile?.user_type === 'student' && profile?.college_id && !q && !category ? (
+          ) : (
+            <>
+            {/* COLLEGE SECTION — shown ALONGSIDE the city section for students, not instead of it */}
+            {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
             <div className="bg-[#6C47FF] rounded-[40px] p-8 sm:p-12 shadow-xl relative overflow-hidden transition-all duration-300">
               {/* FIX: Made decorative blobs responsive so they don't break mobile layout width */}
               <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
@@ -254,20 +250,41 @@ export function HomePageClient(props: HomePageClientProps) {
               <div className="relative z-10 space-y-8">
                 <div>
                   <h2 className="text-3xl font-heading font-black text-white flex items-center gap-3">
-                    <Sparkles className="w-8 h-8 text-amber-400" /> My Campus Directory
+                    <Sparkles className="w-8 h-8 text-amber-400" /> Events happening in your college
                   </h2>
                   <p className="text-[#E5E5EA] font-medium text-sm sm:text-base mt-2">Exclusive updates curated inside your college environment framework safely</p>
+
+                  <div className="mt-4 inline-flex items-center gap-1 bg-white/10 rounded-full p-1">
+                    <button
+                      type="button"
+                      onClick={() => setActiveCollegePill('mine')}
+                      className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                        activeCollegePill === 'mine' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-white/80'
+                      }`}
+                    >
+                      In Your College
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveCollegePill('other')}
+                      className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                        activeCollegePill === 'other' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-white/80'
+                      }`}
+                    >
+                      In Other College
+                    </button>
+                  </div>
                 </div>
 
-                {liveCollegeEvents.length > 0 ? (
+                {(activeCollegePill === 'mine' ? liveCollegeEvents : liveOtherCollegeEvents).length > 0 ? (
                   <EventGrid 
-                    events={liveCollegeEvents}
-                    gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                    defaultMatchLabel="College Exclusive"
-                    defaultImage="/window.svg"
-                    user={user}
-                  />
-                ) : (
+                    events={activeCollegePill === 'mine' ? liveCollegeEvents : liveOtherCollegeEvents}
+                    gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+                    defaultMatchLabel={activeCollegePill === 'mine' ? "College Exclusive" : "Open to All Colleges"}
+                    defaultImage="/window.svg"
+                    user={user}
+                  />
+                ) : (
                   <div className="py-12 text-center bg-[#5835e5] rounded-3xl border border-[#7a5cff]">
                     <p className="text-white font-bold uppercase tracking-widest text-xs">No active live campaigns running on campus timeline right now</p>
                     <Link href="/events/new" className="mt-4 inline-block bg-white text-[#6C47FF] px-6 py-3 rounded-full font-bold shadow-sm active:scale-95 transition-transform">
@@ -277,31 +294,39 @@ export function HomePageClient(props: HomePageClientProps) {
                 )}
               </div>
             </div>
-          ) : (activeTab === "around_you" || q || category || location) ? (
+            )}
+
+            {/* CITY SECTION — always shown */}
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                     <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
-                    {category 
-                      ? `${category}s` 
-                      : !user 
-                        ? "Events Happening" 
-                        : showPersonalized
-                          ? "For You" 
-                          : "Events Near You"}
+                    {category ? `${category}s` : "Events happening in the city"}
                   </h2>
-                  {showPersonalized && <p className="text-slate-500 text-sm font-medium">Based on your interests</p>}
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
-                  
-                  {/* NEW: City Fallback Label */}
-                  {profile?.preferred_cities?.[0] && !hasCityEvents && !q && !category && !branch && !location && (
-                    <div className="mt-3 inline-flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                      <MapIcon className="w-3.5 h-3.5 text-amber-500" />
-                      <p className="text-xs font-medium text-amber-700">
-                        No events in <span className="font-bold">{profile.preferred_cities[0]}</span> right now — showing all events.
-                      </p>
+
+                  {showFeedPills && (
+                    <div className="mt-3 inline-flex items-center gap-1 bg-slate-100 rounded-full p-1">
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeedPill('for_you')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                          activeFeedPill === 'for_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                        }`}
+                      >
+                        For You
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeedPill('around_you')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                          activeFeedPill === 'around_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                        }`}
+                      >
+                        Around You
+                      </button>
                     </div>
                   )}
                 </div>
@@ -415,7 +440,8 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               )}
             </div>
-          ) : null}
+            </>
+          )}
         </div>
         
         </div>

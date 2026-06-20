@@ -39,8 +39,11 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   
   // FIX: Properly type personalizedEvents to include matchReason so we don't use 'any'
   let personalizedEvents: (Partial<EventRow> & { matchReason?: string })[] = [];
+  let aroundYouEvents: Partial<EventRow>[] = [];
   let collegeEvents: Partial<EventRow>[] = [];
+  let otherCollegeEvents: Partial<EventRow>[] = [];
   let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
+  let activeCity = "Hyderabad"; // Default city for guests / non-onboarded users
 
   // Define exact fields needed globally for all queries in this file
   const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
@@ -50,30 +53,8 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
     profile = data as (Partial<ProfileRow> & { city?: string }) | null;
 
-   // 2. THE MATCHMAKER ENGINE: Category first, City only as fallback when category gives nothing
-    if (profile?.is_onboarded && ((profile.goals?.length ?? 0) > 0 || (profile.preferred_cities?.length ?? 0) > 0)) {
-
-      let matched: Partial<EventRow>[] = [];
-
-      // Priority 1: Category match
-      if ((profile.goals?.length ?? 0) > 0) {
-        const categoryQuery = supabase.from("events").select(EVENT_FIELDS).in("category", profile.goals || []).eq("status", "approved");
-        const { data: categoryEvents } = await (date ? categoryQuery.eq("date_string", date) : categoryQuery.gte("date_string", todayStr));
-        matched = (categoryEvents || []) as Partial<EventRow>[];
-      }
-
-      // Priority 2: Fallback to Preferred Cities only when category found nothing
-      if (matched.length === 0 && (profile.preferred_cities?.length ?? 0) > 0) {
-        const cityQuery = supabase.from("events").select(EVENT_FIELDS).in("city", profile.preferred_cities || []).eq("status", "approved");
-        const { data: cityEvents } = await (date ? cityQuery.eq("date_string", date) : cityQuery.gte("date_string", todayStr));
-        matched = (cityEvents || []) as Partial<EventRow>[];
-      }
-
-      // Ascending order by date (soonest first)
-      matched.sort((a, b) => (a.date_string || "").localeCompare(b.date_string || ""));
-
-      personalizedEvents = matched.map((event) => ({ ...event, matchReason: getMatchLabel(event, profile) }));
-    }
+    // City scope: use the user's chosen city, default stays "Hyderabad" if they haven't picked one
+    activeCity = profile?.preferred_cities?.[0] || "Hyderabad";
 
     // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
     if (profile?.user_type === 'student' && profile?.college_id) {
@@ -90,6 +71,23 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
         .limit(8);
       
       collegeEvents = (cEvents || []) as Partial<EventRow>[];
+
+      // NEW: "In Other College" pill — college events hosted elsewhere but open to any student
+      let otherCollegeQuery = supabase
+        .from("events")
+        .select(EVENT_FIELDS)
+        .eq("status", "approved")
+        .eq("college_only", true)
+        .neq("college_id", profile.college_id)
+        .contains("target_audience", ["Anyone"]);
+
+      otherCollegeQuery = date ? otherCollegeQuery.eq("date_string", date) : otherCollegeQuery.gte("date_string", todayStr);
+
+      const { data: ocEvents } = await otherCollegeQuery
+        .order("created_at", { ascending: false })
+        .limit(8);
+
+      otherCollegeEvents = (ocEvents || []) as Partial<EventRow>[];
     }
   }
 
@@ -129,7 +127,12 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   
   if (category) query = query.eq("category", category);
 
-  if (location) query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
+  if (location) {
+    query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
+  } else {
+    // No explicit location filter? Scope to the user's city, but always let virtual/online events through
+    query = query.or(`city.eq.${activeCity},is_virtual.eq.true`);
+  }
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
 
@@ -159,6 +162,17 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   }
 
   const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+
+  // Split the city-scoped feed: "For You" = chosen categories, "Around You" = everything else
+  if ((profile?.goals?.length ?? 0) > 0) {
+    const goalSet = new Set(profile!.goals);
+    const forYou = allEvents.filter((e) => e.category && goalSet.has(e.category));
+    const others = allEvents.filter((e) => !(e.category && goalSet.has(e.category)));
+    personalizedEvents = forYou.map((event) => ({ ...event, matchReason: getMatchLabel(event, profile) }));
+    aroundYouEvents = others;
+  } else {
+    aroundYouEvents = allEvents;
+  }
 
   // NEW: Check if there are any events in the user's city (Empty City State Fallback)
   let hasCityEvents = true;
@@ -235,10 +249,13 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     eventDates,
     allEventDates,
     personalizedEvents,
+    aroundYouEvents,
     collegeEvents,
+    otherCollegeEvents,
     fallbackEvents,
     allEvents,
     hasCityEvents,
+    activeCity,
     dynamicChips,
     dynamicLocationChips,
     featuredEvents,
