@@ -84,6 +84,16 @@ export function useEventSubmit() {
           "Event Curator";
       }
 
+      // NEW: For College-Only events, auto-assign the curator's own college_id
+      if ((finalPayload as any).college_only) {
+        const { data: collegeProfile } = await supabase
+          .from("profiles")
+          .select("college_id")
+          .eq("id", user.id)
+          .single();
+        (finalPayload as any).college_id = collegeProfile?.college_id || null;
+      }
+
       if (isEditing && eventId) {
         console.log("[useEventSubmit] Updating event with creator_id:", user.id);
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);

@@ -113,13 +113,13 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     setIsSaving(true);
     
     const updatePayload = {
-      city, 
+      preferred_cities: city ? [city] : [],
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
       branch: role === "Student" ? branch : null,
       graduation_year: role === "Student" ? year : null,
-      role: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: categories,
+      user_type: role === "Student" ? 'student' : role.toLowerCase(),
+      goals: categories.slice(0, 6),
       is_onboarded: true
     };
 

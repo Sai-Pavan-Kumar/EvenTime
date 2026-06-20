@@ -43,11 +43,11 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
 
   // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   if (user) {
     // FIX: Removed 'as any' from the select statement
-    const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, role, college_id, city").eq("id", user.id).single();
+    const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
     profile = data as (Partial<ProfileRow> & { city?: string }) | null;
 
    // 2. THE MATCHMAKER ENGINE: Fetch events matching user's Branch OR Goals
@@ -84,7 +84,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     }
 
     // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
-    if (profile?.role === 'student' && profile?.college_id) {
+    if (profile?.user_type === 'student' && profile?.college_id) {
       let collegeQuery = supabase
         .from("events")
         .select(EVENT_FIELDS) // Replaced "*"
@@ -115,7 +115,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   }
 
   // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   let query = supabase
     .from("events")
@@ -141,6 +141,14 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
 
+  // College-only events: hide from everyone except students of that exact college,
+  // unless the event explicitly opens itself up to "Anyone"
+  if (profile?.user_type === 'student' && profile?.college_id) {
+    query = query.or(`college_only.is.null,college_only.eq.false,college_id.eq.${profile.college_id},target_audience.cs.{Anyone}`);
+  } else {
+    query = query.or(`college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`);
+  }
+
   const { data: rawAllEvents } = await query;
 
   // NEW: Fetch user profiles if search query starts with '@'
@@ -162,11 +170,12 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   // NEW: Check if there are any events in the user's city (Empty City State Fallback)
   let hasCityEvents = true;
-  if (profile?.city && allEvents && allEvents.length > 0 && !q && !category && !branch) {
+  const primaryCity = profile?.preferred_cities?.[0];
+  if (primaryCity && allEvents && allEvents.length > 0 && !q && !category && !branch) {
     // FIX: Added (event: Partial<EventRow>) type
     hasCityEvents = allEvents.some((event: Partial<EventRow>) => 
-      event.location?.toLowerCase().includes(profile.city!.toLowerCase()) || 
-      event.city?.toLowerCase().includes(profile.city!.toLowerCase())
+      event.location?.toLowerCase().includes(primaryCity.toLowerCase()) || 
+      event.city?.toLowerCase().includes(primaryCity.toLowerCase())
     );
   }
 

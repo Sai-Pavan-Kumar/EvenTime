@@ -111,7 +111,9 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       status: eventData.isTrustedDomain ? "approved" : "pending",
       registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
       branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
+      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
+      college_year: isCollegeCategory ? eventData.collegeYear : null,
+      college_only: isCollegeCategory ? eventData.collegeOnly : null,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);

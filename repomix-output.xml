@@ -430,7 +430,8 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   const [
     { data: events },
     followResult,
-    { count: followerCount }
+    { count: followerCount },
+    { data: appSettings }
   ] = await Promise.all([
     // 1. Fetch Curator's Approved Events
     supabase
@@ -454,12 +455,16 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     supabase
       .from("followers")
       .select("*", { count: "exact", head: true })
-      .eq("curator_id", curator.id)
+      .eq("curator_id", curator.id),
+
+    // 4. Check if leaderboard / ET Score is enabled platform-wide
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
 
   const isFollowing = !!followResult.data;
 
   const etScore = curator.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 
@@ -517,10 +522,12 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
               </div>
 
-              <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
-                <span className="text-xl font-black text-amber-600">{etScore}</span>
-              </div>
+              {leaderboardEnabled && (
+                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
+                  <span className="text-xl font-black text-amber-600">{etScore}</span>
+                </div>
+              )}
 
               {/* NEW: Follow Button (Hidden if viewing own profile or logged out) */}
               {currentUser && currentUser.id !== curator.id && (
@@ -3578,84 +3585,6 @@ export async function requireAdmin(supabase: SupabaseClient, userId: string): Pr
 }
 </file>
 
-<file path="src/lib/city-config.ts">
-export const CITY_CONFIG: Record<string, {
-  backgroundImage: string;
-  accentColor: string;
-}> = {
-  'hyderabad': {
-    backgroundImage: '/cities/hyderabad.webp',
-    accentColor: '#6C47FF',
-  },
-  'bangalore': {
-    backgroundImage: '/cities/bangalore.webp',
-    accentColor: '#0EA5E9',
-  },
-  'bengaluru': {
-    backgroundImage: '/cities/bangalore.webp', // same image, alias
-    accentColor: '#0EA5E9',
-  },
-  'mumbai': {
-    backgroundImage: '/cities/mumbai.webp',
-    accentColor: '#F59E0B',
-  },
-  'delhi': {
-    backgroundImage: '/cities/delhi.webp',
-    accentColor: '#EF4444',
-  },
-  'new-delhi': {
-    backgroundImage: '/cities/delhi.webp', // alias
-    accentColor: '#EF4444',
-  },
-  'chennai': {
-    backgroundImage: '/cities/chennai.webp',
-    accentColor: '#10B981',
-  },
-  'pune': {
-    backgroundImage: '/cities/pune.webp',
-    accentColor: '#8B5CF6',
-  },
-  'kolkata': {
-    backgroundImage: '/cities/kolkata.webp',
-    accentColor: '#F97316',
-  },
-  'jaipur': {
-    backgroundImage: '/cities/jaipur.webp',
-    accentColor: '#EC4899',
-  },
-  'ahmedabad': {
-    backgroundImage: '/cities/ahmedabad.webp',
-    accentColor: '#14B8A6',
-  },
-  'kochi': {
-    backgroundImage: '/cities/kochi.webp',
-    accentColor: '#22C55E',
-  },
-  'visakhapatnam': {
-    backgroundImage: '/cities/vizag.webp', // alias
-    accentColor: '#3B82F6',
-  },
-  'coimbatore': {
-    backgroundImage: '/cities/coimbatore.webp',
-    accentColor: '#A855F7',
-  },
-  'nizamabad': {
-    backgroundImage: '/cities/nizamabad.webp',
-    accentColor: '#6C47FF',
-  },
-  'online': {
-    backgroundImage: '/cities/online.webp',
-    accentColor: '#6366F1',
-  },
-};
-
-export const getCityConfig = (city: string) => {
-  if (!city) return CITY_CONFIG['default'] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
-  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
-};
-</file>
-
 <file path="src/lib/constants/branches.ts">
 // src/lib/constants/branches.ts
 
@@ -3833,18 +3762,6 @@ export const INDIAN_COLLEGE_BRANCHES = [
   "MA",
   "PhD"
 ] as const;
-</file>
-
-<file path="src/lib/constants/cities.ts">
-export const CITIES = [
-  "Ahmedabad","Bengaluru","Bhopal","Chennai","Coimbatore","Guntur","Gurugram",
-  "Hyderabad","Indore","Jaipur","Kakinada","Kanpur","Karimnagar","Khammam",
-  "Kochi","Kolkata","Lucknow","Mangaluru","Mumbai","Mysuru","Nagpur","New Delhi",
-  "Nizamabad","Noida","Pune","Thiruvananthapuram","Tirupati","Vijayawada",
-  "Visakhapatnam","Warangal"
-] as const;
-
-export type City = typeof CITIES[number];
 </file>
 
 <file path="src/lib/constants/goals.ts">
@@ -5189,12 +5106,14 @@ Promise<{ tab?: string }>; }) {
     { data: profile },
     { data: myEventsRaw },
     { data: savedEventsData },
-    { data: myReportsRaw, error: reportsError }
+    { data: myReportsRaw, error: reportsError },
+    { data: appSettings }
   ] = await Promise.all([
     supabase.from("profiles").select("full_name, avatar_url, et_score, college, goals").eq("id", user.id).maybeSingle(),
     supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
     supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false })
+    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
 
   if (!profile) {
@@ -5220,6 +5139,7 @@ Promise<{ tab?: string }>; }) {
   const myEvents = myEventsRaw as ProfileEvent[] | null;
 
   const etScore = profile?.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
   const completionPercentage = calculateCompletion(profile);
   const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
@@ -5298,7 +5218,7 @@ Promise<{ tab?: string }>; }) {
                 </div>
                 
                 {/* Unified Minimal Stats Panel */}
-                <div className="grid grid-cols-4 w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100">
+                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
                   <div className="flex flex-col items-center">
                     <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
@@ -5311,10 +5231,12 @@ Promise<{ tab?: string }>; }) {
                     <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
-                    <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
-                  </div>
+                  {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
+                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -5797,13 +5719,13 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     setIsSaving(true);
     
     const updatePayload = {
-      city, 
+      preferred_cities: city ? [city] : [],
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
       branch: role === "Student" ? branch : null,
       graduation_year: role === "Student" ? year : null,
-      role: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: categories,
+      user_type: role === "Student" ? 'student' : role.toLowerCase(),
+      goals: categories.slice(0, 6),
       is_onboarded: true
     };
 
@@ -6233,6 +6155,16 @@ export function useEventSubmit() {
           "Event Curator";
       }
 
+      // NEW: For College-Only events, auto-assign the curator's own college_id
+      if ((finalPayload as any).college_only) {
+        const { data: collegeProfile } = await supabase
+          .from("profiles")
+          .select("college_id")
+          .eq("id", user.id)
+          .single();
+        (finalPayload as any).college_id = collegeProfile?.college_id || null;
+      }
+
       if (isEditing && eventId) {
         console.log("[useEventSubmit] Updating event with creator_id:", user.id);
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
@@ -6473,6 +6405,158 @@ export const getCategoryConfig = (category: string) => {
   const key = category.toLowerCase().trim().replace(/\s+/g, '-');
   return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
 };
+</file>
+
+<file path="src/lib/city-config.ts">
+export const CITY_CONFIG: Record<string, {
+  backgroundImage: string;
+  accentColor: string;
+}> = {
+  'hyderabad': {
+    backgroundImage: '/cities/hyderabad.webp',
+    accentColor: '#6C47FF',
+  },
+   'bengaluru': {
+    backgroundImage: '/cities/bengaluru.webp', 
+    accentColor: '#0EA5E9',
+  },
+  'mumbai': {
+    backgroundImage: '/cities/mumbai.webp',
+    accentColor: '#F59E0B',
+  },
+  'new-delhi': {
+    backgroundImage: '/cities/new-delhi.webp', 
+    accentColor: '#EF4444',
+  },
+  'chennai': {
+    backgroundImage: '/cities/chennai.webp',
+    accentColor: '#10B981',
+  },
+  'pune': {
+    backgroundImage: '/cities/pune.webp',
+    accentColor: '#8B5CF6',
+  },
+  'kolkata': {
+    backgroundImage: '/cities/kolkata.webp',
+    accentColor: '#F97316',
+  },
+  'jaipur': {
+    backgroundImage: '/cities/jaipur.webp',
+    accentColor: '#EC4899',
+  },
+  'ahmedabad': {
+    backgroundImage: '/cities/ahmedabad.webp',
+    accentColor: '#14B8A6',
+  },
+  'kochi': {
+    backgroundImage: '/cities/kochi.webp',
+    accentColor: '#22C55E',
+  },
+  'visakhapatnam': {
+    backgroundImage: '/cities/visakhapatnam.webp', 
+    accentColor: '#6366F1',
+  },
+  'coimbatore': {
+    backgroundImage: '/cities/coimbatore.webp',
+    accentColor: '#A855F7',
+  },
+  'nizamabad': {
+    backgroundImage: '/cities/nizamabad.webp',
+    accentColor: '#6C47FF',
+  },
+  'online': {
+    backgroundImage: '/cities/online.webp',
+    accentColor: '#6366F1',
+  },
+  'bhopal': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#3B82F6',
+  },
+  'guntur': {
+    backgroundImage: '/cities/guntur.webp', 
+    accentColor: '#6366F1',
+  },
+  'gurugram': {
+    backgroundImage: '/cities/gurugram.webp', 
+    accentColor: '#6366F1',
+  },
+  'indore': {
+    backgroundImage: '/cities/indore.webp', 
+    accentColor: '#6366F1',
+  },
+  'kakinada': {
+    backgroundImage: '/cities/kakinada.webp', 
+    accentColor: '#6366F1',
+  },
+  'kanpur': {
+    backgroundImage: '/cities/kanpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'karimnagar': {
+    backgroundImage: '/cities/karimnagar.webp', 
+    accentColor: '#6366F1',
+  },
+  'khammam': {
+    backgroundImage: '/cities/khammam.webp', 
+    accentColor: '#6366F1',
+  },
+  'lucknow': {
+    backgroundImage: '/cities/lucknow.webp', 
+    accentColor: '#6366F1',
+  },
+  'mangaluru': {
+    backgroundImage: '/cities/mangaluru.webp', 
+    accentColor: '#6366F1',
+  },
+  'mysuru': {
+    backgroundImage: '/cities/mysuru.webp', 
+    accentColor: '#6366F1',
+  },
+  'nagpur': {
+    backgroundImage: '/cities/nagpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'noida': {
+    backgroundImage: '/cities/noida.webp', 
+    accentColor: '#6366F1',
+  },
+  'thiruvananthapuram': {
+    backgroundImage: '/cities/thiruvananthapuram.webp', 
+    accentColor: '#6366F1',
+  },
+  'tirupati': {
+    backgroundImage: '/cities/tirupati.webp', 
+    accentColor: '#6366F1',
+  },
+  'vijayawada': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#6366F1',
+  },
+  'warangal': {
+    backgroundImage: '/cities/vijayawada.webp', 
+    accentColor: '#6366F1',
+  },
+};
+
+export const getCityConfig = (city: string) => {
+  if (!city) return CITY_CONFIG['default'] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
+  return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+};
+</file>
+
+<file path="src/lib/constants/cities.ts">
+import { Indie_Flower, Kantumruy_Pro } from "next/font/google";
+
+export const CITIES = [
+  "Ahmedabad","Bengaluru","Bhopal","Chennai","Coimbatore","Guntur","Gurugram",
+  "Hyderabad","Indore","Jaipur","Kakinada","Kanpur","Karimnagar","Khammam",
+  "Kochi","Kolkata","Lucknow","Mangaluru","Mumbai","Mysuru","Nagpur","New Delhi",
+  "Nizamabad","Noida","Pune","Thiruvananthapuram","Tirupati","Vijayawada",
+  "Visakhapatnam","Warangal"
+] as const;
+
+export type City = typeof CITIES[number];
 </file>
 
 <file path="src/lib/constants/cookies.ts">
@@ -8332,356 +8416,6 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
 }
 </file>
 
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-      setIsSaving(true);
-      setSavedState(!savedState); // optimistic update
-      
-      if (onSaveToggle) {
-        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > eventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-        }  }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > checkDate.getTime();
-          
-          if (pastDate || pastTime) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                  {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      <Sparkles className="w-3 h-3" /> Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NEW: Auth Modal Overlay */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
-            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
-              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Bookmark className="w-6 h-6 text-brand" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
-              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
-                Sign In
-              </Link>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-</file>
-
 <file path="src/app/profile/settings/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -9278,252 +9012,361 @@ export function useDuplicateCheck() {
 }
 </file>
 
-<file path="src/lib/home/fetchHomePageData.ts">
-import { createClient } from "@/lib/supabase/server";
-import { getMatchLabel } from "@/lib/events/match";
-import type { ProfileRow, EventRow } from "@/types";
-import type { HomePageClientProps } from "./HomePageClient";
+<file path="src/app/events/EventCard.tsx">
+"use client";
 
-export interface HomePageParams {
-  branch?: string;
-  q?: string;
-  date?: string;
-  category?: string;
-  location?: string;
-  view?: string;
-  tab?: string;
-  show_cal?: string;
-}
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
 
-export async function fetchHomePageData(searchParams: HomePageParams) {
-  const { branch, q, date, category, location, view, tab, show_cal } = searchParams;
-  const supabase = await createClient();
-  const activeTab = tab || "around_you";
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+  }
 
-  // NEW: Dynamically get today's date to display on the button
-  const today = new Date();
-  const day = today.getDate();
-  const month = today.toLocaleDateString('en-US', { month: 'short' });
-  const displayToday = `${day} ${month}`; // Formats to "24 May"
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
 
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  const cutoff = new Date(today);
-cutoff.setDate(cutoff.getDate() - 1);
-const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
-  // 1. Fetch user session and profile for onboarding check
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // FIX: Extend the ProfileRow type to include 'city' so TypeScript stops complaining
-  let profile: (Partial<ProfileRow> & { city?: string }) | null = null; 
-  
-  // FIX: Properly type personalizedEvents to include matchReason so we don't use 'any'
-  let personalizedEvents: (Partial<EventRow> & { matchReason?: string })[] = [];
-  let collegeEvents: Partial<EventRow>[] = [];
-  let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
-
-  // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
-
-  if (user) {
-    // FIX: Removed 'as any' from the select statement
-    const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, role, college_id, city").eq("id", user.id).single();
-    profile = data as (Partial<ProfileRow> & { city?: string }) | null;
-
-   // 2. THE MATCHMAKER ENGINE: Fetch events matching user's Branch OR Goals
-    if (profile?.is_onboarded && (profile.branch || (profile.goals?.length ?? 0) > 0)) {
-
-      // Fetch by Branch (Filtered at DB level)
-      const branchQuery = supabase.from("events").select(EVENT_FIELDS).contains("branch_tags", [profile.branch]).eq("status", "approved");
-      const { data: branchEvents } = profile.branch 
-        ? await (date ? branchQuery.eq("date_string", date) : branchQuery.gte("date_string", todayStr))
-        : { data: [] };
-        
-      // Fetch by Goals (Filtered at DB level)
-      const goalQuery = supabase.from("events").select(EVENT_FIELDS).overlaps("goal_tags", profile.goals || []).eq("status", "approved");
-      const { data: goalEvents } = (profile.goals?.length ?? 0) > 0 
-        ? await (date ? goalQuery.eq("date_string", date) : goalQuery.gte("date_string", todayStr))
-        : { data: [] };
-
-      // Merge and deduplicate intelligently (JS date filtering removed)
-      const merged = [...(branchEvents || []), ...(goalEvents || [])];
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
       
-      const uniqueEventsMap = new Map();
-      // FIX: Added (event: Partial<EventRow>) type
-      merged.forEach((event: Partial<EventRow>) => {
-        if (!uniqueEventsMap.has(event.id)) {
-          // Identify EXACTLY why this event matched
-          const matchReason = getMatchLabel(event, profile);
-          
-          uniqueEventsMap.set(event.id, { ...event, matchReason });
-        }
-      });
-
-      // Get the top 4 highly relevant events
-      personalizedEvents = Array.from(uniqueEventsMap.values()).slice(0, 4) as (Partial<EventRow> & { matchReason?: string })[];
-    }
-
-    // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
-    if (profile?.role === 'student' && profile?.college_id) {
-      let collegeQuery = supabase
-        .from("events")
-        .select(EVENT_FIELDS) // Replaced "*"
-        .eq("status", "approved")
-        .eq("college_id", profile.college_id);
-        
-      collegeQuery = date ? collegeQuery.eq("date_string", date) : collegeQuery.gte("date_string", todayStr);
-
-      const { data: cEvents } = await collegeQuery
-        .order("created_at", { ascending: false })
-        .limit(8);
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
       
-      collegeEvents = (cEvents || []) as Partial<EventRow>[];
-    }
-  }
+      setIsSaving(true);
+      setSavedState(!savedState); // optimistic update
+      
+      if (onSaveToggle) {
+        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
 
-  // 3. Fetch All Events with Dynamic Filters
-  
-  // NEW: Get followed curator IDs first
-  let followedCuratorIds: string[] = [];
-  if (user) {
-    const { data: follows } = await supabase
-      .from("followers")
-      .select("curator_id")
-      .eq("follower_id", user.id);
-    // FIX: Typed f parameter to include null, as expected by Supabase types
-    followedCuratorIds = follows?.map((f: { curator_id: string | null }) => f.curator_id as string) || [];
-  }
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
 
-  // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual";
-
-  let query = supabase
-    .from("events")
-    .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
-    .eq("status", "approved");
-
-  // Filter past events at DB level instead of JS to prevent scalability crashes
-  if (date) {
-    // Matches the start of the ISO string (YYYY-MM-DD)
-    query = query.ilike("date_string", `${date}%`);
-  } else {
-    query = query.gte("date_string", todayStr);
-  }
-  
-  // Final Order: Featured first, then Created Date
-  query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
-
-  if (branch) query = query.contains("branch_tags", [branch]);
-  
-  if (category) query = query.eq("category", category);
-
-  if (location) query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
-  
-  if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
-
-  const { data: rawAllEvents } = await query;
-
-  // NEW: Fetch user profiles if search query starts with '@'
-  let userProfiles: Partial<ProfileRow>[] = [];
-  if (q && q.startsWith('@')) {
-    const usernameQuery = q.substring(1).trim();
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("*")
-      .ilike("username", `%${usernameQuery}%`)
-      .limit(10);
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
     
-    if (profilesData) {
-      userProfiles = profilesData as Partial<ProfileRow>[];
-    }
-  }
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > eventDate.getTime();
 
-  const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+        }  }
 
-  // NEW: Check if there are any events in the user's city (Empty City State Fallback)
-  let hasCityEvents = true;
-  if (profile?.city && allEvents && allEvents.length > 0 && !q && !category && !branch) {
-    // FIX: Added (event: Partial<EventRow>) type
-    hasCityEvents = allEvents.some((event: Partial<EventRow>) => 
-      event.location?.toLowerCase().includes(profile.city!.toLowerCase()) || 
-      event.city?.toLowerCase().includes(profile.city!.toLowerCase())
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          const pastTime = today.getTime() > checkDate.getTime();
+          
+          if (pastDate || pastTime) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.png') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                  {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      <Sparkles className="w-3 h-3" /> Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{city}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* NEW: Auth Modal Overlay */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
+            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
+              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Bookmark className="w-6 h-6 text-brand" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
+              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
+                Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
-
-  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
-  const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
-  const activeLocations = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.city).filter(Boolean) as string[]));
-  const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
-
-  // Fetch ALL approved event dates (unfiltered by date param) so calendar dots persist after date selection
-  const { data: allDateRows } = await supabase
-    .from("events")
-    .select("date_string")
-    .eq("status", "approved");
-
-  const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
-    
-  // Only create the chips array (including 'All') if there are actual categories
-  const dynamicChips = activeCategories.length > 0 
-    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat as string }))]
-    : [];
-  
-  const dynamicLocationChips = activeLocations.length > 0
-    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc as string, value: loc as string }))]
-    : [];
-
-  // NEW: Filter out featured events for the top scrolling section
-  // FIX: Added (event: Partial<EventRow>) type
-  const featuredEvents = allEvents?.filter((event: Partial<EventRow>) => event.is_featured) || [];
-
-  // --- NEW: EMPTY STATE FALLBACK LOGIC ---
-  let isFallback = false;
-
-  // If user searched/filtered and found nothing, fetch some virtual events
-  if ((!allEvents || allEvents.length === 0) && (q || category || location || branch)) {
-    isFallback = true;
-    let virtualQuery = supabase
-      .from("events")
-      .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
-      .eq("status", "approved")
-      .eq("is_virtual", true);
-      
-    virtualQuery = date ? virtualQuery.eq("date_string", date) : virtualQuery.gte("date_string", todayStr);
-
-    const { data: virtualEvents } = await virtualQuery
-      .order("created_at", { ascending: false })
-      .limit(4);
-    
-    // Typecast to ensure it matches the Partial<EventRow>[] declaration
-    fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
-  }
-
-  return {
-    user,
-    profile,
-    activeTab,
-    displayToday,
-    date,
-    eventDates,
-    allEventDates,
-    personalizedEvents,
-    collegeEvents,
-    fallbackEvents,
-    allEvents,
-    hasCityEvents,
-    dynamicChips,
-    dynamicLocationChips,
-    featuredEvents,
-    isFallback,
-    userProfiles,
-    branch,
-    q,
-    category,
-    location,
-    view
-  };
-}
 </file>
 
 <file path="src/features/create-event/CreateEventForm.tsx">
@@ -9640,7 +9483,9 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       status: eventData.isTrustedDomain ? "approved" : "pending",
       registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
       branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      is_college_exclusive: isCollegeCategory ? eventData.collegeOnly : null,
+      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
+      college_year: isCollegeCategory ? eventData.collegeYear : null,
+      college_only: isCollegeCategory ? eventData.collegeOnly : null,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);
@@ -9691,6 +9536,270 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       </div>
     </div>
   );
+}
+</file>
+
+<file path="src/lib/home/fetchHomePageData.ts">
+import { createClient } from "@/lib/supabase/server";
+import { getMatchLabel } from "@/lib/events/match";
+import type { ProfileRow, EventRow } from "@/types";
+import type { HomePageClientProps } from "./HomePageClient";
+
+export interface HomePageParams {
+  branch?: string;
+  q?: string;
+  date?: string;
+  category?: string;
+  location?: string;
+  view?: string;
+  tab?: string;
+  show_cal?: string;
+}
+
+export async function fetchHomePageData(searchParams: HomePageParams) {
+  const { branch, q, date, category, location, view, tab, show_cal } = searchParams;
+  const supabase = await createClient();
+  const activeTab = tab || "around_you";
+
+  // NEW: Dynamically get today's date to display on the button
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.toLocaleDateString('en-US', { month: 'short' });
+  const displayToday = `${day} ${month}`; // Formats to "24 May"
+
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const cutoff = new Date(today);
+cutoff.setDate(cutoff.getDate() - 1);
+const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+  // 1. Fetch user session and profile for onboarding check
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // FIX: Extend the ProfileRow type to include 'city' so TypeScript stops complaining
+  let profile: (Partial<ProfileRow> & { city?: string }) | null = null; 
+  
+  // FIX: Properly type personalizedEvents to include matchReason so we don't use 'any'
+  let personalizedEvents: (Partial<EventRow> & { matchReason?: string })[] = [];
+  let collegeEvents: Partial<EventRow>[] = [];
+  let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
+
+  // Define exact fields needed globally for all queries in this file
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+
+  if (user) {
+    // FIX: Removed 'as any' from the select statement
+    const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
+    profile = data as (Partial<ProfileRow> & { city?: string }) | null;
+
+   // 2. THE MATCHMAKER ENGINE: Fetch events matching user's Branch OR Goals
+    if (profile?.is_onboarded && (profile.branch || (profile.goals?.length ?? 0) > 0)) {
+
+      // Fetch by Branch (Filtered at DB level)
+      const branchQuery = supabase.from("events").select(EVENT_FIELDS).contains("branch_tags", [profile.branch]).eq("status", "approved");
+      const { data: branchEvents } = profile.branch 
+        ? await (date ? branchQuery.eq("date_string", date) : branchQuery.gte("date_string", todayStr))
+        : { data: [] };
+        
+      // Fetch by Goals (Filtered at DB level)
+      const goalQuery = supabase.from("events").select(EVENT_FIELDS).overlaps("goal_tags", profile.goals || []).eq("status", "approved");
+      const { data: goalEvents } = (profile.goals?.length ?? 0) > 0 
+        ? await (date ? goalQuery.eq("date_string", date) : goalQuery.gte("date_string", todayStr))
+        : { data: [] };
+
+      // Merge and deduplicate intelligently (JS date filtering removed)
+      const merged = [...(branchEvents || []), ...(goalEvents || [])];
+      
+      const uniqueEventsMap = new Map();
+      // FIX: Added (event: Partial<EventRow>) type
+      merged.forEach((event: Partial<EventRow>) => {
+        if (!uniqueEventsMap.has(event.id)) {
+          // Identify EXACTLY why this event matched
+          const matchReason = getMatchLabel(event, profile);
+          
+          uniqueEventsMap.set(event.id, { ...event, matchReason });
+        }
+      });
+
+      // Get the top 4 highly relevant events
+      personalizedEvents = Array.from(uniqueEventsMap.values()).slice(0, 4) as (Partial<EventRow> & { matchReason?: string })[];
+    }
+
+    // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
+    if (profile?.user_type === 'student' && profile?.college_id) {
+      let collegeQuery = supabase
+        .from("events")
+        .select(EVENT_FIELDS) // Replaced "*"
+        .eq("status", "approved")
+        .eq("college_id", profile.college_id);
+        
+      collegeQuery = date ? collegeQuery.eq("date_string", date) : collegeQuery.gte("date_string", todayStr);
+
+      const { data: cEvents } = await collegeQuery
+        .order("created_at", { ascending: false })
+        .limit(8);
+      
+      collegeEvents = (cEvents || []) as Partial<EventRow>[];
+    }
+  }
+
+  // 3. Fetch All Events with Dynamic Filters
+  
+  // NEW: Get followed curator IDs first
+  let followedCuratorIds: string[] = [];
+  if (user) {
+    const { data: follows } = await supabase
+      .from("followers")
+      .select("curator_id")
+      .eq("follower_id", user.id);
+    // FIX: Typed f parameter to include null, as expected by Supabase types
+    followedCuratorIds = follows?.map((f: { curator_id: string | null }) => f.curator_id as string) || [];
+  }
+
+  // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+
+  let query = supabase
+    .from("events")
+    .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
+    .eq("status", "approved");
+
+  // Filter past events at DB level instead of JS to prevent scalability crashes
+  if (date) {
+    // Matches the start of the ISO string (YYYY-MM-DD)
+    query = query.ilike("date_string", `${date}%`);
+  } else {
+    query = query.gte("date_string", todayStr);
+  }
+  
+  // Final Order: Featured first, then Created Date
+  query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
+
+  if (branch) query = query.contains("branch_tags", [branch]);
+  
+  if (category) query = query.eq("category", category);
+
+  if (location) query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
+  
+  if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
+
+  // College-only events: hide from everyone except students of that exact college,
+  // unless the event explicitly opens itself up to "Anyone"
+  if (profile?.user_type === 'student' && profile?.college_id) {
+    query = query.or(`college_only.is.null,college_only.eq.false,college_id.eq.${profile.college_id},target_audience.cs.{Anyone}`);
+  } else {
+    query = query.or(`college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`);
+  }
+
+  const { data: rawAllEvents } = await query;
+
+  // NEW: Fetch user profiles if search query starts with '@'
+  let userProfiles: Partial<ProfileRow>[] = [];
+  if (q && q.startsWith('@')) {
+    const usernameQuery = q.substring(1).trim();
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("*")
+      .ilike("username", `%${usernameQuery}%`)
+      .limit(10);
+    
+    if (profilesData) {
+      userProfiles = profilesData as Partial<ProfileRow>[];
+    }
+  }
+
+  const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+
+  // NEW: Check if there are any events in the user's city (Empty City State Fallback)
+  let hasCityEvents = true;
+  const primaryCity = profile?.preferred_cities?.[0];
+  if (primaryCity && allEvents && allEvents.length > 0 && !q && !category && !branch) {
+    // FIX: Added (event: Partial<EventRow>) type
+    hasCityEvents = allEvents.some((event: Partial<EventRow>) => 
+      event.location?.toLowerCase().includes(primaryCity.toLowerCase()) || 
+      event.city?.toLowerCase().includes(primaryCity.toLowerCase())
+    );
+  }
+
+  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
+  const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
+  const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
+
+  // Fetch ALL approved event dates (unfiltered by date param) so calendar dots persist after date selection
+  const { data: allDateRows } = await supabase
+    .from("events")
+    .select("date_string")
+    .eq("status", "approved");
+
+  const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
+
+  // Fetch ALL approved event cities (unfiltered by location param) so the location dropdown always shows every city
+  const { data: allCityRows } = await supabase
+    .from("events")
+    .select("city")
+    .eq("status", "approved");
+
+  const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
+    
+  // Only create the chips array (including 'All') if there are actual categories
+  const dynamicChips = activeCategories.length > 0 
+    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat as string }))]
+    : [];
+  
+  const dynamicLocationChips = activeLocations.length > 0
+    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc as string, value: loc as string }))]
+    : [];
+
+  // NEW: Filter out featured events for the top scrolling section
+  // FIX: Added (event: Partial<EventRow>) type
+  const featuredEvents = allEvents?.filter((event: Partial<EventRow>) => event.is_featured) || [];
+
+  // --- NEW: EMPTY STATE FALLBACK LOGIC ---
+  let isFallback = false;
+
+  // If user searched/filtered and found nothing, fetch some virtual events
+  if ((!allEvents || allEvents.length === 0) && (q || category || location || branch)) {
+    isFallback = true;
+    let virtualQuery = supabase
+      .from("events")
+      .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
+      .eq("status", "approved")
+      .eq("is_virtual", true);
+      
+    virtualQuery = date ? virtualQuery.eq("date_string", date) : virtualQuery.gte("date_string", todayStr);
+
+    const { data: virtualEvents } = await virtualQuery
+      .order("created_at", { ascending: false })
+      .limit(4);
+    
+    // Typecast to ensure it matches the Partial<EventRow>[] declaration
+    fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
+  }
+
+  return {
+    user,
+    profile,
+    activeTab,
+    displayToday,
+    date,
+    eventDates,
+    allEventDates,
+    personalizedEvents,
+    collegeEvents,
+    fallbackEvents,
+    allEvents,
+    hasCityEvents,
+    dynamicChips,
+    dynamicLocationChips,
+    featuredEvents,
+    isFallback,
+    userProfiles,
+    branch,
+    q,
+    category,
+    location,
+    view
+  };
 }
 </file>
 
@@ -11545,10 +11654,10 @@ export function HomePageClient(props: HomePageClientProps) {
         </div>
 
         {/* COMBINED DISCOVERY PILL - Moved out of the relative div to parent scope for sticky to work */}
-        <div className="sticky top-[80px] -mt-8 z-40 mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-4 w-max max-w-[90vw] mb-10">
+        <div className="sticky top-[80px] -mt-8 z-40 mx-auto bg-white/95 backdrop-blur-md rounded-[28px] sm:rounded-full shadow-lg border border-slate-200 px-4 py-3 sm:py-2 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-[92vw] sm:w-max sm:max-w-[90vw] mb-10">
             
             {/* INSTANT DISCOVERY CHIPS */}
-            <div className="flex items-center gap-1.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            <div className="flex items-center justify-center gap-1.5 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
               <span className="text-sm font-bold text-slate-500 whitespace-nowrap">Explore:</span>
               <FilterChips dynamicChips={dynamicChips} category={category} location={location} q={q} branch={branch} paramName="category" />
               
@@ -11562,7 +11671,7 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
 
             {/* DIVIDER */}
-            <div className="h-6 w-px bg-slate-300 shrink-0" />
+            <div className="hidden sm:block h-6 w-px bg-slate-300 shrink-0" />
 
             {/* DATE TOGGLE (Right Corner) */}
             <details ref={detailsRef} className="group cursor-pointer shrink-0 relative">
@@ -11617,7 +11726,7 @@ export function HomePageClient(props: HomePageClientProps) {
           )}
 
           {/* PREMIUM HYPER-LOCAL TAB LAYER SEPARATION CONTROL - STRICTLY STUDENTS ONLY */}
-          {user && profile?.role === 'student' && profile?.college_id && !q && !category && (
+          {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
             <div className="flex overflow-x-auto justify-start md:justify-start gap-3 sm:gap-4 border-b border-slate-200/60 pb-4 mb-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <Link
                 href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "around_you" } }}
@@ -11643,7 +11752,14 @@ export function HomePageClient(props: HomePageClientProps) {
           )}
 
           {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
-          {activeTab === "in_college" && user && profile?.role === 'student' && profile?.college_id && !q && !category ? (
+          {view === "map" ? (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
+                <MapIcon className="w-6 h-6 text-[#6C47FF]" /> Explore by City
+              </h2>
+              <CityGrid events={liveAllEvents || []} />
+            </div>
+          ) : activeTab === "in_college" && user && profile?.user_type === 'student' && profile?.college_id && !q && !category ? (
             <div className="bg-[#6C47FF] rounded-[40px] p-8 sm:p-12 shadow-xl relative overflow-hidden transition-all duration-300">
               {/* FIX: Made decorative blobs responsive so they don't break mobile layout width */}
               <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
@@ -11693,11 +11809,11 @@ export function HomePageClient(props: HomePageClientProps) {
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
                   
                   {/* NEW: City Fallback Label */}
-                  {profile?.city && !hasCityEvents && !q && !category && !branch && !location && (
+                  {profile?.preferred_cities?.[0] && !hasCityEvents && !q && !category && !branch && !location && (
                     <div className="mt-3 inline-flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                       <MapIcon className="w-3.5 h-3.5 text-amber-500" />
                       <p className="text-xs font-medium text-amber-700">
-                        No events in <span className="font-bold">{profile.city}</span> right now — showing all events.
+                        No events in <span className="font-bold">{profile.preferred_cities[0]}</span> right now — showing all events.
                       </p>
                     </div>
                   )}

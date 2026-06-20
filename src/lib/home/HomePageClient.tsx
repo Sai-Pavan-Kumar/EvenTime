@@ -240,7 +240,7 @@ export function HomePageClient(props: HomePageClientProps) {
           )}
 
           {/* PREMIUM HYPER-LOCAL TAB LAYER SEPARATION CONTROL - STRICTLY STUDENTS ONLY */}
-          {user && profile?.role === 'student' && profile?.college_id && !q && !category && (
+          {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
             <div className="flex overflow-x-auto justify-start md:justify-start gap-3 sm:gap-4 border-b border-slate-200/60 pb-4 mb-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <Link
                 href={{ pathname: "/", query: { ...(branch && { branch }), ...(location && { location }), ...(view && { view }), tab: "around_you" } }}
@@ -273,7 +273,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </h2>
               <CityGrid events={liveAllEvents || []} />
             </div>
-          ) : activeTab === "in_college" && user && profile?.role === 'student' && profile?.college_id && !q && !category ? (
+          ) : activeTab === "in_college" && user && profile?.user_type === 'student' && profile?.college_id && !q && !category ? (
             <div className="bg-[#6C47FF] rounded-[40px] p-8 sm:p-12 shadow-xl relative overflow-hidden transition-all duration-300">
               {/* FIX: Made decorative blobs responsive so they don't break mobile layout width */}
               <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
@@ -323,11 +323,11 @@ export function HomePageClient(props: HomePageClientProps) {
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
                   
                   {/* NEW: City Fallback Label */}
-                  {profile?.city && !hasCityEvents && !q && !category && !branch && !location && (
+                  {profile?.preferred_cities?.[0] && !hasCityEvents && !q && !category && !branch && !location && (
                     <div className="mt-3 inline-flex items-center gap-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
                       <MapIcon className="w-3.5 h-3.5 text-amber-500" />
                       <p className="text-xs font-medium text-amber-700">
-                        No events in <span className="font-bold">{profile.city}</span> right now — showing all events.
+                        No events in <span className="font-bold">{profile.preferred_cities[0]}</span> right now — showing all events.
                       </p>
                     </div>
                   )}

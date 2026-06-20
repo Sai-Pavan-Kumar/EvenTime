@@ -55,12 +55,14 @@ Promise<{ tab?: string }>; }) {
     { data: profile },
     { data: myEventsRaw },
     { data: savedEventsData },
-    { data: myReportsRaw, error: reportsError }
+    { data: myReportsRaw, error: reportsError },
+    { data: appSettings }
   ] = await Promise.all([
     supabase.from("profiles").select("full_name, avatar_url, et_score, college, goals").eq("id", user.id).maybeSingle(),
     supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
     supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false })
+    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
 
   if (!profile) {
@@ -86,6 +88,7 @@ Promise<{ tab?: string }>; }) {
   const myEvents = myEventsRaw as ProfileEvent[] | null;
 
   const etScore = profile?.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
   const completionPercentage = calculateCompletion(profile);
   const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
@@ -164,7 +167,7 @@ Promise<{ tab?: string }>; }) {
                 </div>
                 
                 {/* Unified Minimal Stats Panel */}
-                <div className="grid grid-cols-4 w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100">
+                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
                   <div className="flex flex-col items-center">
                     <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
@@ -177,10 +180,12 @@ Promise<{ tab?: string }>; }) {
                     <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
-                    <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
-                  </div>
+                  {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
+                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

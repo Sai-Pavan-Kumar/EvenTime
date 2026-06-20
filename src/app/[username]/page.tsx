@@ -45,7 +45,8 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   const [
     { data: events },
     followResult,
-    { count: followerCount }
+    { count: followerCount },
+    { data: appSettings }
   ] = await Promise.all([
     // 1. Fetch Curator's Approved Events
     supabase
@@ -69,12 +70,16 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     supabase
       .from("followers")
       .select("*", { count: "exact", head: true })
-      .eq("curator_id", curator.id)
+      .eq("curator_id", curator.id),
+
+    // 4. Check if leaderboard / ET Score is enabled platform-wide
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
 
   const isFollowing = !!followResult.data;
 
   const etScore = curator.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 
@@ -132,10 +137,12 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
               </div>
 
-              <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
-                <span className="text-xl font-black text-amber-600">{etScore}</span>
-              </div>
+              {leaderboardEnabled && (
+                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
+                  <span className="text-xl font-black text-amber-600">{etScore}</span>
+                </div>
+              )}
 
               {/* NEW: Follow Button (Hidden if viewing own profile or logged out) */}
               {currentUser && currentUser.id !== curator.id && (
