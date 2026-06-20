@@ -76,9 +76,6 @@ export function HomePageClient(props: HomePageClientProps) {
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
   
-  // State to handle the active time tab (Next 3 Days vs Upcoming)
-  const [timeTab, setTimeTab] = useState<"next3" | "upcoming">("next3");
-
   // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
   useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
   useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
@@ -152,6 +149,10 @@ export function HomePageClient(props: HomePageClientProps) {
     }
   };
 
+  // Merge "For You" + "Happening Around You" into one feed: personalized when no filters active, else all events
+  const showPersonalized = !!(user && profile?.is_onboarded && !q && !category && !location && !date);
+  const gridSource = showPersonalized ? livePersonalizedEvents : liveAllEvents;
+
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
       <Navbar />
@@ -209,37 +210,7 @@ export function HomePageClient(props: HomePageClientProps) {
            </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
-          {/* FOR YOU: Personalized Recommendations */}
-          {user && profile?.is_onboarded && !q && !category && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-amber-500" /> For You
-                  </h2>
-                  <p className="text-slate-500 font-medium text-sm">Tailored to your branch and career goals</p>
-                </div>
-              </div>
-              
-              {livePersonalizedEvents.length > 0 ? (
-                <EventGrid 
-                  events={livePersonalizedEvents}
-                  gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                  isFeatured={true}
-                  user={user}
-                />
-              ) : (
-                <EmptyState 
-                  title="No exact matches"
-                  message="We couldn't find personalized events matching your profile right now. But the stage is never empty."
-                  variant="foryou"
-                  icon={<Sparkles className="w-8 h-8 text-amber-400" />}
-                />
-              )}
-            </div>
-          )}
-
-          {/* PREMIUM HYPER-LOCAL TAB LAYER SEPARATION CONTROL - STRICTLY STUDENTS ONLY */}
+         {/* PREMIUM HYPER-LOCAL TAB LAYER SEPARATION CONTROL - STRICTLY STUDENTS ONLY */}
           {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
             <div className="flex overflow-x-auto justify-start md:justify-start gap-3 sm:gap-4 border-b border-slate-200/60 pb-4 mb-2 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
               <Link
@@ -315,10 +286,11 @@ export function HomePageClient(props: HomePageClientProps) {
                       ? `${category}s` 
                       : !user 
                         ? "Events Happening" 
-                        : profile?.is_onboarded 
-                          ? "Happening Around You" 
+                        : showPersonalized
+                          ? "For You" 
                           : "Events Near You"}
                   </h2>
+                  {showPersonalized && <p className="text-slate-500 text-sm font-medium">Based on your interests</p>}
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
                   
@@ -361,7 +333,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           category={event.category!}
                           date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
                           city={event.location || event.city!}
-                          imageUrl={event.poster_url || "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=800&auto=format&fit=crop"}
+                          imageUrl={event.poster_url || ""}
                           organizerName={event.organizer_name!}
                           isFree={event.is_free!}
                           isFeatured={true}
@@ -377,112 +349,21 @@ export function HomePageClient(props: HomePageClientProps) {
 
               {(
                 <div className="w-full">
-                  {liveAllEvents && liveAllEvents.length > 0 ? (
+                  {gridSource && gridSource.length > 0 ? (
                     (() => {
-                      // Split only when no filters/date selected
-                      const shouldSplit = !date && !q && !category && !location && !branch;
-                      if (!shouldSplit) {
-                        return (
-                          <EventGrid
-                            events={liveAllEvents}
-                            profile={profile}
-                            user={user}
-                            useMatchLogic={true}
-                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
-                          />
-                        );
-                      }
-                      const todayMidnight = new Date();
-                      todayMidnight.setHours(0, 0, 0, 0);
-
-                      const formatDate = (d: Date) => {
-                        const year = d.getFullYear();
-                        const month = String(d.getMonth() + 1).padStart(2, '0');
-                        const day = String(d.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                      };
-
-                      const todayStr = formatDate(todayMidnight);
-
-                      const threeDaysLater = new Date(todayMidnight);
-                      threeDaysLater.setDate(threeDaysLater.getDate() + 3);
-                      const threeDayStr = formatDate(threeDaysLater);
-
-                      // Next 3 days logic: Must be >= today AND <= 3 days from today
-                      const next3 = (liveAllEvents as Partial<EventRow>[]).filter(
-                        (e) => e.date_string && e.date_string >= todayStr && e.date_string <= threeDayStr
-                      );
-                      
-                      // Upcoming logic: Strictly > 3 days from today
-                      const upcoming = (liveAllEvents as Partial<EventRow>[]).filter(
-                        (e) => e.date_string && e.date_string > threeDayStr
-                      );
-
-                      // Auto-switch tabs if one becomes empty (e.g., due to realtime deletion)
-                      let activeView = timeTab;
-                      if (activeView === "next3" && next3.length === 0 && upcoming.length > 0) {
-                        activeView = "upcoming";
-                      } else if (activeView === "upcoming" && upcoming.length === 0 && next3.length > 0) {
-                        activeView = "next3";
-                      }
-
+                      const sortedEvents = [...gridSource].sort((a, b) => (a.date_string || "").localeCompare(b.date_string || ""));
                       return (
-                        <div className="space-y-6">
-                          {/* CLICKABLE TAB BUTTONS */}
-                          <div className="flex items-center gap-3">
-                            {next3.length > 0 && (
-                              <button
-                                onClick={() => setTimeTab("next3")}
-                                className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold transition-all active:scale-95 ${
-                                  activeView === "next3"
-                                    ? "bg-[#F3E8FF] text-[#6C47FF] border border-violet-100 shadow-sm"
-                                    : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-                                }`}
-                              >
-                                Next 3 Days
-                              </button>
-                            )}
-                            
-                            {upcoming.length > 0 && (
-                              <button
-                                onClick={() => setTimeTab("upcoming")}
-                                className={`inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold transition-all active:scale-95 ${
-                                  activeView === "upcoming"
-                                    ? "bg-[#F3E8FF] text-[#6C47FF] border border-violet-100 shadow-sm"
-                                    : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"
-                                }`}
-                              >
-                                Upcoming
-                              </button>
-                            )}
-                          </div>
-
-                          {/* DYNAMIC GRID RENDERING */}
-                          <div className="pt-2">
-                            {activeView === "next3" && next3.length > 0 && (
-                              <EventGrid
-                                events={next3}
-                                profile={profile}
-                                user={user}
-                                useMatchLogic={true}
-                                gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                              />
-                            )}
-                            {activeView === "upcoming" && upcoming.length > 0 && (
-                              <EventGrid
-                                events={upcoming}
-                                profile={profile}
-                                user={user}
-                                useMatchLogic={true}
-                                gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                              />
-                            )}
-                          </div>
-                        </div>
+                        <EventGrid
+                          events={sortedEvents}
+                          profile={profile}
+                          user={user}
+                          useMatchLogic={true}
+                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                        />
                       );
                     })()
-                  ) : (
+                  ) : (
                     // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
                     <div className="col-span-full">
                       {(() => {
