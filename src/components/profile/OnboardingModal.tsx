@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
@@ -20,7 +20,15 @@ export interface OnboardingProps {
 
 export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [step, setStep] = useState(2);
-  const [city, setCity] = useState(""); // NEW: City state
+  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
+
+  const toggleCity = (cityName: string) => {
+    if (cities.includes(cityName)) {
+      setCities(cities.filter(c => c !== cityName));
+    } else if (cities.length < 3) {
+      setCities([...cities, cityName]);
+    }
+  };
   const [college, setCollege] = useState("");
   const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]); // NEW: Master dataset store array array
@@ -113,7 +121,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     setIsSaving(true);
     
     const updatePayload = {
-      preferred_cities: city ? [city] : [],
+      preferred_cities: cities,
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
       branch: role === "Student" ? branch : null,
@@ -176,17 +184,42 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
               <div className="space-y-4">
                 {/* 1. Location Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see?</label>
-                  <select 
-                    value={city} 
-                    onChange={e => setCity(e.target.value)}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
-                  >
-                    <option value="" disabled>Select Location</option>
-                    {CITIES.map(loc => (
-                      <option key={loc} value={loc}>{loc}</option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
+                  {cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {cities.map(c => (
+                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                          {c}
+                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {CITIES.map(loc => {
+                      const isSelected = cities.includes(loc);
+                      const isDisabled = !isSelected && cities.length >= 3;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => toggleCity(loc)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-text-primary text-white border-text-primary"
+                              : isDisabled
+                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
+                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
+                          }`}
+                        >
+                          {loc}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* 2. Role Selector */}
@@ -296,35 +329,30 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                 <div className="space-y-3 pt-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
                   <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (categories.length === categoriesList.length) {
-                          setCategories([]);
-                        } else {
-                          setCategories([...categoriesList]);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${categories.length === categoriesList.length ? "bg-brand-primary text-white border-brand-primary" : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"}`}
-                    >
-                      {categories.length === categoriesList.length ? "Deselect All" : "Select All"}
-                    </button>
-                    {categoriesList.map(opt => (
-                      <button
-                        key={opt} type="button"
-                        onClick={() => setCategories(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${categories.includes(opt) ? "bg-text-primary text-white border-text-primary" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
+                    {categoriesList.map(opt => {
+                      const isSelected = categories.includes(opt);
+                      const isDisabled = !isSelected && categories.length >= 6;
+                      return (
+                        <button
+                          key={opt} type="button"
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (isSelected) setCategories(categories.filter(i => i !== opt));
+                            else if (categories.length < 6) setCategories([...categories, opt]);
+                          }}
+                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <button 
                 onClick={handleSave} 
-                disabled={!city || !role || (role === "Student" && (!college || !branch || !year)) || categories.length === 0}
+                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !branch || !year)) || categories.length === 0}
                 className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile

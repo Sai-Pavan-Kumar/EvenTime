@@ -6640,7 +6640,7 @@ Promise<{ tab?: string }>; }) {
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
@@ -6658,7 +6658,15 @@ export interface OnboardingProps {
 
 export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [step, setStep] = useState(2);
-  const [city, setCity] = useState(""); // NEW: City state
+  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
+
+  const toggleCity = (cityName: string) => {
+    if (cities.includes(cityName)) {
+      setCities(cities.filter(c => c !== cityName));
+    } else if (cities.length < 3) {
+      setCities([...cities, cityName]);
+    }
+  };
   const [college, setCollege] = useState("");
   const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]); // NEW: Master dataset store array array
@@ -6751,7 +6759,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     setIsSaving(true);
     
     const updatePayload = {
-      preferred_cities: city ? [city] : [],
+      preferred_cities: cities,
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
       branch: role === "Student" ? branch : null,
@@ -6814,17 +6822,42 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
               <div className="space-y-4">
                 {/* 1. Location Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see?</label>
-                  <select 
-                    value={city} 
-                    onChange={e => setCity(e.target.value)}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
-                  >
-                    <option value="" disabled>Select Location</option>
-                    {CITIES.map(loc => (
-                      <option key={loc} value={loc}>{loc}</option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
+                  {cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {cities.map(c => (
+                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                          {c}
+                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {CITIES.map(loc => {
+                      const isSelected = cities.includes(loc);
+                      const isDisabled = !isSelected && cities.length >= 3;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => toggleCity(loc)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-text-primary text-white border-text-primary"
+                              : isDisabled
+                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
+                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
+                          }`}
+                        >
+                          {loc}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* 2. Role Selector */}
@@ -6934,35 +6967,30 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                 <div className="space-y-3 pt-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
                   <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (categories.length === categoriesList.length) {
-                          setCategories([]);
-                        } else {
-                          setCategories([...categoriesList]);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${categories.length === categoriesList.length ? "bg-brand-primary text-white border-brand-primary" : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"}`}
-                    >
-                      {categories.length === categoriesList.length ? "Deselect All" : "Select All"}
-                    </button>
-                    {categoriesList.map(opt => (
-                      <button
-                        key={opt} type="button"
-                        onClick={() => setCategories(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt])}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${categories.includes(opt) ? "bg-text-primary text-white border-text-primary" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
+                    {categoriesList.map(opt => {
+                      const isSelected = categories.includes(opt);
+                      const isDisabled = !isSelected && categories.length >= 6;
+                      return (
+                        <button
+                          key={opt} type="button"
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (isSelected) setCategories(categories.filter(i => i !== opt));
+                            else if (categories.length < 6) setCategories([...categories, opt]);
+                          }}
+                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
               <button 
                 onClick={handleSave} 
-                disabled={!city || !role || (role === "Student" && (!college || !branch || !year)) || categories.length === 0}
+                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !branch || !year)) || categories.length === 0}
                 className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile
@@ -7111,79 +7139,6 @@ export function useEventSubmit() {
   };
 
   return { isSubmitting, submitEvent };
-}
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
-  );
 }
 </file>
 
@@ -9010,6 +8965,79 @@ export function useDuplicateCheck() {
   };
 
   return { checkDuplicateLink };
+}
+</file>
+
+<file path="src/lib/home/EventGrid.tsx">
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
 }
 </file>
 
@@ -11278,7 +11306,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   let activeCities: string[] = ["Hyderabad"]; // Default city for guests / non-onboarded users
 
   // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   if (user) {
     // FIX: Removed 'as any' from the select statement
@@ -11337,7 +11365,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   }
 
   // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   let query = supabase
     .from("events")
@@ -11361,8 +11389,9 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   if (location) {
     query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
-  } else {
-    // No explicit location filter? Scope to ALL the user's chosen cities, but always let virtual/online events through
+  } else if (!date) {
+    // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
+    // When a specific date IS picked, skip city scoping so past/other-city events on that date still show.
     const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
     query = query.or(`${cityFilterList},is_virtual.eq.true`);
   }
@@ -11401,7 +11430,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     const goalSet = new Set(profile!.goals);
     const forYou = allEvents.filter((e) => e.category && goalSet.has(e.category));
     const others = allEvents.filter((e) => !(e.category && goalSet.has(e.category)));
-    personalizedEvents = forYou.map((event) => ({ ...event, matchReason: getMatchLabel(event, profile) }));
+    personalizedEvents = forYou;
     aroundYouEvents = others;
   } else {
     aroundYouEvents = allEvents;
@@ -11430,11 +11459,12 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
 
-  // Fetch ALL approved event cities (unfiltered by location param) so the location dropdown always shows every city
+  // Fetch approved + LIVE event cities only (unfiltered by location param) so the location dropdown always shows every city
   const { data: allCityRows } = await supabase
     .from("events")
     .select("city")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .gte("date_string", todayStr);
 
   const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
     
@@ -11883,13 +11913,28 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div className="w-full">
                   {gridSource && gridSource.length > 0 ? (
                     (() => {
-                      const sortedEvents = [...gridSource].sort((a, b) => (a.date_string || "").localeCompare(b.date_string || ""));
+                      const sortedEvents = [...gridSource].sort((a, b) => {
+                        const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
+                        if (dateDiff !== 0) return dateDiff;
+                        // Same date — sort by actual time, not the raw "h:mm AM/PM" string (which sorts wrong)
+                        const toMinutes = (t?: string | null) => {
+                          if (!t) return 0;
+                          const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                          if (!match) return 0;
+                          let h = parseInt(match[1], 10);
+                          const m = parseInt(match[2], 10);
+                          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
+                          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
+                          return h * 60 + m;
+                        };
+                        return toMinutes(a.start_time) - toMinutes(b.start_time);
+                      });
                       return (
                         <EventGrid
                           events={sortedEvents}
                           profile={profile}
                           user={user}
-                          useMatchLogic={true}
+                          useMatchLogic={false}
                           gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                           isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
                         />
