@@ -46,7 +46,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   let activeCities: string[] = ["Hyderabad"]; // Default city for guests / non-onboarded users
 
   // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   if (user) {
     // FIX: Removed 'as any' from the select statement
@@ -105,7 +105,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   }
 
   // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
 
   let query = supabase
     .from("events")
@@ -169,7 +169,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     const goalSet = new Set(profile!.goals);
     const forYou = allEvents.filter((e) => e.category && goalSet.has(e.category));
     const others = allEvents.filter((e) => !(e.category && goalSet.has(e.category)));
-    personalizedEvents = forYou.map((event) => ({ ...event, matchReason: getMatchLabel(event, profile) }));
+    personalizedEvents = forYou;
     aroundYouEvents = others;
   } else {
     aroundYouEvents = allEvents;
@@ -198,11 +198,12 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
 
-  // Fetch ALL approved event cities (unfiltered by location param) so the location dropdown always shows every city
+  // Fetch approved + LIVE event cities only (unfiltered by location param) so the location dropdown always shows every city
   const { data: allCityRows } = await supabase
     .from("events")
     .select("city")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .gte("date_string", todayStr);
 
   const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
     

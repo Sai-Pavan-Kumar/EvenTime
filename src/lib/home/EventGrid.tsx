@@ -48,7 +48,7 @@ export function EventGrid({
             slug={event.slug || (event.id as string)}
             title={event.title!}
             category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
             city={event.location || event.city!}
             imageUrl={event.poster_url || defaultImage}
             organizerName={event.organizer_name || "Event Curator"}

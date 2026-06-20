@@ -377,13 +377,28 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div className="w-full">
                   {gridSource && gridSource.length > 0 ? (
                     (() => {
-                      const sortedEvents = [...gridSource].sort((a, b) => (a.date_string || "").localeCompare(b.date_string || ""));
+                      const sortedEvents = [...gridSource].sort((a, b) => {
+                        const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
+                        if (dateDiff !== 0) return dateDiff;
+                        // Same date — sort by actual time, not the raw "h:mm AM/PM" string (which sorts wrong)
+                        const toMinutes = (t?: string | null) => {
+                          if (!t) return 0;
+                          const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                          if (!match) return 0;
+                          let h = parseInt(match[1], 10);
+                          const m = parseInt(match[2], 10);
+                          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
+                          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
+                          return h * 60 + m;
+                        };
+                        return toMinutes(a.start_time) - toMinutes(b.start_time);
+                      });
                       return (
                         <EventGrid
                           events={sortedEvents}
                           profile={profile}
                           user={user}
-                          useMatchLogic={true}
+                          useMatchLogic={false}
                           gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                           isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
                         />
