@@ -165,8 +165,8 @@ export function HomePageClient(props: HomePageClientProps) {
 
   // No filters active = passive browsing mode → show pill-based feed. Any filter active → show liveAllEvents directly.
   const noFiltersActive = !q && !category && !location && !date;
-  const hasForYou = livePersonalizedEvents.length > 0;
-  const showFeedPills = !!(user && profile?.is_onboarded && hasForYou && noFiltersActive);
+  const hasGoals = (profile?.goals?.length ?? 0) > 0;
+  const showFeedPills = !!(user && profile?.is_onboarded && hasGoals && noFiltersActive);
   const gridSource = !noFiltersActive
     ? liveAllEvents
     : showFeedPills

@@ -43,7 +43,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   let collegeEvents: Partial<EventRow>[] = [];
   let otherCollegeEvents: Partial<EventRow>[] = [];
   let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
-  let activeCity = "Hyderabad"; // Default city for guests / non-onboarded users
+  let activeCities: string[] = ["Hyderabad"]; // Default city for guests / non-onboarded users
 
   // Define exact fields needed globally for all queries in this file
   const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id";
@@ -53,8 +53,8 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
     profile = data as (Partial<ProfileRow> & { city?: string }) | null;
 
-    // City scope: use the user's chosen city, default stays "Hyderabad" if they haven't picked one
-    activeCity = profile?.preferred_cities?.[0] || "Hyderabad";
+    // City scope: use ALL the user's chosen cities, default stays "Hyderabad" if they haven't picked any
+    activeCities = (profile?.preferred_cities?.length ?? 0) > 0 ? (profile!.preferred_cities as string[]) : ["Hyderabad"];
 
     // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
     if (profile?.user_type === 'student' && profile?.college_id) {
@@ -130,8 +130,9 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
   if (location) {
     query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
   } else {
-    // No explicit location filter? Scope to the user's city, but always let virtual/online events through
-    query = query.or(`city.eq.${activeCity},is_virtual.eq.true`);
+    // No explicit location filter? Scope to ALL the user's chosen cities, but always let virtual/online events through
+    const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
+    query = query.or(`${cityFilterList},is_virtual.eq.true`);
   }
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
@@ -255,7 +256,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     fallbackEvents,
     allEvents,
     hasCityEvents,
-    activeCity,
+    activeCities,
     dynamicChips,
     dynamicLocationChips,
     featuredEvents,
