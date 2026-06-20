@@ -50,23 +50,23 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
     const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
     profile = data as (Partial<ProfileRow> & { city?: string }) | null;
 
-   // 2. THE MATCHMAKER ENGINE: Fetch events matching user's Branch OR Goals
-    if (profile?.is_onboarded && (profile.branch || (profile.goals?.length ?? 0) > 0)) {
+   // 2. THE MATCHMAKER ENGINE: Fetch events matching user's Categories OR Preferred Cities
+    if (profile?.is_onboarded && ((profile.goals?.length ?? 0) > 0 || (profile.preferred_cities?.length ?? 0) > 0)) {
 
-      // Fetch by Branch (Filtered at DB level)
-      const branchQuery = supabase.from("events").select(EVENT_FIELDS).contains("branch_tags", [profile.branch]).eq("status", "approved");
-      const { data: branchEvents } = profile.branch 
-        ? await (date ? branchQuery.eq("date_string", date) : branchQuery.gte("date_string", todayStr))
+      // Fetch by Category (profile.goals stores the categories picked in Settings)
+      const categoryQuery = supabase.from("events").select(EVENT_FIELDS).in("category", profile.goals || []).eq("status", "approved");
+      const { data: categoryEvents } = (profile.goals?.length ?? 0) > 0 
+        ? await (date ? categoryQuery.eq("date_string", date) : categoryQuery.gte("date_string", todayStr))
         : { data: [] };
         
-      // Fetch by Goals (Filtered at DB level)
-      const goalQuery = supabase.from("events").select(EVENT_FIELDS).overlaps("goal_tags", profile.goals || []).eq("status", "approved");
-      const { data: goalEvents } = (profile.goals?.length ?? 0) > 0 
-        ? await (date ? goalQuery.eq("date_string", date) : goalQuery.gte("date_string", todayStr))
+      // Fetch by Preferred Cities (Filtered at DB level)
+      const cityQuery = supabase.from("events").select(EVENT_FIELDS).in("city", profile.preferred_cities || []).eq("status", "approved");
+      const { data: cityMatchEvents } = (profile.preferred_cities?.length ?? 0) > 0 
+        ? await (date ? cityQuery.eq("date_string", date) : cityQuery.gte("date_string", todayStr))
         : { data: [] };
 
       // Merge and deduplicate intelligently (JS date filtering removed)
-      const merged = [...(branchEvents || []), ...(goalEvents || [])];
+      const merged = [...(categoryEvents || []), ...(cityMatchEvents || [])];
       
       const uniqueEventsMap = new Map();
       // FIX: Added (event: Partial<EventRow>) type

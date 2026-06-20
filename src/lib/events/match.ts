@@ -8,11 +8,12 @@ export function getMatchLabel(
 ): string | undefined {
   if (!profile?.is_onboarded) return undefined;
   
-  const matchedGoal = event.goal_tags?.find(g => profile.goals?.includes(g));
-  if (matchedGoal) return `Matches Goal: ${matchedGoal}`;
+  if (event.category && profile.goals?.includes(event.category)) {
+    return `Matches Category: ${event.category}`;
+  }
   
-  if (profile.branch && event.branch_tags?.includes(profile.branch)) {
-    return `Matches Branch: ${profile.branch}`;
+  if (event.city && profile.preferred_cities?.includes(event.city)) {
+    return `Matches City: ${event.city}`;
   }
   
   return undefined;
