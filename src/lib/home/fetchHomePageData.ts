@@ -50,7 +50,7 @@ const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart
 
   if (user) {
     // FIX: Removed 'as any' from the select statement
-    const { data } = await supabase.from("profiles").select("is_onboarded, branch, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
+    const { data } = await supabase.from("profiles").select("is_onboarded, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
     profile = data as (Partial<ProfileRow> & { city?: string }) | null;
 
     // City scope: use ALL the user's chosen cities, default stays "Hyderabad" if they haven't picked any

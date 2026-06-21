@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings, MapPin, Home, X, Bug } from "lucide-react";
+import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { FeedbackModal } from "./FeedbackModal";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -244,10 +244,9 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
       <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
     </Link>
 
-    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform relative">
-      <div className="absolute -top-5 bg-[#6C47FF] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-[0_4px_16px_rgba(108,71,255,0.4)] border-[3px] border-white">
-        <Plus className="w-6 h-6" />
-      </div>
+    <Link href="/events/new" onClick={handleProtectedAction} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/events/new' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <SquarePlus className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Create</span>
     </Link>
 
     {leaderboardEnabled && (

@@ -14,7 +14,6 @@ export async function updateProfileSettings(formData: FormData) {
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();
   const college = formData.get("college") as string;
-  const branch = formData.get("branch") as string;
   const graduationYear = formData.get("graduationYear") as string;
   const user_type = formData.get("user_type") as string;
 
@@ -28,7 +27,6 @@ export async function updateProfileSettings(formData: FormData) {
   if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
   if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
   if (college && college.length > 200) return { error: "College name too long." };
-  if (branch && branch.length > 100) return { error: "Branch name too long." };
 
   // Parse preferred_cities (array, max 3)
   const citiesString = formData.get("preferred_cities") as string;
@@ -83,7 +81,6 @@ export async function updateProfileSettings(formData: FormData) {
       user_type: user_type.toLowerCase(),
       preferred_cities,
       college: isStudent ? college : null,
-      branch: isStudent ? branch : null,
       graduation_year: isStudent ? graduationYear : null,
       goals,
       is_onboarded: true,

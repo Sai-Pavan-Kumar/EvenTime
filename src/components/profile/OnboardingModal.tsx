@@ -36,10 +36,6 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
   
   const [role, setRole] = useState("");
-  const [branch, setBranch] = useState("");
-  const [branchSearchQuery, setBranchSearchQuery] = useState("");
-  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
-  const [branchList, setBranchList] = useState<string[]>([...INDIAN_COLLEGE_BRANCHES]);
 
   const [year, setYear] = useState("");
   const [yearSearchQuery, setYearSearchQuery] = useState("");
@@ -48,8 +44,8 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
   const [categories, setCategories] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
-  const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
-  
+const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
   // NEW: State to control manual appearance from banner
   const [isModalOpen, setIsModalOpen] = useState(false); 
   
@@ -60,26 +56,32 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   useEffect(() => {
     const handleClickOutside = () => {
       setShowDropdown(false);
-      setShowBranchDropdown(false);
       setShowYearDropdown(false);
     };
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // NEW: Fetch approved baseline records array directly from Supabase master table records
+  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
   useEffect(() => {
-    async function loadColleges() {
+    const query = searchQuery.trim();
+    if (!user || profile?.is_onboarded || !query) {
+      setCollegesList([]);
+      return;
+    }
+    setIsSearchingColleges(true);
+    const timer = setTimeout(async () => {
       const { data } = await supabase
         .from("colleges")
-        .select("id, name, slug")
-        .order("name", { ascending: true });
-      if (data) setCollegesList(data as CollegeRow[]);
-    }
-    if (user && !profile?.is_onboarded) {
-      loadColleges();
-    }
-  }, [user, profile]);
+        .select("id, name, slug, state")
+        .ilike("name", `%${query}%`)
+        .order("name", { ascending: true })
+        .limit(10);
+      setCollegesList((data as CollegeRow[]) || []);
+      setIsSearchingColleges(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, user, profile]);
 
   // Hide everything if already onboarded
   if (profile?.is_onboarded) return null;
@@ -124,7 +126,6 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       preferred_cities: cities,
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
-      branch: role === "Student" ? branch : null,
       graduation_year: role === "Student" ? year : null,
       user_type: role === "Student" ? 'student' : role.toLowerCase(),
       goals: categories.slice(0, 6),
@@ -237,7 +238,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                   </select>
                 </div>
 
-                {/* 3. Conditional College, Branch, Year (Only if Student) */}
+                {/* 3. Conditional College, Year (Only if Student) */}
                 <AnimatePresence>
                   {role === "Student" && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
@@ -254,12 +255,15 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                         />
                         {showDropdown && searchQuery.trim().length > 0 && (
                           <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                            {collegesList.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase())).map(item => (
+                            {isSearchingColleges && (
+                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                            )}
+                            {!isSearchingColleges && collegesList.map(item => (
                                 <button key={item.id} type="button" onClick={() => { setCollege(item.name); setCollegeId(item.id); setSearchQuery(item.name); setShowDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
                                   🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                                 </button>
                               ))}
-                            {!collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
+                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
                               <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
                                 {isCreatingCollege ? <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                 {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
@@ -270,32 +274,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        {/* BRANCH SELECTOR */}
-                        <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          <input 
-                            type="text" 
-                            placeholder="Branch (e.g. CSE)" 
-                            value={branchSearchQuery} 
-                            onChange={e => { setBranchSearchQuery(e.target.value); setShowBranchDropdown(true); }}
-                            onFocus={() => setShowBranchDropdown(true)}
-                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                          />
-                          {showBranchDropdown && branchSearchQuery.trim().length > 0 && (
-                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                              {branchList.filter(item => item.toLowerCase().includes(branchSearchQuery.toLowerCase())).map(item => (
-                                <button key={item} type="button" onClick={() => { setBranch(item); setBranchSearchQuery(item); setShowBranchDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
-                                  {item}
-                                </button>
-                              ))}
-                              {!branchList.some(item => item.toLowerCase() === branchSearchQuery.toLowerCase().trim()) && (
-                                <button type="button" onClick={() => { setBranchList(prev => [...prev, branchSearchQuery]); setBranch(branchSearchQuery); setBranchSearchQuery(branchSearchQuery); setShowBranchDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                  + Add "{branchSearchQuery}"
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
+                        
                         {/* YEAR SELECTOR */}
                           <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
                             type="text" 
@@ -352,8 +331,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
               <button 
                 onClick={handleSave} 
-                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !branch || !year)) || categories.length === 0}
-                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
+                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile
               </button>
