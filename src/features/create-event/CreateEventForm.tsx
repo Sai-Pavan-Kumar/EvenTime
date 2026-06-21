@@ -41,6 +41,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     collegeBranch: initialData?.college_branch || "",
     collegeYear: initialData?.college_year || "",
     collegeOnly: initialData?.college_only || false,
+    collegeId: initialData?.college_id || null,
+    collegeName: "",
     selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
     selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
     selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
@@ -114,6 +116,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       college_branch: isCollegeCategory ? eventData.collegeBranch : null,
       college_year: isCollegeCategory ? eventData.collegeYear : null,
       college_only: isCollegeCategory ? eventData.collegeOnly : null,
+      college_id: isCollegeCategory && eventData.collegeOnly ? eventData.collegeId : null,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);

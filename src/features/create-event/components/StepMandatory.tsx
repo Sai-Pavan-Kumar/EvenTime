@@ -1,12 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
+import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee, Sparkles } from "lucide-react";
 import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
 import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { CollegeRow } from "@/types";
+
+
 
 export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit }: any) {
   
@@ -22,6 +26,47 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
     };
     checkAdmin();
   }, []);
+
+  // NEW: College picker for restricted college events (live server search)
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
+  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  useEffect(() => {
+    const query = collegeSearchQuery.trim();
+    if (!query) {
+      setCollegesList([]);
+      return;
+    }
+    setIsSearchingColleges(true);
+    const timer = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: results } = await supabase
+        .from("colleges")
+        .select("id, name, slug, state")
+        .ilike("name", `%${query}%`)
+        .order("name", { ascending: true })
+        .limit(10);
+      setCollegesList((results as CollegeRow[]) || []);
+      setIsSearchingColleges(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [collegeSearchQuery]);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const { createCollegeAction } = await import("@/app/profile/action");
+    const result = await createCollegeAction(name);
+    setIsCreatingCollege(false);
+    if (result?.data) {
+      updateData({ collegeId: result.data.id, collegeName: result.data.name });
+      setCollegeSearchQuery(result.data.name);
+      setShowCollegeDropdown(false);
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+    }
+  };
 
   // AUTO-VALIDATE COLLEGE EVENTS
   useEffect(() => {
@@ -153,12 +198,44 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!data.collegeOnly ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
+               {data.collegeOnly && (
+                  <div className="space-y-2 relative">
+                    <label className="block text-xs font-bold text-slate-500">Which College? <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={collegeSearchQuery}
+                      onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
+                      onFocus={() => setShowCollegeDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
+                      placeholder="Search your college..."
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
+                    />
+                    {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                        {isSearchingColleges && (
+                          <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                        )}
+                        {!isSearchingColleges && collegesList.map(item => (
+                          <button key={item.id} type="button" onClick={() => { updateData({ collegeId: item.id, collegeName: item.name }); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none">
+                            🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
+                          </button>
+                        ))}
+                        {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                          <button type="button" onClick={() => handleCreateCollege(collegeSearchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                            {isCreatingCollege ? <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500">Branch</label>
                     <select value={data.collegeBranch} onChange={e => updateData({ collegeBranch: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
                       <option value="">All Branches</option>
-                      {["CSE", "ECE", "EEE", "Mechanical", "Civil", "IT", "AIDS", "CSBS", "Other"].map(b => <option key={b} value={b}>{b}</option>)}
+                      {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">

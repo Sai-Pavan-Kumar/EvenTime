@@ -8,10 +8,18 @@ import type { ProfileRow } from "@/types";
 export const dynamic = "force-dynamic";
 
 const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
+  if (!prof) return 0;
   let score = 0;
-  if (prof?.avatar_url) score += 25;
-  if (prof?.college) score += 25;
-  if (prof?.goals) score += 50;
+  if (prof.avatar_url) score += 20;
+  if (prof.username) score += 20;
+  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
+  if (prof.goals && prof.goals.length > 0) score += 20;
+  const isStudent = (prof as any).user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (prof.college && (prof as any).graduation_year) {
+    score += 20;
+  }
   return score;
 };
 
@@ -22,8 +30,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   // NEW: Get current logged-in user to handle follow logic
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals";
-
+  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
   // AFTER - one query (Checks username or ID in a single round trip)
   const decodedUsername = decodeURIComponent(username);
   const { data: curator } = await supabase

@@ -33,10 +33,18 @@ type ProfileEvent = {
 };
 
 const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
+  if (!prof) return 0;
   let score = 0;
-  if (prof?.avatar_url) score += 25;
-  if (prof?.college) score += 25;
-  if (prof?.goals) score += 50;
+  if (prof.avatar_url) score += 20;
+  if (prof.username) score += 20;
+  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
+  if (prof.goals && prof.goals.length > 0) score += 20;
+  const isStudent = (prof as any).user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (prof.college && (prof as any).graduation_year) {
+    score += 20;
+  }
   return score;
 };
 
@@ -58,7 +66,7 @@ Promise<{ tab?: string }>; }) {
     { data: myReportsRaw, error: reportsError },
     { data: appSettings }
   ] = await Promise.all([
-    supabase.from("profiles").select("full_name, avatar_url, et_score, college, goals").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
     supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
     supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
     supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),

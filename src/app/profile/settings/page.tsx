@@ -13,10 +13,9 @@ export default async function SettingsPage() {
   // Fetch existing profile data
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, full_name, username, preferred_cities, user_type, college, graduation_year, goals, is_onboarded")
+    .select("id, full_name, username, avatar_url, preferred_cities, user_type, college, graduation_year, goals, is_onboarded")
     .eq("id", user.id)
     .single();
-
   // College list is fetched client-side in SettingsClient for better search UX
 
   // NEW: Fetch active events to calculate counts per category

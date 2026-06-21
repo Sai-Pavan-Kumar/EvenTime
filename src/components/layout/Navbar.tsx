@@ -12,9 +12,16 @@ import type { AuthUser } from "@/types";
 const calculateCompletion = (profile: any) => {
   if (!profile) return 0;
   let score = 0;
-  if (profile.avatar_url) score += 25;
-  if (profile.college) score += 25;
-  if (profile.goals) score += 50;
+  if (profile.avatar_url) score += 20;
+  if (profile.username) score += 20;
+  if (profile.preferred_cities && profile.preferred_cities.length > 0) score += 20;
+  if (profile.goals && profile.goals.length > 0) score += 20;
+  const isStudent = profile.user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (profile.college && profile.graduation_year) {
+    score += 20;
+  }
   return score;
 };
 
@@ -46,10 +53,9 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
       try {
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("role, avatar_url, college, goals")
+          .select("role, avatar_url, college, goals, username, preferred_cities, user_type, graduation_year")
           .eq("id", userId)
-          .single();
-        
+          .single();        
         if (mounted && !error && profile) {
           setIsAdmin(profile.role === "admin");
           setProfileDetails(profile);

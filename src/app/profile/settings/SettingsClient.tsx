@@ -154,6 +154,15 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
     }
   };
 
+  // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
+  const isStudentNow = userType === "Student";
+  const missingItems: string[] = [];
+  if (!profile?.avatar_url) missingItems.push("Profile photo");
+  if (!username) missingItems.push("Username");
+  if (selectedCities.length === 0) missingItems.push("Preferred cities");
+  if (selectedGoals.length === 0) missingItems.push("Interest categories");
+  if (isStudentNow && (!college || !year)) missingItems.push("College & graduation year");
+
   return (
     <main className="min-h-screen bg-[#F5F5F7] pb-32">
       {/* Mobile-Optimized Sticky Navbar */}
@@ -168,6 +177,15 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
       </nav>
 
       <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8">
+        {missingItems.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-amber-700">Still missing to reach 100%:</p>
+              <p className="text-xs text-amber-600 font-medium mt-1">{missingItems.join(" · ")}</p>
+            </div>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-8">
           
           {/* Section 1: Identify (Personal Info) */}
