@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug } from "lucide-react";
+import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { CalendarStrip } from "./CalendarStrip";
+import { FilterChips } from "@/lib/home/FilterChips";
 import { FeedbackModal } from "./FeedbackModal";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { AuthUser } from "@/types";
@@ -25,7 +27,9 @@ const calculateCompletion = (profile: any) => {
   return score;
 };
 
-function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+type ChipType = { name: string; value: string; count?: number };
+
+function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [] }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profileDetails, setProfileDetails] = useState<any>(null);
@@ -36,6 +40,13 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [leaderboardEnabled, setLeaderboardEnabled] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const [showMobileCalendar, setShowMobileCalendar] = useState(false);
+  const [calendarEventDates, setCalendarEventDates] = useState<string[]>([]);
+  const mobileCalendarRef = useRef<HTMLDivElement>(null);
+  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
+  const desktopSearchRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams(); const pathname = usePathname();
 
@@ -108,6 +119,10 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
   }, [searchParams]);
 
   useEffect(() => {
+    if (showMobileSearch) mobileSearchInputRef.current?.focus();
+  }, [showMobileSearch]);
+
+  useEffect(() => {
     supabase
       .from("app_settings")
       .select("leaderboard_enabled")
@@ -117,6 +132,29 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
         if (data) setLeaderboardEnabled(data.leaderboard_enabled);
       });
   }, [supabase]);
+
+  useEffect(() => {
+    supabase
+      .from("events")
+      .select("date_string")
+      .eq("status", "approved")
+      .then(({ data }) => {
+        if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
+      });
+  }, [supabase]);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (mobileCalendarRef.current && !mobileCalendarRef.current.contains(e.target as Node)) {
+        setShowMobileCalendar(false);
+      }
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        setShowDesktopFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +172,20 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
 
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
   const completionPercent = calculateCompletion(profileDetails);
+
+  const selectedDate = searchParams.get("date");
+  let mobileDateDisplay = "Today";
+  if (selectedDate) {
+    const [year, month, day] = selectedDate.split("-");
+    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    const monthIndex = parseInt(month, 10) - 1;
+    if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
+  }
+
+  const categoryParam = searchParams.get("category") || undefined;
+  const locationParam = searchParams.get("location") || undefined;
+  const branchParam = searchParams.get("branch") || undefined;
+  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
 
   return (
     <>
@@ -155,17 +207,79 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
 
           {variant !== 'centered' && (
             <>
-              <form onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowDesktopFilters(true)}
                   placeholder="Search hackathons, meetups..."
                   className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
+                {showDesktopFilters && hasFilterChips && (
+                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-3 z-20">
+                    <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+                    <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                  </div>
+                )}
               </form>
-              
+
+              {showMobileSearch && (
+                <form
+                  onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
+                  className="sm:hidden absolute inset-x-4 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10 bg-white"
+                >
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                    <input
+                      ref={mobileSearchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search hackathons, meetups..."
+                      className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                    />
+                  </div>
+                  <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
+                    <X className="w-5 h-5" />
+                  </button>
+                </form>
+              )}
+              {showMobileSearch && hasFilterChips && (
+                <div className="sm:hidden absolute inset-x-4 top-[calc(50%+2.75rem)] flex items-center gap-2 z-10 bg-white rounded-full shadow-sm border border-slate-100 px-3 py-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+                  <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+                  <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                </div>
+              )}
+
+              <div ref={mobileCalendarRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowMobileCalendar((v) => !v)}
+                  className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
+                >
+                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  {mobileDateDisplay}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileCalendar((v) => !v)}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all"
+                >
+                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  {mobileDateDisplay}
+                </button>
+
+                {showMobileCalendar && (
+                  <div className="absolute right-0 mt-2 w-[min(calc(100vw-2rem),340px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
+                    <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
+                      <CalendarStrip eventDates={calendarEventDates} onDateSelect={() => setShowMobileCalendar(false)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
             <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
@@ -238,29 +352,28 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
     </nav>
 
     <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
-  <div className={`grid ${leaderboardEnabled ? 'grid-cols-5' : 'grid-cols-4'} items-center h-16 px-6 max-w-md mx-auto w-full`}>
+  <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
     
     <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
       <Home className="w-5 h-5" />
       <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
     </Link>
-    
+
+    <button type="button" onClick={() => setShowMobileSearch(true)} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform text-text-secondary hover:text-[#6C47FF]">
+      <Search className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
+    </button>
+
+    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full">
+      <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
+        <SquarePlus className="w-6 h-6 text-white" />
+      </div>
+    </Link>
+
     <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
       <MapPin className="w-5 h-5" />
       <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
     </Link>
-
-    <Link href="/events/new" onClick={handleProtectedAction} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/events/new' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <SquarePlus className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Create</span>
-    </Link>
-
-    {leaderboardEnabled && (
-      <Link href="/leaderboard" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/leaderboard' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <Trophy className="w-5 h-5" />
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Rank</span>
-      </Link>
-    )}
 
     {isLoading ? (
      <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
@@ -330,10 +443,10 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
   );
 }
 
-export function Navbar({ variant = 'default' }: { variant?: 'default' | 'centered' }) {
+export function Navbar({ variant = 'default', categoryChips, locationChips }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
   return (
     <Suspense fallback={null}>
-      <NavbarInner variant={variant} />
+      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
     </Suspense>
   );
 }

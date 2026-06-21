@@ -4,14 +4,12 @@ import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
-import { CalendarStrip } from "@/components/layout/CalendarStrip";
 import Link from "next/link";
-import { Sparkles, CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight, X } from "lucide-react";
+import { Sparkles, CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";
 import { HeroSection } from "./HeroSection";
-import { FilterChips } from "./FilterChips";
 import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
@@ -128,42 +126,6 @@ export function HomePageClient(props: HomePageClientProps) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Added ref to control the native <details> dropdown
-  const detailsRef = useRef<HTMLDetailsElement>(null);
-
-  // Effect to close the calendar when clicking outside
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (detailsRef.current && !detailsRef.current.contains(e.target as Node)) {
-        detailsRef.current.removeAttribute("open");
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  // Calculate the display text for the date toggle based on the selected 'date' prop
-  let activeDateDisplay = displayToday;
-  if (date) {
-    const [year, month, day] = date.split('-');
-    if (year && month && day) {
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const monthIndex = parseInt(month, 10) - 1;
-      const dayNum = parseInt(day, 10);
-      
-      if (monthIndex >= 0 && monthIndex <= 11 && !isNaN(dayNum)) {
-        activeDateDisplay = `${dayNum} ${monthNames[monthIndex]}`;
-      }
-    }
-  }
-
-  // Function to close the calendar when a date is selected
-  const closeCalendar = () => {
-    if (detailsRef.current) {
-      detailsRef.current.removeAttribute("open");
-    }
-  };
-
   // No filters active = passive browsing mode → show pill-based feed. Any filter active → show liveAllEvents directly.
   const noFiltersActive = !q && !category && !location && !date;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
@@ -176,7 +138,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
+      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
       
       {/* Onboarding check: user & profile null unna sare modal render avvali */}
       {!profile?.is_onboarded && (
@@ -189,46 +151,16 @@ export function HomePageClient(props: HomePageClientProps) {
           <HeroSection stats={platformStats} />
         </div>
 
-        {/* COMBINED DISCOVERY PILL - Moved out of the relative div to parent scope for sticky to work */}
-        <div className="sticky top-[80px] -mt-8 z-40 mx-auto bg-white/95 backdrop-blur-md rounded-[28px] sm:rounded-full shadow-lg border border-slate-200 px-4 py-3 sm:py-2 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-[92vw] sm:w-max sm:max-w-[90vw] mb-10">
-            
-            {/* INSTANT DISCOVERY CHIPS */}
-            <div className="flex items-center justify-center gap-1.5 max-w-full overflow-x-auto [&::-webkit-scrollbar]:hidden">
-              <span className="text-sm font-bold text-slate-500 whitespace-nowrap">Explore:</span>
-              <FilterChips dynamicChips={dynamicChips} category={category} location={location} q={q} branch={branch} paramName="category" />
-              
-              {dynamicLocationChips && dynamicLocationChips.length > 0 && (
-                <>
-                  <div className="h-4 w-px bg-slate-200 shrink-0 mx-1" />
-                  <span className="text-sm font-bold text-slate-500 whitespace-nowrap">In:</span>
-                  <FilterChips dynamicChips={dynamicLocationChips} category={category} location={location} q={q} branch={branch} paramName="location" />
-                </>
-              )}
-            </div>
-
-            {/* DIVIDER */}
-            <div className="hidden sm:block h-6 w-px bg-slate-300 shrink-0" />
-
-            {/* DATE TOGGLE (Right Corner) */}
-            <details ref={detailsRef} className="group cursor-pointer shrink-0 relative">
-              <summary className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all list-none [&::-webkit-details-marker]:hidden select-none active:scale-95">
-                <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
-                {activeDateDisplay}
-              </summary>
-              
-              {/* CALENDAR STRIP DROPDOWN */}
-              <div className="absolute right-0 mt-4 w-[min(calc(100vw-2rem),360px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
-                <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
-                  <CalendarStrip eventDates={allEventDates} onDateSelect={closeCalendar} />
-                  <div className="text-center pb-1 pt-3 border-t border-slate-50/50 mt-2">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center justify-center gap-1">
-                      <X className="w-3 h-3" /> Click Date button to close
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </details>
-           </div>
+        {/* LIVE COUNTER - replaces the old Explore/In/Date pill (filters now live in the Navbar search) */}
+        <div className="sticky top-[80px] -mt-8 z-40 mx-auto mb-10 w-max">
+          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-5 py-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            <span className="text-sm font-bold text-slate-700">{gridSource?.length || 0} events live right now</span>
+          </div>
+        </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
          {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
@@ -303,7 +235,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                     <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
-                    {category ? `${category}s` : "Events happening in the city"}
+                    {category ? `${category}s` : "What's happening"}
                   </h2>
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}

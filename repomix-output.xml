@@ -3421,35 +3421,6 @@ export function EmptyState({
 }
 </file>
 
-<file path="src/lib/home/HeroSection.tsx">
-"use client";
-
-export function HeroSection() {
-  return (
-    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
-      
-      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
-        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
-          
-          {/* Applied the white halo text-shadow from Option B */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            Stop Searching.
-            <br />
-            <span className="text-[#6C47FF]">Start Attending.</span>
-          </h1>
-          
-          {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
-          <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
-            Hackathons. Fests. Events.   <br className="sm:hidden" /> Everything worth showing up for.
-          </p>
-          
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/supabase/admin.ts">
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -5302,6 +5273,51 @@ export function getMatchLabel(
   }
   
   return undefined;
+}
+</file>
+
+<file path="src/lib/home/HeroSection.tsx">
+"use client";
+
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
+  return (
+    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
+      
+      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
+        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
+          
+          {/* Applied the white halo text-shadow from Option B */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            Stop Searching.
+            <br />
+            <span className="text-[#6C47FF]">Start Attending.</span>
+          </h1>
+          
+          {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
+          <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
+            Hackathons. Fests. Events.   <br className="sm:hidden" /> Everything worth showing up for.
+          </p>
+
+          {stats && (
+            <div className="mt-5 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs font-bold text-[#555570]">
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.event_count}+ Events</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.city_count}+ Cities</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.category_count}+ Categories</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.user_count}+ Users</span>
+            </div>
+          )}
+          
+        </div>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -7416,6 +7432,427 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
 }
 </file>
 
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { 
+  format, 
+  isSameDay, 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  eachDayOfInterval, 
+  addMonths, 
+  subMonths, 
+  isSameMonth,
+  parseISO,
+  differenceInCalendarDays
+} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+      // Deselect if clicked again (Goes back to default future events)
+      router.push(`/?${params.toString()}`, { scroll: false });
+    } else {
+      params.set("date", queryDateStr);
+      router.push(`/?${params.toString()}`, { scroll: false });
+    }
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/features/create-event/hooks/useDuplicateCheck.ts">
+import { createClient } from "@/lib/supabase/client";
+
+export function useDuplicateCheck() {
+  const supabase = createClient();
+  
+  const checkDuplicateLink = async (link: string) => {
+    let normalized = link;
+    try {
+      const url = new URL(link);
+      const host = url.hostname.replace(/^www\./, "");
+      normalized = `${host}${url.pathname}`.replace(/\/$/, "");
+    } catch {
+      // invalid URL, fall back to raw link
+    }
+
+    // Every event platform puts a unique identifier as the last segment of
+    // the path (meetup: numeric "315052580", lu.ma: slug "abc123x", etc).
+    // Pulling that segment out catches duplicates regardless of platform,
+    // since query params/tracking codes never change this part of the URL.
+    let eventId: string | null = null;
+    try {
+      const url = new URL(link);
+      const segments = url.pathname.split("/").filter(Boolean);
+      eventId = segments[segments.length - 1] || null;
+    } catch {
+      // invalid URL, eventId stays null
+    }
+
+    const pattern = eventId ? `%/${eventId}%` : `${normalized}%`;
+
+    const { data } = await supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1).maybeSingle();
+    return data;
+  };
+
+  return { checkDuplicateLink };
+}
+</file>
+
+<file path="src/features/create-event/hooks/useEventSubmit.ts">
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { TablesInsert } from "@/types/database";
+import { toast } from "sonner";
+
+type SubmitPayload = TablesInsert<"events"> & {
+  imageFile?: File | null;
+  previewUrl?: string | null;
+};
+
+export function useEventSubmit() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabase = createClient();
+
+  const generateSlug = (eventTitle: string, eventLocation: string, eventDate: Date | undefined): string => {
+    const slugTitle = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const city = eventLocation
+      ? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+      : "online";
+    const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+    const month = eventDate ? monthNames[eventDate.getMonth()] : "";
+    const year = eventDate ? eventDate.getFullYear().toString() : "";
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    return [slugTitle, city, month, year, randomSuffix].filter(Boolean).join("-");
+  };
+
+  const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
+    setIsSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please login to submit an event.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      let finalPosterUrl = payloadData.previewUrl; // Fallback to existing
+      
+      if (payloadData.imageFile) {
+        const { default: imageCompression } = await import("browser-image-compression");
+        const compressedPoster = await imageCompression(payloadData.imageFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
+        const posterPresign = await fetch("/api/upload/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: `events/poster_${Date.now()}.webp`, contentType: "image/webp", fileSize: compressedPoster.size }) });
+        const { uploadUrl: posterUploadUrl, publicUrl: posterPublicUrl } = await posterPresign.json();
+        await fetch(posterUploadUrl, { method: "PUT", headers: { "Content-Type": "image/webp" }, body: compressedPoster });
+        finalPosterUrl = posterPublicUrl;
+      }
+
+      const eventCity = payloadData.is_virtual ? "online" : payloadData.location;
+      
+      // FIX: Add fallbacks to handle potential null or undefined values from DB types
+      const uniqueSlug = generateSlug(
+        payloadData.title || "", 
+        eventCity || "", 
+        payloadData.date_string ? new Date(payloadData.date_string) : undefined
+      );
+
+      // CORRECT — replace lines 5596–5610 with this:
+      const { imageFile, previewUrl, is_featured, ...dbPayload } = payloadData;
+      const finalPayload = { ...dbPayload };
+
+      if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
+
+      // NEW: Auto-fetch and assign curator name if organizer_name is empty
+      if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
+        
+        // 1. Fetch profile data from your database
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, username")
+          .eq("id", user.id)
+          .single();
+        
+        // 2. Extract name from Supabase/Google Auth metadata
+        // Google usually stores this under 'name' or 'full_name'
+        const authName = user.user_metadata?.full_name || user.user_metadata?.name;
+
+        // 3. Fallback logic: Profile Name -> Google Name -> Profile Username -> Default
+        finalPayload.organizer_name = 
+          profile?.full_name || 
+          authName || 
+          profile?.username || 
+          "Event Curator";
+      }
+
+           if (isEditing && eventId) {
+
+        console.log("[useEventSubmit] Updating event with creator_id:", user.id);
+        const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
+        
+        if (error) throw error; // ← check error FIRST
+        
+        // Only runs if update succeeded:
+        await supabase.from("event_reports")
+          .update({ status: "resolved" })
+          .eq("event_id", eventId)
+          .eq("status", "pending");
+          
+      } else {
+        console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
+        const { error } = await supabase.from("events").insert([{ ...finalPayload, slug: uniqueSlug, creator_id: user.id }]);
+        if (error) throw error;
+      }
+      
+      router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
+    } catch (err) {
+      toast.error("Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { isSubmitting, submitEvent };
+}
+</file>
+
+<file path="src/lib/home/EventGrid.tsx">
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/profile/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -7886,427 +8323,6 @@ Promise<{ tab?: string }>; }) {
         </div>
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { 
-  format, 
-  isSameDay, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  addMonths, 
-  subMonths, 
-  isSameMonth,
-  parseISO,
-  differenceInCalendarDays
-} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-      // Deselect if clicked again (Goes back to default future events)
-      router.push(`/?${params.toString()}`, { scroll: false });
-    } else {
-      params.set("date", queryDateStr);
-      router.push(`/?${params.toString()}`, { scroll: false });
-    }
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/features/create-event/hooks/useDuplicateCheck.ts">
-import { createClient } from "@/lib/supabase/client";
-
-export function useDuplicateCheck() {
-  const supabase = createClient();
-  
-  const checkDuplicateLink = async (link: string) => {
-    let normalized = link;
-    try {
-      const url = new URL(link);
-      const host = url.hostname.replace(/^www\./, "");
-      normalized = `${host}${url.pathname}`.replace(/\/$/, "");
-    } catch {
-      // invalid URL, fall back to raw link
-    }
-
-    // Every event platform puts a unique identifier as the last segment of
-    // the path (meetup: numeric "315052580", lu.ma: slug "abc123x", etc).
-    // Pulling that segment out catches duplicates regardless of platform,
-    // since query params/tracking codes never change this part of the URL.
-    let eventId: string | null = null;
-    try {
-      const url = new URL(link);
-      const segments = url.pathname.split("/").filter(Boolean);
-      eventId = segments[segments.length - 1] || null;
-    } catch {
-      // invalid URL, eventId stays null
-    }
-
-    const pattern = eventId ? `%/${eventId}%` : `${normalized}%`;
-
-    const { data } = await supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1).maybeSingle();
-    return data;
-  };
-
-  return { checkDuplicateLink };
-}
-</file>
-
-<file path="src/features/create-event/hooks/useEventSubmit.ts">
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import type { TablesInsert } from "@/types/database";
-import { toast } from "sonner";
-
-type SubmitPayload = TablesInsert<"events"> & {
-  imageFile?: File | null;
-  previewUrl?: string | null;
-};
-
-export function useEventSubmit() {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const supabase = createClient();
-
-  const generateSlug = (eventTitle: string, eventLocation: string, eventDate: Date | undefined): string => {
-    const slugTitle = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const city = eventLocation
-      ? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-      : "online";
-    const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-    const month = eventDate ? monthNames[eventDate.getMonth()] : "";
-    const year = eventDate ? eventDate.getFullYear().toString() : "";
-    const randomSuffix = Math.random().toString(36).substring(2, 6);
-    return [slugTitle, city, month, year, randomSuffix].filter(Boolean).join("-");
-  };
-
-  const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
-    setIsSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please login to submit an event.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      let finalPosterUrl = payloadData.previewUrl; // Fallback to existing
-      
-      if (payloadData.imageFile) {
-        const { default: imageCompression } = await import("browser-image-compression");
-        const compressedPoster = await imageCompression(payloadData.imageFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
-        const posterPresign = await fetch("/api/upload/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: `events/poster_${Date.now()}.webp`, contentType: "image/webp", fileSize: compressedPoster.size }) });
-        const { uploadUrl: posterUploadUrl, publicUrl: posterPublicUrl } = await posterPresign.json();
-        await fetch(posterUploadUrl, { method: "PUT", headers: { "Content-Type": "image/webp" }, body: compressedPoster });
-        finalPosterUrl = posterPublicUrl;
-      }
-
-      const eventCity = payloadData.is_virtual ? "online" : payloadData.location;
-      
-      // FIX: Add fallbacks to handle potential null or undefined values from DB types
-      const uniqueSlug = generateSlug(
-        payloadData.title || "", 
-        eventCity || "", 
-        payloadData.date_string ? new Date(payloadData.date_string) : undefined
-      );
-
-      // CORRECT — replace lines 5596–5610 with this:
-      const { imageFile, previewUrl, is_featured, ...dbPayload } = payloadData;
-      const finalPayload = { ...dbPayload };
-
-      if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
-
-      // NEW: Auto-fetch and assign curator name if organizer_name is empty
-      if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
-        
-        // 1. Fetch profile data from your database
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, username")
-          .eq("id", user.id)
-          .single();
-        
-        // 2. Extract name from Supabase/Google Auth metadata
-        // Google usually stores this under 'name' or 'full_name'
-        const authName = user.user_metadata?.full_name || user.user_metadata?.name;
-
-        // 3. Fallback logic: Profile Name -> Google Name -> Profile Username -> Default
-        finalPayload.organizer_name = 
-          profile?.full_name || 
-          authName || 
-          profile?.username || 
-          "Event Curator";
-      }
-
-           if (isEditing && eventId) {
-
-        console.log("[useEventSubmit] Updating event with creator_id:", user.id);
-        const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
-        
-        if (error) throw error; // ← check error FIRST
-        
-        // Only runs if update succeeded:
-        await supabase.from("event_reports")
-          .update({ status: "resolved" })
-          .eq("event_id", eventId)
-          .eq("status", "pending");
-          
-      } else {
-        console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
-        const { error } = await supabase.from("events").insert([{ ...finalPayload, slug: uniqueSlug, creator_id: user.id }]);
-        if (error) throw error;
-      }
-      
-      router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
-    } catch (err) {
-      toast.error("Submission failed. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return { isSubmitting, submitEvent };
-}
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
   );
 }
 </file>
@@ -11598,9 +11614,14 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
       .order("created_at", { ascending: false })
       .limit(4);
     
+   // AFTER
     // Typecast to ensure it matches the Partial<EventRow>[] declaration
     fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
   }
+
+  // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
+  const { data: statsData } = await supabase.rpc("get_platform_stats" as any).single();
+  const platformStats = (statsData as any) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
 
   return {
     user,
@@ -11627,7 +11648,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     q,
     category,
     location,
-    view
+    view,
+    platformStats
   };
 }
 </file>
@@ -11677,8 +11699,8 @@ export interface HomePageClientProps {
   category?: string;
   location?: string;
   view?: string;
+  platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
 }
-
 export function HomePageClient(props: HomePageClientProps) {
   const {
     user,
@@ -11704,7 +11726,8 @@ export function HomePageClient(props: HomePageClientProps) {
     q,
     category,
     location,
-    view
+    view,
+    platformStats
   } = props;
 
   // Local copies of the server-fetched event lists, so we can remove an event
@@ -11820,7 +11843,7 @@ export function HomePageClient(props: HomePageClientProps) {
       <div className="flex flex-col">
         {/* Header Section Background & Combined Navigation Pill */}
         <div className="relative">
-          <HeroSection />
+          <HeroSection stats={platformStats} />
         </div>
 
         {/* COMBINED DISCOVERY PILL - Moved out of the relative div to parent scope for sticky to work */}
