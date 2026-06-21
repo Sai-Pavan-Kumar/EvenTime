@@ -7,6 +7,7 @@ import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, 
 import { createClient } from "@/lib/supabase/client";
 import { CalendarStrip } from "./CalendarStrip";
 import { FilterChips } from "@/lib/home/FilterChips";
+import { EventGrid } from "@/lib/home/EventGrid";
 import { FeedbackModal } from "./FeedbackModal";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { AuthUser } from "@/types";
@@ -47,6 +48,8 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const mobileCalendarRef = useRef<HTMLDivElement>(null);
   const [showDesktopFilters, setShowDesktopFilters] = useState(false);
   const desktopSearchRef = useRef<HTMLFormElement>(null);
+  const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
+  const [isSearchingMobile, setIsSearchingMobile] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams(); const pathname = usePathname();
 
@@ -142,6 +145,27 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
       });
   }, [supabase]);
+
+  useEffect(() => {
+    if (!showMobileSearch || !searchQuery.trim()) {
+      setMobileSearchResults([]);
+      return;
+    }
+    setIsSearchingMobile(true);
+    const timer = setTimeout(() => {
+      supabase
+        .from("events")
+        .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+        .eq("status", "approved")
+        .or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
+        .limit(20)
+        .then(({ data }) => {
+          setMobileSearchResults(data || []);
+          setIsSearchingMobile(false);
+        });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, showMobileSearch, supabase]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -255,7 +279,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   </form>
 
                   {hasFilterChips && (
-                    <div className="flex flex-col gap-4 px-4 py-5">
+                    <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
                         <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
@@ -266,6 +290,18 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                       </div>
                     </div>
                   )}
+
+                  <div className="flex-1 overflow-y-auto px-4 py-5">
+                    {!searchQuery.trim() ? (
+                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing to search events...</p>
+                    ) : isSearchingMobile ? (
+                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
+                    ) : mobileSearchResults.length === 0 ? (
+                      <p className="text-sm text-slate-400 font-medium text-center mt-10">No events found for "{searchQuery}"</p>
+                    ) : (
+                      <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
+                    )}
+                  </div>
                 </div>
               )}
 
