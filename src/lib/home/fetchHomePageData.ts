@@ -19,16 +19,20 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   const supabase = await createClient();
   const activeTab = tab || "around_you";
 
-  // NEW: Dynamically get today's date to display on the button
-  const today = new Date();
-  const day = today.getDate();
-  const month = today.toLocaleDateString('en-US', { month: 'short' });
+  // NEW: Dynamically get today's date using IST timezone.
+  // The server runs on UTC time. By forcing it to calculate the date in 'Asia/Kolkata', 
+  // we prevent the server from fetching yesterday's events during early morning hours in India,
+  // which stops the client-side hydration flashing.
+  const serverTime = new Date();
+  const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  
+  const day = todayIST.getDate();
+  const month = todayIST.toLocaleDateString('en-US', { month: 'short' });
   const displayToday = `${day} ${month}`; // Formats to "24 May"
 
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  // This stops past events from appearing and fluctuating in the live feed.
+  const yyyy = todayIST.getFullYear();
+  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
+  const dd = String(todayIST.getDate()).padStart(2, '0');
   const todayStr = `${yyyy}-${mm}-${dd}`;
   // 1. Fetch user session and profile for onboarding check
   const { data: { user } } = await supabase.auth.getUser();
