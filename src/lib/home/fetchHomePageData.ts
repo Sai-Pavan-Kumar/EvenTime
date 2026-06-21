@@ -242,9 +242,14 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
       .order("created_at", { ascending: false })
       .limit(4);
     
+   // AFTER
     // Typecast to ensure it matches the Partial<EventRow>[] declaration
     fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
   }
+
+  // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
+  const { data: statsData } = await supabase.rpc("get_platform_stats" as any).single();
+  const platformStats = (statsData as any) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
 
   return {
     user,
@@ -271,6 +276,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     q,
     category,
     location,
-    view
+    view,
+    platformStats
   };
 }

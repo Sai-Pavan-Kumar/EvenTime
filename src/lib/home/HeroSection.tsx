@@ -1,6 +1,13 @@
 "use client";
 
-export function HeroSection() {
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
   return (
     <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
       
@@ -18,6 +25,15 @@ export function HeroSection() {
           <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
             Hackathons. Fests. Events.   <br className="sm:hidden" /> Everything worth showing up for.
           </p>
+
+          {stats && (
+            <div className="mt-5 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs font-bold text-[#555570]">
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.event_count}+ Events</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.city_count}+ Cities</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.category_count}+ Categories</span>
+              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.user_count}+ Users</span>
+            </div>
+          )}
           
         </div>
       </div>

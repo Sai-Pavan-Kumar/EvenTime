@@ -42,8 +42,8 @@ export interface HomePageClientProps {
   category?: string;
   location?: string;
   view?: string;
+  platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
 }
-
 export function HomePageClient(props: HomePageClientProps) {
   const {
     user,
@@ -69,7 +69,8 @@ export function HomePageClient(props: HomePageClientProps) {
     q,
     category,
     location,
-    view
+    view,
+    platformStats
   } = props;
 
   // Local copies of the server-fetched event lists, so we can remove an event
@@ -185,7 +186,7 @@ export function HomePageClient(props: HomePageClientProps) {
       <div className="flex flex-col">
         {/* Header Section Background & Combined Navigation Pill */}
         <div className="relative">
-          <HeroSection />
+          <HeroSection stats={platformStats} />
         </div>
 
         {/* COMBINED DISCOVERY PILL - Moved out of the relative div to parent scope for sticky to work */}
