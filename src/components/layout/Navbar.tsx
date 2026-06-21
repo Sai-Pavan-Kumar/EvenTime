@@ -174,10 +174,11 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const completionPercent = calculateCompletion(profileDetails);
 
   const selectedDate = searchParams.get("date");
-  let mobileDateDisplay = "Today";
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const todayObj = new Date();
+  let mobileDateDisplay = `${todayObj.getDate()} ${monthNames[todayObj.getMonth()]}`;
   if (selectedDate) {
     const [year, month, day] = selectedDate.split("-");
-    const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const monthIndex = parseInt(month, 10) - 1;
     if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
   }
@@ -218,38 +219,53 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
                 {showDesktopFilters && hasFilterChips && (
-                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-3 z-20">
-                    <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-                    <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-4 z-20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+                      <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+                      <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                    </div>
                   </div>
                 )}
               </form>
 
               {showMobileSearch && (
-                <form
-                  onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
-                  className="sm:hidden absolute inset-x-4 top-1/2 -translate-y-1/2 flex items-center gap-2 z-10 bg-white"
-                >
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                    <input
-                      ref={mobileSearchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search hackathons, meetups..."
-                      className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                    />
-                  </div>
-                  <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
-                    <X className="w-5 h-5" />
-                  </button>
-                </form>
-              )}
-              {showMobileSearch && hasFilterChips && (
-                <div className="sm:hidden absolute inset-x-4 top-[calc(50%+2.75rem)] flex items-center gap-2 z-10 bg-white rounded-full shadow-sm border border-slate-100 px-3 py-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-                  <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-                  <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+                  <form
+                    onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
+                    className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
+                  >
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                      <input
+                        ref={mobileSearchInputRef}
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search hackathons, meetups..."
+                        className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                      />
+                    </div>
+                    <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </form>
+
+                  {hasFilterChips && (
+                    <div className="flex flex-col gap-4 px-4 py-5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+                        <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+                        <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

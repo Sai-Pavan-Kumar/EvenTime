@@ -24,17 +24,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
           {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
           <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
             Hackathons. Fests. Events.   <br className="sm:hidden" /> Everything worth showing up for.
-          </p>
-
-          {stats && (
-            <div className="mt-5 flex items-center justify-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs font-bold text-[#555570]">
-              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.event_count}+ Events</span>
-              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.city_count}+ Cities</span>
-              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.category_count}+ Categories</span>
-              <span className="bg-white/70 backdrop-blur-sm px-3 py-1.5 rounded-full border border-white/40 shadow-sm">{stats.user_count}+ Users</span>
-            </div>
-          )}
-          
+          </p>         
         </div>
       </div>
     </div>

@@ -151,14 +151,25 @@ export function HomePageClient(props: HomePageClientProps) {
           <HeroSection stats={platformStats} />
         </div>
 
-        {/* LIVE COUNTER - replaces the old Explore/In/Date pill (filters now live in the Navbar search) */}
+        {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
         <div className="sticky top-[80px] -mt-8 z-40 mx-auto mb-10 w-max">
-          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-5 py-2.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <span className="text-sm font-bold text-slate-700">{gridSource?.length || 0} events live right now</span>
+          <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
+            <div className="flex flex-col items-center px-3">
+              <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
+            </div>
+            <div className="flex flex-col items-center px-3">
+              <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
+            </div>
+            <div className="flex flex-col items-center px-3">
+              <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
+            </div>
+            <div className="flex flex-col items-center px-3">
+              <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
+            </div>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
