@@ -28,7 +28,7 @@ function NavbarInner({ variant = 'default' }: { variant?: 'default' | 'centered'
   const [imgError, setImgError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
+  const [leaderboardEnabled, setLeaderboardEnabled] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams(); const pathname = usePathname();
 

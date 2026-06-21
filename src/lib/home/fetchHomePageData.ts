@@ -28,9 +28,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   const yyyy = today.getFullYear();
   const mm = String(today.getMonth() + 1).padStart(2, '0');
   const dd = String(today.getDate()).padStart(2, '0');
-  const cutoff = new Date(today);
-cutoff.setDate(cutoff.getDate() - 1);
-const todayStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+  // This stops past events from appearing and fluctuating in the live feed.
+  const todayStr = `${yyyy}-${mm}-${dd}`;
   // 1. Fetch user session and profile for onboarding check
   const { data: { user } } = await supabase.auth.getUser();
   
