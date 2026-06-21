@@ -97,13 +97,34 @@
     const eventDate = parseEventDateString(date);
     if (eventDate) {
       const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
       diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > eventDate.getTime();
+      isPastTime = today.getTime() > exactEventDate.getTime();
 
       if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
-        }  }
+      }  
+    }
 
     useEffect(() => {
       // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
@@ -112,8 +133,27 @@
         const checkDate = parseEventDateString(date);
         if (checkDate) {
           const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
           const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > checkDate.getTime();
+          const pastTime = today.getTime() > exactCheckDate.getTime();
           
           if (pastDate || pastTime) {
             setIsVisible(false);
