@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock } from "lucide-react";
+import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
@@ -260,6 +260,12 @@ Promise<{ tab?: string }>; }) {
                     </div>
                   )}
                 </Link>
+
+                {leaderboardEnabled && (
+                  <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Trophy className="w-4 h-4" /> Leaderboard
+                  </Link>
+                )}
 
                 <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
                   <Settings className="w-4 h-4" /> Profile Settings
