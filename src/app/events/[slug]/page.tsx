@@ -192,6 +192,25 @@ export default async function EventPage({
     }
   }
 
+ // Fetch up to 3 interested user avatars for social proof
+  let interestedAvatars: { avatar_url: string | null; full_name: string | null }[] = [];
+  {
+    const { data: interestedRows } = await supabase
+      .from("interested_events" as any)
+      .select("user_id")
+      .eq("event_id", finalEvent.id)
+      .limit(3);
+
+    if (interestedRows && interestedRows.length > 0) {
+      const userIds = interestedRows.map((r: any) => r.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("avatar_url, full_name")
+        .in("id", userIds);
+      if (profiles) interestedAvatars = profiles;
+    }
+  }
+
   // Pass the data cleanly to the client UI
   return (
     <>
@@ -199,7 +218,7 @@ export default async function EventPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} />
+      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} />
     </>
   );
 }
