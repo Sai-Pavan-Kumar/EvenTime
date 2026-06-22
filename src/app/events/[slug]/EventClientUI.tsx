@@ -186,7 +186,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   };
 
   return (
-    <main className="min-h-screen bg-white pb-40">
+    <main className="min-h-screen bg-white pb-8">
       {/* Shared Navbar */}
       <Navbar />
 
@@ -209,22 +209,16 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           </div>
         </div>
 
-        {/* TWO-COLUMN LAYOUT on lg+: left = title/image/actions, right = about/similar */}
+         {/* Full-width title */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
+          {safeTitle}
+        </h1>
+
+        {/* TWO-COLUMN LAYOUT on lg+: left = image/actions, right = about/similar */}
         <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
 
-          {/* LEFT COLUMN */}
+         {/* LEFT COLUMN */}
           <div className="space-y-8">
-
-            {/* 1. Title — shown first, above the cover image */}
-            <div className="space-y-3">
-              <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
-                {safeCategory}
-              </span>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
-                {safeTitle}
-              </h1>
-            </div>
-
             {/* 2. Cover Image — natural size, no fixed box, no border/crop */}
             {imageUrl ? (
               <div className="relative w-full rounded-[24px] overflow-hidden">
@@ -240,12 +234,12 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             ) : null}
 
             {/* Curator name + interest label */}
-            <div className="space-y-4">
-              <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-slate-500 font-medium text-base">by {safeOrganizer}</p>
 
-              {/* Global Interest Label - Updated to show total interested count */}
+              {/* Global Interest Label */}
             {localInterestCount > 0 ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full mt-2 animate-in fade-in duration-300">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full animate-in fade-in duration-300">
               <span className="text-orange-500 text-lg">🔥</span>
              <p className="text-orange-700 font-bold text-sm">
               {localInterestCount} {localInterestCount === 1 ? "person is" : "people are"} interested in this event
@@ -316,34 +310,35 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
               </div>
             </div>
 
-            {/* Similar Events Section */}
-            {similarEvents && similarEvents.length > 0 && (
-              <div className="pt-8 border-t border-slate-100">
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Events</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {similarEvents.map((simEvent) => (
-                    <EventCard 
-                      key={simEvent.id}
-                      id={simEvent.id!}
-                      slug={simEvent.slug || simEvent.id!}
-                      title={simEvent.title || "Untitled Event"}
-                      category={simEvent.category || "General"}
-                      date={simEvent.date_string || "TBA"}
-                      city={simEvent.location || simEvent.city || "Online"}
-                      imageUrl={simEvent.poster_url || "/window.svg"}
-                      organizerName={simEvent.organizer_name || "Organizer"}
-                      isFree={simEvent.is_free ?? false}
-                      audience={simEvent.target_audience ?? []}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-          </div>
+           </div>
 
         </div>
       </div>
+
+      {/* Similar Events — horizontal scroll, pinned above footer */}
+      {similarEvents && similarEvents.length > 0 && (
+        <div className="max-w-6xl mx-auto w-full px-6 pt-8 border-t border-slate-100 mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Similar Events</h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {similarEvents.map((simEvent) => (
+              <div key={simEvent.id} className="min-w-[260px]">
+                <EventCard 
+                  id={simEvent.id!}
+                  slug={simEvent.slug || simEvent.id!}
+                  title={simEvent.title || "Untitled Event"}
+                  category={simEvent.category || "General"}
+                  date={simEvent.date_string || "TBA"}
+                  city={simEvent.location || simEvent.city || "Online"}
+                  imageUrl={simEvent.poster_url || "/window.svg"}
+                  organizerName={simEvent.organizer_name || "Organizer"}
+                  isFree={simEvent.is_free ?? false}
+                  audience={simEvent.target_audience ?? []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile Floating Bottom Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
