@@ -2,12 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, 
-  CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2
-} from "lucide-react";
+import { useState, useEffect, useRef } from "react";import { motion, AnimatePresence } from "framer-motion";
+import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight} from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { submitReportAction } from "../report-actions";
 import { getCategoryConfig } from "@/lib/category-config";
@@ -146,6 +142,13 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
       setIsInterested(previousState);
       setLocalInterestCount((prev: number) => previousState ? prev + 1 : Math.max(0, prev - 1));
       alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
+    }
+  };
+
+   const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
     }
   };
 
@@ -297,36 +300,52 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
               )}
 
             </div>
-
-            {/* Similar Events — horizontal scroll, inside right column at bottom */}
-            {similarEvents && similarEvents.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-slate-100">
-                <h2 className="text-xl font-bold text-slate-900">Similar Events</h2>
-                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                  {similarEvents.map((simEvent) => (
-                    <div key={simEvent.id} className="min-w-[240px]">
-                      <EventCard
-                        id={simEvent.id!}
-                        slug={simEvent.slug || simEvent.id!}
-                        title={simEvent.title || "Untitled Event"}
-                        category={simEvent.category || "General"}
-                        date={simEvent.date_string || "TBA"}
-                        city={simEvent.location || simEvent.city || "Online"}
-                        imageUrl={simEvent.poster_url || "/window.svg"}
-                        organizerName={simEvent.organizer_name || "Organizer"}
-                        isFree={simEvent.is_free ?? false}
-                        audience={simEvent.target_audience ?? []}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-          </div>
+           </div>
 
         </div>
       </div>
+
+      {/* Similar Events — separate full-width section */}
+      {similarEvents && similarEvents.length > 0 && (
+        <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
+            {/* Arrow buttons — desktop only */}
+            <div className="hidden md:flex gap-2">
+              <button
+                onClick={() => scroll("left")}
+                className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
+              </button>
+              <button
+                onClick={() => scroll("right")}
+                className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
+              >
+                <ChevronRight className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          </div>
+          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {similarEvents.map((simEvent) => (
+              <div key={simEvent.id} className="min-w-[240px]">
+                <EventCard
+                  id={simEvent.id!}
+                  slug={simEvent.slug || simEvent.id!}
+                  title={simEvent.title || "Untitled Event"}
+                  category={simEvent.category || "General"}
+                  date={simEvent.date_string || "TBA"}
+                  city={simEvent.location || simEvent.city || "Online"}
+                  imageUrl={simEvent.poster_url || "/window.svg"}
+                  organizerName={simEvent.organizer_name || "Organizer"}
+                  isFree={simEvent.is_free ?? false}
+                  audience={simEvent.target_audience ?? []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mobile Floating Bottom Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
