@@ -36,15 +36,14 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
         onChange={(e) => {
           const val = e.target.value;
           const params = new URLSearchParams();
-          
+
+          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
           if (paramName === "category") {
             if (val) params.set("category", val);
-            if (location) params.set("location", location);
           } else {
-            if (category) params.set("category", category);
             if (val) params.set("location", val);
           }
-          
+
           if (q) params.set("q", q);
           if (branch) params.set("branch", branch);
           router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });

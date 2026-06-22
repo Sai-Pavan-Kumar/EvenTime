@@ -416,7 +416,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           ) : isSearchingMobile ? (
             <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
           ) : mobileSearchResults.length === 0 ? (
-            <p className="text-sm text-slate-400 font-medium text-center mt-10">No events found for "{searchQuery}"</p>
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">{searchQuery.trim() ? `No events found for "${searchQuery}"` : "No events found for the selected filters"}</p>
           ) : (
             <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
           )}
