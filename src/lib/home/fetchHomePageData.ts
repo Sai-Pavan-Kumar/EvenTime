@@ -166,17 +166,23 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     }
   }
 
-  const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+ const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+
+  // Own-college events already show in the "Your Campus" pill — exclude them here
+  // so the same event doesn't repeat in "For You" / "Around You".
+  const nonCampusEvents = (profile?.user_type === 'student' && profile?.college_id)
+    ? allEvents.filter((e) => e.college_id !== profile!.college_id)
+    : allEvents;
 
   // Split the city-scoped feed: "For You" = chosen categories, "Around You" = everything else
   if ((profile?.goals?.length ?? 0) > 0) {
     const goalSet = new Set(profile!.goals);
-    const forYou = allEvents.filter((e) => e.category && goalSet.has(e.category));
-    const others = allEvents.filter((e) => !(e.category && goalSet.has(e.category)));
+    const forYou = nonCampusEvents.filter((e) => e.category && goalSet.has(e.category));
+    const others = nonCampusEvents.filter((e) => !(e.category && goalSet.has(e.category)));
     personalizedEvents = forYou;
     aroundYouEvents = others;
   } else {
-    aroundYouEvents = allEvents;
+    aroundYouEvents = nonCampusEvents;
   }
 
   // NEW: Check if there are any events in the user's city (Empty City State Fallback)
