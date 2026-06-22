@@ -51,7 +51,12 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
   const [isSearchingMobile, setIsSearchingMobile] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams(); const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const categoryParam = searchParams.get("category") || undefined;
+  const locationParam = searchParams.get("location") || undefined;
+  const branchParam = searchParams.get("branch") || undefined;
+  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
 
   const handleProtectedAction = (e: React.MouseEvent) => {
     if (!user) {
@@ -147,25 +152,46 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   }, [supabase]);
 
   useEffect(() => {
-    if (!showMobileSearch || !searchQuery.trim()) {
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasFilter = !!categoryParam || !!locationParam;
+    if (!showMobileSearch || (!hasQuery && !hasFilter)) {
       setMobileSearchResults([]);
       return;
     }
     setIsSearchingMobile(true);
     const timer = setTimeout(() => {
-      supabase
+      let query = supabase
         .from("events")
         .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-        .eq("status", "approved")
-        .or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
-        .limit(20)
-        .then(({ data }) => {
-          setMobileSearchResults(data || []);
-          setIsSearchingMobile(false);
-        });
+        .eq("status", "approved");
+      if (hasQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+      }
+      if (categoryParam) query = query.eq("category", categoryParam);
+      if (locationParam) query = query.eq("location", locationParam);
+      query.limit(20).then(({ data }) => {
+        setMobileSearchResults(data || []);
+        setIsSearchingMobile(false);
+      });
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, showMobileSearch, supabase]);
+  }, [searchQuery, showMobileSearch, supabase, categoryParam, locationParam]);
+
+  useEffect(() => {
+    if (!showMobileSearch) return;
+    window.history.pushState({ mobileSearch: true }, "");
+    const handlePop = () => setShowMobileSearch(false);
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [showMobileSearch]);
+
+  const closeMobileSearch = () => {
+    if (window.history.state?.mobileSearch) {
+      window.history.back();
+    } else {
+      setShowMobileSearch(false);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -206,11 +232,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     const monthIndex = parseInt(month, 10) - 1;
     if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
   }
-
-  const categoryParam = searchParams.get("category") || undefined;
-  const locationParam = searchParams.get("location") || undefined;
-  const branchParam = searchParams.get("branch") || undefined;
-  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
 
   return (
     <>
@@ -357,7 +378,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     {showMobileSearch && (
       <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
         <form
-          onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
+          onSubmit={(e) => { handleSearch(e); closeMobileSearch(); }}
           className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
         >
           <div className="relative flex-1">
@@ -371,7 +392,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
               className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
             />
           </div>
-          <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
+          <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
             <X className="w-5 h-5" />
           </button>
         </form>
@@ -390,8 +411,8 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         )}
 
         <div className="flex-1 overflow-y-auto px-4 py-5">
-          {!searchQuery.trim() ? (
-            <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing to search events...</p>
+          {!searchQuery.trim() && !categoryParam && !locationParam ? (
+              <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing or pick a filter to see events...</p>
           ) : isSearchingMobile ? (
             <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
           ) : mobileSearchResults.length === 0 ? (
