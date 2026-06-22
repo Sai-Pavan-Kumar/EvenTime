@@ -82,9 +82,8 @@ export function HomePageClient(props: HomePageClientProps) {
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
 
   // Pill toggles: which sub-feed is active inside each section
-  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you'>('for_you');
-  const [activeCollegePill, setActiveCollegePill] = useState<'mine' | 'other'>('mine');
-  
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('for_you');
+  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
   // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
   useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
   useEffect(() => { setLiveAroundYouEvents(aroundYouEvents); }, [aroundYouEvents]);
@@ -127,13 +126,13 @@ export function HomePageClient(props: HomePageClientProps) {
   }, []);
 
   // No filters active = passive browsing mode → show pill-based feed. Any filter active → show liveAllEvents directly.
-  const noFiltersActive = !q && !category && !location && !date;
+ const noFiltersActive = !q && !category && !location && !date;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
-  const showFeedPills = !!(user && profile?.is_onboarded && hasGoals && noFiltersActive);
+  const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
   const gridSource = !noFiltersActive
     ? liveAllEvents
     : showFeedPills
-      ? (activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
+      ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
 
   return (
@@ -184,61 +183,6 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
           ) : (
             <>
-            {/* COLLEGE SECTION — shown ALONGSIDE the city section for students, not instead of it */}
-            {user && profile?.user_type === 'student' && profile?.college_id && !q && !category && (
-            <div className="bg-[#6C47FF] rounded-[40px] p-8 sm:p-12 shadow-xl relative overflow-hidden transition-all duration-300">
-              {/* FIX: Made decorative blobs responsive so they don't break mobile layout width */}
-              <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
-              <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-white/10 rounded-full blur-2xl md:blur-3xl" />
-              
-              <div className="relative z-10 space-y-8">
-                <div>
-                  <h2 className="text-3xl font-heading font-black text-white flex items-center gap-3">
-                    <Sparkles className="w-8 h-8 text-amber-400" /> Events happening in your college
-                  </h2>
-                  <p className="text-[#E5E5EA] font-medium text-sm sm:text-base mt-2">Exclusive updates curated inside your college environment framework safely</p>
-
-                  <div className="mt-4 inline-flex items-center gap-1 bg-white/10 rounded-full p-1">
-                    <button
-                      type="button"
-                      onClick={() => setActiveCollegePill('mine')}
-                      className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                        activeCollegePill === 'mine' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-white/80'
-                      }`}
-                    >
-                      In Your College
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveCollegePill('other')}
-                      className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                        activeCollegePill === 'other' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-white/80'
-                      }`}
-                    >
-                      In Other College
-                    </button>
-                  </div>
-                </div>
-
-                {(activeCollegePill === 'mine' ? liveCollegeEvents : liveOtherCollegeEvents).length > 0 ? (
-                  <EventGrid 
-                    events={activeCollegePill === 'mine' ? liveCollegeEvents : liveOtherCollegeEvents}
-                    gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-                    defaultMatchLabel={activeCollegePill === 'mine' ? "College Exclusive" : "Open to All Colleges"}
-                    defaultImage="/window.svg"
-                    user={user}
-                  />
-                ) : (
-                  <div className="py-12 text-center bg-[#5835e5] rounded-3xl border border-[#7a5cff]">
-                    <p className="text-white font-bold uppercase tracking-widest text-xs">No active live campaigns running on campus timeline right now</p>
-                    <Link href="/events/new" className="mt-4 inline-block bg-white text-[#6C47FF] px-6 py-3 rounded-full font-bold shadow-sm active:scale-95 transition-transform">
-                      Host the first one
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-            )}
 
             {/* CITY SECTION — always shown */}
             <div className="space-y-6">
@@ -271,6 +215,17 @@ export function HomePageClient(props: HomePageClientProps) {
                       >
                         Around You
                       </button>
+                      {isCollegeStudent && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveFeedPill('campus')}
+                          className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                            activeFeedPill === 'campus' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                          }`}
+                        >
+                          Your Campus
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -6157,71 +6157,6 @@ export async function updateProfileSettings(formData: FormData) {
 }
 </file>
 
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          const val = e.target.value;
-          const params = new URLSearchParams();
-          
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-            if (location) params.set("location", location);
-          } else {
-            if (category) params.set("category", category);
-            if (val) params.set("location", val);
-          }
-          
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/HeroSection.tsx">
 "use client";
 
@@ -7838,6 +7773,70 @@ export function EventGrid({
         );
       })}
       </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          const val = e.target.value;
+          const params = new URLSearchParams();
+
+          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+          } else {
+            if (val) params.set("location", val);
+          }
+
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -11077,7 +11076,12 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
   const [isSearchingMobile, setIsSearchingMobile] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams(); const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const categoryParam = searchParams.get("category") || undefined;
+  const locationParam = searchParams.get("location") || undefined;
+  const branchParam = searchParams.get("branch") || undefined;
+  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
 
   const handleProtectedAction = (e: React.MouseEvent) => {
     if (!user) {
@@ -11173,25 +11177,46 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   }, [supabase]);
 
   useEffect(() => {
-    if (!showMobileSearch || !searchQuery.trim()) {
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasFilter = !!categoryParam || !!locationParam;
+    if (!showMobileSearch || (!hasQuery && !hasFilter)) {
       setMobileSearchResults([]);
       return;
     }
     setIsSearchingMobile(true);
     const timer = setTimeout(() => {
-      supabase
+      let query = supabase
         .from("events")
         .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-        .eq("status", "approved")
-        .or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`)
-        .limit(20)
-        .then(({ data }) => {
-          setMobileSearchResults(data || []);
-          setIsSearchingMobile(false);
-        });
+        .eq("status", "approved");
+      if (hasQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+      }
+      if (categoryParam) query = query.eq("category", categoryParam);
+      if (locationParam) query = query.eq("location", locationParam);
+      query.limit(20).then(({ data }) => {
+        setMobileSearchResults(data || []);
+        setIsSearchingMobile(false);
+      });
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, showMobileSearch, supabase]);
+  }, [searchQuery, showMobileSearch, supabase, categoryParam, locationParam]);
+
+  useEffect(() => {
+    if (!showMobileSearch) return;
+    window.history.pushState({ mobileSearch: true }, "");
+    const handlePop = () => setShowMobileSearch(false);
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [showMobileSearch]);
+
+  const closeMobileSearch = () => {
+    if (window.history.state?.mobileSearch) {
+      window.history.back();
+    } else {
+      setShowMobileSearch(false);
+    }
+  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -11232,11 +11257,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     const monthIndex = parseInt(month, 10) - 1;
     if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
   }
-
-  const categoryParam = searchParams.get("category") || undefined;
-  const locationParam = searchParams.get("location") || undefined;
-  const branchParam = searchParams.get("branch") || undefined;
-  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
 
   return (
     <>
@@ -11281,55 +11301,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   </div>
                 )}
               </form>
-
-              {showMobileSearch && (
-                <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
-                  <form
-                    onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
-                    className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
-                  >
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        ref={mobileSearchInputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search hackathons, meetups..."
-                        className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                      />
-                    </div>
-                    <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </form>
-
-                  {hasFilterChips && (
-                    <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
-                        <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
-                        <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1 overflow-y-auto px-4 py-5">
-                    {!searchQuery.trim() ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing to search events...</p>
-                    ) : isSearchingMobile ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
-                    ) : mobileSearchResults.length === 0 ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">No events found for "{searchQuery}"</p>
-                    ) : (
-                      <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
-                    )}
-                  </div>
-                </div>
-              )}
 
               <div ref={mobileCalendarRef} className="relative shrink-0">
                 <button
@@ -11428,6 +11399,55 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </div>
       </div>
     </nav>
+
+    {showMobileSearch && (
+      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <form
+          onSubmit={(e) => { handleSearch(e); closeMobileSearch(); }}
+          className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search hackathons, meetups..."
+              className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+            />
+          </div>
+          <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </form>
+
+        {hasFilterChips && (
+          <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+              <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+              <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-4 py-5">
+          {!searchQuery.trim() && !categoryParam && !locationParam ? (
+              <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing or pick a filter to see events...</p>
+          ) : isSearchingMobile ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
+          ) : mobileSearchResults.length === 0 ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">{searchQuery.trim() ? `No events found for "${searchQuery}"` : "No events found for the selected filters"}</p>
+          ) : (
+            <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
+          )}
+        </div>
+      </div>
+    )}
 
     <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
   <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
