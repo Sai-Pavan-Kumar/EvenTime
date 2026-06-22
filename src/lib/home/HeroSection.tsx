@@ -16,9 +16,9 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
           
           {/* Applied the white halo text-shadow from Option B */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The dictionary
+            The Dictionary for
             <br />
-            <span className="text-[#6C47FF]">of events.</span>
+            <span className="text-[#6C47FF]">Events.</span>
           </h1>
           
           {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
