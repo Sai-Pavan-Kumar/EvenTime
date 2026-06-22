@@ -354,13 +354,14 @@ export async function POST(request: Request) {
     let hostname = parsedUrl.hostname.toLowerCase();
     if (hostname.startsWith("www.")) hostname = hostname.slice(4);
 
-    // Trusted domain check
-    const { data: trustedDomain } = await supabase
+    // Trusted domain check (matches hostname, or hostname+path for shared hosts like Google Forms)
+    const fullPath = `${hostname}${parsedUrl.pathname}`;
+    const { data: trustedDomains } = await supabase
       .from("verified_domains")
-      .select("domain_name")
-      .eq("domain_name", hostname)
-      .maybeSingle();
-    const isTrusted = !!trustedDomain;
+      .select("domain_name");
+    const isTrusted = !!trustedDomains?.some(
+      (d) => hostname === d.domain_name || fullPath.startsWith(d.domain_name)
+    );
 
     // Parse HTML + JSON-LD
     const $ = cheerio.load(html);
