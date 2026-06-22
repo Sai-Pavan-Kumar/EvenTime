@@ -256,55 +256,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                 )}
               </form>
 
-              {showMobileSearch && (
-                <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
-                  <form
-                    onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
-                    className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
-                  >
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                      <input
-                        ref={mobileSearchInputRef}
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search hackathons, meetups..."
-                        className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                      />
-                    </div>
-                    <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </form>
-
-                  {hasFilterChips && (
-                    <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
-                        <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
-                        <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1 overflow-y-auto px-4 py-5">
-                    {!searchQuery.trim() ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing to search events...</p>
-                    ) : isSearchingMobile ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
-                    ) : mobileSearchResults.length === 0 ? (
-                      <p className="text-sm text-slate-400 font-medium text-center mt-10">No events found for "{searchQuery}"</p>
-                    ) : (
-                      <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
-                    )}
-                  </div>
-                </div>
-              )}
-
               <div ref={mobileCalendarRef} className="relative shrink-0">
                 <button
                   type="button"
@@ -402,6 +353,55 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </div>
       </div>
     </nav>
+
+    {showMobileSearch && (
+      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <form
+          onSubmit={(e) => { handleSearch(e); setShowMobileSearch(false); }}
+          className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search hackathons, meetups..."
+              className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+            />
+          </div>
+          <button type="button" onClick={() => setShowMobileSearch(false)} className="p-2 text-text-secondary shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </form>
+
+        {hasFilterChips && (
+          <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+              <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+              <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-4 py-5">
+          {!searchQuery.trim() ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing to search events...</p>
+          ) : isSearchingMobile ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
+          ) : mobileSearchResults.length === 0 ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">No events found for "{searchQuery}"</p>
+          ) : (
+            <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
+          )}
+        </div>
+      </div>
+    )}
 
     <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
   <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
