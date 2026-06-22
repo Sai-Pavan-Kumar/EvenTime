@@ -93,6 +93,17 @@ export default async function EventPage({
 
   const { data: finalEvent } = await query.maybeSingle();
 
+  // NEW: Fetch curator's username (shorter than full_name) for display on the event page
+  let curatorUsername: string | null = null;
+  if (finalEvent?.creator_id) {
+    const { data: curatorProfile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", finalEvent.creator_id)
+      .maybeSingle();
+    curatorUsername = curatorProfile?.username || null;
+  }
+
   if (!finalEvent) {
     return (
       <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
@@ -188,7 +199,7 @@ export default async function EventPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} />
+      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} />
     </>
   );
 }

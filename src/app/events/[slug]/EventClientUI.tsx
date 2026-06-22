@@ -22,9 +22,10 @@ export interface EventUIProps {
     same_college_interested_count?: number; 
   };
   similarEvents?: Partial<EventRow>[];
+  curatorUsername?: string | null;
 }
 
-export default function EventClientUI({ event, similarEvents = [] }: EventUIProps) {
+export default function EventClientUI({ event, similarEvents = [], curatorUsername = null }: EventUIProps) {
   const router = useRouter();
   const supabase = createClient(); 
   
@@ -49,7 +50,7 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
   // Safe variables to prevent TypeScript 'undefined' errors
   const safeTitle = event.title ?? "Event Details";
   const safeCategory = event.category ?? "General";
-  const safeOrganizer = event.organizer_name ?? "Unknown Organizer";
+  const safeOrganizer = curatorUsername || event.organizer_name || "Unknown Organizer";
   const safeRegistrationLink = event.registration_link ?? "#";
   const safeId = event.id ?? "";
   const safeCreatorId = event.creator_id ?? "";
@@ -190,7 +191,7 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
       <Navbar />
 
       {/* Unified Layout Container */}
-      <div className="max-w-5xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
+      <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
         
         {/* Sub-header Actions */}
         <div className="flex justify-between items-center w-full">
@@ -208,130 +209,140 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
           </div>
         </div>
 
-        {/* 1. Title — shown first, above the cover image */}
-        <div className="space-y-3">
-          <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
-            {safeCategory}
-          </span>
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
-            {safeTitle}
-          </h1>
-        </div>
+        {/* TWO-COLUMN LAYOUT on lg+: left = title/image/actions, right = about/similar */}
+        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
 
-        {/* 2. Cover Image — natural size, no fixed box, no border/crop */}
-        {imageUrl ? (
-          <div className="relative w-full rounded-[24px] overflow-hidden">
-            <Image 
-              src={imageUrl} 
-              alt={safeTitle} 
-              width={1200}
-              height={675}
-              className="w-full h-auto object-contain" 
-              priority 
-            />
-          </div>
-        ) : null}
+          {/* LEFT COLUMN */}
+          <div className="space-y-8">
 
-        {/* 3. Event Details Content */}
-        <div className="space-y-10">
-          
-          {/* Curator name + interest label */}
-          <div className="space-y-4">
-            <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
-
-            {/* Global Interest Label - Updated to show total interested count */}
-          {localInterestCount > 0 ? (
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full mt-2 animate-in fade-in duration-300">
-            <span className="text-orange-500 text-lg">🔥</span>
-           <p className="text-orange-700 font-bold text-sm">
-            {localInterestCount} {localInterestCount === 1 ? "person is" : "people are"} interested in this event
-          </p>
-         </div>
-         ) : null}
-          </div>
-
-          {/* Desktop Action Buttons */}
-          <div className="hidden md:flex gap-4">
-            <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2">
-              Register <ExternalLink className="w-4 h-4" />
-            </a>
-            <button 
-              onClick={handleInterestedClick}
-              disabled={isLoadingInterest || isCuratorOrAdmin}
-              className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                isCuratorOrAdmin 
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
-                  : isInterested 
-                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
-                    : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-              }`}
-            >
-              {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
-            </button>
-          </div>
-
-          {/* Logistics Card */}
-          <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Date & Time */}
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                <CalendarDays className="w-5 h-5 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Date & Time</p>
-                <p className="text-[14px] font-bold text-slate-900">{displayDate}</p>
-                <p className="text-xs text-slate-500 font-medium">{event.start_time || "TBA"}</p>
-              </div>
+            {/* 1. Title — shown first, above the cover image */}
+            <div className="space-y-3">
+              <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
+                {safeCategory}
+              </span>
+              <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
+                {safeTitle}
+              </h1>
             </div>
 
-            {/* Location */}
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Location</p>
-                <p className="text-[14px] font-bold text-slate-900 truncate max-w-[200px]">
-                  {event.is_virtual ? "Online Platform" : event.location}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-900">About Event</h2>
-            <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
-              {event.description}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Similar Events Section */}
-        {similarEvents && similarEvents.length > 0 && (
-          <div className="pt-10 border-t border-slate-100 mt-12">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Events</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {similarEvents.map((simEvent) => (
-                <EventCard 
-                  key={simEvent.id}
-                  id={simEvent.id!}
-                  slug={simEvent.slug || simEvent.id!}
-                  title={simEvent.title || "Untitled Event"}
-                  category={simEvent.category || "General"}
-                  date={simEvent.date_string || "TBA"}
-                  city={simEvent.location || simEvent.city || "Online"}
-                  imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.organizer_name || "Organizer"}
-                  isFree={simEvent.is_free ?? false}
-                  audience={simEvent.target_audience ?? []}
+            {/* 2. Cover Image — natural size, no fixed box, no border/crop */}
+            {imageUrl ? (
+              <div className="relative w-full rounded-[24px] overflow-hidden">
+                <Image 
+                  src={imageUrl} 
+                  alt={safeTitle} 
+                  width={1200}
+                  height={675}
+                  className="w-full h-auto object-contain" 
+                  priority 
                 />
-              ))}
+              </div>
+            ) : null}
+
+            {/* Curator name + interest label */}
+            <div className="space-y-4">
+              <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
+
+              {/* Global Interest Label - Updated to show total interested count */}
+            {localInterestCount > 0 ? (
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 border border-orange-100 rounded-full mt-2 animate-in fade-in duration-300">
+              <span className="text-orange-500 text-lg">🔥</span>
+             <p className="text-orange-700 font-bold text-sm">
+              {localInterestCount} {localInterestCount === 1 ? "person is" : "people are"} interested in this event
+            </p>
+           </div>
+           ) : null}
             </div>
+
+            {/* Desktop Action Buttons */}
+            <div className="hidden md:flex gap-4">
+              <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2">
+                Register <ExternalLink className="w-4 h-4" />
+              </a>
+              <button 
+                onClick={handleInterestedClick}
+                disabled={isLoadingInterest || isCuratorOrAdmin}
+                className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                  isCuratorOrAdmin 
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
+                    : isInterested 
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200" 
+                      : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                }`}
+              >
+                {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
+              </button>
+            </div>
+
+            {/* Logistics Card */}
+            <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Date & Time */}
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Date & Time</p>
+                  <p className="text-[14px] font-bold text-slate-900">{displayDate}</p>
+                  <p className="text-xs text-slate-500 font-medium">{event.start_time || "TBA"}</p>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Location</p>
+                  <p className="text-[14px] font-bold text-slate-900 truncate max-w-[200px]">
+                    {event.is_virtual ? "Online Platform" : event.location}
+                  </p>
+                </div>
+              </div>
+            </div>
+
           </div>
-        )}
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-10">
+
+            {/* Description */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-bold text-slate-900">About Event</h2>
+              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
+                {event.description}
+              </div>
+            </div>
+
+            {/* Similar Events Section */}
+            {similarEvents && similarEvents.length > 0 && (
+              <div className="pt-8 border-t border-slate-100">
+                <h2 className="text-2xl font-bold text-slate-900 mb-6">Similar Events</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {similarEvents.map((simEvent) => (
+                    <EventCard 
+                      key={simEvent.id}
+                      id={simEvent.id!}
+                      slug={simEvent.slug || simEvent.id!}
+                      title={simEvent.title || "Untitled Event"}
+                      category={simEvent.category || "General"}
+                      date={simEvent.date_string || "TBA"}
+                      city={simEvent.location || simEvent.city || "Online"}
+                      imageUrl={simEvent.poster_url || "/window.svg"}
+                      organizerName={simEvent.organizer_name || "Organizer"}
+                      isFree={simEvent.is_free ?? false}
+                      audience={simEvent.target_audience ?? []}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </div>
+
+        </div>
       </div>
 
       {/* Mobile Floating Bottom Bar */}
