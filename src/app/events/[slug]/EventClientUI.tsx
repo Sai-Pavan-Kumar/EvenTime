@@ -208,30 +208,35 @@ export default function EventClientUI({ event, similarEvents = [] }: EventUIProp
           </div>
         </div>
 
-        {/* 1. Hero Image — fixed height, full image visible without cropping */}
-        <div className="relative w-full h-[280px] sm:h-[360px] bg-slate-100 rounded-[24px] overflow-hidden border border-slate-100 shadow-sm">
-          {imageUrl ? (
+        {/* 1. Title — shown first, above the cover image */}
+        <div className="space-y-3">
+          <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
+            {safeCategory}
+          </span>
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
+            {safeTitle}
+          </h1>
+        </div>
+
+        {/* 2. Cover Image — natural size, no fixed box, no border/crop */}
+        {imageUrl ? (
+          <div className="relative w-full rounded-[24px] overflow-hidden">
             <Image 
               src={imageUrl} 
               alt={safeTitle} 
-              fill 
-              className="object-contain object-center bg-slate-50" 
+              width={1200}
+              height={675}
+              className="w-full h-auto object-contain" 
               priority 
             />
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
-        {/* 2. Event Details Content */}
+        {/* 3. Event Details Content */}
         <div className="space-y-10">
           
-          {/* Title & Header Section */}
+          {/* Curator name + interest label */}
           <div className="space-y-4">
-            <span className="inline-block px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-lg uppercase tracking-wider">
-              {safeCategory}
-            </span>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1]">
-              {safeTitle}
-            </h1>
             <p className="text-slate-500 font-medium text-lg">by {safeOrganizer}</p>
 
             {/* Global Interest Label - Updated to show total interested count */}
