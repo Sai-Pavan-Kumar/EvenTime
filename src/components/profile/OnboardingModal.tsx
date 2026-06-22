@@ -19,7 +19,7 @@ export interface OnboardingProps {
 }
 
 export function OnboardingModal({ user, profile }: OnboardingProps) {
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(1);
   const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
 
   const toggleCity = (cityName: string) => {
@@ -47,7 +47,9 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
   const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
   // NEW: State to control manual appearance from banner
-  const [isModalOpen, setIsModalOpen] = useState(false); 
+  // Signed-in but not-onboarded users get the modal right away (forced).
+  // Guests still go through DelayedPrompt's soft, dismissible teaser.
+  const [isModalOpen, setIsModalOpen] = useState(!!user); 
   
   const router = useRouter();
   const supabase = createClient();
@@ -148,8 +150,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      {/* Modal Overlay */}
-      <div className="absolute inset-0 bg-slate-900/60 cursor-pointer" onClick={() => setIsModalOpen(false)} />
+      {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
+      <div className="absolute inset-0 bg-slate-900/60" />
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -165,8 +167,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                 <Sparkles className="w-8 h-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Personalize Your Feed</h2>
-                <p className="text-text-secondary mt-2 font-medium">Tell us a bit about yourself to see events that actually matter to you.</p>
+                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
+                <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
               </div>
               <button 
                 onClick={() => setStep(2)}
@@ -243,6 +245,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                   {role === "Student" && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
                       
+                      <p className="text-xs text-text-secondary font-medium -mt-1">Add your college — and we&apos;ll surface what&apos;s happening on your own campus first.</p>
+
                       {/* COLLEGE SELECTOR */}
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <input 

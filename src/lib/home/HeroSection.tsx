@@ -16,14 +16,14 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
           
           {/* Applied the white halo text-shadow from Option B */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            Stop Searching.
+            The dictionary
             <br />
-            <span className="text-[#6C47FF]">Start Attending.</span>
+            <span className="text-[#6C47FF]">of events.</span>
           </h1>
           
           {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
           <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
-            Hackathons. Fests. Events.   <br className="sm:hidden" /> Everything worth showing up for.
+            Stop hunting across ten apps. <br className="sm:hidden" /> We&apos;ve already found what&apos;s happening — you just have to look here.
           </p>         
         </div>
       </div>
