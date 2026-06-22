@@ -19,12 +19,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
             The Dictionary for
             <br />
             <span className="text-[#6C47FF]">Events.</span>
-          </h1>
-          
-          {/* Adjusted max-width to 640px and kept text-shadow on paragraph */}
-          <p className="mt-4 sm:mt-6 text-[#555570] drop-shadow-md font-medium text-sm md:text-base max-w-[640px] mx-auto leading-relaxed">
-            Stop hunting across ten apps. <br className="sm:hidden" /> We&apos;ve already found what&apos;s happening — you just have to look here.
-          </p>         
+          </h1>    
         </div>
       </div>
     </div>

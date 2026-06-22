@@ -171,6 +171,14 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
           </div>
         </div>
+
+        {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
+        {!user && (
+          <p className="text-center text-[#555570] font-medium text-sm md:text-base max-w-[640px] mx-auto px-4 -mt-4 mb-4 leading-relaxed">
+            Stop hunting across ten apps. We&apos;ve already found what&apos;s happening — you just have to look here.
+          </p>
+        )}
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
          {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
