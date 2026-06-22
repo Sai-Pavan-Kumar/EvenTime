@@ -2,17 +2,17 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";import { motion, AnimatePresence } from "framer-motion";
-import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { submitReportAction } from "../report-actions";
 import { getCategoryConfig } from "@/lib/category-config";
 import { EventCard } from "@/app/events/EventCard";
 import type { EventRow } from "@/types";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client"; 
+import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
-
 
 export interface EventUIProps {
   event: any;
@@ -24,8 +24,8 @@ export interface EventUIProps {
 
 export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [] }: EventUIProps) {
   const router = useRouter();
-  const supabase = createClient(); 
-  
+  const supabase = createClient();
+
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -34,8 +34,8 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   const [isReported, setIsReported] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInterested, setIsInterested] = useState(false);
-  const [isLoadingInterest, setIsLoadingInterest] = useState(true); 
-  const [localInterestCount, setLocalInterestCount] = useState(event.same_college_interested_count || 0); 
+  const [isLoadingInterest, setIsLoadingInterest] = useState(true);
+  const [localInterestCount, setLocalInterestCount] = useState(event.same_college_interested_count || 0);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
 
@@ -48,8 +48,18 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
   const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
   const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
-  const eventUrl = typeof window !== 'undefined' ? window.location.href : "";
+  const eventUrl = typeof window !== "undefined" ? window.location.href : "";
   const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
+
+  const googleCalendarUrl = (() => {
+    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    const title = encodeURIComponent(`${safeTitle} · via EvenTime`);
+    const dateStr = event.date_string?.replace(/-/g, "") ?? "";
+    const dates = dateStr ? `${dateStr}/${dateStr}` : "";
+    const details = encodeURIComponent(event.description ?? "");
+    const location = encodeURIComponent(event.is_virtual ? "Online" : (event.location ?? ""));
+    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+  })();
 
   useEffect(() => {
     const fetchInitialState = async () => {
@@ -61,7 +71,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         let isAdmin = false;
         if (user.id !== safeCreatorId) {
           const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-          isAdmin = profile?.role === 'admin';
+          isAdmin = profile?.role === "admin";
         }
 
         if (user.id === safeCreatorId || isAdmin) {
@@ -100,9 +110,9 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
       const response = await fetch(storyImageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `${safeTitle.replace(/\s+/g, '-')}-Story.png`;
+      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -124,17 +134,10 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
     try {
       if (!previousState) {
-        const { error } = await supabase
-          .from("interested_events" as any)
-          .insert({ event_id: safeId, user_id: currentUser.id })
-          .select();
+        const { error } = await supabase.from("interested_events" as any).insert({ event_id: safeId, user_id: currentUser.id }).select();
         if (error) throw new Error(error.message || JSON.stringify(error));
       } else {
-        const { error } = await supabase
-          .from("interested_events" as any)
-          .delete()
-          .eq("event_id", safeId)
-          .eq("user_id", currentUser.id);
+        const { error } = await supabase.from("interested_events" as any).delete().eq("event_id", safeId).eq("user_id", currentUser.id);
         if (error) throw new Error(error.message || JSON.stringify(error));
       }
     } catch (error: any) {
@@ -145,7 +148,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
     }
   };
 
-   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const scroll = (dir: "left" | "right") => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
@@ -160,7 +163,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
         {/* Back + Actions */}
         <div className="flex justify-between items-center w-full">
-          <button onClick={() => router.push('/')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+          <button onClick={() => router.push("/")} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5 text-slate-900" />
           </button>
           <div className="flex items-center gap-2">
@@ -174,7 +177,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         </div>
 
         {/* Full-width centered title */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 font-heading leading-[1.1] text-center">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-[#6C47FF] font-heading leading-[1.1] text-center">
           {safeTitle}
         </h1>
 
@@ -184,17 +187,9 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           {/* LEFT COLUMN — sticky */}
           <div className="lg:sticky lg:top-8 space-y-6">
 
-            {/* Cover Image */}
             {imageUrl ? (
               <div className="relative w-full rounded-[24px] overflow-hidden">
-                <Image
-                  src={imageUrl}
-                  alt={safeTitle}
-                  width={1200}
-                  height={675}
-                  className="w-full h-auto object-contain"
-                  priority
-                />
+                <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
               </div>
             ) : null}
 
@@ -228,7 +223,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
           </div>
 
-          {/* RIGHT COLUMN — scrollable */}
+          {/* RIGHT COLUMN */}
           <div className="space-y-8">
 
             {/* About Event */}
@@ -275,6 +270,24 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 </div>
               </div>
 
+              {/* Add to Calendar */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-base">📅</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Add to Calendar</p>
+                  <a
+                    href={googleCalendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] font-bold text-[#6C47FF] hover:underline"
+                  >
+                    Add to Google Calendar &rarr;
+                  </a>
+                </div>
+              </div>
+
               {/* Interested people with avatars */}
               {localInterestCount > 0 && (
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
@@ -300,7 +313,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
               )}
 
             </div>
-           </div>
+          </div>
 
         </div>
       </div>
@@ -310,18 +323,11 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
-            {/* Arrow buttons — desktop only */}
             <div className="hidden md:flex gap-2">
-              <button
-                onClick={() => scroll("left")}
-                className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
-              >
+              <button onClick={() => scroll("left")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
                 <ChevronLeft className="w-5 h-5 text-slate-600" />
               </button>
-              <button
-                onClick={() => scroll("right")}
-                className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
-              >
+              <button onClick={() => scroll("right")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
                 <ChevronRight className="w-5 h-5 text-slate-600" />
               </button>
             </div>
