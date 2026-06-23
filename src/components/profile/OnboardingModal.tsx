@@ -42,6 +42,8 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
 
+  const [branch, setBranch] = useState("");
+
   const [categories, setCategories] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
@@ -129,6 +131,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
       college: role === "Student" ? college : null,
       college_id: role === "Student" ? collegeId : null,
       graduation_year: role === "Student" ? year : null,
+      branch: role === "Student" ? branch : null,
       user_type: role === "Student" ? 'student' : role.toLowerCase(),
       goals: categories.slice(0, 6),
       is_onboarded: true
@@ -278,7 +281,19 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        
+
+                        {/* BRANCH SELECTOR */}
+                        <div className="relative">
+                          <select
+                            value={branch}
+                            onChange={e => setBranch(e.target.value)}
+                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium appearance-none"
+                          >
+                            <option value="" disabled>Branch</option>
+                            {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+
                         {/* YEAR SELECTOR */}
                           <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
                             type="text" 
@@ -335,7 +350,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
               <button 
                 onClick={handleSave} 
-                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
+                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile
               </button>

@@ -40,11 +40,12 @@ export default function SettingsClient({
   // States for Education Logic
   const [college, setCollege] = useState(profile?.college || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
+  const [branch, setBranch] = useState((profile as any)?.branch || "");
 
   // College search dropdown states
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
-  const [collegeId, setCollegeId] = useState<string | null>(null);
+  const [collegeId, setCollegeId] = useState<string | null>((profile as any)?.college_id || null);
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
 const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
@@ -132,12 +133,18 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
     if (userType === "Student" && college) formData.set("college", college);
     else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
     else formData.delete("college");
+
+    if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
+    else formData.delete("collegeId");
     
         formData.delete("yearOfStudying");
 
     
     if (userType === "Student" && year) formData.set("graduationYear", year);
     else formData.delete("graduationYear");
+
+    if (userType === "Student" && branch) formData.set("branch", branch);
+    else formData.delete("branch");
     
     formData.delete("goals");
     formData.append("goals", JSON.stringify(selectedGoals));
@@ -161,7 +168,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   if (!username) missingItems.push("Username");
   if (selectedCities.length === 0) missingItems.push("Preferred cities");
   if (selectedGoals.length === 0) missingItems.push("Interest categories");
-  if (isStudentNow && (!college || !year)) missingItems.push("College & graduation year");
+  if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
 
   return (
     <main className="min-h-screen bg-[#F5F5F7] pb-32">
@@ -382,7 +389,24 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    
+
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
+                      <select
+                        value={branch}
+                        onChange={e => setBranch(e.target.value)}
+                        required={userType === "Student"}
+                        disabled={isLocked}
+                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="" disabled>Select</option>
+                        {INDIAN_COLLEGE_BRANCHES.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+                    </div>
+
                     <div className="relative">
                       <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
                       <select 

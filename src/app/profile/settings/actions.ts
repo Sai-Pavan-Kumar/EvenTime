@@ -14,7 +14,9 @@ export async function updateProfileSettings(formData: FormData) {
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();
   const college = formData.get("college") as string;
+  const collegeId = formData.get("collegeId") as string | null;
   const graduationYear = formData.get("graduationYear") as string;
+  const branch = formData.get("branch") as string;
   const user_type = formData.get("user_type") as string;
 
   const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
@@ -81,7 +83,9 @@ export async function updateProfileSettings(formData: FormData) {
       user_type: user_type.toLowerCase(),
       preferred_cities,
       college: isStudent ? college : null,
+      college_id: isStudent ? (collegeId || null) : null,
       graduation_year: isStudent ? graduationYear : null,
+      branch: isStudent ? branch : null,
       goals,
       is_onboarded: true,
     })
