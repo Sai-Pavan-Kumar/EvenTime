@@ -348,7 +348,19 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             </div>
           </div>
           <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {similarEvents.map((simEvent) => (
+            {similarEvents.filter((simEvent) => {
+              // FIX: Filter out events that are today but whose time has already passed
+              if (!simEvent.date_string) return true;
+              const eventDate = new Date(simEvent.date_string);
+              if (simEvent.start_time) {
+                const [time, modifier] = simEvent.start_time.split(" ");
+                let [hours, minutes] = time.split(":");
+                if (hours === "12") hours = "00";
+                if (modifier === "PM") hours = parseInt(hours, 10) + 12;
+                eventDate.setHours(hours, minutes, 0, 0);
+              }
+              return eventDate.getTime() > new Date().getTime();
+            }).map((simEvent) => (
               <div key={simEvent.id} className="w-[280px] shrink-0">
                 <EventCard
                   id={simEvent.id!}
@@ -367,6 +379,8 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           </div>
         </div>
       )}
+
+      
 
       {/* Mobile Floating Bottom Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
