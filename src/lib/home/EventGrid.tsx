@@ -61,6 +61,7 @@ export function EventGrid({
             layout={true}
             isPastDateView={isPastDateView}
             userRole={profile?.role as string | undefined}
+            collegeName={(event as any).colleges?.name}
           />
         );
       })}

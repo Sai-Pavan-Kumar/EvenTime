@@ -29,6 +29,7 @@
     layout?: boolean;
     isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
     userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
   }
 
   export function EventCard({
@@ -51,6 +52,7 @@
     layout,
     isPastDateView = false,
     userRole,
+    collegeName,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
     const [isSaving, setIsSaving] = useState(false);
@@ -323,7 +325,7 @@
                 {city && (
                   <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{city}</span>
+                    <span className="truncate">{city}{collegeName ? `, ${collegeName}` : ""}</span>
                   </div>
                 )}
 

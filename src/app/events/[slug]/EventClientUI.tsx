@@ -20,9 +20,10 @@ export interface EventUIProps {
   curatorUsername?: string | null;
   same_college_interested_count?: number;
   interestedAvatars?: { avatar_url: string | null; full_name: string | null }[];
+  collegeName?: string | null;
 }
 
-export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [] }: EventUIProps) {
+export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [], collegeName = null }: EventUIProps) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -269,6 +270,19 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   <p className="text-[14px] font-bold text-slate-900">{event.is_virtual ? "Online Platform" : event.location}</p>
                 </div>
               </div>
+
+              {/* College (if applicable) */}
+              {collegeName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-base">🏢</span>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hosted by</p>
+                    <p className="text-[14px] font-bold text-slate-900">{collegeName}</p>
+                  </div>
+                </div>
+              )}
 
               {/* Add to Calendar */}
               <div className="flex items-center gap-3">

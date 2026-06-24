@@ -45,7 +45,8 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [branch, setBranch] = useState("");
 
   const [categories, setCategories] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [username, setUsername] = useState("");
+const [isSaving, setIsSaving] = useState(false);
 const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
   const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
   // NEW: State to control manual appearance from banner
@@ -134,8 +135,10 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
       branch: role === "Student" ? branch : null,
       user_type: role === "Student" ? 'student' : role.toLowerCase(),
       goals: categories.slice(0, 6),
-      is_onboarded: true
+      is_onboarded: true,
+      ...(username.trim() ? { username: username.trim().toLowerCase() } : {}),
     };
+
 
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
@@ -188,6 +191,18 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
               <h2 className="text-xl font-heading font-extrabold text-text-primary">Tell us about yourself</h2>
               
               <div className="space-y-4">
+                {/* 0. Username */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-text-secondary font-normal normal-case">(optional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. john_doe"
+                    value={username}
+                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
+                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                  />
+                </div>
+
                 {/* 1. Location Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
