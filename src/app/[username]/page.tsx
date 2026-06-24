@@ -141,10 +141,12 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
                 <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
               </div>
-              <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
-                <span className="text-xl font-black text-slate-900">{impactSaves}</span>
-              </div>
+              {appSettings?.leaderboard_enabled && (
+                <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
+                  <span className="text-xl font-black text-slate-900">{impactSaves}</span>
+                </div>
+              )}
               {leaderboardEnabled && (
                 <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
                   <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>

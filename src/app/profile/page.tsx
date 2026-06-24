@@ -121,7 +121,10 @@ Promise<{ tab?: string }>; }) {
   if (myEvents && myEvents.length > 0) {
       myEvents.forEach(ev => {
       // Extract the aggregated counts returned natively by the Supabase join
+      const eventSaves = ev.saved_events?.[0]?.count || 0;
       const eventInterested = ev.interested_events?.[0]?.count || 0;
+      
+      totalSaves += eventSaves;
       totalInterested += eventInterested;
     });
   }
@@ -195,11 +198,12 @@ Promise<{ tab?: string }>; }) {
                     <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
-                  </div>
-                  <div className="flex flex-col items-center">
+                   {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
+                    </div>
+                  )}                  <div className="flex flex-col items-center">
                     <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
                   </div>
@@ -331,11 +335,12 @@ Promise<{ tab?: string }>; }) {
                             <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
                           </div>
                           
-                          <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
-                            <Bookmark className="w-2.5 h-2.5" />
-                            <span>{event.saved_events?.[0]?.count || 0} Saves</span>
-                          </div>
-                        </div>
+                          {leaderboardEnabled && (
+                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
+                              <Bookmark className="w-2.5 h-2.5" />
+                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
+                            </div>
+                          )}                        </div>
 
                         {/* Management Icon Controls */}
                         <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
