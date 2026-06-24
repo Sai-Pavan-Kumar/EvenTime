@@ -349,7 +349,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           </div>
           <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {similarEvents.map((simEvent) => (
-              <div key={simEvent.id} className="min-w-[240px]">
+              <div key={simEvent.id} className="w-[280px] shrink-0">
                 <EventCard
                   id={simEvent.id!}
                   slug={simEvent.slug || simEvent.id!}
@@ -358,7 +358,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   date={simEvent.date_string || "TBA"}
                   city={simEvent.location || simEvent.city || "Online"}
                   imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.organizer_name || "Organizer"}
+                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
                   isFree={simEvent.is_free ?? false}
                   audience={simEvent.target_audience ?? []}
                 />

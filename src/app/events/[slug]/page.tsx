@@ -76,7 +76,7 @@ export default async function EventPage({
   const { slug } = await params;
   const supabase = await createServerClient();
 
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count)";
+ const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
 
   const isUUID = isValidUUID(slug);
 
@@ -178,14 +178,16 @@ export default async function EventPage({
   // NEW: Fetch Similar Events based on the same category
   let similarEvents: any[] = [];
   if (finalEvent.category) {
+    const todayStr = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("events")
       .select(EVENT_DETAIL_FIELDS)
       .eq("category", finalEvent.category)
       .eq("status", "approved")
+      .gte("date_string", todayStr) // NEW: Removes past events!
       .neq("id", finalEvent.id)
       .order("created_at", { ascending: false })
-      .limit(3);
+      .limit(6); // Increased limit to 6 so slider looks good
     
     if (data) {
       similarEvents = data;
