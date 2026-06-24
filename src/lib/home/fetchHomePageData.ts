@@ -141,13 +141,19 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
 
-  // College-only events: hide from everyone except students of that exact college,
-  // unless the event explicitly opens itself up to "Anyone"
-  if (profile?.user_type === 'student' && profile?.college_id) {
-    query = query.or(`college_only.is.null,college_only.eq.false,college_id.eq.${profile.college_id},target_audience.cs.{Anyone}`);
-  } else {
-    query = query.or(`college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`);
+  // EVENT VISIBILITY LOGIC (Applied universally to prevent ghost dots/cities)
+  // 1. Public events (college_only = false or Audience includes Anyone)
+  // 2. Or if the user created the event themselves
+  // 3. Or if the user is a student at the exact college the event is restricted to
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
   }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+  query = query.or(visibilityFilter);
 
   const { data: rawAllEvents } = await query;
 
@@ -204,7 +210,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   const { data: allDateRows } = await supabase
     .from("events")
     .select("date_string")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .or(visibilityFilter);
 
   const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
 
@@ -213,7 +220,8 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     .from("events")
     .select("city")
     .eq("status", "approved")
-    .gte("date_string", todayStr);
+    .gte("date_string", todayStr)
+    .or(visibilityFilter);
 
   const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
     
