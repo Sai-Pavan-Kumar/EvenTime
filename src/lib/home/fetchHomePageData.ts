@@ -118,7 +118,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   // Filter past events at DB level instead of JS to prevent scalability crashes
   if (date) {
     // Matches the start of the ISO string (YYYY-MM-DD)
-    query = query.ilike("date_string", `${date}%`);
+    query = query.eq("date_string", date);
   } else {
     query = query.gte("date_string", todayStr);
   }

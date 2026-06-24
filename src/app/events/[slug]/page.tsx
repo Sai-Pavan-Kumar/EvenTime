@@ -191,6 +191,22 @@ export default async function EventPage({
     
     if (data) {
       similarEvents = data;
+      // FIX: Fetch curator usernames for similar events
+      const creatorIds = similarEvents.map(e => e.creator_id).filter(Boolean);
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", creatorIds);
+        
+        if (profiles) {
+          similarEvents = similarEvents.map(e => {
+            const profile = profiles.find(p => p.id === e.creator_id);
+            if (profile) return { ...e, profiles: { username: profile.username } };
+            return e;
+          });
+        }
+      }
     }
   }
 

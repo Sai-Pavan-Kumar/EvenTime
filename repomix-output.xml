@@ -7088,6 +7088,109 @@ return (
 }
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={{ pathname: "/", query: { location: city, view: "list" } }}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/HeroSection.tsx">
+"use client";
+
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
+  return (
+    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
+      
+      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
+        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
+          
+          {/* Applied the white halo text-shadow from Option B */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            The Dictionary for
+            <br />
+            <span className="text-[#6C47FF]">Events.</span>
+          </h1>    
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/events/[slug]/page.tsx">
 import { Metadata } from "next";
 import { createClient as createServerClient } from "@/lib/supabase/server";
@@ -7167,7 +7270,7 @@ export default async function EventPage({
   const { slug } = await params;
   const supabase = await createServerClient();
 
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count)";
+ const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
 
   const isUUID = isValidUUID(slug);
 
@@ -7269,14 +7372,16 @@ export default async function EventPage({
   // NEW: Fetch Similar Events based on the same category
   let similarEvents: any[] = [];
   if (finalEvent.category) {
+    const todayStr = new Date().toISOString().split("T")[0];
     const { data } = await supabase
       .from("events")
       .select(EVENT_DETAIL_FIELDS)
       .eq("category", finalEvent.category)
       .eq("status", "approved")
+      .gte("date_string", todayStr) // NEW: Removes past events!
       .neq("id", finalEvent.id)
       .order("created_at", { ascending: false })
-      .limit(3);
+      .limit(6); // Increased limit to 6 so slider looks good
     
     if (data) {
       similarEvents = data;
@@ -7311,109 +7416,6 @@ export default async function EventPage({
       />
       <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
     </>
-  );
-}
-</file>
-
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/HeroSection.tsx">
-"use client";
-
-interface PlatformStats {
-  event_count: number;
-  city_count: number;
-  category_count: number;
-  user_count: number;
-}
-
-export function HeroSection({ stats }: { stats?: PlatformStats }) {
-  return (
-    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
-      
-      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
-        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
-          
-          {/* Applied the white halo text-shadow from Option B */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The Dictionary for
-            <br />
-            <span className="text-[#6C47FF]">Events.</span>
-          </h1>    
-        </div>
-      </div>
-    </div>
   );
 }
 </file>
@@ -11015,7 +11017,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           </div>
           <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {similarEvents.map((simEvent) => (
-              <div key={simEvent.id} className="min-w-[240px]">
+              <div key={simEvent.id} className="w-[280px] shrink-0">
                 <EventCard
                   id={simEvent.id!}
                   slug={simEvent.slug || simEvent.id!}
@@ -11024,7 +11026,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   date={simEvent.date_string || "TBA"}
                   city={simEvent.location || simEvent.city || "Online"}
                   imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.organizer_name || "Organizer"}
+                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
                   isFree={simEvent.is_free ?? false}
                   audience={simEvent.target_audience ?? []}
                 />
