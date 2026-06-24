@@ -215,13 +215,31 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                         {isSearchingColleges && (
                           <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
                         )}
-                        {!isSearchingColleges && collegesList.map(item => (
-                          <button key={item.id} type="button" onClick={() => { updateData({ collegeId: item.id, collegeName: item.name }); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none">
+                         {!isSearchingColleges && collegesList.map(item => (
+                          <button 
+                            key={item.id} 
+                            type="button" 
+                            onMouseDown={(e) => { 
+                              e.preventDefault(); // Stop blur from happening early
+                              updateData({ collegeId: item.id, collegeName: item.name }); 
+                              setCollegeSearchQuery(item.name); 
+                              setShowCollegeDropdown(false); 
+                            }} 
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none"
+                          >
                             🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                           </button>
                         ))}
                         {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                          <button type="button" onClick={() => handleCreateCollege(collegeSearchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                          <button 
+                            type="button" 
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCreateCollege(collegeSearchQuery);
+                            }} 
+                            disabled={isCreatingCollege} 
+                            className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
+                          >
                             {isCreatingCollege ? <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
                             {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
                           </button>
