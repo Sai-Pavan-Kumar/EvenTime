@@ -56,7 +56,11 @@ export function EventGrid({
             isFeatured={event.is_featured || isFeatured}
             matchLabel={matchReason}
             audience={event.target_audience!}
-            collegeName={(event as any).colleges?.name}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
             interestedCount={0}
             isGuest={!user}
             layout={true}

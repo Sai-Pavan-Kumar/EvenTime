@@ -53,13 +53,12 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     { data: events },
     followResult,
     { count: followerCount },
-    { data: appSettings },
-    { data: leaderboardStats } // NEW: Fetch stats
+    { data: appSettings }
   ] = await Promise.all([
     // 1. Fetch Curator's Approved Events
     supabase
       .from("events")
-      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience")
+      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
       .eq("creator_id", curator.id)
       .eq("status", "approved")
       .order("created_at", { ascending: false }),
@@ -79,12 +78,11 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
       .select("*", { count: "exact", head: true })
       .eq("curator_id", curator.id),
     // 4. Check if leaderboard / ET Score is enabled platform-wide
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
-    // 5. Get impact saves from leaderboard view
-    supabase.from("leaderboard_view").select("impact_saves").eq("user_id", curator.id).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
   const isFollowing = !!followResult.data;
-  const impactSaves = leaderboardStats?.impact_saves || 0;
+  // Dynamic ga events anni thirigi saves count ni sum chesthundi
+  const impactSaves = events?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
   const etScore = curator.et_score || 100;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const avatarUrl = curator.avatar_url || "/window.svg";

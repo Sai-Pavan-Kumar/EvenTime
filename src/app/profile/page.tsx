@@ -119,15 +119,14 @@ Promise<{ tab?: string }>; }) {
   let totalInterested = 0;
 
   if (myEvents && myEvents.length > 0) {
-    myEvents.forEach(ev => {
+      myEvents.forEach(ev => {
       // Extract the aggregated counts returned natively by the Supabase join
-      const eventSaves = ev.saved_events?.[0]?.count || 0;
       const eventInterested = ev.interested_events?.[0]?.count || 0;
-      
-      totalSaves += eventSaves;
       totalInterested += eventInterested;
     });
   }
+  // This exactly saves the bookmarks done by the user
+  totalSaves = savedEvents.length;
 
   let strokeColor = "#005AE0"; 
   if (eventCount >= 69) {
