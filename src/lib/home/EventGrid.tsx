@@ -56,12 +56,12 @@ export function EventGrid({
             isFeatured={event.is_featured || isFeatured}
             matchLabel={matchReason}
             audience={event.target_audience!}
+            collegeName={(event as any).colleges?.name}
             interestedCount={0}
             isGuest={!user}
             layout={true}
             isPastDateView={isPastDateView}
             userRole={profile?.role as string | undefined}
-            collegeName={(event as any).colleges?.name}
           />
         );
       })}

@@ -49,11 +49,12 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   }
 
   // Fix: Running the remaining dependent queries in parallel using Promise.all
-  const [
+   const [
     { data: events },
     followResult,
     { count: followerCount },
-    { data: appSettings }
+    { data: appSettings },
+    { data: leaderboardStats } // NEW: Fetch stats
   ] = await Promise.all([
     // 1. Fetch Curator's Approved Events
     supabase
@@ -72,19 +73,18 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
           .eq("curator_id", curator.id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-
     // 3. Get total follower count for the UI
     supabase
       .from("followers")
       .select("*", { count: "exact", head: true })
       .eq("curator_id", curator.id),
-
     // 4. Check if leaderboard / ET Score is enabled platform-wide
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
+    // 5. Get impact saves from leaderboard view
+    supabase.from("leaderboard_view").select("impact_saves").eq("user_id", curator.id).maybeSingle()
   ]);
-
   const isFollowing = !!followResult.data;
-
+  const impactSaves = leaderboardStats?.impact_saves || 0;
   const etScore = curator.et_score || 100;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const avatarUrl = curator.avatar_url || "/window.svg";
@@ -143,7 +143,10 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
                 <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
               </div>
-
+              <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
+                <span className="text-xl font-black text-slate-900">{impactSaves}</span>
+              </div>
               {leaderboardEnabled && (
                 <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
                   <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>

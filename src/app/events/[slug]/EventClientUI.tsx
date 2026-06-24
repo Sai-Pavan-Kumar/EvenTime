@@ -36,7 +36,8 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isInterested, setIsInterested] = useState(false);
   const [isLoadingInterest, setIsLoadingInterest] = useState(true);
-  const [localInterestCount, setLocalInterestCount] = useState(event.same_college_interested_count || 0);
+  const totalInterested = event.interested_events?.[0]?.count || 0;
+  const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
 

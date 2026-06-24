@@ -272,6 +272,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           isFeatured={true}
                           matchLabel={getMatchLabel(event, profile)}
                           audience={event.target_audience!}
+                          collegeName={(event as any).colleges?.name}
                           isGuest={!user}
                         />
                       </div>

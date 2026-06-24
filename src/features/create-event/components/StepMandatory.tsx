@@ -210,8 +210,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                       placeholder="Search your college..."
                       className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
                     />
-                    {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                     {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col" onMouseDown={(e) => e.preventDefault()}>
                         {isSearchingColleges && (
                           <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
                         )}

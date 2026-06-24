@@ -4,6 +4,7 @@
   import Link from "next/link";
   import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
   import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
   import { format, differenceInCalendarDays } from "date-fns";
   import { motion, AnimatePresence } from "framer-motion";
   import { getCategoryConfig } from "@/lib/category-config";
@@ -69,11 +70,24 @@
         return;
       }
       
-      setIsSaving(true);
-      setSavedState(!savedState); // optimistic update
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
       
-      if (onSaveToggle) {
-        await onSaveToggle(id);
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
       }
       
       setIsSaving(false);
@@ -325,7 +339,7 @@
                 {city && (
                   <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{city}{collegeName ? `, ${collegeName}` : ""}</span>
+                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
                   </div>
                 )}
 

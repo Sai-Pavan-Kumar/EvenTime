@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/client";
 export function useDuplicateCheck() {
   const supabase = createClient();
   
-  const checkDuplicateLink = async (link: string) => {
+  const checkDuplicateLink = async (link: string, currentEventId?: string) => {
     let normalized = link;
     try {
       const url = new URL(link);
@@ -27,8 +27,12 @@ export function useDuplicateCheck() {
     }
 
     const pattern = eventId ? `%/${eventId}%` : `${normalized}%`;
-
-    const { data } = await supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1).maybeSingle();
+    let query = supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1);
+    if (currentEventId) {
+      query = query.neq("id", currentEventId);
+    }
+    
+    const { data } = await query.maybeSingle();
     return data;
   };
 

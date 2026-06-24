@@ -10,9 +10,10 @@ interface ExtractionProps {
   setSelectedDate: (d: Date) => void;
   setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
   initialLink?: string;
+  currentEventId?: string;
 }
 
-export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink }: ExtractionProps) {
+export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, currentEventId  }: ExtractionProps) {
   const [regLink, setRegLink] = useState(initialLink || "");
   const [isExtracting, setIsExtracting] = useState(false);
   const [linkDuplicateError, setLinkDuplicateError] = useState("");
@@ -37,7 +38,7 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
 
     setIsExtracting(true);
     try {
-      const existing = await checkDuplicateLink(val);
+      const existing = await checkDuplicateLink(val, currentEventId);
       if (existing) {
         setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
         setIsExtracting(false); return;
