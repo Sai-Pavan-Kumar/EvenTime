@@ -26,11 +26,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.in",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
     siteName: "EvenTime",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
         width: 1200,
         height: 630,
         alt: "EvenTime Platform",
@@ -39,10 +39,13 @@ export const metadata: Metadata = {
     locale: "en_IN",
     type: "website",
   },
-  twitter: {
+   twitter: {
     card: "summary_large_image",
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
   },
 };
 
