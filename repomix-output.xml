@@ -86,6 +86,7 @@ public/cities/bengaluru.webp
 public/cities/bhopal.webp
 public/cities/chennai.webp
 public/cities/coimbatore.webp
+public/cities/covers/hyderabad.webp
 public/cities/guntur.webp
 public/cities/gurugram.webp
 public/cities/hyderabad.webp
@@ -1443,68 +1444,6 @@ export default async function CategoryPage({
 }
 </file>
 
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-    .eq("status", "approved")
-    .ilike("city", decodedCity)
-    .order("date_string", { ascending: true });
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-10">
-          <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
-            Events in {decodedCity}
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">
-            Discover and join the best events happening in {decodedCity}.
-          </p>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No events found in this city</p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/error.tsx">
 "use client";
 
@@ -1846,199 +1785,6 @@ export default function Loading() {
           </div>
         </div>
       </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/login/page.tsx">
-"use client";
-
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock } from "lucide-react";
-import Image from "next/image";
-import { toast } from "sonner";
-
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-    const [hasConsented, setHasConsented] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
- const handleLogin = async (provider: 'google' | 'github') => {
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    setIsLoading(provider);
-    await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
-
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
-    setIsLoading('email');
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 5) {
-        toast.error("Too many failed attempts. Please wait before trying again.");
-        setIsLockedOut(true);
-        
-        // Disable button for 30s
-        setTimeout(() => {
-          setIsLockedOut(false);
-          setAttempts(0); // Reset attempts so they can try again
-        }, 30000);
-      } else {
-        toast.error("Invalid email or password.");
-      }
-      setIsLoading(null);
-    } else {
-      setAttempts(0); // Reset attempts on success
-      router.push("/");
-      router.refresh();
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
-      {/* THE PERFECT 2:1 SPLIT LAYOUT
-        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
-        - Mobile: auto height, vertical stack
-      */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
-      >
-        
-        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
-          {/* Aesthetic Background Glows */}
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
-
-          {/* Top Logo */}
-          <div className="relative z-10 w-16 h-16">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
-          </div>
-
-          {/* Center Pitch */}
-          <div className="relative z-10 mt-auto mb-16">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              Stop Searching.<br />Start Attending.
-            </h1>
-            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
-              The ultimate stage for Gen-Z curators and seekers to discover the best events.
-            </p>
-          </div>
-
-          {/* Bottom Footer Area */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="h-1 w-8 bg-white/30 rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
-        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
-          
-          {/* Mobile Logo (Visible only on small screens) */}
-          <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
-            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="password" name="password" required placeholder="••••••••" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-              <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                I consent to the collection of my email and college details to verify my student status and personalize my event feed, as per the <a href="#" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
-              </label>
-            </div>
-            <button 
-              type="submit" disabled={!!isLoading || isLockedOut}
-              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-            >
-              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
-        </div>
-      </motion.div>
     </main>
   );
 }
@@ -2937,81 +2683,6 @@ export function ConfidenceField({ status, children }: { status: FieldStatus; chi
 }
 </file>
 
-<file path="src/features/create-event/components/StepFeatured.tsx">
-"use client";
-
-import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, CheckCircle2, UploadCloud, Crop } from "lucide-react";
-import Cropper from "react-easy-crop";
-
-export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing }: any) {
-  
-  return (
-    <motion.div key="stepFeatured" initial={{ x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 24, opacity: 0 }} className="space-y-8">
-      
-      {/* FEATURE TOGGLE */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
-        <div>
-          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Feature this Event</h4>
-          <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
-        </div>
-        <button type="button" onClick={() => updateData({ isFeatured: !data.isFeatured })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.isFeatured ? "bg-amber-500" : "bg-slate-300"}`}>
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isFeatured ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-      </div>
-
-      {/* FEATURED POSTER UPLOAD (1:1 Ratio) */}
-      {data.isFeatured && (
-        <div className="space-y-3 pt-4">
-          <label className="block text-sm font-semibold text-slate-700">1:1 Square Featured Poster <span className="text-red-500">*</span></label>
-          
-          {crop.isCropping && crop.rawImage ? (
-            <div className="w-full max-w-md mx-auto bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
-              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-900 mb-4">
-                {/* Changed aspect to 1 for 1:1 ratio per your requirement */}
-                <Cropper image={crop.rawImage} crop={crop.crop} zoom={crop.zoom} aspect={1} onCropChange={crop.setCrop} onCropComplete={(_, pixels) => crop.setCroppedAreaPixels(pixels)} onZoomChange={crop.setZoom} />
-              </div>
-              <div className="flex gap-4">
-                <button type="button" onClick={() => { crop.setIsCropping(false); crop.setRawImage(null); }} className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-100">Cancel</button>
-                <button type="button" onClick={crop.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-[#6C47FF] flex justify-center items-center gap-2"><Crop className="w-4 h-4"/> Save</button>
-              </div>
-            </div>
-          ) : !crop.previewUrl ? (
-            <div className="relative group w-full max-w-[280px] mx-auto">
-              <input type="file" accept="image/*" onChange={crop.handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-              <div className="w-full aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-white hover:border-[#6C47FF] hover:bg-[#6C47FF]/5">
-                <UploadCloud className="w-10 h-10 mb-3 text-slate-300" />
-                <span className="text-sm font-bold text-slate-600">Upload Poster (1:1)</span>
-              </div>
-            </div>
-          ) : (
-            <div className="relative w-full max-w-[280px] mx-auto aspect-square rounded-2xl overflow-hidden border border-slate-200" style={{ backgroundImage: `url(${crop.previewUrl})`, backgroundSize: "cover" }} />
-          )}
-        </div>
-      )}
-
-      {/* ADVANCED FIELDS (Always shown in Step 2) */}
-      <div className="pt-6 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-500 uppercase">Organizer</label>
-          <input type="text" value={data.organizer} onChange={e => updateData({ organizer: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none" />
-        </div>
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-500 uppercase">Website (Optional)</label>
-          <input type="url" value={data.website} onChange={e => updateData({ website: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none" />
-        </div>
-      </div>
-
-      <div className="pt-8 border-t border-slate-200 flex justify-between items-center">
-        <button type="button" onClick={onBack} className="flex items-center gap-2 text-slate-500 font-bold px-4 py-2"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button type="button" onClick={onSubmit} disabled={isSubmitting || (data.isFeatured && !crop.previewUrl)} className="bg-[#6C47FF] hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
-        {isEditing ? "Update Event" : (data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval")} <CheckCircle2 className="w-4 h-4" />        </button>
-      </div>
-    </motion.div>
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepMedia.tsx">
 "use client";
 
@@ -3880,6 +3551,199 @@ export default function RootLayout({
 }
 </file>
 
+<file path="src/app/login/page.tsx">
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Lock } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+    const [hasConsented, setHasConsented] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    setIsLoading(provider);
+    await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    if (isLockedOut) {
+      toast.error("Too many failed attempts. Please wait before trying again.");
+      return;
+    }
+
+    setIsLoading('email');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      
+      if (newAttempts >= 5) {
+        toast.error("Too many failed attempts. Please wait before trying again.");
+        setIsLockedOut(true);
+        
+        // Disable button for 30s
+        setTimeout(() => {
+          setIsLockedOut(false);
+          setAttempts(0); // Reset attempts so they can try again
+        }, 30000);
+      } else {
+        toast.error("Invalid email or password.");
+      }
+      setIsLoading(null);
+    } else {
+      setAttempts(0); // Reset attempts on success
+      router.push("/");
+      router.refresh();
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
+      {/* THE PERFECT 2:1 SPLIT LAYOUT
+        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
+        - Mobile: auto height, vertical stack
+      */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
+      >
+        
+        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
+        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+          {/* Aesthetic Background Glows */}
+          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
+
+          {/* Top Logo */}
+          <div className="relative z-10 w-16 h-16">
+            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+          </div>
+
+          {/* Center Pitch */}
+          <div className="relative z-10 mt-auto mb-16">
+            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
+              Stop Searching.<br />Start Attending.
+            </h1>
+            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
+              The ultimate stage for Gen-Z curators and seekers to discover the best events.
+            </p>
+          </div>
+
+          {/* Bottom Footer Area */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="h-1 w-8 bg-white/30 rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
+        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
+          
+          {/* Mobile Logo (Visible only on small screens) */}
+          <div className="md:hidden w-14 h-14 relative mb-8">
+            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
+            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="email" name="email" required placeholder="name@email.com" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="password" name="password" required placeholder="••••••••" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+              <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                I consent to the collection of my email and college details to verify my student status and personalize my event feed, as per the <a href="#" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
+              </label>
+            </div>
+            <button 
+              type="submit" disabled={!!isLoading || isLockedOut}
+              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+            >
+              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          {/* Clean Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
+          </div>
+
+          {/* Social Logins */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
+              GitHub
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/profile/action.ts">
 "use server";
 
@@ -3984,6 +3848,81 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
   if (error) return { error: "Failed to submit feedback." };
   
   return { success: true };
+}
+</file>
+
+<file path="src/features/create-event/components/StepFeatured.tsx">
+"use client";
+
+import { motion } from "framer-motion";
+import { ArrowLeft, Sparkles, CheckCircle2, UploadCloud, Crop } from "lucide-react";
+import Cropper from "react-easy-crop";
+
+export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing }: any) {
+  
+  return (
+    <motion.div key="stepFeatured" initial={{ x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 24, opacity: 0 }} className="space-y-8">
+      
+      {/* FEATURE TOGGLE */}
+      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
+        <div>
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Feature this Event</h4>
+          <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
+        </div>
+        <button type="button" onClick={() => updateData({ isFeatured: !data.isFeatured })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.isFeatured ? "bg-amber-500" : "bg-slate-300"}`}>
+          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isFeatured ? "translate-x-6" : "translate-x-1"}`} />
+        </button>
+      </div>
+
+      {/* FEATURED POSTER UPLOAD (1:1 Ratio) */}
+      {data.isFeatured && (
+        <div className="space-y-3 pt-4">
+          <label className="block text-sm font-semibold text-slate-700">1:1 Square Featured Poster <span className="text-red-500">*</span></label>
+          
+          {crop.isCropping && crop.rawImage ? (
+            <div className="w-full max-w-md mx-auto bg-white p-4 rounded-3xl border border-slate-200 shadow-sm">
+              <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-slate-900 mb-4">
+                {/* Changed aspect to 1 for 1:1 ratio per your requirement */}
+                <Cropper image={crop.rawImage} crop={crop.crop} zoom={crop.zoom} aspect={1} onCropChange={crop.setCrop} onCropComplete={(_, pixels) => crop.setCroppedAreaPixels(pixels)} onZoomChange={crop.setZoom} />
+              </div>
+              <div className="flex gap-4">
+                <button type="button" onClick={() => { crop.setIsCropping(false); crop.setRawImage(null); }} className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-100">Cancel</button>
+                <button type="button" onClick={crop.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-[#6C47FF] flex justify-center items-center gap-2"><Crop className="w-4 h-4"/> Save</button>
+              </div>
+            </div>
+          ) : !crop.previewUrl ? (
+            <div className="relative group w-full max-w-[280px] mx-auto">
+              <input type="file" accept="image/*" onChange={crop.handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+              <div className="w-full aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-white hover:border-[#6C47FF] hover:bg-[#6C47FF]/5">
+                <UploadCloud className="w-10 h-10 mb-3 text-slate-300" />
+                <span className="text-sm font-bold text-slate-600">Upload Poster (1:1)</span>
+              </div>
+            </div>
+          ) : (
+            <div className="relative w-full max-w-[280px] mx-auto aspect-square rounded-2xl overflow-hidden border border-slate-200" style={{ backgroundImage: `url(${crop.previewUrl})`, backgroundSize: "cover" }} />
+          )}
+        </div>
+      )}
+
+      {/* ADVANCED FIELDS (Always shown in Step 2) */}
+      <div className="pt-6 border-t border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-500 uppercase">Organizer</label>
+          <input type="text" value={data.organizer} onChange={e => updateData({ organizer: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none" />
+        </div>
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-500 uppercase">Website (Optional)</label>
+          <input type="url" value={data.website} onChange={e => updateData({ website: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 outline-none" />
+        </div>
+      </div>
+
+      <div className="pt-8 border-t border-slate-200 flex justify-between items-center">
+        <button type="button" onClick={onBack} className="flex items-center gap-2 text-slate-500 font-bold px-4 py-2"><ArrowLeft className="w-4 h-4" /> Back</button>
+        <button type="button" onClick={onSubmit} disabled={isSubmitting || (data.isFeatured && !crop.previewUrl)} className="bg-[#6C47FF] hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
+        {isEditing ? "Update Event" : (data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval")} <CheckCircle2 className="w-4 h-4" />        </button>
+      </div>
+    </motion.div>
+  );
 }
 </file>
 
@@ -4225,144 +4164,6 @@ export const getCategoryConfig = (category: string) => {
   if (!category) return CATEGORY_CONFIG['default'];
   const key = category.toLowerCase().trim().replace(/\s+/g, '-');
   return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
-};
-</file>
-
-<file path="src/lib/city-config.ts">
-export const CITY_CONFIG: Record<string, {
-  backgroundImage: string;
-  accentColor: string;
-}> = {
-  'hyderabad': {
-    backgroundImage: '/cities/hyderabad.webp',
-    accentColor: '#6C47FF',
-  },
-   'bengaluru': {
-    backgroundImage: '/cities/bengaluru.webp', 
-    accentColor: '#0EA5E9',
-  },
-  'mumbai': {
-    backgroundImage: '/cities/mumbai.webp',
-    accentColor: '#F59E0B',
-  },
-  'new-delhi': {
-    backgroundImage: '/cities/new-delhi.webp', 
-    accentColor: '#EF4444',
-  },
-  'chennai': {
-    backgroundImage: '/cities/chennai.webp',
-    accentColor: '#10B981',
-  },
-  'pune': {
-    backgroundImage: '/cities/pune.webp',
-    accentColor: '#8B5CF6',
-  },
-  'kolkata': {
-    backgroundImage: '/cities/kolkata.webp',
-    accentColor: '#F97316',
-  },
-  'jaipur': {
-    backgroundImage: '/cities/jaipur.webp',
-    accentColor: '#EC4899',
-  },
-  'ahmedabad': {
-    backgroundImage: '/cities/ahmedabad.webp',
-    accentColor: '#14B8A6',
-  },
-  'kochi': {
-    backgroundImage: '/cities/kochi.webp',
-    accentColor: '#22C55E',
-  },
-  'visakhapatnam': {
-    backgroundImage: '/cities/visakhapatnam.webp', 
-    accentColor: '#6366F1',
-  },
-  'coimbatore': {
-    backgroundImage: '/cities/coimbatore.webp',
-    accentColor: '#A855F7',
-  },
-  'nizamabad': {
-    backgroundImage: '/cities/nizamabad.webp',
-    accentColor: '#6C47FF',
-  },
-  'online': {
-    backgroundImage: '/cities/online.webp',
-    accentColor: '#6366F1',
-  },
-  'bhopal': {
-    backgroundImage: '/cities/bhopal.webp', 
-    accentColor: '#3B82F6',
-  },
-  'guntur': {
-    backgroundImage: '/cities/guntur.webp', 
-    accentColor: '#6366F1',
-  },
-  'gurugram': {
-    backgroundImage: '/cities/gurugram.webp', 
-    accentColor: '#6366F1',
-  },
-  'indore': {
-    backgroundImage: '/cities/indore.webp', 
-    accentColor: '#6366F1',
-  },
-  'kakinada': {
-    backgroundImage: '/cities/kakinada.webp', 
-    accentColor: '#6366F1',
-  },
-  'kanpur': {
-    backgroundImage: '/cities/kanpur.webp', 
-    accentColor: '#6366F1',
-  },
-  'karimnagar': {
-    backgroundImage: '/cities/karimnagar.webp', 
-    accentColor: '#6366F1',
-  },
-  'khammam': {
-    backgroundImage: '/cities/khammam.webp', 
-    accentColor: '#6366F1',
-  },
-  'lucknow': {
-    backgroundImage: '/cities/lucknow.webp', 
-    accentColor: '#6366F1',
-  },
-  'mangaluru': {
-    backgroundImage: '/cities/mangaluru.webp', 
-    accentColor: '#6366F1',
-  },
-  'mysuru': {
-    backgroundImage: '/cities/mysuru.webp', 
-    accentColor: '#6366F1',
-  },
-  'nagpur': {
-    backgroundImage: '/cities/nagpur.webp', 
-    accentColor: '#6366F1',
-  },
-  'noida': {
-    backgroundImage: '/cities/noida.webp', 
-    accentColor: '#6366F1',
-  },
-  'thiruvananthapuram': {
-    backgroundImage: '/cities/thiruvananthapuram.webp', 
-    accentColor: '#6366F1',
-  },
-  'tirupati': {
-    backgroundImage: '/cities/tirupati.webp', 
-    accentColor: '#6366F1',
-  },
-  'vijayawada': {
-    backgroundImage: '/cities/bhopal.webp', 
-    accentColor: '#6366F1',
-  },
-  'warangal': {
-    backgroundImage: '/cities/vijayawada.webp', 
-    accentColor: '#6366F1',
-  },
-};
-
-export const getCityConfig = (city: string) => {
-  if (!city) return CITY_CONFIG['default'] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
-  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
 };
 </file>
 
@@ -5213,6 +5014,117 @@ export async function POST(request: Request) {
 }
 </file>
 
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  // Get today's date string (YYYY-MM-DD) to filter out past events
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+    .eq("status", "approved")
+    .ilike("city", decodedCity)
+    .gte("date_string", todayStr) // Only today & upcoming events
+    .order("date_string", { ascending: true });
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero */}
+      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+           <img 
+            src={cityConfig.coverImage} 
+            alt={decodedCity} 
+            className="w-full h-full object-cover"
+            // Okavela covers folder lo 21:9 lekapothe pata 16:9 image vesthundi
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = cityConfig.backgroundImage;
+            }}
+          />          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+          
+          {/* Content */}
+          <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="bg-white/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20 shadow-sm">
+                <MapPin className="w-3.5 h-3.5" />
+                {decodedCity}
+              </span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-heading font-black text-white capitalize drop-shadow-md">
+              {decodedCity}
+            </h1>
+            <p className="text-white/90 font-medium mt-2 md:mt-3 md:text-lg max-w-xl drop-shadow-md">
+              Events happening here
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-black text-slate-900 font-heading">
+            Upcoming Events
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/leaderboard/page.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { createClient } from "@/lib/supabase/server";
@@ -5478,6 +5390,157 @@ export default async function Home({
   // Pass the returned props directly into our separated Client UI component
   return <HomePageClient {...data} />;
 }
+</file>
+
+<file path="src/lib/city-config.ts">
+export const CITY_CONFIG: Record<string, {
+  backgroundImage: string;
+  accentColor: string;
+}> = {
+  'hyderabad': {
+    backgroundImage: '/cities/hyderabad.webp',
+    accentColor: '#6C47FF',
+  },
+   'bengaluru': {
+    backgroundImage: '/cities/bengaluru.webp', 
+    accentColor: '#0EA5E9',
+  },
+  'mumbai': {
+    backgroundImage: '/cities/mumbai.webp',
+    accentColor: '#F59E0B',
+  },
+  'new-delhi': {
+    backgroundImage: '/cities/new-delhi.webp', 
+    accentColor: '#EF4444',
+  },
+  'chennai': {
+    backgroundImage: '/cities/chennai.webp',
+    accentColor: '#10B981',
+  },
+  'pune': {
+    backgroundImage: '/cities/pune.webp',
+    accentColor: '#8B5CF6',
+  },
+  'kolkata': {
+    backgroundImage: '/cities/kolkata.webp',
+    accentColor: '#F97316',
+  },
+  'jaipur': {
+    backgroundImage: '/cities/jaipur.webp',
+    accentColor: '#EC4899',
+  },
+  'ahmedabad': {
+    backgroundImage: '/cities/ahmedabad.webp',
+    accentColor: '#14B8A6',
+  },
+  'kochi': {
+    backgroundImage: '/cities/kochi.webp',
+    accentColor: '#22C55E',
+  },
+  'visakhapatnam': {
+    backgroundImage: '/cities/visakhapatnam.webp', 
+    accentColor: '#6366F1',
+  },
+  'coimbatore': {
+    backgroundImage: '/cities/coimbatore.webp',
+    accentColor: '#A855F7',
+  },
+  'nizamabad': {
+    backgroundImage: '/cities/nizamabad.webp',
+    accentColor: '#6C47FF',
+  },
+  'online': {
+    backgroundImage: '/cities/online.webp',
+    accentColor: '#6366F1',
+  },
+  'bhopal': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#3B82F6',
+  },
+  'guntur': {
+    backgroundImage: '/cities/guntur.webp', 
+    accentColor: '#6366F1',
+  },
+  'gurugram': {
+    backgroundImage: '/cities/gurugram.webp', 
+    accentColor: '#6366F1',
+  },
+  'indore': {
+    backgroundImage: '/cities/indore.webp', 
+    accentColor: '#6366F1',
+  },
+  'kakinada': {
+    backgroundImage: '/cities/kakinada.webp', 
+    accentColor: '#6366F1',
+  },
+  'kanpur': {
+    backgroundImage: '/cities/kanpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'karimnagar': {
+    backgroundImage: '/cities/karimnagar.webp', 
+    accentColor: '#6366F1',
+  },
+  'khammam': {
+    backgroundImage: '/cities/khammam.webp', 
+    accentColor: '#6366F1',
+  },
+  'lucknow': {
+    backgroundImage: '/cities/lucknow.webp', 
+    accentColor: '#6366F1',
+  },
+  'mangaluru': {
+    backgroundImage: '/cities/mangaluru.webp', 
+    accentColor: '#6366F1',
+  },
+  'mysuru': {
+    backgroundImage: '/cities/mysuru.webp', 
+    accentColor: '#6366F1',
+  },
+  'nagpur': {
+    backgroundImage: '/cities/nagpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'noida': {
+    backgroundImage: '/cities/noida.webp', 
+    accentColor: '#6366F1',
+  },
+  'thiruvananthapuram': {
+    backgroundImage: '/cities/thiruvananthapuram.webp', 
+    accentColor: '#6366F1',
+  },
+  'tirupati': {
+    backgroundImage: '/cities/tirupati.webp', 
+    accentColor: '#6366F1',
+  },
+  'vijayawada': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#6366F1',
+  },
+  'warangal': {
+    backgroundImage: '/cities/vijayawada.webp', 
+    accentColor: '#6366F1',
+  },
+};
+
+export const getCityConfig = (city: string) => {
+  const fallback = { 
+    backgroundImage: '/cities/default.webp', 
+    coverImage: '/cities/default.webp', 
+    accentColor: '#6C47FF' 
+  };
+  
+  if (!city) return fallback;
+  
+  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
+  const config = CITY_CONFIG[key];
+  
+  if (!config) return fallback;
+  return {
+    ...config,
+    coverImage: `/cities/covers/${key}.webp`
+  };
+};
 </file>
 
 <file path="next.config.ts">
@@ -7071,79 +7134,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/HeroSection.tsx">
 "use client";
 
@@ -7359,410 +7349,82 @@ export function Footer() {
 }
 </file>
 
-<file path="src/features/create-event/components/StepMandatory.tsx">
+<file path="src/lib/home/CityGrid.tsx">
 "use client";
 
-import { motion } from "framer-motion";
-import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee, Sparkles } from "lucide-react";
-import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
-import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
-import { CITIES } from "@/lib/constants/cities";
-import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { CollegeRow } from "@/types";
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
 
 
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing }: any) {
-  
-  // SECURE ADMIN CHECK
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-        setIsAdmin(true);
-      }
-    };
-    checkAdmin();
-  }, []);
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
 
-  // NEW: College picker for restricted college events (live server search)
-  const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
-  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
-  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
-  const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
 
-  useEffect(() => {
-    const query = collegeSearchQuery.trim();
-    if (!query) {
-      setCollegesList([]);
-      return;
-    }
-    setIsSearchingColleges(true);
-    const timer = setTimeout(async () => {
-      const supabase = createClient();
-      const { data: results } = await supabase
-        .from("colleges")
-        .select("id, name, slug, state")
-        .ilike("name", `%${query}%`)
-        .order("name", { ascending: true })
-        .limit(10);
-      setCollegesList((results as CollegeRow[]) || []);
-      setIsSearchingColleges(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [collegeSearchQuery]);
-
-  const handleCreateCollege = async (name: string) => {
-    setIsCreatingCollege(true);
-    const { createCollegeAction } = await import("@/app/profile/action");
-    const result = await createCollegeAction(name);
-    setIsCreatingCollege(false);
-    if (result?.data) {
-      updateData({ collegeId: result.data.id, collegeName: result.data.name });
-      setCollegeSearchQuery(result.data.name);
-      setShowCollegeDropdown(false);
-      setCollegesList(prev => [...prev, result.data as CollegeRow]);
-    }
-  };
-
-  // AUTO-VALIDATE COLLEGE EVENTS
-  useEffect(() => {
-    if (isCollegeCategory && data.selectedAudience.length === 0) {
-      updateData({ selectedAudience: ["College Students"] });
-    }
-  }, [isCollegeCategory, data.selectedAudience.length, updateData]);
-
-  // Smart Link Handler (Point 5 & 3)
-  const handleLinkInput = (url: string) => {
-    updateData({ regLink: url });
-    // Run the actual backend extraction hook
-    extraction.handleLinkInput(url);
-  };
-
-  // Sync the backend trust status with the form data so the final submission gets the right status
-  useEffect(() => {
-    if (data.isTrustedDomain !== extraction.isTrusted) {
-      updateData({ isTrustedDomain: extraction.isTrusted });
-    }
-  }, [data.isTrustedDomain, extraction.isTrusted, updateData]);
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <motion.div key="stepMandatory" initial={{ x: -24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -24, opacity: 0 }} className="space-y-8">
-      
-      {/* LINK INPUT */}
-      <div className="space-y-2">
-        <label className="block text-sm font-semibold text-slate-700">Registration Link <span className="text-red-500">*</span></label>
-        <div className="relative">
-          <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input
-            type="url" value={data.regLink} onChange={e => handleLinkInput(e.target.value)}
-            placeholder="Paste event link (lu.ma, eventbrite, etc.)"
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
-          />
-          {extraction.isExtracting && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2">
-              <div className="w-5 h-5 border-2 border-slate-200 border-t-[#6C47FF] rounded-full animate-spin" />
-            </div>
-          )}
-          {!extraction.isExtracting && data.regLink && !extraction.linkDuplicateError && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-green-500">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-          )}
-        </div>
-
-        {/* EXTRACTION STATUS ALERTS */}
-        {extraction.linkDuplicateError && (
-          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-red-500 flex items-center gap-1.5 mt-2">
-            <AlertTriangle className="w-4 h-4" /> {extraction.linkDuplicateError}
-          </motion.p>
-        )}
-        {extraction.extractError && !extraction.linkDuplicateError && (
-          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-amber-600 flex items-center gap-1.5 mt-2">
-            <AlertTriangle className="w-4 h-4" /> {extraction.extractError}
-          </motion.p>
-        )}
-        {extraction.trustWarning && !extraction.linkDuplicateError && (
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2 mt-2">
-            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs font-semibold text-amber-700 leading-relaxed">{extraction.trustWarning}</p>
-          </motion.div>
-        )}
-        {extraction.extractionConfidence > 0 && !extraction.linkDuplicateError && (
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold mt-2 ${extraction.extractionConfidence >= 0.8 ? "bg-green-50 text-green-700 border border-green-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-            {extraction.extractionConfidence >= 0.8
-              ? <><CheckCircle2 className="w-4 h-4" /> Details auto-filled. Review and continue.</>
-              : <><AlertTriangle className="w-4 h-4" /> Partial details found. Please review highlighted fields carefully.</>
-            }
-          </motion.div>
-        )}
-      </div>
-
-      {/* BASICS */}
-      <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          Event Title <span className="text-red-500">*</span>
-          {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
-            <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs">
-              <AlertTriangle className="w-4 h-4" /> Unverified Domain
-            </span>
-          )}
-        </label>
-        <input
-          type="text" value={data.title} onChange={e => updateData({ title: e.target.value })}
-          className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
-        />
-      </div>
-
-      {/* CATEGORY & AUDIENCE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-slate-700">Category <span className="text-red-500">*</span></label>
-          <select value={data.category} onChange={e => updateData({ category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none">
-            <option value="" disabled>Select category</option>
-            {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        {!isCollegeCategory && (
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-700">Who is it for? <span className="text-red-500">*</span></label>
-              <select 
-                value={data.selectedAudience[0] || ""}
-                onChange={(e) => updateData({ selectedAudience: [e.target.value] })}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
-              >
-                <option value="" disabled>Select audience</option>
-                {audienceOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
-            </div>
-          )}
-          </div>
-
-          {/* COLLEGE FIELDS (DYNAMIC) */}
-          {isCollegeCategory && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
-                <p className="text-sm font-bold text-[#6C47FF]">College Event Details</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">Open to all colleges?</p>
-                    <p className="text-xs text-slate-500">Toggle off to restrict to one college only</p>
-                  </div>
-                  <button
-                    type="button" onClick={() => updateData({ collegeOnly: !data.collegeOnly })}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${!data.collegeOnly ? "bg-blue-500" : "bg-slate-300"}`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!data.collegeOnly ? "translate-x-6" : "translate-x-1"}`} />
-                  </button>
-                </div>
-               {data.collegeOnly && (
-                  <div className="space-y-2 relative">
-                    <label className="block text-xs font-bold text-slate-500">Which College? <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={collegeSearchQuery}
-                      onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
-                      onFocus={() => setShowCollegeDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
-                      placeholder="Search your college..."
-                      className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
-                    />
-                     {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col" onMouseDown={(e) => e.preventDefault()}>
-                        {isSearchingColleges && (
-                          <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
-                        )}
-                         {!isSearchingColleges && collegesList.map(item => (
-                          <button 
-                            key={item.id} 
-                            type="button" 
-                            onMouseDown={(e) => { 
-                              e.preventDefault(); // Stop blur from happening early
-                              updateData({ collegeId: item.id, collegeName: item.name }); 
-                              setCollegeSearchQuery(item.name); 
-                              setShowCollegeDropdown(false); 
-                            }} 
-                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none"
-                          >
-                            🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
-                          </button>
-                        ))}
-                        {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                          <button 
-                            type="button" 
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleCreateCollege(collegeSearchQuery);
-                            }} 
-                            disabled={isCreatingCollege} 
-                            className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
-                          >
-                            {isCreatingCollege ? <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                            {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-500">Branch</label>
-                    <select value={data.collegeBranch} onChange={e => updateData({ collegeBranch: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
-                      <option value="">All Branches</option>
-                      {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-500">Year</label>
-                    <select value={data.collegeYear} onChange={e => updateData({ collegeYear: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
-                      <option value="">All Years</option>
-                      {["1st Year", "2nd Year", "3rd Year", "4th Year", "All Years"].map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* DESCRIPTION */}
-          <div className="space-y-3 pt-2">
-            <label className="block text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
-            <textarea
-              value={data.description}
-              onChange={e => updateData({ description: e.target.value })}
-              placeholder="What is this event about?"
-              className="w-full bg-white border border-slate-200 rounded-xl p-4 min-h-[120px] outline-none focus:border-[#6C47FF] focus:ring-4 focus:ring-[#6C47FF]/10"
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+     {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
             />
           </div>
 
-          {/* DATE & TIME & LOCATION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-200">
-        <div className="space-y-4">
-           <div className="flex items-center justify-between mb-2">
-             <label className="text-sm font-semibold text-slate-700">Event Date <span className="text-red-500">*</span></label>
-             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
-               <input type="checkbox" checked={data.hasEndDate} onChange={() => updateData({ hasEndDate: !data.hasEndDate })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
-               + End Date
-             </label>
-           </div>
-           <MiniCalendar selectedDate={data.selectedDate} onSelect={(d) => updateData({ selectedDate: d })} />
-           
-           {data.hasEndDate && (
-             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 border-l-2 border-[#6C47FF] pl-3 overflow-hidden">
-               <MiniCalendar selectedDate={data.endDate} onSelect={(d) => updateData({ endDate: d })} />
-             </motion.div>
-           )}
-
-           <div className="pt-4">
-             <div className="flex items-center justify-between mb-2">
-               <label className="block text-xs font-semibold text-slate-500">Start Time</label>
-               <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
-                 <input type="checkbox" checked={data.hasEndTime} onChange={() => updateData({ hasEndTime: !data.hasEndTime })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
-                 + End Time
-               </label>
-             </div>
-             <div className="flex gap-2">
-               <select value={data.selectedHour} onChange={e => updateData({ selectedHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>HH</option>{hours.map(h => <option key={`sh-${h}`} value={h}>{h}</option>)}</select>
-               <select value={data.selectedMin} onChange={e => updateData({ selectedMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>MM</option>{mins.map(m => <option key={`sm-${m}`} value={m}>{m}</option>)}</select>
-               <select value={data.selectedAmPm} onChange={e => updateData({ selectedAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`sa-${a}`} value={a}>{a}</option>)}</select>
-             </div>
-
-             {data.hasEndTime && (
-               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 border-l-2 border-[#6C47FF] pl-3 overflow-hidden">
-                 <div className="flex gap-2">
-                   <select value={data.endHour} onChange={e => updateData({ endHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>HH</option>{hours.map(h => <option key={`eh-${h}`} value={h}>{h}</option>)}</select>
-                   <select value={data.endMin} onChange={e => updateData({ endMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>MM</option>{mins.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}</select>
-                   <select value={data.endAmPm} onChange={e => updateData({ endAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`ea-${a}`} value={a}>{a}</option>)}</select>
-                 </div>
-               </motion.div>
-             )}
-           </div>
-        </div>
-        
-        <div className="space-y-4">
-           <div className="flex justify-between items-center">
-             <label className="text-sm font-semibold text-slate-700">Event Location <span className="text-red-500">*</span></label>
-             <button type="button" onClick={() => updateData({ isOnline: !data.isOnline })} className={`text-xs font-bold px-3 py-1.5 rounded-full ${data.isOnline ? "bg-[#1D1D1F] text-white" : "bg-white text-slate-600 border"}`}>
-               {data.isOnline ? "Virtual Event" : "Switch to Virtual"}
-             </button>
-           </div>
-
-           {!data.isOnline ? (
-             <select
-               value={data.city || ""}
-               onChange={e => updateData({ city: e.target.value, location: e.target.value })}
-               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
-             >
-               <option value="" disabled>Select City</option>
-               {CITIES.map(c => (
-                 <option key={c} value={c}>{c}</option>
-               ))}
-             </select>
-           ) : (
-             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-[#6C47FF]" /> Virtual Event</div>
-           )}
-           {/* FREE / PAID */}
-           <div className="pt-6">
-             <label className="block text-sm font-semibold text-slate-700 mb-3">Pricing</label>
-             <div className="grid grid-cols-2 gap-4">
-                <button type="button" onClick={() => updateData({ isFree: true, price: "" })} className={`py-3 px-4 rounded-xl border-2 flex items-center gap-2 ${data.isFree ? "border-[#6C47FF] bg-white" : "border-transparent bg-slate-100"}`}>
-                  <span className="text-sm font-bold">Free Event</span>
-                </button>
-                <button type="button" onClick={() => updateData({ isFree: false })} className={`py-3 px-4 rounded-xl border-2 flex items-center gap-2 ${!data.isFree ? "border-[#1D1D1F] bg-white" : "border-transparent bg-slate-100"}`}>
-                  <span className="text-sm font-bold">Paid Event</span>
-                </button>
-             </div>
-             {!data.isFree && (
-               <div className="relative mt-3">
-                 <IndianRupee className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                 <input type="number" value={data.price} onChange={e => updateData({ price: e.target.value })} placeholder="Ticket Price" className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none" />
-               </div>
-             )}
-
-             {isAdmin && (
-               <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                 <label className="flex items-center gap-3 cursor-pointer">
-                   <input type="checkbox" checked={data.isFeatured} onChange={e => updateData({ isFeatured: e.target.checked })} className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 outline-none" />
-                   <div>
-                     <span className="block text-sm font-bold text-amber-900">Feature this event</span>
-                     <span className="block text-xs text-amber-700 mt-0.5">Add a poster and advanced details</span>
-                   </div>
-                 </label>
-               </div>
-             )}
-           </div>
-        </div>
-      </div>
-
-      <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
-            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
-              <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
-                ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
-              </div>
-            )}
-            
-           {isAdmin && data.isFeatured ? (
-              <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">
-                 Continue to Next Step
-              </button>
-            ) : (
-              <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-[#6C47FF] hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
-              {isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")} <CheckCircle2 className="w-5 h-5" />
-              </button>
-            )}
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
           </div>
-        </motion.div>
+        </Link>
+      ))}
+    </div>
   );
 }
 </file>
 
 <file path="src/lib/home/EventGrid.tsx">
+"use client";
+
 import { EventCard } from "@/app/events/EventCard";
 import { AnimatePresence } from "framer-motion";
 import type { EventRow, ProfileRow } from "@/types";
@@ -10027,6 +9689,409 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 }
 </file>
 
+<file path="src/features/create-event/components/StepMandatory.tsx">
+"use client";
+
+import { motion } from "framer-motion";
+import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee, Sparkles } from "lucide-react";
+import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
+import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
+import { CITIES } from "@/lib/constants/cities";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { CollegeRow } from "@/types";
+
+
+
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing }: any) {
+  
+  // SECURE ADMIN CHECK
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+        setIsAdmin(true);
+      }
+    };
+    checkAdmin();
+  }, []);
+
+  // NEW: College picker for restricted college events (live server search)
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
+  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  useEffect(() => {
+    const query = collegeSearchQuery.trim();
+    if (!query) {
+      setCollegesList([]);
+      return;
+    }
+    setIsSearchingColleges(true);
+    const timer = setTimeout(async () => {
+      const supabase = createClient();
+      const { data: results } = await supabase
+        .from("colleges")
+        .select("id, name, slug, state")
+        .ilike("name", `%${query}%`)
+        .order("name", { ascending: true })
+        .limit(10);
+      setCollegesList((results as CollegeRow[]) || []);
+      setIsSearchingColleges(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [collegeSearchQuery]);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const { createCollegeAction } = await import("@/app/profile/action");
+    const result = await createCollegeAction(name);
+    setIsCreatingCollege(false);
+    if (result?.data) {
+      updateData({ collegeId: result.data.id, collegeName: result.data.name });
+      setCollegeSearchQuery(result.data.name);
+      setShowCollegeDropdown(false);
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+    }
+  };
+
+  // AUTO-VALIDATE COLLEGE EVENTS
+  useEffect(() => {
+    if (isCollegeCategory && data.selectedAudience.length === 0) {
+      updateData({ selectedAudience: ["College Students"] });
+    }
+  }, [isCollegeCategory, data.selectedAudience.length, updateData]);
+
+  // Smart Link Handler (Point 5 & 3)
+  const handleLinkInput = (url: string) => {
+    updateData({ regLink: url });
+    // Run the actual backend extraction hook
+    extraction.handleLinkInput(url);
+  };
+
+  // Sync the backend trust status with the form data so the final submission gets the right status
+  useEffect(() => {
+    if (data.isTrustedDomain !== extraction.isTrusted) {
+      updateData({ isTrustedDomain: extraction.isTrusted });
+    }
+  }, [data.isTrustedDomain, extraction.isTrusted, updateData]);
+
+  return (
+    <motion.div key="stepMandatory" initial={{ x: -24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -24, opacity: 0 }} className="space-y-8">
+      
+      {/* LINK INPUT */}
+      <div className="space-y-2">
+        <label className="block text-sm font-semibold text-slate-700">Registration Link <span className="text-red-500">*</span></label>
+        <div className="relative">
+          <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <input
+            type="url" value={data.regLink} onChange={e => handleLinkInput(e.target.value)}
+            placeholder="Paste event link (lu.ma, eventbrite, etc.)"
+            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
+          />
+          {extraction.isExtracting && (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2">
+              <div className="w-5 h-5 border-2 border-slate-200 border-t-[#6C47FF] rounded-full animate-spin" />
+            </div>
+          )}
+          {!extraction.isExtracting && data.regLink && !extraction.linkDuplicateError && (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-green-500">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+          )}
+        </div>
+
+        {/* EXTRACTION STATUS ALERTS */}
+        {extraction.linkDuplicateError && (
+          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-red-500 flex items-center gap-1.5 mt-2">
+            <AlertTriangle className="w-4 h-4" /> {extraction.linkDuplicateError}
+          </motion.p>
+        )}
+        {extraction.extractError && !extraction.linkDuplicateError && (
+          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-amber-600 flex items-center gap-1.5 mt-2">
+            <AlertTriangle className="w-4 h-4" /> {extraction.extractError}
+          </motion.p>
+        )}
+        {extraction.trustWarning && !extraction.linkDuplicateError && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2 mt-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs font-semibold text-amber-700 leading-relaxed">{extraction.trustWarning}</p>
+          </motion.div>
+        )}
+        {extraction.extractionConfidence > 0 && !extraction.linkDuplicateError && (
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold mt-2 ${extraction.extractionConfidence >= 0.8 ? "bg-green-50 text-green-700 border border-green-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+            {extraction.extractionConfidence >= 0.8
+              ? <><CheckCircle2 className="w-4 h-4" /> Details auto-filled. Review and continue.</>
+              : <><AlertTriangle className="w-4 h-4" /> Partial details found. Please review highlighted fields carefully.</>
+            }
+          </motion.div>
+        )}
+      </div>
+
+      {/* BASICS */}
+      <div className="space-y-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          Event Title <span className="text-red-500">*</span>
+          {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+            <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs">
+              <AlertTriangle className="w-4 h-4" /> Unverified Domain
+            </span>
+          )}
+        </label>
+        <input
+          type="text" value={data.title} onChange={e => updateData({ title: e.target.value })}
+          className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
+        />
+      </div>
+
+      {/* CATEGORY & AUDIENCE */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-3">
+          <label className="block text-sm font-semibold text-slate-700">Category <span className="text-red-500">*</span></label>
+          <select value={data.category} onChange={e => updateData({ category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none">
+            <option value="" disabled>Select category</option>
+            {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        {!isCollegeCategory && (
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-slate-700">Who is it for? <span className="text-red-500">*</span></label>
+              <select 
+                value={data.selectedAudience[0] || ""}
+                onChange={(e) => updateData({ selectedAudience: [e.target.value] })}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
+              >
+                <option value="" disabled>Select audience</option>
+                {audienceOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            </div>
+          )}
+          </div>
+
+          {/* COLLEGE FIELDS (DYNAMIC) */}
+          {isCollegeCategory && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
+                <p className="text-sm font-bold text-[#6C47FF]">College Event Details</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">Open to all colleges?</p>
+                    <p className="text-xs text-slate-500">Toggle off to restrict to one college only</p>
+                  </div>
+                  <button
+                    type="button" onClick={() => updateData({ collegeOnly: !data.collegeOnly })}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${!data.collegeOnly ? "bg-blue-500" : "bg-slate-300"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!data.collegeOnly ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+               {data.collegeOnly && (
+                  <div className="space-y-2 relative">
+                    <label className="block text-xs font-bold text-slate-500">Which College? <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={collegeSearchQuery}
+                      onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
+                      onFocus={() => setShowCollegeDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
+                      placeholder="Search your college..."
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
+                    />
+                     {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col" onMouseDown={(e) => e.preventDefault()}>
+                        {isSearchingColleges && (
+                          <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                        )}
+                         {!isSearchingColleges && collegesList.map(item => (
+                          <button 
+                            key={item.id} 
+                            type="button" 
+                            onMouseDown={(e) => { 
+                              e.preventDefault(); // Stop blur from happening early
+                              updateData({ collegeId: item.id, collegeName: item.name }); 
+                              setCollegeSearchQuery(item.name); 
+                              setShowCollegeDropdown(false); 
+                            }} 
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none"
+                          >
+                            🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
+                          </button>
+                        ))}
+                        {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                          <button 
+                            type="button" 
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCreateCollege(collegeSearchQuery);
+                            }} 
+                            disabled={isCreatingCollege} 
+                            className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
+                          >
+                            {isCreatingCollege ? <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-500">Branch</label>
+                    <select value={data.collegeBranch} onChange={e => updateData({ collegeBranch: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
+                      <option value="">All Branches</option>
+                      {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-500">Year</label>
+                    <select value={data.collegeYear} onChange={e => updateData({ collegeYear: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
+                      <option value="">All Years</option>
+                      {["1st Year", "2nd Year", "3rd Year", "4th Year", "All Years"].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* DESCRIPTION */}
+          <div className="space-y-3 pt-2">
+            <label className="block text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+            <textarea
+              value={data.description}
+              onChange={e => updateData({ description: e.target.value })}
+              placeholder="What is this event about?"
+              className="w-full bg-white border border-slate-200 rounded-xl p-4 min-h-[120px] outline-none focus:border-[#6C47FF] focus:ring-4 focus:ring-[#6C47FF]/10"
+            />
+          </div>
+
+          {/* DATE & TIME & LOCATION */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-200">
+        <div className="space-y-4">
+           <div className="flex items-center justify-between mb-2">
+             <label className="text-sm font-semibold text-slate-700">Event Date <span className="text-red-500">*</span></label>
+             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
+               <input type="checkbox" checked={data.hasEndDate} onChange={() => updateData({ hasEndDate: !data.hasEndDate })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
+               + End Date
+             </label>
+           </div>
+           <MiniCalendar selectedDate={data.selectedDate} onSelect={(d) => updateData({ selectedDate: d })} />
+           
+           {data.hasEndDate && (
+             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 border-l-2 border-[#6C47FF] pl-3 overflow-hidden">
+               <MiniCalendar selectedDate={data.endDate} onSelect={(d) => updateData({ endDate: d })} />
+             </motion.div>
+           )}
+
+           <div className="pt-4">
+             <div className="flex items-center justify-between mb-2">
+               <label className="block text-xs font-semibold text-slate-500">Start Time</label>
+               <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
+                 <input type="checkbox" checked={data.hasEndTime} onChange={() => updateData({ hasEndTime: !data.hasEndTime })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
+                 + End Time
+               </label>
+             </div>
+             <div className="flex gap-2">
+               <select value={data.selectedHour} onChange={e => updateData({ selectedHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>HH</option>{hours.map(h => <option key={`sh-${h}`} value={h}>{h}</option>)}</select>
+               <select value={data.selectedMin} onChange={e => updateData({ selectedMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>MM</option>{mins.map(m => <option key={`sm-${m}`} value={m}>{m}</option>)}</select>
+               <select value={data.selectedAmPm} onChange={e => updateData({ selectedAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`sa-${a}`} value={a}>{a}</option>)}</select>
+             </div>
+
+             {data.hasEndTime && (
+               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mt-3 border-l-2 border-[#6C47FF] pl-3 overflow-hidden">
+                 <div className="flex gap-2">
+                   <select value={data.endHour} onChange={e => updateData({ endHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>HH</option>{hours.map(h => <option key={`eh-${h}`} value={h}>{h}</option>)}</select>
+                   <select value={data.endMin} onChange={e => updateData({ endMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>MM</option>{mins.map(m => <option key={`em-${m}`} value={m}>{m}</option>)}</select>
+                   <select value={data.endAmPm} onChange={e => updateData({ endAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`ea-${a}`} value={a}>{a}</option>)}</select>
+                 </div>
+               </motion.div>
+             )}
+           </div>
+        </div>
+        
+        <div className="space-y-4">
+           <div className="flex justify-between items-center">
+             <label className="text-sm font-semibold text-slate-700">Event Location <span className="text-red-500">*</span></label>
+             <button type="button" onClick={() => updateData({ isOnline: !data.isOnline })} className={`text-xs font-bold px-3 py-1.5 rounded-full ${data.isOnline ? "bg-[#1D1D1F] text-white" : "bg-white text-slate-600 border"}`}>
+               {data.isOnline ? "Virtual Event" : "Switch to Virtual"}
+             </button>
+           </div>
+
+           {!data.isOnline ? (
+             <select
+               value={data.city || ""}
+               onChange={e => updateData({ city: e.target.value, location: e.target.value })}
+               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+             >
+               <option value="" disabled>Select City</option>
+               {CITIES.map(c => (
+                 <option key={c} value={c}>{c}</option>
+               ))}
+             </select>
+           ) : (
+             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-[#6C47FF]" /> Virtual Event</div>
+           )}
+           {/* FREE / PAID */}
+           <div className="pt-6">
+             <label className="block text-sm font-semibold text-slate-700 mb-3">Pricing</label>
+             <div className="grid grid-cols-2 gap-4">
+                <button type="button" onClick={() => updateData({ isFree: true, price: "" })} className={`py-3 px-4 rounded-xl border-2 flex items-center gap-2 ${data.isFree ? "border-[#6C47FF] bg-white" : "border-transparent bg-slate-100"}`}>
+                  <span className="text-sm font-bold">Free Event</span>
+                </button>
+                <button type="button" onClick={() => updateData({ isFree: false })} className={`py-3 px-4 rounded-xl border-2 flex items-center gap-2 ${!data.isFree ? "border-[#1D1D1F] bg-white" : "border-transparent bg-slate-100"}`}>
+                  <span className="text-sm font-bold">Paid Event</span>
+                </button>
+             </div>
+             {!data.isFree && (
+               <div className="relative mt-3">
+                 <IndianRupee className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
+                 <input type="number" value={data.price} onChange={e => updateData({ price: e.target.value })} placeholder="Ticket Price" className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none" />
+               </div>
+             )}
+
+             {isAdmin && (
+               <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                 <label className="flex items-center gap-3 cursor-pointer">
+                   <input type="checkbox" checked={data.isFeatured} onChange={e => updateData({ isFeatured: e.target.checked })} className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 outline-none" />
+                   <div>
+                     <span className="block text-sm font-bold text-amber-900">Feature this event</span>
+                     <span className="block text-xs text-amber-700 mt-0.5">Add a poster and advanced details</span>
+                   </div>
+                 </label>
+               </div>
+             )}
+           </div>
+        </div>
+      </div>
+
+      <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
+            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+              <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
+                ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
+              </div>
+            )}
+            
+           {isAdmin && data.isFeatured ? (
+              <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">
+                 Continue to Next Step
+              </button>
+            ) : (
+              <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-[#6C47FF] hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
+              {isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")} <CheckCircle2 className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        </motion.div>
+  );
+}
+</file>
+
 <file path="src/features/create-event/CreateEventForm.tsx">
 "use client";
 
@@ -10631,8 +10696,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
             )}
           </AnimatePresence>
 
-          {/* Editable: Event Categories */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+                    {/* Editable: Event Categories */}
+          <div className="bg-white rounded-[24px] border border-slate-100 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
@@ -10671,8 +10736,9 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                   </button>
                 );
               })}
- </div>
+            </div>
           </div>
+
           {/* Danger Zone (DPDP Compliance) */}
           <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
             <div className="flex items-center gap-3 mb-2">
@@ -10688,8 +10754,21 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               <button 
                 type="button"
                 onClick={async () => {
-                  if (window.confirm("Are you absolutely sure you want to delete your account? This will permanently erase your data and cannot be undone.")) {
-                    toast.success("Account deletion request submitted. An admin will process this within 72 hours.");
+                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
+                    const supabase = createClient();
+                    
+                    // TS Error ni bypass cheyadaniki 'as any' vadutunnam
+                    const { error } = await supabase.rpc('delete_user' as any);
+                    
+                    if (error) {
+                      toast.error("Failed to delete account. Please try again.");
+                      console.error("Delete user error:", error);
+                      return;
+                    }
+
+                    await supabase.auth.signOut();
+                    toast.success("Your account has been permanently deleted.");
+                    router.push("/login");
                   }
                 }}
                 className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
@@ -10698,9 +10777,9 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               </button>
             </div>
           </div>
+
           {/* Fixed Save Button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
-
             <button 
               type="submit" 
               disabled={isSubmitting}
@@ -10719,7 +10798,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
         </form>
       </div>
     </main>
-
   );
 }
 </file>
@@ -12226,38 +12304,43 @@ export function HomePageClient(props: HomePageClientProps) {
       )}
 
       <div className="flex flex-col">
-        {/* Header Section Background & Combined Navigation Pill */}
-        <div className="relative">
-          <HeroSection stats={platformStats} />
-        </div>
+        {/* Hide Hero and Stats when in Explore by City (Map) view */}
+        {view !== "map" && (
+          <>
+            {/* Header Section Background & Combined Navigation Pill */}
+            <div className="relative">
+              <HeroSection stats={platformStats} />
+            </div>
 
-        {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
-        <div className="sticky top-[80px] -mt-8 z-40 mx-auto mb-10 w-max">
-          <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
-            <div className="flex flex-col items-center px-3">
-              <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
+            {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
+            <div className="sticky top-[80px] -mt-8 z-40 mx-auto mb-10 w-max">
+              <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col items-center px-3">
-              <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
-            </div>
-            <div className="flex flex-col items-center px-3">
-              <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
-            </div>
-            <div className="flex flex-col items-center px-3">
-              <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
-            </div>
-          </div>
-        </div>
 
-        {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-        {!user && (
-          <p className="text-center text-[#555570] font-medium text-sm md:text-base max-w-[640px] mx-auto px-4 -mt-4 mb-4 leading-relaxed">
-            Stop hunting across ten apps. We&apos;ve already found what&apos;s happening — you just have to look here.
-          </p>
+            {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
+            {!user && (
+              <p className="text-center text-[#555570] font-medium text-sm md:text-base max-w-[640px] mx-auto px-4 -mt-4 mb-4 leading-relaxed">
+                Stop hunting across ten apps. We&apos;ve already found what&apos;s happening — you just have to look here.
+              </p>
+            )}
+          </>
         )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">

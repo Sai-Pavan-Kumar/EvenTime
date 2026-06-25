@@ -153,9 +153,9 @@ export default function LoginPage() {
                 onChange={(e) => setHasConsented(e.target.checked)} 
                 className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
               />
-              <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                I consent to the collection of my email and college details to verify my student status and personalize my event feed, as per the <a href="#" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
-              </label>
+               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
+                </label>
             </div>
             <button 
               type="submit" disabled={!!isLoading || isLockedOut}

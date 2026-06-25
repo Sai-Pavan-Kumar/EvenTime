@@ -1,3 +1,5 @@
+"use client";
+
 import { EventCard } from "@/app/events/EventCard";
 import { AnimatePresence } from "framer-motion";
 import type { EventRow, ProfileRow } from "@/types";

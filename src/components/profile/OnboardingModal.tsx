@@ -158,11 +158,11 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
       <div className="absolute inset-0 bg-slate-900/60" />
-      <motion.div 
+       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden p-8"
+        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 max-h-[90vh] overflow-y-auto p-8 custom-scrollbar"
       >
         <AnimatePresence mode="wait">
           
