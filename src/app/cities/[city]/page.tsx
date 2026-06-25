@@ -33,7 +33,7 @@ export default async function CityPage({
 
   const { data: events } = await supabase
     .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
     .eq("status", "approved")
     .ilike("city", decodedCity)
     .gte("date_string", todayStr)

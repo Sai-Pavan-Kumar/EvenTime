@@ -19,7 +19,7 @@ export interface EventUIProps {
   similarEvents?: any[];
   curatorUsername?: string | null;
   same_college_interested_count?: number;
-  interestedAvatars?: { avatar_url: string | null; full_name: string | null }[];
+  interestedAvatars?: { avatar_url: string | null; username: string | null }[];
   collegeName?: string | null;
 }
 
@@ -311,10 +311,10 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                       {interestedAvatars.map((u, i) => (
                         <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0">
                           {u.avatar_url ? (
-                            <Image src={u.avatar_url} alt={u.full_name || ""} width={32} height={32} className="object-cover w-full h-full" />
+                            <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
                           ) : (
                             <div className="w-full h-full bg-[#6C47FF]/20 flex items-center justify-center text-[10px] font-bold text-[#6C47FF]">
-                              {(u.full_name || "?")[0].toUpperCase()}
+                              {(u.username || "?")[0].toUpperCase()}
                             </div>
                           )}
                         </div>

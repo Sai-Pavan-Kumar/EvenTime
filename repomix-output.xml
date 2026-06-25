@@ -386,52 +386,43 @@ College students and young professionals in India.
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
 </file>
 
-<file path="src/app/about/page.tsx">
-import { Metadata } from "next";
-import { Sparkles, Users, Target } from "lucide-react";
-export const metadata: Metadata = {
-  title: "About Us | EvenTime",
-  description: "Learn more about EvenTime and our mission.",
-};
-export default function AboutPage() {
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pt-24 pb-32">
-      <div className="max-w-4xl mx-auto px-4 md:px-8">
-        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-100">
-          <div className="inline-flex items-center justify-center p-3 bg-brand-primary/10 rounded-2xl text-brand-primary mb-6">
-            <Sparkles className="w-8 h-8" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-heading font-black text-slate-900 mb-6 tracking-tight">
-            About EvenTime
-          </h1>
-          <p className="text-lg text-slate-600 font-medium mb-12 leading-relaxed max-w-2xl">
-            We built EvenTime to fix a simple problem: finding good tech events, startup meetups, and professional workshops is too chaotic. Our mission is to be the cleanest, most reliable directory for your career growth.
-          </p>
-          <div className="grid md:grid-cols-2 gap-8 mt-12 border-t border-slate-100 pt-12">
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
-                <Target className="w-6 h-6 text-emerald-500" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Our Mission</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                To connect ambitious individuals with the right opportunities. We filter the noise so you can focus on attending events that actually matter to your career.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Users className="w-6 h-6 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900">Community First</h3>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                EvenTime is built for the community. Whether you are a student, a founder, or a professional, our platform adapts to show what's relevant to you.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
 <file path="src/app/admin/colleges/page.tsx">
@@ -3537,43 +3528,52 @@ export const config = {
 };
 </file>
 
-<file path="README.md">
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+<file path="src/app/about/page.tsx">
+import { Metadata } from "next";
+import { Sparkles, Users, Target } from "lucide-react";
+export const metadata: Metadata = {
+  title: "About Us | EvenTime",
+  description: "Learn more about EvenTime and our mission.",
+};
+export default function AboutPage() {
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pt-24 pb-32">
+      <div className="max-w-4xl mx-auto px-4 md:px-8">
+        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-100">
+          <div className="inline-flex items-center justify-center p-3 bg-brand-primary/10 rounded-2xl text-brand-primary mb-6">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-heading font-black text-slate-900 mb-6 tracking-tight">
+            About EvenTime
+          </h1>
+          <p className="text-lg text-slate-600 font-medium mb-12 leading-relaxed max-w-2xl">
+            We built EvenTime to fix a simple problem: finding good tech events, startup meetups, and professional workshops is too chaotic. Our mission is to be the cleanest, most reliable directory for your career growth.
+          </p>
+          <div className="grid md:grid-cols-2 gap-8 mt-12 border-t border-slate-100 pt-12">
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+                <Target className="w-6 h-6 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Our Mission</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                To connect ambitious individuals with the right opportunities. We filter the noise so you can focus on attending events that actually matter to your career.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900">Community First</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                EvenTime is built for the community. Whether you are a student, a founder, or a professional, our platform adapts to show what's relevant to you.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
 </file>
 
 <file path="src/app/page.tsx">
@@ -5342,117 +5342,6 @@ export async function POST(request: Request) {
 }
 </file>
 
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  // Get today's date string (YYYY-MM-DD) to filter out past events
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-    .eq("status", "approved")
-    .ilike("city", decodedCity)
-    .gte("date_string", todayStr) // Only today & upcoming events
-    .order("date_string", { ascending: true });
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero */}
-      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-           <img 
-            src={cityConfig.coverImage} 
-            alt={decodedCity} 
-            className="w-full h-full object-cover"
-            // Okavela covers folder lo 21:9 lekapothe pata 16:9 image vesthundi
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = cityConfig.backgroundImage;
-            }}
-          />          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-          
-          {/* Content */}
-          <div className="absolute bottom-0 left-0 p-6 md:p-10 w-full">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="bg-white/20 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 border border-white/20 shadow-sm">
-                <MapPin className="w-3.5 h-3.5" />
-                {decodedCity}
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-heading font-black text-white capitalize drop-shadow-md">
-              {decodedCity}
-            </h1>
-            <p className="text-white/90 font-medium mt-2 md:mt-3 md:text-lg max-w-xl drop-shadow-md">
-              Events happening here
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading">
-            Upcoming Events
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/globals.css">
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -6686,6 +6575,43 @@ export async function toggleLeaderboardAction(formData: FormData) {
 }
 </file>
 
+<file path="src/app/events/[slug]/edit/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import { CreateEventForm } from "@/features/create-event/CreateEventForm";
+
+// We will build the modified CreateEventForm to handle edits in the next step
+export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only, college_id, colleges(name), status")
+    .eq("slug", slug)
+    .single() as any;
+
+  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
+  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
+
+  // Inside your EditEventPage return
+return (
+  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
+    {/* Clean Apple-style Header */}
+    <div className="max-w-2xl mx-auto mb-10">
+       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
+       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
+    </div>
+    
+    <CreateEventForm initialData={event} isEditing={true} />
+  </main>
+);
+}
+</file>
+
 <file path="src/app/profile/settings/actions.ts">
 "use server";
 
@@ -7057,40 +6983,91 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
-<file path="src/app/events/[slug]/edit/page.tsx">
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
-import { CreateEventForm } from "@/features/create-event/CreateEventForm";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
 
-// We will build the modified CreateEventForm to handle edits in the next step
-export default async function EditEventPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
-  const { data: event } = await supabase
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { data: events } = await supabase
     .from("events")
-    .select("id, slug, title, category, description, target_audience, date_string, start_time, end_date_string, end_time, location, city, is_virtual, is_free, price, registration_link, prizes, team_size, website, is_featured, registration_deadline, poster_url, creator_id, college_branch, college_year, college_only, college_id, colleges(name), status")
-    .eq("slug", slug)
-    .single() as any;
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+    .eq("status", "approved")
+    .ilike("city", decodedCity)
+    .gte("date_string", todayStr)
+    .order("date_string", { ascending: true });
 
-  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
-  if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
+  const cityConfig = getCityConfig(decodedCity);
 
-  // Inside your EditEventPage return
-return (
-  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
-    {/* Clean Apple-style Header */}
-    <div className="max-w-2xl mx-auto mb-10">
-       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
-       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
-    </div>
-    
-    <CreateEventForm initialData={event} isEditing={true} />
-  </main>
-);
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero */}
+      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+          <img 
+            src={cityConfig.backgroundImage} 
+            alt={decodedCity} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
 }
 </file>
 
@@ -7369,97 +7346,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/components/layout/Footer.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
-
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
-
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
-
-export function Footer() {
-  return (
-    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
-
-        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
-
-        {/* Brand */}
-        <div className="flex flex-col items-center gap-2 lg:items-start">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
-            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
-              EvenTime
-            </h3>
-          </div>
-          <p className="text-white/40 text-sm font-medium">
-            Your event search struggles end here.
-          </p>
-        </div>
-
-        {/* For any Queries */}
-        <div className="flex flex-col items-center gap-3 lg:items-start">
-          <h4 className="text-base font-bold text-white">For any Queries</h4>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
-            <InstagramIcon className="w-4 h-4" />
-            Message us on Instagram
-          </a>
-          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
-            <MapPin className="w-4 h-4" />
-            Hyderabad, India
-          </div>
-        </div>
-
-        {/* Join the Family */}
-        <div className="flex flex-col items-center gap-4 lg:items-start">
-          <h4 className="text-base font-bold text-white">Join the Family</h4>
-          <div className="flex items-center gap-4">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <InstagramIcon className="w-5 h-5" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <YoutubeIcon className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        </div>
-
-        {/* Divider with pill sitting on it */}
-        <div className="relative w-full flex items-center justify-center">
-          <div className="w-full h-px bg-white/10" />
-          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
-            The SurfBoard
-          </div>
-        </div>
-
-        {/* Copyright */}
-        <p className="text-xs font-medium text-white/30 -mt-2">
-          © {new Date().getFullYear()} EvenTime. All rights reserved.
-        </p>
-
-      </div>
-    </footer>
   );
 }
 </file>
@@ -8032,6 +7918,106 @@ export default async function SettingsPage() {
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
   return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+}
+</file>
+
+<file path="src/components/layout/Footer.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
+
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
+
+export function Footer() {
+  return (
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+
+        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
+
+                {/* Brand */}
+        <div className="flex flex-col items-center gap-2 lg:items-start">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              EvenTime
+            </h3>
+          </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+          {/* Action Pages Links */}
+          <div className="flex items-center gap-3 mt-1">
+            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
+          </div>
+        </div>
+
+
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3 lg:items-start">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
+          </div>
+        </div>
+
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4 lg:items-start">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        </div>
+
+        {/* Divider with pill sitting on it */}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="w-full h-px bg-white/10" />
+          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            The SurfBoard
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <p className="text-xs font-medium text-white/30 -mt-2">
+          © {new Date().getFullYear()} EvenTime. All rights reserved.
+        </p>
+
+      </div>
+    </footer>
+  );
 }
 </file>
 

@@ -211,7 +211,7 @@ export default async function EventPage({
   }
 
  // Fetch up to 3 interested user avatars for social proof
-  let interestedAvatars: { avatar_url: string | null; full_name: string | null }[] = [];
+  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
   {
     const { data: interestedRows } = await supabase
       .from("interested_events" as any)
@@ -223,7 +223,7 @@ export default async function EventPage({
       const userIds = interestedRows.map((r: any) => r.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("avatar_url, full_name")
+        .select("avatar_url, username")
         .in("id", userIds);
       if (profiles) interestedAvatars = profiles;
     }
