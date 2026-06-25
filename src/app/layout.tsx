@@ -4,7 +4,8 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer"; // Import the new Footer component
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
 
 // 1. Load Outfit font for your headings
 const outfit = Outfit({
@@ -61,15 +62,25 @@ export default function RootLayout({
       className={cn("h-full antialiased scroll-smooth", outfit.variable)}
       data-scroll-behavior="smooth"
     >
-      <head>
+<head>
         {/* Forcing the browser to load Switzer directly */}
         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
         <LaunchScreen /> {/* Added LaunchScreen component here */}
         
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
-        <div className="flex-1 w-full flex flex-col">
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
           {children}
         </div>
         
