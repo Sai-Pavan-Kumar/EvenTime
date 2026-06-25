@@ -10,16 +10,16 @@ interface ExtractionProps {
   setSelectedDate: (d: Date) => void;
   setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
   initialLink?: string;
+  initialIsTrusted?: boolean;
   currentEventId?: string;
 }
 
-export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, currentEventId  }: ExtractionProps) {
+export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, initialIsTrusted = false, currentEventId }: ExtractionProps) {  
   const [regLink, setRegLink] = useState(initialLink || "");
   const [isExtracting, setIsExtracting] = useState(false);
   const [linkDuplicateError, setLinkDuplicateError] = useState("");
   const [extractError, setExtractError] = useState("");
-  const [isTrusted, setIsTrusted] = useState(false);
-  const [trustWarning, setTrustWarning] = useState("");
+  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);  const [trustWarning, setTrustWarning] = useState("");
   const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
   
   const { checkDuplicateLink } = useDuplicateCheck();
