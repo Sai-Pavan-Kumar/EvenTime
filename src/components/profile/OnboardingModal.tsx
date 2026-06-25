@@ -117,15 +117,31 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     setShowDropdown(false);
   };
 
-  const handleSave = async () => {
+   const handleSave = async () => {
     // Guest user try chesthe login page ki pampiddam
     if (!user) {
       toast.error("Please sign in to complete your profile!");
-      router.push("/login"); // Note: Change "/login" if your auth route is different
+      router.push("/login");
       return;
     }
-
+    const finalUsername = username.trim().toLowerCase();
+    if (!finalUsername) {
+      toast.error("Username is required!");
+      return;
+    }
     setIsSaving(true);
+    // Check if username is unique
+    const { data: existingUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", finalUsername)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (existingUser) {
+      toast.error("This username is already taken. Please try another one.");
+      setIsSaving(false);
+      return;
+    }
     
     const updatePayload = {
       preferred_cities: cities,
@@ -136,13 +152,11 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
       user_type: role === "Student" ? 'student' : role.toLowerCase(),
       goals: categories.slice(0, 6),
       is_onboarded: true,
-      ...(username.trim() ? { username: username.trim().toLowerCase() } : {}),
+      username: finalUsername,
     };
-
-
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
-    
+
     if (error) {
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
@@ -192,10 +206,9 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
               
               <div className="space-y-4">
                 {/* 0. Username */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-text-secondary font-normal normal-case">(optional)</span></label>
-                  <input
-                    type="text"
+               <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
+                  <input                    type="text"
                     placeholder="e.g. john_doe"
                     value={username}
                     onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
@@ -365,7 +378,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
               <button 
                 onClick={handleSave} 
-                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
+                disabled={!username.trim() || cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}
+                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile
               </button>

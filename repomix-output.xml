@@ -166,6 +166,7 @@ src/app/leaderboard/page.tsx
 src/app/loading.tsx
 src/app/login/page.tsx
 src/app/page.tsx
+src/app/privacy/page.tsx
 src/app/profile/action.ts
 src/app/profile/loading.tsx
 src/app/profile/page.tsx
@@ -174,6 +175,7 @@ src/app/profile/settings/page.tsx
 src/app/profile/settings/SettingsClient.tsx
 src/app/robots.ts
 src/app/sitemap.ts
+src/app/terms/page.tsx
 src/components/layout/CalendarStrip.tsx
 src/components/layout/FeedbackModal.tsx
 src/components/layout/Footer.tsx
@@ -234,6 +236,94 @@ tsconfig.json
 <files>
 This section contains the contents of the repository's files.
 
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
 <file path=".openspec-ignore">
 # Dependencies
 node_modules
@@ -291,43 +381,57 @@ Thumbs.db
 }
 </file>
 
-<file path="eslint.config.mjs">
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
-</file>
-
-<file path="postcss.config.mjs">
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
+<file path="package.json">
+{
+  "name": "eventime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "context": "npx code-to-text . -o project_context.txt",
+    "lint": "eslint"
   },
-};
-
-export default config;
-</file>
-
-<file path="public/file.svg">
-<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
-</file>
-
-<file path="public/globe.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
+    "@base-ui/react": "^1.4.1",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-day-picker": "^10.0.0",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "react-leaflet": "^5.0.0",
+    "shadcn": "^4.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^25",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^10",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
 </file>
 
 <file path="public/llms.txt">
@@ -371,16 +475,43 @@ College students and young professionals in India.
 }
 </file>
 
-<file path="public/next.svg">
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
-</file>
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-<file path="public/vercel.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
-</file>
+## Getting Started
 
-<file path="public/window.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
 <file path="src/app/admin/colleges/page.tsx">
@@ -1790,6 +1921,67 @@ export default function Loading() {
 }
 </file>
 
+<file path="src/app/privacy/page.tsx">
+import { Metadata } from "next";
+import { Navbar } from "@/components/layout/Navbar";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | EvenTime",
+  description: "Privacy policy and data handling practices for EvenTime.",
+};
+
+export default function PrivacyPolicyPage() {
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        
+        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
+          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Privacy Policy</h1>
+          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
+          
+          <div className="space-y-8 text-slate-700 leading-relaxed">
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Information We Collect</h2>
+              <p>
+                When you sign up for EvenTime, we collect your email address and basic profile details (like your username and location preferences). This helps us personalize your event feed and verify your identity securely.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">2. How We Use Your Data</h2>
+              <p>
+                We use your data strictly to improve your experience on our platform. This includes showing you events in your city, recommending categories you care about, and keeping your account secure.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">3. Data Security (DPDP Compliant)</h2>
+              <p>
+                We value your privacy. Your passwords are encrypted using secure hashing algorithms, and we do not sell your personal data to third parties. You have the full right to request account deletion and data erasure at any time from your settings page.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Contact Us</h2>
+              <p>
+                If you have any questions or concerns about this Privacy Policy, please contact us at support@eventime.in.
+              </p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/profile/loading.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1963,6 +2155,81 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...cityUrls,
     ...eventUrls,
   ];
+}
+</file>
+
+<file path="src/app/terms/page.tsx">
+import { Metadata } from "next";
+import { Navbar } from "@/components/layout/Navbar";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | EvenTime",
+  description: "Terms of service and user agreements for EvenTime.",
+};
+
+export default function TermsOfServicePage() {
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        
+        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
+          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Terms of Service</h1>
+          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
+          
+          <div className="space-y-8 text-slate-700 leading-relaxed">
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Acceptance of Terms</h2>
+              <p>
+                By accessing and using EvenTime ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">2. User Accounts</h2>
+              <p>
+                To access certain features, you must register for an account. You agree to provide accurate information and are solely responsible for maintaining the confidentiality of your account credentials. We reserve the right to suspend or terminate accounts that violate our policies.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">3. User Conduct and Content</h2>
+              <p>
+                You agree not to use the Platform for any unlawful purpose. When submitting events or content, you ensure that you have the right to share such information and that it does not infringe on any third-party rights or contain malicious intent. EvenTime reserves the right to remove any content that violates these terms.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Intellectual Property</h2>
+              <p>
+                The Platform, including its original content, features, and functionality, are owned by EvenTime and are protected by international copyright, trademark, and other intellectual property laws.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">5. Disclaimer of Warranties</h2>
+              <p>
+                EvenTime serves as a discovery platform. We do not guarantee the accuracy, quality, or safety of any events listed by third parties. Your attendance at any event is solely at your own risk.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">6. Contact Information</h2>
+              <p>
+                For any questions regarding these Terms of Service, please contact us at support@eventime.in.
+              </p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
 </file>
 
@@ -3210,96 +3477,6 @@ optimize-existing-functions-again
 v1.60.4
 </file>
 
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
-}
-</file>
-
-<file path="package.json">
-{
-  "name": "eventime",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "context": "npx code-to-text . -o project_context.txt",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/s3-request-presigner": "^3.1045.0",
-    "@base-ui/react": "^1.4.1",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@phosphor-icons/react": "^2.1.10",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
-    "browser-image-compression": "^2.0.2",
-    "cheerio": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^1.14.0",
-    "next": "16.2.6",
-    "react": "19.2.6",
-    "react-day-picker": "^10.0.0",
-    "react-dom": "^19.2.6",
-    "react-easy-crop": "^5.5.7",
-    "react-leaflet": "^5.0.0",
-    "shadcn": "^4.7.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/leaflet": "^1.9.21",
-    "@types/node": "^25",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^10",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^6"
-  }
-}
-</file>
-
 <file path="proxy.ts">
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -3376,45 +3553,6 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
-</file>
-
-<file path="README.md">
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
 <file path="src/app/auth/callback/route.ts">
@@ -3498,11 +3636,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.in",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
     siteName: "EvenTime",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
         width: 1200,
         height: 630,
         alt: "EvenTime Platform",
@@ -3511,10 +3649,13 @@ export const metadata: Metadata = {
     locale: "en_IN",
     type: "website",
   },
-  twitter: {
+   twitter: {
     card: "summary_large_image",
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
   },
 };
 
@@ -3551,196 +3692,25 @@ export default function RootLayout({
 }
 </file>
 
-<file path="src/app/login/page.tsx">
-"use client";
+<file path="src/app/page.tsx">
+import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
+import { HomePageClient } from "@/lib/home/HomePageClient";
 
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock } from "lucide-react";
-import Image from "next/image";
-import { toast } from "sonner";
+export const dynamic = "force-dynamic"; 
 
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-    const [hasConsented, setHasConsented] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
- const handleLogin = async (provider: 'google' | 'github') => {
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    setIsLoading(provider);
-    await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
-
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
-    setIsLoading('email');
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 5) {
-        toast.error("Too many failed attempts. Please wait before trying again.");
-        setIsLockedOut(true);
-        
-        // Disable button for 30s
-        setTimeout(() => {
-          setIsLockedOut(false);
-          setAttempts(0); // Reset attempts so they can try again
-        }, 30000);
-      } else {
-        toast.error("Invalid email or password.");
-      }
-      setIsLoading(null);
-    } else {
-      setAttempts(0); // Reset attempts on success
-      router.push("/");
-      router.refresh();
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
-      {/* THE PERFECT 2:1 SPLIT LAYOUT
-        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
-        - Mobile: auto height, vertical stack
-      */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
-      >
-        
-        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
-          {/* Aesthetic Background Glows */}
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
-
-          {/* Top Logo */}
-          <div className="relative z-10 w-16 h-16">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
-          </div>
-
-          {/* Center Pitch */}
-          <div className="relative z-10 mt-auto mb-16">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              Stop Searching.<br />Start Attending.
-            </h1>
-            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
-              The ultimate stage for Gen-Z curators and seekers to discover the best events.
-            </p>
-          </div>
-
-          {/* Bottom Footer Area */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="h-1 w-8 bg-white/30 rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
-        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
-          
-          {/* Mobile Logo (Visible only on small screens) */}
-          <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
-            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="password" name="password" required placeholder="••••••••" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-              <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                I consent to the collection of my email and college details to verify my student status and personalize my event feed, as per the <a href="#" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
-              </label>
-            </div>
-            <button 
-              type="submit" disabled={!!isLoading || isLockedOut}
-              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-            >
-              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
-        </div>
-      </motion.div>
-    </main>
-  );
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
+}) {
+  // Await the params before passing them
+  const params = await searchParams;
+  
+  // Fetch all the heavily lifted data securely from the backend logic
+  const data = await fetchHomePageData(params);
+  
+  // Pass the returned props directly into our separated Client UI component
+  return <HomePageClient {...data} />;
 }
 </file>
 
@@ -4414,6 +4384,78 @@ export function createClient() {
 
   return supabaseClient;
 }
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
+              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
+              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/admin/users/page.tsx">
@@ -5125,6 +5167,66 @@ export default async function CityPage({
 }
 </file>
 
+<file path="src/app/globals.css">
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Colors - Light Mode Primary */
+  --color-brand-primary: #6C47FF;
+  --color-brand-accent: #F59E0B;
+  --color-brand-anchor: #005AE0;
+  --color-surface-base: #F5F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F0F0F8;
+  --color-text-primary: #1D1D1F;
+  --color-text-secondary: #86868B;
+
+  /* Typography */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px Base Unit) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  body {
+    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
+    @apply bg-surface-base text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
+    @apply font-heading tracking-[-0.02em];
+  }
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</file>
+
 <file path="src/app/leaderboard/page.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { createClient } from "@/lib/supabase/server";
@@ -5370,25 +5472,196 @@ export default async function LeaderboardPage() {
 }
 </file>
 
-<file path="src/app/page.tsx">
-import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
-import { HomePageClient } from "@/lib/home/HomePageClient";
+<file path="src/app/login/page.tsx">
+"use client";
 
-export const dynamic = "force-dynamic"; 
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Lock } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
-}) {
-  // Await the params before passing them
-  const params = await searchParams;
-  
-  // Fetch all the heavily lifted data securely from the backend logic
-  const data = await fetchHomePageData(params);
-  
-  // Pass the returned props directly into our separated Client UI component
-  return <HomePageClient {...data} />;
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+    const [hasConsented, setHasConsented] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    setIsLoading(provider);
+    await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    if (isLockedOut) {
+      toast.error("Too many failed attempts. Please wait before trying again.");
+      return;
+    }
+
+    setIsLoading('email');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      
+      if (newAttempts >= 5) {
+        toast.error("Too many failed attempts. Please wait before trying again.");
+        setIsLockedOut(true);
+        
+        // Disable button for 30s
+        setTimeout(() => {
+          setIsLockedOut(false);
+          setAttempts(0); // Reset attempts so they can try again
+        }, 30000);
+      } else {
+        toast.error("Invalid email or password.");
+      }
+      setIsLoading(null);
+    } else {
+      setAttempts(0); // Reset attempts on success
+      router.push("/");
+      router.refresh();
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
+      {/* THE PERFECT 2:1 SPLIT LAYOUT
+        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
+        - Mobile: auto height, vertical stack
+      */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
+      >
+        
+        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
+        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+          {/* Aesthetic Background Glows */}
+          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
+
+          {/* Top Logo */}
+          <div className="relative z-10 w-16 h-16">
+            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+          </div>
+
+          {/* Center Pitch */}
+          <div className="relative z-10 mt-auto mb-16">
+            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
+              Stop Searching.<br />Start Attending.
+            </h1>
+            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
+              The ultimate stage for Gen-Z curators and seekers to discover the best events.
+            </p>
+          </div>
+
+          {/* Bottom Footer Area */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="h-1 w-8 bg-white/30 rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
+        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
+          
+          {/* Mobile Logo (Visible only on small screens) */}
+          <div className="md:hidden w-14 h-14 relative mb-8">
+            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
+            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="email" name="email" required placeholder="name@email.com" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="password" name="password" required placeholder="••••••••" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
+                </label>
+            </div>
+            <button 
+              type="submit" disabled={!!isLoading || isLockedOut}
+              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+            >
+              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          {/* Clean Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
+          </div>
+
+          {/* Social Logins */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
+              GitHub
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+    </main>
+  );
 }
 </file>
 
@@ -5541,78 +5814,6 @@ export const getCityConfig = (city: string) => {
     coverImage: `/cities/covers/${key}.webp`
   };
 };
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
-              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/admin/actions.ts">
@@ -6199,66 +6400,6 @@ export default async function AdminDashboard() {
       </div>
     </main>
   );
-}
-</file>
-
-<file path="src/app/globals.css">
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@theme {
-  /* Colors - Light Mode Primary */
-  --color-brand-primary: #6C47FF;
-  --color-brand-accent: #F59E0B;
-  --color-brand-anchor: #005AE0;
-  --color-surface-base: #F5F5F7;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #F0F0F8;
-  --color-text-primary: #1D1D1F;
-  --color-text-secondary: #86868B;
-
-  /* Typography */
-  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-
-  /* Spacing (4px Base Unit) */
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-}
-
-@layer base {
-  body {
-    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
-    @apply bg-surface-base text-text-primary font-sans antialiased;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
-    @apply font-heading tracking-[-0.02em];
-  }
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 </file>
 
@@ -7417,86 +7558,6 @@ export function CityGrid({ events }: CityGridProps) {
           </div>
         </Link>
       ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-          />
-        );
-      })}
-      </AnimatePresence>
     </div>
   );
 }
@@ -9297,398 +9358,6 @@ Promise<{ tab?: string }>; }) {
 }
 </file>
 
-<file path="src/components/profile/OnboardingModal.tsx">
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Sparkles, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
-import { createCollegeAction } from "@/app/profile/action"; // NEW: Import Server Action
-import { CITIES } from "@/lib/constants/cities";
-import { toast } from "sonner"; // NEW: Added toast import
-import { categoriesList } from "@/features/create-event/constants";
-import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { DelayedPrompt } from "./DelayedActionModal"; // NEW: Clean extracted component
-
-export interface OnboardingProps {
-  user: AuthUser | null;
-  profile: Partial<ProfileRow> | null;
-}
-
-export function OnboardingModal({ user, profile }: OnboardingProps) {
-  const [step, setStep] = useState(1);
-  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
-
-  const toggleCity = (cityName: string) => {
-    if (cities.includes(cityName)) {
-      setCities(cities.filter(c => c !== cityName));
-    } else if (cities.length < 3) {
-      setCities([...cities, cityName]);
-    }
-  };
-  const [college, setCollege] = useState("");
-  const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
-  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]); // NEW: Master dataset store array array
-  const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
-  const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
-  
-  const [role, setRole] = useState("");
-
-  const [year, setYear] = useState("");
-  const [yearSearchQuery, setYearSearchQuery] = useState("");
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
-
-  const [branch, setBranch] = useState("");
-
-  const [categories, setCategories] = useState<string[]>([]);
-  const [username, setUsername] = useState("");
-const [isSaving, setIsSaving] = useState(false);
-const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
-  // NEW: State to control manual appearance from banner
-  // Signed-in but not-onboarded users get the modal right away (forced).
-  // Guests still go through DelayedPrompt's soft, dismissible teaser.
-  const [isModalOpen, setIsModalOpen] = useState(!!user); 
-  
-  const router = useRouter();
-  const supabase = createClient();
-
-  // NEW: Click outside handler to close all dropdowns
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowDropdown(false);
-      setShowYearDropdown(false);
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-
-  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
-  useEffect(() => {
-    const query = searchQuery.trim();
-    if (!user || profile?.is_onboarded || !query) {
-      setCollegesList([]);
-      return;
-    }
-    setIsSearchingColleges(true);
-    const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("colleges")
-        .select("id, name, slug, state")
-        .ilike("name", `%${query}%`)
-        .order("name", { ascending: true })
-        .limit(10);
-      setCollegesList((data as CollegeRow[]) || []);
-      setIsSearchingColleges(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, user, profile]);
-
-  // Hide everything if already onboarded
-  if (profile?.is_onboarded) return null;
-
-  // If modal is not manually opened yet, show the new isolated clean popup
-  if (!isModalOpen) {
-    return <DelayedPrompt user={user} profile={profile} onOpen={() => setIsModalOpen(true)} />;
-  }
-
-  // NEW: Notion-style Create College Function via Server Action
-  const handleCreateCollege = async (newCollegeName: string) => {
-    setIsCreatingCollege(true);
-    
-    // Call the secure server action instead of hitting the DB directly
-    const result = await createCollegeAction(newCollegeName);
-
-    if (result.data && !result.error) {
-      // Cast to CollegeRow in case your type requires specific fields returning from action
-      setCollegesList(prev => [...prev, result.data as CollegeRow]); 
-      setCollege(result.data.name);
-      setCollegeId(result.data.id);
-      setSearchQuery(result.data.name);
-    } else {
-      console.error("Failed to add college:", result.error);
-    }
-    
-    setIsCreatingCollege(false);
-    setShowDropdown(false);
-  };
-
-  const handleSave = async () => {
-    // Guest user try chesthe login page ki pampiddam
-    if (!user) {
-      toast.error("Please sign in to complete your profile!");
-      router.push("/login"); // Note: Change "/login" if your auth route is different
-      return;
-    }
-
-    setIsSaving(true);
-    
-    const updatePayload = {
-      preferred_cities: cities,
-      college: role === "Student" ? college : null,
-      college_id: role === "Student" ? collegeId : null,
-      graduation_year: role === "Student" ? year : null,
-      branch: role === "Student" ? branch : null,
-      user_type: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: categories.slice(0, 6),
-      is_onboarded: true,
-      ...(username.trim() ? { username: username.trim().toLowerCase() } : {}),
-    };
-
-
-    // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
-    const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
-    
-    if (error) {
-      toast.error("Failed to save. Please try again.");
-      setIsSaving(false);
-      return;
-    }
-    
-    // Immediately navigate — the animation IS the feedback
-    router.refresh();
-    setIsSaving(false);
-  };
-
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
-      <div className="absolute inset-0 bg-slate-900/60" />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden p-8"
-      >
-        <AnimatePresence mode="wait">
-          
-          {/* STEP 1: The Welcome */}
-          {step === 1 && !isSaving && (
-            <motion.div key="step1" exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
-              <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto text-brand-primary">
-                <Sparkles className="w-8 h-8" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
-                <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
-              </div>
-              <button 
-                onClick={() => setStep(2)}
-                className="w-full bg-text-primary hover:bg-black text-white py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                Let's setup <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {/* STEP 2: The Details */}
-          {step === 2 && !isSaving && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-              <h2 className="text-xl font-heading font-extrabold text-text-primary">Tell us about yourself</h2>
-              
-              <div className="space-y-4">
-                {/* 0. Username */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-text-secondary font-normal normal-case">(optional)</span></label>
-                  <input
-                    type="text"
-                    placeholder="e.g. john_doe"
-                    value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                  />
-                </div>
-
-                {/* 1. Location Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
-                  {cities.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {cities.map(c => (
-                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                          {c}
-                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    {CITIES.map(loc => {
-                      const isSelected = cities.includes(loc);
-                      const isDisabled = !isSelected && cities.length >= 3;
-                      return (
-                        <button
-                          key={loc}
-                          type="button"
-                          onClick={() => toggleCity(loc)}
-                          disabled={isDisabled}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                            isSelected
-                              ? "bg-text-primary text-white border-text-primary"
-                              : isDisabled
-                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
-                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
-                          }`}
-                        >
-                          {loc}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Role Selector */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What are you?</label>
-                  <select 
-                    value={role} 
-                    onChange={e => setRole(e.target.value)}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
-                  >
-                    <option value="" disabled>Select Role</option>
-                    {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Conditional College, Year (Only if Student) */}
-                <AnimatePresence>
-                  {role === "Student" && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
-                      
-                      <p className="text-xs text-text-secondary font-medium -mt-1">Add your college — and we&apos;ll surface what&apos;s happening on your own campus first.</p>
-
-                      {/* COLLEGE SELECTOR */}
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="text" 
-                          placeholder="Search & Select Your College" 
-                          value={searchQuery} 
-                          onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                          onFocus={() => setShowDropdown(true)}
-                          className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                        />
-                        {showDropdown && searchQuery.trim().length > 0 && (
-                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                            {isSearchingColleges && (
-                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
-                            )}
-                            {!isSearchingColleges && collegesList.map(item => (
-                                <button key={item.id} type="button" onClick={() => { setCollege(item.name); setCollegeId(item.id); setSearchQuery(item.name); setShowDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
-                                  🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
-                                </button>
-                              ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
-                              <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                {isCreatingCollege ? <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-
-                        {/* BRANCH SELECTOR */}
-                        <div className="relative">
-                          <select
-                            value={branch}
-                            onChange={e => setBranch(e.target.value)}
-                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium appearance-none"
-                          >
-                            <option value="" disabled>Branch</option>
-                            {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                          </select>
-                        </div>
-
-                        {/* YEAR SELECTOR */}
-                          <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
-                            type="text" 
-                            placeholder="Year (e.g. 2026)" 
-                            value={yearSearchQuery} 
-                            onChange={e => { setYearSearchQuery(e.target.value); setShowYearDropdown(true); }}
-                            onFocus={() => setShowYearDropdown(true)}
-                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                          />
-                          {showYearDropdown && yearSearchQuery.trim().length > 0 && (
-                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                              {yearList.filter(item => item.includes(yearSearchQuery)).map(item => (
-                                <button key={item} type="button" onClick={() => { setYear(item); setYearSearchQuery(item); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
-                                  {item}
-                                </button>
-                              ))}
-                              {!yearList.some(item => item === yearSearchQuery.trim()) && (
-                                <button type="button" onClick={() => { setYearList(prev => [...prev, yearSearchQuery]); setYear(yearSearchQuery); setYearSearchQuery(yearSearchQuery); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                  + Add "{yearSearchQuery}"
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* 4. Categories Selector */}
-                <div className="space-y-3 pt-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
-                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
-                    {categoriesList.map(opt => {
-                      const isSelected = categories.includes(opt);
-                      const isDisabled = !isSelected && categories.length >= 6;
-                      return (
-                        <button
-                          key={opt} type="button"
-                          disabled={isDisabled}
-                          onClick={() => {
-                            if (isSelected) setCategories(categories.filter(i => i !== opt));
-                            else if (categories.length < 6) setCategories([...categories, opt]);
-                          }}
-                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={handleSave} 
-                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
-              >
-                Complete Profile
-              </button>
-            </motion.div>
-          )}
-
-          {/* LOADING STATE: The Magic Animation */}
-          {isSaving && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 flex flex-col items-center justify-center space-y-4">
-              <div className="w-12 h-12 border-4 border-surface-base border-t-brand-primary rounded-full animate-spin" />
-              <p className="font-heading font-bold text-lg text-text-primary animate-pulse">
-                Gathering events to match your preferences...
-              </p>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepMandatory.tsx">
 "use client";
 
@@ -10088,6 +9757,478 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             )}
           </div>
         </motion.div>
+  );
+}
+</file>
+
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
+<file path="src/components/profile/OnboardingModal.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, CheckCircle2, Sparkles, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
+import { createCollegeAction } from "@/app/profile/action"; // NEW: Import Server Action
+import { CITIES } from "@/lib/constants/cities";
+import { toast } from "sonner"; // NEW: Added toast import
+import { categoriesList } from "@/features/create-event/constants";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { DelayedPrompt } from "./DelayedActionModal"; // NEW: Clean extracted component
+
+export interface OnboardingProps {
+  user: AuthUser | null;
+  profile: Partial<ProfileRow> | null;
+}
+
+export function OnboardingModal({ user, profile }: OnboardingProps) {
+  const [step, setStep] = useState(1);
+  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
+
+  const toggleCity = (cityName: string) => {
+    if (cities.includes(cityName)) {
+      setCities(cities.filter(c => c !== cityName));
+    } else if (cities.length < 3) {
+      setCities([...cities, cityName]);
+    }
+  };
+  const [college, setCollege] = useState("");
+  const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
+  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]); // NEW: Master dataset store array array
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
+  const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
+  
+  const [role, setRole] = useState("");
+
+  const [year, setYear] = useState("");
+  const [yearSearchQuery, setYearSearchQuery] = useState("");
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
+
+  const [branch, setBranch] = useState("");
+
+  const [categories, setCategories] = useState<string[]>([]);
+  const [username, setUsername] = useState("");
+const [isSaving, setIsSaving] = useState(false);
+const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
+  const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
+  // NEW: State to control manual appearance from banner
+  // Signed-in but not-onboarded users get the modal right away (forced).
+  // Guests still go through DelayedPrompt's soft, dismissible teaser.
+  const [isModalOpen, setIsModalOpen] = useState(!!user); 
+  
+  const router = useRouter();
+  const supabase = createClient();
+
+  // NEW: Click outside handler to close all dropdowns
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+      setShowYearDropdown(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!user || profile?.is_onboarded || !query) {
+      setCollegesList([]);
+      return;
+    }
+    setIsSearchingColleges(true);
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("colleges")
+        .select("id, name, slug, state")
+        .ilike("name", `%${query}%`)
+        .order("name", { ascending: true })
+        .limit(10);
+      setCollegesList((data as CollegeRow[]) || []);
+      setIsSearchingColleges(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, user, profile]);
+
+  // Hide everything if already onboarded
+  if (profile?.is_onboarded) return null;
+
+  // If modal is not manually opened yet, show the new isolated clean popup
+  if (!isModalOpen) {
+    return <DelayedPrompt user={user} profile={profile} onOpen={() => setIsModalOpen(true)} />;
+  }
+
+  // NEW: Notion-style Create College Function via Server Action
+  const handleCreateCollege = async (newCollegeName: string) => {
+    setIsCreatingCollege(true);
+    
+    // Call the secure server action instead of hitting the DB directly
+    const result = await createCollegeAction(newCollegeName);
+
+    if (result.data && !result.error) {
+      // Cast to CollegeRow in case your type requires specific fields returning from action
+      setCollegesList(prev => [...prev, result.data as CollegeRow]); 
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setSearchQuery(result.data.name);
+    } else {
+      console.error("Failed to add college:", result.error);
+    }
+    
+    setIsCreatingCollege(false);
+    setShowDropdown(false);
+  };
+
+  const handleSave = async () => {
+    // Guest user try chesthe login page ki pampiddam
+    if (!user) {
+      toast.error("Please sign in to complete your profile!");
+      router.push("/login"); // Note: Change "/login" if your auth route is different
+      return;
+    }
+
+    setIsSaving(true);
+    
+    const updatePayload = {
+      preferred_cities: cities,
+      college: role === "Student" ? college : null,
+      college_id: role === "Student" ? collegeId : null,
+      graduation_year: role === "Student" ? year : null,
+      branch: role === "Student" ? branch : null,
+      user_type: role === "Student" ? 'student' : role.toLowerCase(),
+      goals: categories.slice(0, 6),
+      is_onboarded: true,
+      ...(username.trim() ? { username: username.trim().toLowerCase() } : {}),
+    };
+
+
+    // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
+    const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
+    
+    if (error) {
+      toast.error("Failed to save. Please try again.");
+      setIsSaving(false);
+      return;
+    }
+    
+    // Immediately navigate — the animation IS the feedback
+    router.refresh();
+    setIsSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
+      <div className="absolute inset-0 bg-slate-900/60" />
+       <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 max-h-[90vh] overflow-y-auto p-8 custom-scrollbar"
+      >
+        <AnimatePresence mode="wait">
+          
+          {/* STEP 1: The Welcome */}
+          {step === 1 && !isSaving && (
+            <motion.div key="step1" exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
+              <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto text-brand-primary">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
+                <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
+              </div>
+              <button 
+                onClick={() => setStep(2)}
+                className="w-full bg-text-primary hover:bg-black text-white py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                Let's setup <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* STEP 2: The Details */}
+          {step === 2 && !isSaving && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <h2 className="text-xl font-heading font-extrabold text-text-primary">Tell us about yourself</h2>
+              
+              <div className="space-y-4">
+                {/* 0. Username */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-text-secondary font-normal normal-case">(optional)</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. john_doe"
+                    value={username}
+                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
+                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                  />
+                </div>
+
+                {/* 1. Location Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
+                  {cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {cities.map(c => (
+                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                          {c}
+                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {CITIES.map(loc => {
+                      const isSelected = cities.includes(loc);
+                      const isDisabled = !isSelected && cities.length >= 3;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => toggleCity(loc)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-text-primary text-white border-text-primary"
+                              : isDisabled
+                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
+                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
+                          }`}
+                        >
+                          {loc}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Role Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What are you?</label>
+                  <select 
+                    value={role} 
+                    onChange={e => setRole(e.target.value)}
+                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
+                  >
+                    <option value="" disabled>Select Role</option>
+                    {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Conditional College, Year (Only if Student) */}
+                <AnimatePresence>
+                  {role === "Student" && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
+                      
+                      <p className="text-xs text-text-secondary font-medium -mt-1">Add your college — and we&apos;ll surface what&apos;s happening on your own campus first.</p>
+
+                      {/* COLLEGE SELECTOR */}
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="text" 
+                          placeholder="Search & Select Your College" 
+                          value={searchQuery} 
+                          onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                          onFocus={() => setShowDropdown(true)}
+                          className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                        />
+                        {showDropdown && searchQuery.trim().length > 0 && (
+                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
+                            {isSearchingColleges && (
+                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                            )}
+                            {!isSearchingColleges && collegesList.map(item => (
+                                <button key={item.id} type="button" onClick={() => { setCollege(item.name); setCollegeId(item.id); setSearchQuery(item.name); setShowDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
+                                  🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
+                                </button>
+                              ))}
+                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
+                              <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                                {isCreatingCollege ? <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+
+                        {/* BRANCH SELECTOR */}
+                        <div className="relative">
+                          <select
+                            value={branch}
+                            onChange={e => setBranch(e.target.value)}
+                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium appearance-none"
+                          >
+                            <option value="" disabled>Branch</option>
+                            {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+
+                        {/* YEAR SELECTOR */}
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
+                            type="text" 
+                            placeholder="Year (e.g. 2026)" 
+                            value={yearSearchQuery} 
+                            onChange={e => { setYearSearchQuery(e.target.value); setShowYearDropdown(true); }}
+                            onFocus={() => setShowYearDropdown(true)}
+                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                          />
+                          {showYearDropdown && yearSearchQuery.trim().length > 0 && (
+                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
+                              {yearList.filter(item => item.includes(yearSearchQuery)).map(item => (
+                                <button key={item} type="button" onClick={() => { setYear(item); setYearSearchQuery(item); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
+                                  {item}
+                                </button>
+                              ))}
+                              {!yearList.some(item => item === yearSearchQuery.trim()) && (
+                                <button type="button" onClick={() => { setYearList(prev => [...prev, yearSearchQuery]); setYear(yearSearchQuery); setYearSearchQuery(yearSearchQuery); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                                  + Add "{yearSearchQuery}"
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* 4. Categories Selector */}
+                <div className="space-y-3 pt-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
+                    {categoriesList.map(opt => {
+                      const isSelected = categories.includes(opt);
+                      const isDisabled = !isSelected && categories.length >= 6;
+                      return (
+                        <button
+                          key={opt} type="button"
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (isSelected) setCategories(categories.filter(i => i !== opt));
+                            else if (categories.length < 6) setCategories([...categories, opt]);
+                          }}
+                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleSave} 
+                disabled={cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
+              >
+                Complete Profile
+              </button>
+            </motion.div>
+          )}
+
+          {/* LOADING STATE: The Magic Animation */}
+          {isSaving && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 flex flex-col items-center justify-center space-y-4">
+              <div className="w-12 h-12 border-4 border-surface-base border-t-brand-primary rounded-full animate-spin" />
+              <p className="font-heading font-bold text-lg text-text-primary animate-pulse">
+                Gathering events to match your preferences...
+              </p>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </motion.div>
+    </div>
   );
 }
 </file>
