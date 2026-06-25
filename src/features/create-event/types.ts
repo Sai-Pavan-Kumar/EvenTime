@@ -6,6 +6,8 @@ export interface CreateEventFormProps {
     college_branch?: string | null;
     college_year?: string | null;
     college_only?: boolean | null;
+    colleges?: { name: string } | null;
+    status?: string | null;
   };
   isEditing?: boolean;
 }

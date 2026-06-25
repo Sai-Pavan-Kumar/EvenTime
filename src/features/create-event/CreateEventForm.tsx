@@ -28,7 +28,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   // Unified State Object
   const [eventData, setEventData] = useState({
     regLink: initialData?.registration_link || "",
-    isTrustedDomain: true,
+    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
     title: initialData?.title || "",
     category: initialData?.category || "",
     isCreatingNewCategory: false,
@@ -42,7 +42,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     collegeYear: initialData?.college_year || "",
     collegeOnly: initialData?.college_only || false,
     collegeId: initialData?.college_id || null,
-    collegeName: "",
+    collegeName: initialData?.colleges?.name || "",
     selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
     selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
     selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
@@ -83,13 +83,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
   const { isSubmitting, submitEvent } = useEventSubmit();
 
-   // Re-run domain trust check on edit load so isTrustedDomain reflects the real status
-  useEffect(() => {
-    if (isEditing && initialData?.registration_link) {
-      extraction.handleLinkInput(initialData.registration_link);
-    }
-  }, []);
-
+   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
+   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
   const handleSubmit = () => {
     submitEvent({
       title: eventData.title,
