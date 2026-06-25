@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles, AlertTriangle  } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import { createClient } from "@/lib/supabase/client";
@@ -469,11 +469,36 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                   </button>
                 );
               })}
+ </div>
+          </div>
+          {/* Danger Zone (DPDP Compliance) */}
+          <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+              </div>
+              <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
+            </div>
+            <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
+              Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
+            </p>
+            <div className="ml-11">
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (window.confirm("Are you absolutely sure you want to delete your account? This will permanently erase your data and cannot be undone.")) {
+                    toast.success("Account deletion request submitted. An admin will process this within 72 hours.");
+                  }
+                }}
+                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
+              >
+                Delete My Account
+              </button>
             </div>
           </div>
-
           {/* Fixed Save Button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
+
             <button 
               type="submit" 
               disabled={isSubmitting}

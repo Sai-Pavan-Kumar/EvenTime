@@ -12,10 +12,15 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
+    const [hasConsented, setHasConsented] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
-  const handleLogin = async (provider: 'google' | 'github') => {
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
     setIsLoading(provider);
     await supabase.auth.signInWithOAuth({
       provider: provider,
@@ -25,7 +30,10 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
     if (isLockedOut) {
       toast.error("Too many failed attempts. Please wait before trying again.");
       return;
@@ -137,7 +145,18 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+              <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                I consent to the collection of my email and college details to verify my student status and personalize my event feed, as per the <a href="#" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
+              </label>
+            </div>
             <button 
               type="submit" disabled={!!isLoading || isLockedOut}
               className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"

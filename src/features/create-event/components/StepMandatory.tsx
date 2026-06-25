@@ -12,7 +12,7 @@ import type { CollegeRow } from "@/types";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing }: any) {
   
   // SECURE ADMIN CHECK
   const [isAdmin, setIsAdmin] = useState(false);
@@ -391,7 +391,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
               </button>
             ) : (
               <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-[#6C47FF] hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
-                 {extraction.isTrusted ? "Post your event" : "Submit Event"} <CheckCircle2 className="w-5 h-5" />
+              {isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")} <CheckCircle2 className="w-5 h-5" />
               </button>
             )}
           </div>

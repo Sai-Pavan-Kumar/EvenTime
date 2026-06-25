@@ -148,6 +148,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               isSubmitting={isSubmitting && !isAdminFeatureEnabled}
               onSubmit={handleSubmit}
               isAdminFeatureEnabled={isAdminFeatureEnabled}
+              isEditing={isEditing}
             />
           )}
           {step === 1 && (
@@ -158,6 +159,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               onBack={() => setStep(0)} 
               onSubmit={handleSubmit} 
               isSubmitting={isSubmitting}
+              isEditing={isEditing}
             />
           )}
         </AnimatePresence>

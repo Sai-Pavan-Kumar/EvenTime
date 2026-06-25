@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Sparkles, CheckCircle2, UploadCloud, Crop } from "lucide-react";
 import Cropper from "react-easy-crop";
 
-export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting }: any) {
+export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing }: any) {
   
   return (
     <motion.div key="stepFeatured" initial={{ x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 24, opacity: 0 }} className="space-y-8">
@@ -65,8 +65,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
       <div className="pt-8 border-t border-slate-200 flex justify-between items-center">
         <button type="button" onClick={onBack} className="flex items-center gap-2 text-slate-500 font-bold px-4 py-2"><ArrowLeft className="w-4 h-4" /> Back</button>
         <button type="button" onClick={onSubmit} disabled={isSubmitting || (data.isFeatured && !crop.previewUrl)} className="bg-[#6C47FF] hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
-          {data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval"} <CheckCircle2 className="w-4 h-4" />
-        </button>
+        {isEditing ? "Update Event" : (data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval")} <CheckCircle2 className="w-4 h-4" />        </button>
       </div>
     </motion.div>
   );
