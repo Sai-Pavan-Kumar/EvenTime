@@ -429,8 +429,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
             )}
           </AnimatePresence>
 
-          {/* Editable: Event Categories */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+                    {/* Editable: Event Categories */}
+          <div className="bg-white rounded-[24px] border border-slate-100 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
@@ -469,8 +469,9 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                   </button>
                 );
               })}
- </div>
+            </div>
           </div>
+
           {/* Danger Zone (DPDP Compliance) */}
           <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
             <div className="flex items-center gap-3 mb-2">
@@ -486,8 +487,21 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               <button 
                 type="button"
                 onClick={async () => {
-                  if (window.confirm("Are you absolutely sure you want to delete your account? This will permanently erase your data and cannot be undone.")) {
-                    toast.success("Account deletion request submitted. An admin will process this within 72 hours.");
+                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
+                    const supabase = createClient();
+                    
+                    // TS Error ni bypass cheyadaniki 'as any' vadutunnam
+                    const { error } = await supabase.rpc('delete_user' as any);
+                    
+                    if (error) {
+                      toast.error("Failed to delete account. Please try again.");
+                      console.error("Delete user error:", error);
+                      return;
+                    }
+
+                    await supabase.auth.signOut();
+                    toast.success("Your account has been permanently deleted.");
+                    router.push("/login");
                   }
                 }}
                 className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
@@ -496,9 +510,9 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               </button>
             </div>
           </div>
+
           {/* Fixed Save Button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
-
             <button 
               type="submit" 
               disabled={isSubmitting}
@@ -517,6 +531,5 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
         </form>
       </div>
     </main>
-
   );
 }
