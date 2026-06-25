@@ -26,7 +26,7 @@ export function Footer() {
 
         <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
 
-        {/* Brand */}
+                {/* Brand */}
         <div className="flex flex-col items-center gap-2 lg:items-start">
           <div className="flex items-center gap-3">
             <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
@@ -37,7 +37,16 @@ export function Footer() {
           <p className="text-white/40 text-sm font-medium">
             Your event search struggles end here.
           </p>
+          {/* Action Pages Links */}
+          <div className="flex items-center gap-3 mt-1">
+            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
+          </div>
         </div>
+
 
         {/* For any Queries */}
         <div className="flex flex-col items-center gap-3 lg:items-start">
