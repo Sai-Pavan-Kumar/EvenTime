@@ -2,21 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
-import { 
-  format, 
-  isSameDay, 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  eachDayOfInterval, 
-  addMonths, 
-  subMonths, 
-  isSameMonth,
-  parseISO,
-  differenceInCalendarDays
-} from "date-fns";
+import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import NProgress from "nprogress";
+
 
 export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
   const router = useRouter();
@@ -38,6 +27,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
   );
 
   const handleDateClick = (date: Date) => {
+    NProgress.start();
     const standardDateStr = format(date, "yyyy-MM-dd");
     const queryDateStr = standardDateStr;
 

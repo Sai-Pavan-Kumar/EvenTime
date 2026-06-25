@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import NProgress from "nprogress";
+
 
 export interface FilterChipsProps {
   dynamicChips: { name: string; value: string; count?: number }[];
@@ -34,6 +36,7 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
       <select
         value={activeVal || ""}
         onChange={(e) => {
+          NProgress.start();
           const val = e.target.value;
           const params = new URLSearchParams();
 

@@ -11,6 +11,8 @@ import { EventGrid } from "@/lib/home/EventGrid";
 import { FeedbackModal } from "./FeedbackModal";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { AuthUser } from "@/types";
+import NProgress from "nprogress";
+
 
 const calculateCompletion = (profile: any) => {
   if (!profile) return 0;
@@ -57,6 +59,10 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const locationParam = searchParams.get("location") || undefined;
   const branchParam = searchParams.get("branch") || undefined;
   const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
+
+  useEffect(() => {
+    NProgress.done();
+  }, [pathname, searchParams]);
 
   const handleProtectedAction = (e: React.MouseEvent) => {
     if (!user) {
@@ -208,6 +214,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    NProgress.start();
     if (searchQuery.trim()) {
       router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
     } else {
