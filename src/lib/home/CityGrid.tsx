@@ -39,10 +39,10 @@ export function CityGrid({ events }: CityGridProps) {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {cities.map(([city, count]) => (
+     {cities.map(([city, count]) => (
         <Link
           key={city}
-          href={{ pathname: "/", query: { location: city, view: "list" } }}
+          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
           className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
         >
           <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
