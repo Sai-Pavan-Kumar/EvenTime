@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles, AlertTriangle  } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import { createClient } from "@/lib/supabase/client";
@@ -50,6 +50,8 @@ export default function SettingsClient({
 const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   
+  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin';
+
  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
   useEffect(() => {
     const query = collegeSearchQuery.trim();
@@ -101,7 +103,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const toggleCity = (cityName: string) => {
     if (selectedCities.includes(cityName)) {
       setSelectedCities(selectedCities.filter(c => c !== cityName));
-    } else if (selectedCities.length < 3) {
+    } else if (isAdmin || selectedCities.length < 3) {
       setSelectedCities([...selectedCities, cityName]);
     }
   };
@@ -112,7 +114,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const toggleGoal = (goal: string) => {
     if (selectedGoals.includes(goal)) {
       setSelectedGoals(selectedGoals.filter(g => g !== goal));
-    } else if (selectedGoals.length < 6) {
+    } else if (isAdmin || selectedGoals.length < 6) {
       setSelectedGoals([...selectedGoals, goal]);
     }
   };
@@ -249,7 +251,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               {/* Editable: City Multi-Select (max 3) */}
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Event Cities <span className="text-slate-300 font-normal normal-case">(pick up to 3)</span>
+                  Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
                 </label>
                 {selectedCities.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -266,7 +268,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                 <div className="flex flex-wrap gap-2">
                   {CITIES.map(loc => {
                     const isSelected = selectedCities.includes(loc);
-                    const isDisabled = !isSelected && selectedCities.length >= 3;
+                    const isDisabled = !isSelected && !isAdmin && selectedCities.length >= 3;
                     return (
                       <button
                         key={loc}
@@ -429,8 +431,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
             )}
           </AnimatePresence>
 
-                    {/* Editable: Event Categories */}
-          <div className="bg-white rounded-[24px] border border-slate-100 p-6 shadow-sm">
+          {/* Editable: Event Categories */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
@@ -439,10 +441,12 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                 <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
               </div>
               <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
-                {selectedGoals.length}/6
+                {selectedGoals.length}{!isAdmin && "/6"}
               </span>
             </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">Select up to 6 categories you are interested in.</p>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
+              {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
+            </p>
 
             <div className="flex flex-wrap gap-2.5">
               {categoriesList.map((goal) => {
@@ -456,6 +460,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                     className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center gap-2 border ${
                       isSelected 
                         ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-md shadow-black/10" 
+                        : !isAdmin && selectedGoals.length >= 6
+                        ? "bg-white text-slate-300 border-transparent cursor-not-allowed"
                         : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
@@ -490,7 +496,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                   if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
                     const supabase = createClient();
                     
-                    // TS Error ni bypass cheyadaniki 'as any' vadutunnam
+                    // Call the secure RPC function to delete the user
                     const { error } = await supabase.rpc('delete_user' as any);
                     
                     if (error) {
@@ -499,6 +505,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                       return;
                     }
 
+                    // Sign out and redirect
                     await supabase.auth.signOut();
                     toast.success("Your account has been permanently deleted.");
                     router.push("/login");
@@ -531,5 +538,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
         </form>
       </div>
     </main>
+
   );
 }

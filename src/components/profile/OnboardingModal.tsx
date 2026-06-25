@@ -22,10 +22,12 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
 
+  const isAdmin = profile?.user_type === 'admin' || user?.email === 'eventime.admin@gmail.com';
+
   const toggleCity = (cityName: string) => {
     if (cities.includes(cityName)) {
       setCities(cities.filter(c => c !== cityName));
-    } else if (cities.length < 3) {
+    } else if (isAdmin || cities.length < 3) {
       setCities([...cities, cityName]);
     }
   };
@@ -117,19 +119,22 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     setShowDropdown(false);
   };
 
-   const handleSave = async () => {
+  const handleSave = async () => {
     // Guest user try chesthe login page ki pampiddam
     if (!user) {
       toast.error("Please sign in to complete your profile!");
-      router.push("/login");
+      router.push("/login"); // Note: Change "/login" if your auth route is different
       return;
     }
+
     const finalUsername = username.trim().toLowerCase();
     if (!finalUsername) {
       toast.error("Username is required!");
       return;
     }
+
     setIsSaving(true);
+
     // Check if username is unique
     const { data: existingUser } = await supabase
       .from("profiles")
@@ -137,6 +142,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
       .eq("username", finalUsername)
       .neq("id", user.id)
       .maybeSingle();
+
     if (existingUser) {
       toast.error("This username is already taken. Please try another one.");
       setIsSaving(false);
@@ -154,9 +160,11 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
       is_onboarded: true,
       username: finalUsername,
     };
+
+
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
-
+    
     if (error) {
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
@@ -172,11 +180,11 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
       {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
       <div className="absolute inset-0 bg-slate-900/60" />
-       <motion.div 
+      <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 max-h-[90vh] overflow-y-auto p-8 custom-scrollbar"
+        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden p-8"
       >
         <AnimatePresence mode="wait">
           
@@ -206,9 +214,10 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
               
               <div className="space-y-4">
                 {/* 0. Username */}
-               <div className="space-y-2">
+                <div className="space-y-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
-                  <input                    type="text"
+                  <input
+                    type="text"
                     placeholder="e.g. john_doe"
                     value={username}
                     onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
@@ -218,7 +227,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
                 {/* 1. Location Selection */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">(pick up to 3)</span></label>
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span></label>
                   {cities.length > 0 && (
                     <div className="flex flex-wrap gap-2">
                       {cities.map(c => (
@@ -234,7 +243,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                   <div className="flex flex-wrap gap-2">
                     {CITIES.map(loc => {
                       const isSelected = cities.includes(loc);
-                      const isDisabled = !isSelected && cities.length >= 3;
+                      const isDisabled = !isSelected && !isAdmin && cities.length >= 3;
                       return (
                         <button
                           key={loc}
@@ -357,14 +366,14 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                   <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
                     {categoriesList.map(opt => {
                       const isSelected = categories.includes(opt);
-                      const isDisabled = !isSelected && categories.length >= 6;
+                      const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
                       return (
                         <button
                           key={opt} type="button"
                           disabled={isDisabled}
                           onClick={() => {
                             if (isSelected) setCategories(categories.filter(i => i !== opt));
-                            else if (categories.length < 6) setCategories([...categories, opt]);
+                            else if (isAdmin || categories.length < 6) setCategories([...categories, opt]);
                           }}
                           className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
                         >
