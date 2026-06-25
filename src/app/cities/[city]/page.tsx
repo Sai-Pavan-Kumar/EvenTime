@@ -49,12 +49,16 @@ export default async function CityPage({
       {/* City Cover Hero */}
       <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-          <img 
-            src={cityConfig.backgroundImage} 
+           <img 
+            src={cityConfig.coverImage} 
             alt={decodedCity} 
             className="w-full h-full object-cover"
-          />
-          {/* Overlay gradient */}
+            // Okavela covers folder lo 21:9 lekapothe pata 16:9 image vesthundi
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = cityConfig.backgroundImage;
+            }}
+          />          {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
           
           {/* Content */}

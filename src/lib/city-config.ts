@@ -129,9 +129,22 @@ export const CITY_CONFIG: Record<string, {
 };
 
 export const getCityConfig = (city: string) => {
-  if (!city) return CITY_CONFIG['default'] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+  const fallback = { 
+    backgroundImage: '/cities/default.webp', 
+    coverImage: '/cities/default.webp', 
+    accentColor: '#6C47FF' 
+  };
+  
+  if (!city) return fallback;
+  
   const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  return CITY_CONFIG[key] ?? { backgroundImage: '/cities/default.webp', accentColor: '#6C47FF' };
+  const config = CITY_CONFIG[key];
+  
+  if (!config) return fallback;
+  return {
+    ...config,
+    coverImage: `/cities/covers/${key}.webp`
+  };
 };
 
 
