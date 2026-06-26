@@ -16,7 +16,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
       {/* Background Image Layer (DESKTOP ONLY) */}
       <div className="absolute inset-0 z-0 hidden md:block">
         <Image 
-          src="/hero-section-v3.png" 
+          src="/hero-section-v2.png" 
           alt="EvenTime Hero Background" 
           fill
           priority
@@ -30,15 +30,15 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
         
         {/* Text Layer: Left Aligned always */}
         <div className="w-full px-4 sm:px-8 pt-12 pb-4 md:py-0 md:w-3/5 text-left">
-          <h1 className="text-[2.5rem] leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The Dictionary for
+           <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            The Dictionary
             <br />
-            <span className="text-[#6C47FF]">Events.</span>
+            for <span className="text-[#6C47FF]">Events.</span>
           </h1>    
         </div>
 
-        {/* Image Layer (MOBILE ONLY) - Normal flow aspect ratio removes all white space! */}
-        <div className="w-full md:hidden relative aspect-[2.5/1]">
+         {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
+        <div className="w-full md:hidden relative aspect-[2.5/1] mb-12 sm:mb-16">
           <Image 
             src="/hero-section-v2.png" 
             alt="EvenTime Hero Background" 
