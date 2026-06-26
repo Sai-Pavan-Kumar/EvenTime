@@ -38,7 +38,7 @@ export function EventGrid({
   return (
     <div className={finalGridClass}>
       <AnimatePresence>
-        {events.map((event) => {
+        {events.map((event, index) => {
           const matchReason = useMatchLogic
           ? getMatchLabel(event as Partial<EventRow>, profile || null)
           : event.matchReason || defaultMatchLabel;
@@ -68,6 +68,7 @@ export function EventGrid({
             layout={true}
             isPastDateView={isPastDateView}
             userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
           />
         );
       })}

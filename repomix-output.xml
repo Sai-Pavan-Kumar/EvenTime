@@ -327,6 +327,84 @@ const config = {
 export default config;
 </file>
 
+<file path="proxy.ts">
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
+
+// NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
+export async function proxy(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
+      },
+    }
+  );
+
+  // Use getUser() for high-security checks
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // NEW: Global Authentication Check Strategy
+  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
+  response.cookies.set({
+    name: 'client_auth',
+    value: user ? 'true' : 'false',
+    path: '/',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  // 1. If user IS logged in and tries to go to login page, send to profile
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
+
+  const isProtected = 
+    request.nextUrl.pathname.startsWith('/events/new') || 
+    request.nextUrl.pathname.endsWith('/edit') || 
+    request.nextUrl.pathname.startsWith('/profile') || 
+    request.nextUrl.pathname.startsWith('/admin');
+    
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+// Ensure the config remains to avoid unnecessary runs
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+</file>
+
 <file path="public/file.svg">
 <svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
 </file>
@@ -1339,26 +1417,6 @@ export async function GET(req: NextRequest) {
   console.error(errorMessage);
   return new Response(`Failed to generate image`, { status: 500 });
 }
-}
-</file>
-
-<file path="src/app/api/revalidate/route.ts">
-import { revalidateTag } from 'next/cache';
-import { NextResponse } from 'next/server';
-
-export async function POST(request: Request) {
-  try {
-    const secret = request.headers.get('x-webhook-secret');
-    if (process.env.SUPABASE_WEBHOOK_SECRET && secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-    }
-
-    revalidateTag('events', 'events');
-
-    return NextResponse.json({ revalidated: true, now: Date.now() });
-  } catch (err) {
-    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
-  }
 }
 </file>
 
@@ -3301,40 +3359,6 @@ import { User } from '@supabase/supabase-js';
 export type AuthUser = User;
 </file>
 
-<file path="src/types/nprogress.d.ts">
-declare module 'nprogress' {
-  interface NProgressOptions {
-    minimum?: number;
-    easing?: string;
-    positionUsing?: string;
-    speed?: number;
-    trickle?: boolean;
-    trickleSpeed?: number;
-    showSpinner?: boolean;
-    barSelector?: string;
-    spinnerSelector?: string;
-    parent?: string;
-    template?: string;
-  }
-
-  interface NProgress {
-    version: string;
-    settings: NProgressOptions;
-    status: number | null;
-    configure(options: Partial<NProgressOptions>): NProgress;
-    set(number: number): NProgress;
-    isStarted(): boolean;
-    start(): NProgress;
-    done(force?: boolean): NProgress;
-    inc(amount?: number): NProgress;
-    trickle(): NProgress;
-  }
-
-  const nprogress: NProgress;
-  export default nprogress;
-}
-</file>
-
 <file path="supabase/.temp/cli-latest">
 v2.105.0
 </file>
@@ -3480,84 +3504,6 @@ const nextConfig: NextConfig = {
 export default withPWA(nextConfig);
 </file>
 
-<file path="proxy.ts">
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
-
-// NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-        },
-      },
-    }
-  );
-
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  const isProtected = 
-    request.nextUrl.pathname.startsWith('/events/new') || 
-    request.nextUrl.pathname.endsWith('/edit') || 
-    request.nextUrl.pathname.startsWith('/profile') || 
-    request.nextUrl.pathname.startsWith('/admin');
-    
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return response;
-}
-
-// Ensure the config remains to avoid unnecessary runs
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-};
-</file>
-
 <file path="src/app/about/page.tsx">
 import { Metadata } from "next";
 import { Sparkles, Users, Target } from "lucide-react";
@@ -3606,25 +3552,23 @@ export default function AboutPage() {
 }
 </file>
 
-<file path="src/app/page.tsx">
-import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
-import { HomePageClient } from "@/lib/home/HomePageClient";
+<file path="src/app/api/revalidate/route.ts">
+import { revalidateTag } from 'next/cache';
+import { NextResponse } from 'next/server';
 
-export const revalidate = 3600; // Revalidate at most every hour 
+export async function POST(request: Request) {
+  try {
+    const secret = request.headers.get('x-webhook-secret');
+    if (process.env.SUPABASE_WEBHOOK_SECRET && secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
+      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
+    }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
-}) {
-  // Await the params before passing them
-  const params = await searchParams;
-  
-  // Fetch all the heavily lifted data securely from the backend logic
-  const data = await fetchHomePageData(params);
-  
-  // Pass the returned props directly into our separated Client UI component
-  return <HomePageClient {...data} />;
+    revalidateTag('events', 'events');
+
+    return NextResponse.json({ revalidated: true, now: Date.now() });
+  } catch (err) {
+    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
+  }
 }
 </file>
 
@@ -4411,55 +4355,37 @@ export function createAdminClient() {
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "eventime",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "context": "npx code-to-text . -o project_context.txt",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/s3-request-presigner": "^3.1045.0",
-    "@base-ui/react": "^1.4.1",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@phosphor-icons/react": "^2.1.10",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
-    "browser-image-compression": "^2.0.2",
-    "cheerio": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.14.0",
-    "next": "16.2.6",
-    "nextjs-toploader": "^3.9.17",
-    "react": "19.2.6",
-    "react-day-picker": "^10.0.0",
-    "react-dom": "^19.2.6",
-    "react-easy-crop": "^5.5.7",
-    "shadcn": "^4.7.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^25",
-    "@types/nprogress": "^0.2.3",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^10",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^6"
+<file path="src/types/nprogress.d.ts">
+declare module 'nprogress' {
+  interface NProgressOptions {
+    minimum?: number;
+    easing?: string;
+    positionUsing?: string;
+    speed?: number;
+    trickle?: boolean;
+    trickleSpeed?: number;
+    showSpinner?: boolean;
+    barSelector?: string;
+    spinnerSelector?: string;
+    parent?: string;
+    template?: string;
   }
+
+  interface NProgress {
+    version: string;
+    settings: NProgressOptions;
+    status: number | null;
+    configure(options: Partial<NProgressOptions>): NProgress;
+    set(number: number): NProgress;
+    isStarted(): boolean;
+    start(): NProgress;
+    done(force?: boolean): NProgress;
+    inc(amount?: number): NProgress;
+    trickle(): NProgress;
+  }
+
+  const nprogress: NProgress;
+  export default nprogress;
 }
 </file>
 
@@ -6027,6 +5953,28 @@ export default function LoginPage() {
 }
 </file>
 
+<file path="src/app/page.tsx">
+import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
+import { HomePageClient } from "@/lib/home/HomePageClient";
+
+export const revalidate = 3600; // Revalidate at most every hour 
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ branch?: string; q?: string; date?: string; category?: string; view?: string; tab?: string; show_cal?: string }>;
+}) {
+  // Await the params before passing them
+  const params = await searchParams;
+  
+  // Fetch all the heavily lifted data securely from the backend logic
+  const data = await fetchHomePageData(params);
+  
+  // Pass the returned props directly into our separated Client UI component
+  return <HomePageClient {...data} />;
+}
+</file>
+
 <file path="src/features/create-event/hooks/useEventSubmit.ts">
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -6157,6 +6105,58 @@ export const CITIES = [
 ] as const;
 
 export type City = typeof CITIES[number];
+</file>
+
+<file path="package.json">
+{
+  "name": "eventime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "context": "npx code-to-text . -o project_context.txt",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
+    "@base-ui/react": "^1.4.1",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "nextjs-toploader": "^3.9.17",
+    "react": "19.2.6",
+    "react-day-picker": "^10.0.0",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "shadcn": "^4.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^25",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^10",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
 </file>
 
 <file path="src/app/admin/actions.ts">
@@ -7073,6 +7073,124 @@ export function useDuplicateCheck() {
 }
 </file>
 
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
+    .eq("status", "approved")
+    .ilike("city", decodedCity)
+    .gte("date_string", todayStr)
+    .order("date_string", { ascending: true });
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero */}
+      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+          <img 
+            src={cityConfig.backgroundImage} 
+            alt={decodedCity} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/lib/home/HeroSection.tsx">
+"use client";
+
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
+  return (
+    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
+      
+      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
+        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
+          
+          {/* Applied the white halo text-shadow from Option B */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            The Dictionary for
+            <br />
+            <span className="text-[#6C47FF]">Events.</span>
+          </h1>    
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/[username]/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -7303,608 +7421,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
           </form>
         </div>
 
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
-    .eq("status", "approved")
-    .ilike("city", decodedCity)
-    .gte("date_string", todayStr)
-    .order("date_string", { ascending: true });
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero */}
-      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-          <img 
-            src={cityConfig.backgroundImage} 
-            alt={decodedCity} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
-            Events happening in {decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/lib/home/HeroSection.tsx">
-"use client";
-
-interface PlatformStats {
-  event_count: number;
-  city_count: number;
-  category_count: number;
-  user_count: number;
-}
-
-export function HeroSection({ stats }: { stats?: PlatformStats }) {
-  return (
-    <div className="relative w-full py-12 sm:py-16 lg:py-20 bg-[url('/hero-section.png')] bg-cover bg-bottom bg-no-repeat px-4 sm:px-8 text-center flex flex-col items-center justify-center">
-      
-      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col items-center justify-center">
-        <div className="max-w-4xl w-full mx-auto relative flex flex-col items-center justify-center">
-          
-          {/* Applied the white halo text-shadow from Option B */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] leading-tight [text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The Dictionary for
-            <br />
-            <span className="text-[#6C47FF]">Events.</span>
-          </h1>    
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/profile/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
-import Image from "next/image";
-import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { getCategoryConfig } from "@/lib/category-config";
-import { deleteEventAction } from "./action";
-import type { ProfileRow } from "@/types";
-
-export const dynamic = "force-dynamic";
-
-type ReportWithEventSlug = {
-  id: string;
-  reason: string;
-  status: string | null;
-  created_at: string;
-  events: { title: string; slug: string | null } | null;
-};
-
-type ProfileEvent = {
-  id: string;
-  slug: string | null;
-  title: string;
-  category: string;
-  date_string: string | null;
-  status: string;
-  poster_url: string | null;
-  is_featured: boolean;
-  interested_events: any;
-  saved_events: any;
-};
-
-const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
-  if (!prof) return 0;
-  let score = 0;
-  if (prof.avatar_url) score += 20;
-  if (prof.username) score += 20;
-  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
-  if (prof.goals && prof.goals.length > 0) score += 20;
-  const isStudent = (prof as any).user_type === "student";
-  if (!isStudent) {
-    score += 20;
-  } else if (prof.college && (prof as any).graduation_year) {
-    score += 20;
-  }
-  return score;
-};
-
-export default async function ProfilePage({ searchParams, }: { searchParams:
-Promise<{ tab?: string }>; }) { 
-  const { tab } = await searchParams; 
-  const activeTab = (tab && tab !== "menu") ? tab : "posted";
-  const isMobileMenu = !tab || tab === "menu";
-  
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const [
-    { data: profile },
-    { data: myEventsRaw },
-    { data: savedEventsData },
-    { data: myReportsRaw, error: reportsError },
-    { data: appSettings }
-  ] = await Promise.all([
-    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
-    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
-  ]);
-
-  if (!profile) {
-    redirect("/profile/settings");
-  }
-
-  // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
-  const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
-  const audienceRequests = reqError ? [] : (audienceReqsRaw || []);
-
-  if (reportsError) {
-    console.error("Error fetching reports:", reportsError);
-  }
-
-  // Debugging logs to verify if queries return data or empty arrays due to RLS
-  console.log("--- Profile Page Data Fetch Debug ---");
-  console.log("myEventsRaw:", myEventsRaw);
-  console.log("savedEventsData:", savedEventsData);
-  console.log("myReportsRaw:", myReportsRaw);
-  console.log("-------------------------------------");
-
-  const myReports = myReportsRaw as ReportWithEventSlug[] | null;
-  const myEvents = myEventsRaw as ProfileEvent[] | null;
-
-  const etScore = profile?.et_score || 100;
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
-  const completionPercentage = calculateCompletion(profile);
-  const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
-
-  // NEW: What's missing checklist, mirrors the calculateCompletion formula
-  const missingItems: string[] = [];
-  if (!profile?.avatar_url) missingItems.push("Profile photo");
-  if (!(profile as any)?.username) missingItems.push("Username");
-  if (!(profile as any)?.preferred_cities || (profile as any).preferred_cities.length === 0) missingItems.push("Preferred cities");
-  if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
-  if ((profile as any)?.user_type === "student" && (!profile?.college || !(profile as any)?.graduation_year)) missingItems.push("College & graduation year");
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
-  }
-
-  const eventCount = myEvents?.length || 0;
-  let totalSaves = 0;
-  let totalInterested = 0;
-
-  if (myEvents && myEvents.length > 0) {
-      myEvents.forEach(ev => {
-      // Extract the aggregated counts returned natively by the Supabase join
-      const eventSaves = ev.saved_events?.[0]?.count || 0;
-      const eventInterested = ev.interested_events?.[0]?.count || 0;
-      
-      totalSaves += eventSaves;
-      totalInterested += eventInterested;
-    });
-  }
-  // This exactly saves the bookmarks done by the user
-  totalSaves = savedEvents.length;
-
-  let strokeColor = "#005AE0"; 
-  if (eventCount >= 69) {
-    strokeColor = "#F59E0B";
-  } else if (eventCount >= 30) {
-    strokeColor = "#94A3B8";
-  } else if (eventCount >= 10) {
-    strokeColor = "#B45309";
-  }
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar variant="centered" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    {/* Unified Master Box enclosing both Sidebar and Content */}
-    <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[700px]">
-      
-      {/* LEFT SIDEBAR */}
-      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 ${isMobileMenu ? "block" : "hidden lg:block"}`}>
-        <div className="flex flex-col h-full">
-              
-              {/* Profile Info Section */}
-              <div className="p-6 flex flex-col items-center text-center">
-                <div className="relative w-28 h-28 mb-4 flex items-center justify-center shrink-0">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
-                    <circle cx="64" cy="64" r="58" fill="none" className="stroke-slate-100" strokeWidth="4" />
-                    <circle 
-                      cx="64" 
-                      cy="64" 
-                      r="58" 
-                      fill="none" 
-                      stroke={strokeColor} 
-                      strokeWidth="4" 
-                      strokeDasharray="364" 
-                      strokeDashoffset={364 - (completionPercentage / 100) * 364} 
-                      strokeLinecap="round" 
-                      className="transition-all duration-1000 ease-out" 
-                    />
-                  </svg>
-                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-50 border border-slate-100 shadow-inner">
-                    <Image src={profilePic} alt="Profile" fill unoptimized={true} sizes="96px" className="object-cover" />
-                  </div>
-                </div>
-
-                <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
-                  {profile?.full_name || user.user_metadata?.full_name || "Curator"}
-                </h1>
-                
-               <div className="flex items-center gap-1.5 text-slate-400 mt-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="font-medium text-xs break-all px-2">{user.email}</span>
-                </div>
-
-                {missingItems.length > 0 && (
-                  <Link href="/profile/settings" className="w-full mt-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2 hover:bg-amber-100 transition-colors">
-                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide shrink-0">{completionPercentage}%</span>
-                    <span className="text-[11px] font-medium text-amber-600 text-left">Missing: {missingItems.join(" · ")}</span>
-                  </Link>
-                )}
-                {missingItems.length === 0 && <div className="mb-6" />}
-
-                {/* Unified Minimal Stats Panel */}
-                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
-                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
-                  </div>
-                   {leaderboardEnabled && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
-                    </div>
-                  )}                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
-                  </div>
-                  {leaderboardEnabled && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
-                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-100 w-full"></div>
-
-              {/* Vertical Menu Navigation */}
-              <div className="flex flex-col p-3 gap-1">
-                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <LayoutGrid className="w-4 h-4" /> My Events
-                </Link>
-                
-                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <div className="flex items-center gap-3">
-                    <Bookmark className="w-4 h-4" /> Saved Events
-                  </div>
-                  {savedEvents.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-[#6C47FF]" : "bg-slate-100 text-slate-500"}`}>
-                      {savedEvents.length}
-                    </span>
-                  )}
-                </Link>
-                
-                <Link href="?tab=alerts" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "alerts" ? "bg-red-50 text-red-600" : "text-slate-500 hover:bg-red-50 hover:text-red-600"}`}>
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-4 h-4" /> Alerts
-                  </div>
-                  {myReports && myReports.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "alerts" ? "bg-red-100 text-red-600" : "bg-red-100 text-red-600"}`}>
-                      {myReports.length}
-                    </span>
-                  )}
-                </Link>
-                
-                <div className="h-px bg-slate-100 my-2 mx-2"></div>
-                
-                <Link 
-                  href={eventCount >= 15 ? "?tab=requests" : "#"} 
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
-                  title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
-                >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-4 h-4" /> Audience Requests
-                  </div>
-                  {eventCount < 15 && (
-                    <div className="flex items-center gap-1 bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-500 scale-90">
-                      <Lock className="w-3 h-3" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">15 Events</span>
-                    </div>
-                  )}
-                </Link>
-
-                {leaderboardEnabled && (
-                  <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-                    <Trophy className="w-4 h-4" /> Leaderboard
-                  </Link>
-                )}
-
-                <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-                  <Settings className="w-4 h-4" /> Profile Settings
-                </Link>
-              </div>
-
-              <div className="p-4 pt-1 mb-2 mt-auto">
-                <Link href="/events/new" className="w-full bg-[#6C47FF] hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
-                  <Plus className="w-4 h-4" /> Create New Event
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT CONTENT AREA */}
-      <div className={`flex-1 p-6 sm:p-8 lg:p-10 flex-col ${isMobileMenu ? "hidden lg:flex" : "flex"}`}>
-        
-        {/* Mobile Back Button */}
-        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-[#6C47FF] font-bold text-sm mb-6 transition-colors w-fit">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Profile
-        </Link>
-
-        {/* Content Tab Header */}
-            <div className="mb-8">
-              <h2 className="text-xl font-heading font-bold text-slate-900 tracking-tight">
-                {activeTab === 'posted' && "My Posted Events"}
-                {activeTab === 'saved' && "Saved Events"}
-                {activeTab === 'alerts' && "Action Required"}
-                {activeTab === 'requests' && "Audience Requests"}
-              </h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                {activeTab === 'posted' && "Manage and track the events you've created."}
-                {activeTab === 'saved' && "Events you've bookmarked for later."}
-                {activeTab === 'alerts' && "Events reported by users that need your attention."}
-                {activeTab === 'requests' && "See what kind of events your audience wants next."}
-              </p>
-            </div>
-
-            {/* Structured Grid Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              
-              {/* POSTED EVENTS GRID */}
-              {activeTab === "posted" && (
-                myEvents && myEvents.length > 0 ? (
-                  myEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
-                          {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
-                          {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
-                        </div>
-                      </div>
-                      
-                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                        
-                        <div className="flex items-center justify-between mt-auto mb-3.5">
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          {leaderboardEnabled && (
-                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
-                              <Bookmark className="w-2.5 h-2.5" />
-                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
-                            </div>
-                          )}                        </div>
-
-                        {/* Management Icon Controls */}
-                        <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
-                          <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                          <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Edit3 className="w-4 h-4" />
-                          </Link>
-                          <form action={handleDelete} className="flex-1">
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-profile.png" alt="Empty Profile" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
-                    <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
-                      <Plus className="w-4 h-4" /> Create Your First Event
-                    </Link>
-                  </div>
-                )
-              )}
-
-              {/* SAVED EVENTS GRID */}
-              {activeTab === "saved" && (
-                savedEvents.length > 0 ? (
-                  savedEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                          <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        </div>
-                        <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                          <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          <div className="mt-auto border-t border-slate-100 pt-3">
-                            <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
-                              <Eye className="w-3.5 h-3.5" /> View Details
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-saved.png" alt="No Saved Events" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
-                  </div>
-                )
-              )}
-
-              {/* ALERTS SECTION */}
-              {activeTab === "alerts" && (
-                myReports && myReports.length > 0 ? (
-                  myReports.map((report) => {
-                    const eventData = report.events;
-                    return (
-                      <div key={report.id} className="col-span-full bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow">
-                        <div className="flex gap-3.5 items-start">
-                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-red-100|0">
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
-                          </div>
-                          <div>
-                            <span className="inline-block px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold uppercase tracking-wider rounded border border-red-100 mb-1.5">
-                              Action Required: {report.reason}
-                            </span>
-                            <h4 className="font-bold text-slate-900 text-base">{eventData?.title || "Unknown Event"}</h4>
-                            <p className="text-xs text-slate-400 mt-0.5 font-medium">A community member reported an accuracy problem. Please review updates immediately.</p>
-                          </div>
-                        </div>
-                        {eventData?.slug && (
-                          <Link href={`/events/${eventData.slug}/edit`} className="bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap active:scale-98 shadow-sm">
-                            Fix Issue
-                          </Link>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-alerts.png" alt="No Alerts" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
-                  </div>
-                )
-              )}
-
-              {/* AUDIENCE REQUESTS */}
-              {activeTab === "requests" && eventCount >= 15 && (
-                audienceRequests && audienceRequests.length > 0 ? (
-                  audienceRequests.map((req: any) => (
-                    <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
-                          Requested Category: {req.category || "General"}
-                        </span>
-                        <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
-                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-category.png" alt="No Requests" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
       </div>
     </main>
   );
@@ -8721,418 +8237,488 @@ export const Constants = {
 } as const
 </file>
 
-<file path="src/app/events/EventCard.tsx">
-"use client";
+<file path="src/app/profile/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import Image from "next/image";
+import Link from "next/link";
+import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { getCategoryConfig } from "@/lib/category-config";
+import { deleteEventAction } from "./action";
+import type { ProfileRow } from "@/types";
 
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { createClient } from "@/lib/supabase/client";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
+export const dynamic = "force-dynamic";
 
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-    collegeName?: string; // NEW: college that hosts the event
+type ReportWithEventSlug = {
+  id: string;
+  reason: string;
+  status: string | null;
+  created_at: string;
+  events: { title: string; slug: string | null } | null;
+};
+
+type ProfileEvent = {
+  id: string;
+  slug: string | null;
+  title: string;
+  category: string;
+  date_string: string | null;
+  status: string;
+  poster_url: string | null;
+  is_featured: boolean;
+  interested_events: any;
+  saved_events: any;
+};
+
+const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
+  if (!prof) return 0;
+  let score = 0;
+  if (prof.avatar_url) score += 20;
+  if (prof.username) score += 20;
+  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
+  if (prof.goals && prof.goals.length > 0) score += 20;
+  const isStudent = (prof as any).user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (prof.college && (prof as any).graduation_year) {
+    score += 20;
+  }
+  return score;
+};
+
+export default async function ProfilePage({ searchParams, }: { searchParams:
+Promise<{ tab?: string }>; }) { 
+  const { tab } = await searchParams; 
+  const activeTab = (tab && tab !== "menu") ? tab : "posted";
+  const isMobileMenu = !tab || tab === "menu";
+  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const [
+    { data: profile },
+    { data: myEventsRaw },
+    { data: savedEventsData },
+    { data: myReportsRaw, error: reportsError },
+    { data: appSettings }
+  ] = await Promise.all([
+    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+  ]);
+
+  if (!profile) {
+    redirect("/profile/settings");
   }
 
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-    collegeName,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
+  // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
+  const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
+  const audienceRequests = reqError ? [] : (audienceReqsRaw || []);
 
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
+  if (reportsError) {
+    console.error("Error fetching reports:", reportsError);
+  }
+
+  // Debugging logs to verify if queries return data or empty arrays due to RLS
+  console.log("--- Profile Page Data Fetch Debug ---");
+  console.log("myEventsRaw:", myEventsRaw);
+  console.log("savedEventsData:", savedEventsData);
+  console.log("myReportsRaw:", myReportsRaw);
+  console.log("-------------------------------------");
+
+  const myReports = myReportsRaw as ReportWithEventSlug[] | null;
+  const myEvents = myEventsRaw as ProfileEvent[] | null;
+
+  const etScore = profile?.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
+  const completionPercentage = calculateCompletion(profile);
+  const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
+
+  // NEW: What's missing checklist, mirrors the calculateCompletion formula
+  const missingItems: string[] = [];
+  if (!profile?.avatar_url) missingItems.push("Profile photo");
+  if (!(profile as any)?.username) missingItems.push("Username");
+  if (!(profile as any)?.preferred_cities || (profile as any).preferred_cities.length === 0) missingItems.push("Preferred cities");
+  if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
+  if ((profile as any)?.user_type === "student" && (!profile?.college || !(profile as any)?.graduation_year)) missingItems.push("College & graduation year");
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    await deleteEventAction(formData);
+  }
+
+  const eventCount = myEvents?.length || 0;
+  let totalSaves = 0;
+  let totalInterested = 0;
+
+  if (myEvents && myEvents.length > 0) {
+      myEvents.forEach(ev => {
+      // Extract the aggregated counts returned natively by the Supabase join
+      const eventSaves = ev.saved_events?.[0]?.count || 0;
+      const eventInterested = ev.interested_events?.[0]?.count || 0;
       
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
+      totalSaves += eventSaves;
+      totalInterested += eventInterested;
+    });
+  }
+  // This exactly saves the bookmarks done by the user
+  totalSaves = savedEvents.length;
+
+  let strokeColor = "#005AE0"; 
+  if (eventCount >= 69) {
+    strokeColor = "#F59E0B";
+  } else if (eventCount >= 30) {
+    strokeColor = "#94A3B8";
+  } else if (eventCount >= 10) {
+    strokeColor = "#B45309";
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <Navbar variant="centered" />
       
-        setIsSaving(true);
-      const newState = !savedState;
-      setSavedState(newState); // optimistic update
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {/* Unified Master Box enclosing both Sidebar and Content */}
+    <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[700px]">
       
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to save event:", err);
-      }
-      if (onSaveToggle) {        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      }  
-    }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > exactCheckDate.getTime();
-          
-          if (pastDate || pastTime) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
+      {/* LEFT SIDEBAR */}
+      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 ${isMobileMenu ? "block" : "hidden lg:block"}`}>
+        <div className="flex flex-col h-full">
               
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    unoptimized={true}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
+              {/* Profile Info Section */}
+              <div className="p-6 flex flex-col items-center text-center">
+                <div className="relative w-28 h-28 mb-4 flex items-center justify-center shrink-0">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
+                    <circle cx="64" cy="64" r="58" fill="none" className="stroke-slate-100" strokeWidth="4" />
+                    <circle 
+                      cx="64" 
+                      cy="64" 
+                      r="58" 
+                      fill="none" 
+                      stroke={strokeColor} 
+                      strokeWidth="4" 
+                      strokeDasharray="364" 
+                      strokeDashoffset={364 - (completionPercentage / 100) * 364} 
+                      strokeLinecap="round" 
+                      className="transition-all duration-1000 ease-out" 
+                    />
+                  </svg>
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-50 border border-slate-100 shadow-inner">
+                    <Image src={profilePic} alt="Profile" fill unoptimized={true} sizes="96px" className="object-cover" />
+                  </div>
                 </div>
 
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
+                <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
+                  {profile?.full_name || user.user_metadata?.full_name || "Curator"}
+                </h1>
+                
+               <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span className="font-medium text-xs break-all px-2">{user.email}</span>
+                </div>
 
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
+                {missingItems.length > 0 && (
+                  <Link href="/profile/settings" className="w-full mt-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2 hover:bg-amber-100 transition-colors">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide shrink-0">{completionPercentage}%</span>
+                    <span className="text-[11px] font-medium text-amber-600 text-left">Missing: {missingItems.join(" · ")}</span>
+                  </Link>
+                )}
+                {missingItems.length === 0 && <div className="mb-6" />}
 
-                  {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      <Sparkles className="w-3 h-3" /> Featured
-                    </span>
+                {/* Unified Minimal Stats Panel */}
+                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
+                  <div className="flex flex-col items-center">
+                    <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
+                  </div>
+                   {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
+                    </div>
+                  )}                  <div className="flex flex-col items-center">
+                    <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
+                  </div>
+                  {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
+                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
+              <div className="h-px bg-slate-100 w-full"></div>
+
+              {/* Vertical Menu Navigation */}
+              <div className="flex flex-col p-3 gap-1">
+                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                  <LayoutGrid className="w-4 h-4" /> My Events
+                </Link>
+                
+                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="w-4 h-4" /> Saved Events
+                  </div>
+                  {savedEvents.length > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-[#6C47FF]" : "bg-slate-100 text-slate-500"}`}>
+                      {savedEvents.length}
+                    </span>
+                  )}
+                </Link>
+                
+                <Link href="?tab=alerts" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "alerts" ? "bg-red-50 text-red-600" : "text-slate-500 hover:bg-red-50 hover:text-red-600"}`}>
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-4 h-4" /> Alerts
+                  </div>
+                  {myReports && myReports.length > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "alerts" ? "bg-red-100 text-red-600" : "bg-red-100 text-red-600"}`}>
+                      {myReports.length}
+                    </span>
+                  )}
+                </Link>
+                
+                <div className="h-px bg-slate-100 my-2 mx-2"></div>
+                
+                <Link 
+                  href={eventCount >= 15 ? "?tab=requests" : "#"} 
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
+                  title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-4 h-4" /> Audience Requests
+                  </div>
+                  {eventCount < 15 && (
+                    <div className="flex items-center gap-1 bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-500 scale-90">
+                      <Lock className="w-3 h-3" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">15 Events</span>
+                    </div>
+                  )}
                 </Link>
 
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
+                {leaderboardEnabled && (
+                  <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Trophy className="w-4 h-4" /> Leaderboard
+                  </Link>
                 )}
 
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
+                <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                  <Settings className="w-4 h-4" /> Profile Settings
+                </Link>
               </div>
 
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
+              <div className="p-4 pt-1 mb-2 mt-auto">
+                <Link href="/events/new" className="w-full bg-[#6C47FF] hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
+                  <Plus className="w-4 h-4" /> Create New Event
+                </Link>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NEW: Auth Modal Overlay */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
-            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
-              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Bookmark className="w-6 h-6 text-brand" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
-              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
-                Sign In
-              </Link>
             </div>
           </div>
-        )}
-      </>
-    );
-  }
+
+          {/* RIGHT CONTENT AREA */}
+      <div className={`flex-1 p-6 sm:p-8 lg:p-10 flex-col ${isMobileMenu ? "hidden lg:flex" : "flex"}`}>
+        
+        {/* Mobile Back Button */}
+        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-[#6C47FF] font-bold text-sm mb-6 transition-colors w-fit">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Profile
+        </Link>
+
+        {/* Content Tab Header */}
+            <div className="mb-8">
+              <h2 className="text-xl font-heading font-bold text-slate-900 tracking-tight">
+                {activeTab === 'posted' && "My Posted Events"}
+                {activeTab === 'saved' && "Saved Events"}
+                {activeTab === 'alerts' && "Action Required"}
+                {activeTab === 'requests' && "Audience Requests"}
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                {activeTab === 'posted' && "Manage and track the events you've created."}
+                {activeTab === 'saved' && "Events you've bookmarked for later."}
+                {activeTab === 'alerts' && "Events reported by users that need your attention."}
+                {activeTab === 'requests' && "See what kind of events your audience wants next."}
+              </p>
+            </div>
+
+            {/* Structured Grid Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              
+              {/* POSTED EVENTS GRID */}
+              {activeTab === "posted" && (
+                myEvents && myEvents.length > 0 ? (
+                  myEvents.map((event) => (
+                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
+                          {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
+                          {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
+                        </div>
+                      </div>
+                      
+                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                        
+                        <div className="flex items-center justify-between mt-auto mb-3.5">
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
+                          </div>
+                          
+                          {leaderboardEnabled && (
+                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
+                              <Bookmark className="w-2.5 h-2.5" />
+                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
+                            </div>
+                          )}                        </div>
+
+                        {/* Management Icon Controls */}
+                        <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
+                          <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                            <Edit3 className="w-4 h-4" />
+                          </Link>
+                          <form action={handleDelete} className="flex-1">
+                            <input type="hidden" name="eventId" value={event.id} />
+                            <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-profile.png" alt="Empty Profile" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
+                    <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
+                      <Plus className="w-4 h-4" /> Create Your First Event
+                    </Link>
+                  </div>
+                )
+              )}
+
+              {/* SAVED EVENTS GRID */}
+              {activeTab === "saved" && (
+                savedEvents.length > 0 ? (
+                  savedEvents.map((event) => (
+                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                      <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
+                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                          <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                        </div>
+                        <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                          <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
+                          </div>
+                          
+                          <div className="mt-auto border-t border-slate-100 pt-3">
+                            <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
+                              <Eye className="w-3.5 h-3.5" /> View Details
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-saved.png" alt="No Saved Events" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
+                  </div>
+                )
+              )}
+
+              {/* ALERTS SECTION */}
+              {activeTab === "alerts" && (
+                myReports && myReports.length > 0 ? (
+                  myReports.map((report) => {
+                    const eventData = report.events;
+                    return (
+                      <div key={report.id} className="col-span-full bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow">
+                        <div className="flex gap-3.5 items-start">
+                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-red-100|0">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                          </div>
+                          <div>
+                            <span className="inline-block px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold uppercase tracking-wider rounded border border-red-100 mb-1.5">
+                              Action Required: {report.reason}
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-base">{eventData?.title || "Unknown Event"}</h4>
+                            <p className="text-xs text-slate-400 mt-0.5 font-medium">A community member reported an accuracy problem. Please review updates immediately.</p>
+                          </div>
+                        </div>
+                        {eventData?.slug && (
+                          <Link href={`/events/${eventData.slug}/edit`} className="bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap active:scale-98 shadow-sm">
+                            Fix Issue
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-alerts.png" alt="No Alerts" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
+                  </div>
+                )
+              )}
+
+              {/* AUDIENCE REQUESTS */}
+              {activeTab === "requests" && eventCount >= 15 && (
+                audienceRequests && audienceRequests.length > 0 ? (
+                  audienceRequests.map((req: any) => (
+                    <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
+                          Requested Category: {req.category || "General"}
+                        </span>
+                        <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-category.png" alt="No Requests" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
 </file>
 
 <file path="src/features/create-event/components/StepMandatory.tsx">
@@ -9854,6 +9440,420 @@ export default async function EventPage({
     </>
   );
 }
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+    collegeName,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > exactEventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      }  
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          const pastTime = today.getTime() > exactCheckDate.getTime();
+          
+          if (pastDate || pastTime) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    unoptimized={true}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.png') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                  {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      <Sparkles className="w-3 h-3" /> Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* NEW: Auth Modal Overlay */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
+            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
+              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Bookmark className="w-6 h-6 text-brand" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
+              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
+                Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 </file>
 
 <file path="src/lib/home/EventGrid.tsx">

@@ -31,6 +31,7 @@
     isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
     userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
     collegeName?: string; // NEW: college that hosts the event
+    priority?: boolean; // NEW: For LCP image optimization
   }
 
   export function EventCard({
@@ -54,6 +55,7 @@
     isPastDateView = false,
     userRole,
     collegeName,
+    priority = false,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
     const [isSaving, setIsSaving] = useState(false);
@@ -243,6 +245,7 @@
                     alt={title} 
                     fill 
                     unoptimized={true}
+                    priority={priority}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
