@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useTransition } from "react";
 import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import NProgress from "nprogress";
@@ -9,6 +9,7 @@ import NProgress from "nprogress";
 
 export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
   const selectedDateParam = searchParams.get("date");
   
@@ -38,13 +39,15 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
     if (currentQ) params.set("q", currentQ);
     if (currentBranch) params.set("branch", currentBranch);
     
-    if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-      // Deselect if clicked again (Goes back to default future events)
-      window.history.pushState(null, "", `/?${params.toString()}`);
-    } else {
-      params.set("date", queryDateStr);
-      window.history.pushState(null, "", `/?${params.toString()}`);
-    }
+    startTransition(() => {
+      if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+        // Deselect if clicked again (Goes back to default future events)
+        router.push(`/?${params.toString()}`, { scroll: false });
+      } else {
+        params.set("date", queryDateStr);
+        router.push(`/?${params.toString()}`, { scroll: false });
+      }
+    });
 
     // Close calendar on selection automatically
     if (onDateSelect) {

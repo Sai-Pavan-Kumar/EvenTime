@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
 import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug, CalendarDays } from "lucide-react";
@@ -55,6 +55,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
   const categoryParam = searchParams.get("category") || undefined;
   const locationParam = searchParams.get("location") || undefined;
   const branchParam = searchParams.get("branch") || undefined;
@@ -215,11 +216,13 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     NProgress.start();
-    if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      router.push(`/`);
-    }
+    startTransition(() => {
+      if (searchQuery.trim()) {
+        router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        router.push(`/`);
+      }
+    });
   };
 
   const handleLogout = async () => {
@@ -313,7 +316,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
-            <button onClick={() => window.history.pushState(null, "", "/?view=map")} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <MapPin className="w-4 h-4 shrink-0" /> Map
             </button>
 
@@ -450,7 +453,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     </Link>
 
-    <button onClick={() => window.history.pushState(null, "", "/?view=map")} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+    <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
       <MapPin className="w-5 h-5" />
       <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
     </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useTransition } from "react";
 import NProgress from "nprogress";
 
 
@@ -15,6 +16,7 @@ export interface FilterChipsProps {
 
 export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   if (!dynamicChips || dynamicChips.length === 0) return null;
 
   const activeVal = paramName === "category" ? category : location;
@@ -50,9 +52,9 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
           if (q) params.set("q", q);
           if (branch) params.set("branch", branch);
           
-          // LIGHTSPEED: Update URL without triggering server reload/skeleton
-          const newUrl = params.toString() ? `/?${params.toString()}` : "/";
-          window.history.pushState(null, "", newUrl);
+          startTransition(() => {
+            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+          });
         }}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
       >
