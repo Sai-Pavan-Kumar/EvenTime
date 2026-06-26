@@ -40,7 +40,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
         {/* Image Layer (MOBILE ONLY) - Normal flow aspect ratio removes all white space! */}
         <div className="w-full md:hidden relative aspect-[2.5/1]">
           <Image 
-            src="/hero-section-v3.png" 
+            src="/hero-section-v2.png" 
             alt="EvenTime Hero Background" 
             fill
             priority
