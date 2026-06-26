@@ -313,9 +313,9 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
-            <Link href="/?view=map" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+            <button onClick={() => window.history.pushState(null, "", "/?view=map")} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <MapPin className="w-4 h-4 shrink-0" /> Map
-            </Link>
+            </button>
 
             {leaderboardEnabled && (
               <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
@@ -450,10 +450,10 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     </Link>
 
-    <Link href="/?view=map" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+    <button onClick={() => window.history.pushState(null, "", "/?view=map")} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
       <MapPin className="w-5 h-5" />
       <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
-    </Link>
+    </button>
 
     {isLoading ? (
      <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">

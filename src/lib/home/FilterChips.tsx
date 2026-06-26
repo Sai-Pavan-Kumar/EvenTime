@@ -49,7 +49,10 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
 
           if (q) params.set("q", q);
           if (branch) params.set("branch", branch);
-          router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+          
+          // LIGHTSPEED: Update URL without triggering server reload/skeleton
+          const newUrl = params.toString() ? `/?${params.toString()}` : "/";
+          window.history.pushState(null, "", newUrl);
         }}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
       >

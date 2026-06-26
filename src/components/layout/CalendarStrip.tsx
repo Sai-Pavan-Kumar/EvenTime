@@ -40,10 +40,10 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
     
     if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
       // Deselect if clicked again (Goes back to default future events)
-      router.push(`/?${params.toString()}`, { scroll: false });
+      window.history.pushState(null, "", `/?${params.toString()}`);
     } else {
       params.set("date", queryDateStr);
-      router.push(`/?${params.toString()}`, { scroll: false });
+      window.history.pushState(null, "", `/?${params.toString()}`);
     }
 
     // Close calendar on selection automatically
