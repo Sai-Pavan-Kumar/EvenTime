@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import { getMatchLabel } from "@/lib/events/match";
 import type { ProfileRow, EventRow } from "@/types";
 import type { HomePageClientProps } from "./HomePageClient";
@@ -109,7 +111,37 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
 
   // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
   const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
+// CACHED: Fetch all public active events. This runs once and serves 10M users without hitting DB.
+  const getCachedGlobalData = unstable_cache(
+  async (todayStr: string) => {
+    // Non-cookie client for static caching
+    const supabaseAnon = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } }
+    );
+    
+    // 1. Fetch all public events starting from today (ignore past events)
+    const { data: rawAllEvents } = await supabaseAnon
+      .from("events")
+      .select(PUBLIC_EVENT_FIELDS)
+      .eq("status", "approved")
+      .gte("date_string", todayStr)
+      .order("is_featured", { ascending: false })
+      .order("created_at", { ascending: false });
 
+    // 2. Fetch platform stats
+    const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
+    const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
+    
+    return {
+      rawAllEvents: rawAllEvents || [],
+      platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
+    };
+  },
+  ['global_events_cache'],
+  { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
+);
   let query = supabase
     .from("events")
     .select(PUBLIC_EVENT_FIELDS) // Replaced "*"

@@ -125,15 +125,45 @@ export function HomePageClient(props: HomePageClientProps) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // No filters active = passive browsing mode → show pill-based feed. Any filter active → show liveAllEvents directly.
- const noFiltersActive = !q && !category && !location && !date;
+    // No filters active = passive browsing mode → show pill-based feed. Any filter active → filter liveAllEvents directly.
+  const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
   const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
+
+  let filteredAllEvents = liveAllEvents || [];
+  
+  if (!noFiltersActive) {
+    filteredAllEvents = filteredAllEvents.filter(e => {
+      let match = true;
+      if (branch && !e.branch_tags?.includes(branch)) match = false;
+      if (category && e.category !== category) match = false;
+      if (date && e.date_string !== date) match = false;
+      if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+      if (q) {
+        const query = q.toLowerCase();
+        if (!e.title?.toLowerCase().includes(query) && 
+            !e.category?.toLowerCase().includes(query) &&
+            !e.city?.toLowerCase().includes(query) &&
+            !e.location?.toLowerCase().includes(query)) {
+          match = false;
+        }
+      }
+      return match;
+    });
+  }
+
   const gridSource = !noFiltersActive
-    ? liveAllEvents
+    ? filteredAllEvents
     : showFeedPills
       ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
+
+  let clientIsFallback = false;
+  let clientFallbackEvents = liveFallbackEvents;
+  if (!noFiltersActive && filteredAllEvents.length === 0) {
+    clientIsFallback = true;
+    clientFallbackEvents = (liveAllEvents || []).filter(e => e.is_virtual).slice(0, 4);
+  }
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
@@ -347,9 +377,8 @@ export function HomePageClient(props: HomePageClientProps) {
                         );
                       })()}
                     
-
                       {/* Fallback Events (Virtual/Online) */}
-                      {isFallback && liveFallbackEvents.length > 0 && (
+                      {clientIsFallback && clientFallbackEvents.length > 0 && (
                         <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
                           <div className="flex items-center gap-4 mb-8">
                             <div className="h-px bg-slate-200 flex-1" />
@@ -360,11 +389,11 @@ export function HomePageClient(props: HomePageClientProps) {
                           </div>
 
                           <EventGrid 
-                            events={liveFallbackEvents}
-                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            defaultMatchLabel="Recommended Virtual"
-                            user={user}
-                          />
+                            events={clientFallbackEvents}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            defaultMatchLabel="Recommended Virtual"
+                            user={user}
+                          />
                         </div>
                       )}
                     </div>

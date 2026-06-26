@@ -122,7 +122,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
               <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
             </svg>
             <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
-              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill sizes="128px" className="object-cover" />
+              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
             </div>
           </div>
           <div className="flex-1 text-center md:text-left">

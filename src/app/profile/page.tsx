@@ -171,7 +171,7 @@ Promise<{ tab?: string }>; }) {
                     />
                   </svg>
                   <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-50 border border-slate-100 shadow-inner">
-                    <Image src={profilePic} alt="Profile" fill sizes="96px" className="object-cover" />
+                    <Image src={profilePic} alt="Profile" fill unoptimized={true} sizes="96px" className="object-cover" />
                   </div>
                 </div>
 
@@ -319,7 +319,7 @@ Promise<{ tab?: string }>; }) {
                   myEvents.map((event) => (
                     <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
                       <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
                         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
                           {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
                           {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}

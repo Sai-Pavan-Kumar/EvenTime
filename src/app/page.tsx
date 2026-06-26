@@ -1,7 +1,7 @@
 import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
 import { HomePageClient } from "@/lib/home/HomePageClient";
 
-export const dynamic = "force-dynamic"; 
+export const revalidate = 3600; // Revalidate at most every hour 
 
 export default async function Home({
   searchParams,
