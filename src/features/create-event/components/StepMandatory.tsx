@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee, Sparkles } from "lucide-react";
+import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
 import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
 import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
@@ -240,7 +240,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                             disabled={isCreatingCollege} 
                             className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
                           >
-                            {isCreatingCollege ? <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                            {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
                             {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
                           </button>
                         )}

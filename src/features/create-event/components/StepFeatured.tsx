@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, Sparkles, CheckCircle2, UploadCloud, Crop } from "lucide-react";
+import { ArrowLeft, CheckCircle2, UploadCloud, Crop } from "lucide-react";
 import Cropper from "react-easy-crop";
 
 export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing }: any) {
@@ -12,7 +12,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
       {/* FEATURE TOGGLE */}
       <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
         <div>
-          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Feature this Event</h4>
+          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">Feature this Event</h4>
           <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
         </div>
         <button type="button" onClick={() => updateData({ isFeatured: !data.isFeatured })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.isFeatured ? "bg-amber-500" : "bg-slate-300"}`}>

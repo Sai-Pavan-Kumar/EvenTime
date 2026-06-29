@@ -2,7 +2,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
-import { Trophy, Crown, Medal, Award, Info, Sparkles, ArrowRight, Share2 } from "lucide-react";
+import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
 import { redirect } from "next/navigation";
 
 export const revalidate = 0;
@@ -175,7 +175,7 @@ export default async function LeaderboardPage() {
              
              <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
                <div className="w-20 h-20 bg-amber-50 border border-amber-100 rounded-[24px] flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500">
-                 <Sparkles className="w-10 h-10 text-amber-500" />
+                 <Trophy className="w-10 h-10 text-amber-500" />
                </div>
                <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
                  The Throne is Empty

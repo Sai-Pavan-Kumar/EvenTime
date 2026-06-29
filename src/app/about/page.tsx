@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Sparkles, Users, Target } from "lucide-react";
+import { Users, Target } from "lucide-react";
 export const metadata: Metadata = {
   title: "About Us | EvenTime",
   description: "Learn more about EvenTime and our mission.",
@@ -9,9 +9,6 @@ export default function AboutPage() {
     <main className="min-h-screen bg-[#F5F5F7] pt-24 pb-32">
       <div className="max-w-4xl mx-auto px-4 md:px-8">
         <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-100">
-          <div className="inline-flex items-center justify-center p-3 bg-brand-primary/10 rounded-2xl text-brand-primary mb-6">
-            <Sparkles className="w-8 h-8" />
-          </div>
           <h1 className="text-4xl md:text-5xl font-heading font-black text-slate-900 mb-6 tracking-tight">
             About EvenTime
           </h1>

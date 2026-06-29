@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ArrowRight, UserPlus } from "lucide-react";
+import { X, ArrowRight, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow } from "@/types";
 
@@ -105,7 +105,7 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
                   <div className="w-12 h-12 bg-brand-primary/10 rounded-2xl flex items-center justify-center shrink-0">
                     {isGuest
                       ? <UserPlus className="w-6 h-6 text-brand-primary" />
-                      : <Sparkles className="w-6 h-6 text-brand-primary" />
+                      : <UserPlus className="w-6 h-6 text-brand-primary" />
                     }
                   </div>
                   <div className="pr-2">

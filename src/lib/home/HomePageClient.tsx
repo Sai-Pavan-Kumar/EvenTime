@@ -5,7 +5,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { Sparkles, CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
+import { CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Sparkles, AlertTriangle } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import { createClient } from "@/lib/supabase/client";
@@ -377,9 +377,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                                 disabled={isCreatingCollege}
                                 className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
                               >
-                                {isCreatingCollege
-                                  ? <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
-                                  : <Sparkles className="w-4 h-4" />}
+                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
                                 {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
                               </button>
                             )}

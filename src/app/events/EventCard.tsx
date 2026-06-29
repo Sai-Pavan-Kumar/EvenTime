@@ -2,7 +2,7 @@
 
   import Image from "next/image";
   import Link from "next/link";
-  import { Bookmark, Sparkles, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
   import { useState, useEffect } from "react";
   import { createClient } from "@/lib/supabase/client";
   import { format, differenceInCalendarDays } from "date-fns";
@@ -300,9 +300,9 @@
                     </span>
                   )}
 
-                  {isFeatured && !matchLabel && (
+                   {isFeatured && !matchLabel && (
                     <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      <Sparkles className="w-3 h-3" /> Featured
+                      Featured
                     </span>
                   )}
                 </div>

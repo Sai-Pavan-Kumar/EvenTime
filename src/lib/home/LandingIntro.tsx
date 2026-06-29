@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Sparkles, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
 
 export function LandingIntro() {
   return (
@@ -9,7 +9,7 @@ export function LandingIntro() {
       <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
         <div className="flex-1 space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold">
-            <Sparkles className="w-4 h-4" /> What is EvenTime?
+            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
             India's cleanest directory for tech & startup events.
@@ -22,7 +22,7 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/placeholders/what.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/what.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/placeholders/why.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/why.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
           </div>
         </div>
@@ -93,7 +93,7 @@ export function LandingIntro() {
           <div className="space-y-6">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5 text-[#6C47FF]" />
+                <Star className="w-5 h-5 text-[#6C47FF]" />
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
@@ -130,7 +130,7 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/placeholders/benefits.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/benefits.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
           </div>
         </div>

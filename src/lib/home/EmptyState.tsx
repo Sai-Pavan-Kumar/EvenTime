@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Sparkles, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 import { ReactNode } from "react";
 
 export interface EmptyStateProps {
@@ -36,9 +36,9 @@ export function EmptyState({
         <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
           {message}
         </p>
-        {showButton && (
+       {showButton && (
           <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
-            <Sparkles className="w-4 h-4 text-warning" /> {buttonText}
+            {buttonText}
           </Link>
         )}
       </div>

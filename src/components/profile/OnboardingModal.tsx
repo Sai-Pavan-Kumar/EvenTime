@@ -191,9 +191,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
           {/* STEP 1: The Welcome */}
           {step === 1 && !isSaving && (
             <motion.div key="step1" exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
-              <div className="w-16 h-16 bg-brand-primary/10 rounded-2xl flex items-center justify-center mx-auto text-brand-primary">
-                <Sparkles className="w-8 h-8" />
-              </div>
               <div>
                 <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
                 <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
@@ -309,7 +306,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                               ))}
                             {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
                               <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                {isCreatingCollege ? <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                {isCreatingCollege && <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />}
                                 {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
                               </button>
                             )}
