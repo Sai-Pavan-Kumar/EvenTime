@@ -10,6 +10,7 @@ import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import type { User } from "@supabase/supabase-js";
 import { HeroSection } from "./HeroSection";
+import { LandingIntro } from "./LandingIntro";
 import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
@@ -179,12 +180,14 @@ export function HomePageClient(props: HomePageClientProps) {
         {view !== "map" && (
           <>
             {/* Header Section Background & Combined Navigation Pill */}
-            <div className="relative">
-              <HeroSection stats={platformStats} />
-            </div>
+            {!user && (
+              <div className="relative">
+                <HeroSection stats={platformStats} />
+              </div>
+            )}
 
             {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
-            <div className="sticky top-[80px] -mt-8 z-40 mx-auto mb-10 w-max">
+            <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
               <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
                 <div className="flex flex-col items-center px-3">
                   <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
@@ -205,12 +208,12 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             </div>
 
-            {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-            {!user && (
-              <p className="text-center text-[#555570] font-medium text-sm md:text-base max-w-[640px] mx-auto px-4 -mt-4 mb-4 leading-relaxed">
-                Stop hunting across ten apps. We&apos;ve already found what&apos;s happening — you just have to look here.
-              </p>
-            )}
+                    {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
+        {!user && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <LandingIntro />
+          </div>
+        )}
           </>
         )}
 
