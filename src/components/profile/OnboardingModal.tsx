@@ -384,8 +384,10 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
               
               <div className="space-y-4">
                 <div className="space-y-3 pt-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
-                  <div className="flex flex-wrap gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                    What categories do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : `(picked ${categories.length}/6)`}</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto no-scrollbar">
                     {categoriesList.map(opt => {
                       const isSelected = categories.includes(opt);
                       const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
