@@ -237,7 +237,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                       ))}
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-2">
+                  {/* ADDED: max-h-48 overflow-y-auto no-scrollbar to make it scrollable on mobile */}
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
                     {CITIES.map(loc => {
                       const isSelected = cities.includes(loc);
                       const isDisabled = !isSelected && !isAdmin && cities.length >= 3;
