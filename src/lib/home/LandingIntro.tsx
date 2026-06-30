@@ -25,13 +25,14 @@ export function LandingIntro({
             We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
           </p>
         </div>
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/what1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
+          <div className="flex-1 w-full relative aspect-square rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+            <Image 
+              src="/landing-assets/what1.png" 
+              alt="What is EvenTime" 
+              fill 
+              className="object-cover"
+            />
           </div>
-        </div>
       </div>
 
       {/* SECTION 2: How it works */}
@@ -62,14 +63,15 @@ export function LandingIntro({
       </div>
 
       {/* SECTION 3: Why we built it */}
-      <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/why1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
+          <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+          <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+            <Image 
+              src="/landing-assets/why1.png" 
+              alt="Why EvenTime" 
+              fill 
+              className="object-cover"
+            />
           </div>
-        </div>
         <div className="flex-1 space-y-6">
             <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
               Built for event enthusiasts.
@@ -138,13 +140,14 @@ export function LandingIntro({
             </div>
           </div>
         </div>
-        <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/benefits1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
+          <div className="flex-1 w-full relative aspect-square rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+            <Image 
+              src="/landing-assets/benefits.png" 
+              alt="EvenTime Benefits" 
+              fill 
+              className="object-cover"
+            />
           </div>
-        </div>
       </div>
       
     </div>

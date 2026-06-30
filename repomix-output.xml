@@ -6274,181 +6274,6 @@ export function useEventSubmit() {
 }
 </file>
 
-<file path="src/lib/home/LandingIntro.tsx">
-import Image from "next/image";
-import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
-
-export function LandingIntro({ 
-  isLeaderboardEnabled = false, 
-  isSmartAlertsEnabled = false 
-}: { 
-  isLeaderboardEnabled?: boolean;
-  isSmartAlertsEnabled?: boolean;
-}) {
-  return (
-    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      
-      {/* SECTION 1: What is it? */}
-      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
-        <div className="flex-1 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold">
-            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
-          </div>
-          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for college, tech, startup events & etc
-          </h2>
-          <p className="text-lg text-slate-500 leading-relaxed font-medium">
-            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
-            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
-          </p>
-        </div>
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/what1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 2: How it works */}
-      <div className="mb-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
-          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
-          ].map((item, i) => (
-            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
-                {item.step}
-              </div>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
-              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION 3: Why we built it */}
-      <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/why1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
-          </div>
-        </div>
-        <div className="flex-1 space-y-6">
-            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
-              Built for event enthusiasts.
-            </h2>
-            <p className="text-lg text-slate-600 leading-relaxed font-medium">
-              We were tired of finding out about an amazing event two days after registrations closed. 
-              Information is scattered, and people lose out on opportunities simply because they didn't know. 
-            </p>
-          <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
-          </p>
-        </div>
-      </div>
-
-      {/* SECTION 4: Why Sign In? */}
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        <div className="flex-1 space-y-8">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
-              Unlock the full experience
-            </h2>
-            <p className="text-lg text-slate-500 font-medium">
-              Guest mode is great, but an account is better. Takes 10 seconds via Google.
-            </p>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Star className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
-                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    ET Score Leaderboard
-                    {!isLeaderboardEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
-                    )}
-                  </h4>
-                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-[#6C47FF]" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    Smart Alerts
-                    {!isSmartAlertsEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
-                    )}
-                  </h4>
-                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/benefits1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
-          </div>
-        </div>
-      </div>
-      
-    </div>
-  );
-}
-
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  );
-}
-</file>
-
 <file path="package.json">
 {
   "name": "eventime",
@@ -6750,6 +6575,63 @@ export async function toggleLeaderboardAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/leaderboard");
   return { success: true };
+}
+</file>
+
+<file path="src/app/profile/settings/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import SettingsClient from "./SettingsClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  // Fetch existing profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, avatar_url, preferred_cities, user_type, college, college_id, branch, graduation_year, goals, is_onboarded")
+    .eq("id", user.id)
+    .single();
+  // College list is fetched client-side in SettingsClient for better search UX
+
+  // NEW: Fetch active events to calculate counts per category
+  const today = new Date().toISOString();
+  const { data: activeEvents } = await supabase
+    .from("events")
+    .select("category")
+    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
+    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
+
+  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
+  const categoryCounts: Record<string, number> = {};
+  if (activeEvents) {
+    activeEvents.forEach(event => {
+      if (event.category) {
+        let cats: string[] = [];
+        if (Array.isArray(event.category)) {
+          cats = event.category;
+        } else if (typeof event.category === 'string') {
+          try {
+            const parsed = JSON.parse(event.category);
+            cats = Array.isArray(parsed) ? parsed : [event.category];
+          } catch {
+            cats = [event.category];
+          }
+        }
+        cats.forEach(c => {
+          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  // Cast profile to any to bypass strict Typescript errors until global types are updated
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
 }
 </file>
 
@@ -7161,6 +7043,181 @@ export function CityGrid({ events }: CityGridProps) {
 }
 </file>
 
+<file path="src/lib/home/LandingIntro.tsx">
+import Image from "next/image";
+import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
+
+export function LandingIntro({ 
+  isLeaderboardEnabled = false, 
+  isSmartAlertsEnabled = false 
+}: { 
+  isLeaderboardEnabled?: boolean;
+  isSmartAlertsEnabled?: boolean;
+}) {
+  return (
+    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      
+      {/* SECTION 1: What is it? */}
+      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
+        <div className="flex-1 space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold">
+            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
+          </div>
+          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
+            India's cleanest directory for college, tech, startup events & etc
+          </h2>
+          <p className="text-lg text-slate-500 leading-relaxed font-medium">
+            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
+            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
+          </p>
+        </div>
+        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
+          <div className="text-center p-6">
+            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
+            <p className="text-sm text-slate-500">/landing-assets/what1.png</p>
+            <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 2: How it works */}
+      <div className="mb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
+          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
+          ].map((item, i) => (
+            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
+                {item.step}
+              </div>
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
+              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: Why we built it */}
+      <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+          <div className="text-center p-6">
+            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
+            <p className="text-sm text-slate-500">/landing-assets/why1.png</p>
+            <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
+          </div>
+        </div>
+        <div className="flex-1 space-y-6">
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
+              Built for event enthusiasts.
+            </h2>
+            <p className="text-lg text-slate-600 leading-relaxed font-medium">
+              We were tired of finding out about an amazing event two days after registrations closed. 
+              Information is scattered, and people lose out on opportunities simply because they didn't know. 
+            </p>
+          <p className="text-lg text-slate-600 leading-relaxed font-medium">
+            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
+          </p>
+        </div>
+      </div>
+
+      {/* SECTION 4: Why Sign In? */}
+      <div className="flex flex-col md:flex-row items-center gap-12">
+        <div className="flex-1 space-y-8">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
+              Unlock the full experience
+            </h2>
+            <p className="text-lg text-slate-500 font-medium">
+              Guest mode is great, but an account is better. Takes 10 seconds via Google.
+            </p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
+                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    ET Score Leaderboard
+                    {!isLeaderboardEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                    )}
+                  </h4>
+                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    Smart Alerts
+                    {!isSmartAlertsEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                    )}
+                  </h4>
+                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+          <div className="text-center p-6">
+            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
+            <p className="text-sm text-slate-500">/landing-assets/benefits1.png</p>
+            <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  );
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+</file>
+
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -7257,63 +7314,6 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
-</file>
-
-<file path="src/app/profile/settings/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import SettingsClient from "./SettingsClient";
-
-export const dynamic = "force-dynamic";
-
-export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // Fetch existing profile data
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, username, avatar_url, preferred_cities, user_type, college, college_id, branch, graduation_year, goals, is_onboarded")
-    .eq("id", user.id)
-    .single();
-  // College list is fetched client-side in SettingsClient for better search UX
-
-  // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
-  const { data: activeEvents } = await supabase
-    .from("events")
-    .select("category")
-    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
-    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
-
-  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
-  const categoryCounts: Record<string, number> = {};
-  if (activeEvents) {
-    activeEvents.forEach(event => {
-      if (event.category) {
-        let cats: string[] = [];
-        if (Array.isArray(event.category)) {
-          cats = event.category;
-        } else if (typeof event.category === 'string') {
-          try {
-            const parsed = JSON.parse(event.category);
-            cats = Array.isArray(parsed) ? parsed : [event.category];
-          } catch {
-            cats = [event.category];
-          }
-        }
-        cats.forEach(c => {
-          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
-        });
-      }
-    });
-  }
-
-  // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
 }
 </file>
 
@@ -9770,504 +9770,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 }
 </file>
 
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event, index) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { createClient } from "@/lib/supabase/client";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-    collegeName?: string; // NEW: college that hosts the event
-    priority?: boolean; // NEW: For LCP image optimization
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-    collegeName,
-    priority = false,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-        setIsSaving(true);
-      const newState = !savedState;
-      setSavedState(newState); // optimistic update
-      
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to save event:", err);
-      }
-      if (onSaveToggle) {        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      }  
-    }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > exactCheckDate.getTime();
-          
-          if (pastDate || pastTime) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    unoptimized={true}
-                    priority={priority}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                   {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NEW: Auth Modal Overlay */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
-            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
-              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Bookmark className="w-6 h-6 text-brand" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
-              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
-                Sign In
-              </Link>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-</file>
-
 <file path="src/app/profile/settings/SettingsClient.tsx">
 "use client";
 
@@ -10810,6 +10312,504 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
 
   );
 }
+</file>
+
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event, index) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
+    priority?: boolean; // NEW: For LCP image optimization
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+    collegeName,
+    priority = false,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > exactEventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      }  
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          const pastTime = today.getTime() > exactCheckDate.getTime();
+          
+          if (pastDate || pastTime) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    unoptimized={true}
+                    priority={priority}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.png') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                   {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* NEW: Auth Modal Overlay */}
+        {showAuthModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
+            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
+              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Bookmark className="w-6 h-6 text-brand" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
+              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
+                Sign In
+              </Link>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
 </file>
 
 <file path="src/components/profile/OnboardingModal.tsx">
@@ -12892,11 +12892,15 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
 
                     {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-        {!user && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <LandingIntro />
-          </div>
-        )}
+          {!user && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+              {/* Nuvvu database nunchi fetch chese admin settings object variable ni ikkada update chey (e.g. settings.leaderboard_active) */}
+              <LandingIntro 
+                isLeaderboardEnabled={false} 
+                isSmartAlertsEnabled={false} 
+              />
+            </div>
+          )}
           </>
         )}
 
