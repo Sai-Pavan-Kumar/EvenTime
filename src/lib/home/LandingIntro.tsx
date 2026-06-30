@@ -18,9 +18,7 @@ export function LandingIntro({
             <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for <br />
-            college, tech, startup <br />
-            & all other event categories.
+            India's cleanest directory for college, tech, startup & all other event categories.
           </h2>
           
           {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
@@ -78,19 +76,22 @@ export function LandingIntro({
       </div>
 
       {/* SECTION 3: Why we built it */}
-          <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
-          <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100">
-            <Image 
-              src="/landing-assets/why1.png" 
-              alt="Why EvenTime" 
-              fill 
-              className="object-cover"
-            />
-          </div>
-        <div className="flex-1 space-y-6">
+      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+        <div className="flex-1 space-y-6 flex flex-col">
             <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
               Built for event enthusiasts.
             </h2>
+
+            {/* MOBILE ONLY IMAGE */}
+            <div className="w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 block md:hidden mt-2 mb-2">
+              <Image 
+                src="/landing-assets/why1.png" 
+                alt="Why EvenTime" 
+                fill 
+                className="object-cover"
+              />
+            </div>
+
             <p className="text-lg text-slate-600 leading-relaxed font-medium">
               We were tired of finding out about an amazing event two days after registrations closed. 
               Information is scattered, and people lose out on opportunities simply because they didn't know. 
@@ -99,11 +100,21 @@ export function LandingIntro({
             That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
           </p>
         </div>
+        
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 hidden md:block">
+          <Image 
+            src="/landing-assets/why1.png" 
+            alt="Why EvenTime" 
+            fill 
+            className="object-cover"
+          />
+        </div>
       </div>
 
       {/* SECTION 4: Why Sign In? */}
       <div className="flex flex-col md:flex-row items-center gap-12">
-        <div className="flex-1 space-y-8">
+        <div className="flex-1 space-y-8 flex flex-col">
           <div>
             <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
               Unlock the full experience
@@ -111,6 +122,16 @@ export function LandingIntro({
             <p className="text-lg text-slate-500 font-medium">
               Guest mode is great, but an account is better. Takes 10 seconds via Google.
             </p>
+          </div>
+
+          {/* MOBILE ONLY IMAGE - exactly between heading and features list */}
+          <div className="w-full relative aspect-square block md:hidden mt-2 mb-2">
+            <Image 
+              src="/landing-assets/benefits1.png" 
+              alt="EvenTime Benefits" 
+              fill 
+              className="object-contain"
+            />
           </div>
           
           <div className="space-y-6">
@@ -155,14 +176,16 @@ export function LandingIntro({
             </div>
           </div>
         </div>
-          <div className="flex-1 w-full relative aspect-square">
-            <Image 
-              src="/landing-assets/benefits1.png" 
-              alt="EvenTime Benefits" 
-              fill 
-              className="object-contain"
-            />
-          </div>
+
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-square hidden md:block">
+          <Image 
+            src="/landing-assets/benefits1.png" 
+            alt="EvenTime Benefits" 
+            fill 
+            className="object-contain"
+          />
+        </div>
       </div>
       
     </div>
