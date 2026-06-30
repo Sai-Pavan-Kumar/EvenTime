@@ -390,12 +390,12 @@
           )}
         </AnimatePresence>
 
-                  {/* NEW: Auth Modal Overlay */}
+          {/* NEW: Auth Modal Overlay */}
           {showAuthModal && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
               <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-brand/10 hover:text-brand rounded-full transition-colors">
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors">
                   <X className="w-5 h-5" />
                 </button>
                 <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
@@ -404,10 +404,10 @@
                 <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
                 <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
                 <div className="flex gap-3">
-                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-brand/10 hover:text-brand transition-colors">
+                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
                     Cancel
                   </button>
-                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
                     Sign In
                   </Link>
                 </div>
