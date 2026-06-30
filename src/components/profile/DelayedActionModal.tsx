@@ -92,41 +92,36 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
                 pointerEvents: "auto",
               }}
             >
-              <div className="bg-white border border-slate-200 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)] rounded-[32px] p-8 relative overflow-hidden">
-
-                <button
-                  onClick={handleClose}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 hover:bg-slate-100 rounded-full p-1.5"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex gap-4">
-                  <div className="w-12 h-12 bg-brand-primary/10 rounded-2xl flex items-center justify-center shrink-0">
+                              <div className="bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center relative z-10">
+                  <button
+                    onClick={handleClose}
+                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+  
+                  <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2 shrink-0">
                     {isGuest
-                      ? <UserPlus className="w-6 h-6 text-brand-primary" />
-                      : <UserPlus className="w-6 h-6 text-brand-primary" />
+                      ? <UserPlus className="w-6 h-6 text-[#6C47FF]" />
+                      : <UserPlus className="w-6 h-6 text-[#6C47FF]" />
                     }
                   </div>
-                  <div className="pr-2">
-                    <h4 className="text-sm font-heading font-black text-slate-900 mb-1.5 leading-tight">
-                      {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium mb-4 leading-relaxed">
-                      {isGuest
-                        ? "Sign in to save events, host your own, and get tailored recommendations."
-                        : "Tell us your interests to see events that actually matter to you."}
-                    </p>
-                    <button
-                      onClick={handleCTA}
-                      className="w-full text-xs font-bold bg-text-primary hover:bg-black text-white px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-black/10"
-                    >
-                      {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
+                  
+                  <h4 className="font-heading font-bold text-xl text-slate-900 leading-tight">
+                    {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
+                  </h4>
+                  <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">
+                    {isGuest
+                      ? "Sign in to save events, host your own, and get tailored recommendations."
+                      : "Tell us your interests to see events that actually matter to you."}
+                  </p>
+                  <button
+                    onClick={handleCTA}
+                    className="w-full bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
+                  >
+                    {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
-
-              </div>
             </motion.div>
           </div>
         </>
