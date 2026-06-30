@@ -324,11 +324,29 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                       ))}
                     </div>
                   )}
-                  <p className="text-sm font-semibold text-slate-700">
+                                    <p className="text-sm font-semibold text-slate-700">
                     {localInterestCount} {localInterestCount === 1 ? "person" : "people"} interested
                   </p>
                 </div>
               )}
+
+              {/* Mobile Action Buttons (Inline) */}
+              <div className="md:hidden flex gap-3 pt-2 border-t border-slate-200 mt-2">
+                <button
+                  onClick={handleInterestedClick}
+                  disabled={isLoadingInterest || isCuratorOrAdmin}
+                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
+                  }`}
+                >
+                  {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
+                </button>
+                {!isPastEvent && (
+                  <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                    Register <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
 
             </div>
           </div>
@@ -336,7 +354,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         </div>
       </div>
 
-      {/* Similar Events — separate full-width section */}
+      {/* Similar Events - separate full-width section */}
       {similarEvents && similarEvents.length > 0 && (
         <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
           <div className="flex items-center justify-between mb-4">
@@ -382,26 +400,6 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           </div>
         </div>
       )}
-
-      
-
-      {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex gap-3 z-40 pb-safe">
-        <button
-          onClick={handleInterestedClick}
-          disabled={isLoadingInterest || isCuratorOrAdmin}
-          className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-            isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-900"
-          }`}
-        >
-          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
-        </button>
-        {!isPastEvent && (
-          <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-            Register <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
-      </div>
 
       {/* Auth Modal */}
       <AnimatePresence>
