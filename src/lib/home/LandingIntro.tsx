@@ -1,7 +1,13 @@
 import Image from "next/image";
 import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
 
-export function LandingIntro() {
+export function LandingIntro({ 
+  isLeaderboardEnabled = false, 
+  isSmartAlertsEnabled = false 
+}: { 
+  isLeaderboardEnabled?: boolean;
+  isSmartAlertsEnabled?: boolean;
+}) {
   return (
     <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       
@@ -12,7 +18,7 @@ export function LandingIntro() {
             <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for tech & startup events.
+            India's cleanest directory for college, tech, startup events & etc
           </h2>
           <p className="text-lg text-slate-500 leading-relaxed font-medium">
             Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
@@ -22,7 +28,7 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/what.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/what1.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
           </div>
         </div>
@@ -60,18 +66,18 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/why.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/why1.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
           </div>
         </div>
         <div className="flex-1 space-y-6">
-          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">
-            By students, for students.
-          </h2>
-          <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            We were tired of finding out about an amazing hackathon two days after registrations closed. 
-            Information is scattered, and students lose out on opportunities simply because they didn't know. 
-          </p>
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
+              Built for event enthusiasts.
+            </h2>
+            <p className="text-lg text-slate-600 leading-relaxed font-medium">
+              We were tired of finding out about an amazing event two days after registrations closed. 
+              Information is scattered, and people lose out on opportunities simply because they didn't know. 
+            </p>
           <p className="text-lg text-slate-600 leading-relaxed font-medium">
             That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
           </p>
@@ -106,22 +112,27 @@ export function LandingIntro() {
                 <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
               </div>
               <div>
-                <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  ET Score Leaderboard
-                  <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
-                </h4>
-                <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    ET Score Leaderboard
+                    {!isLeaderboardEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                    )}
+                  </h4>
+                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  Smart Alerts
-                </h4>
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    Smart Alerts
+                    {!isSmartAlertsEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                    )}
+                  </h4>
                 <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
               </div>
             </div>
@@ -130,7 +141,7 @@ export function LandingIntro() {
         <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
           <div className="text-center p-6">
             <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/benefits.png</p>
+            <p className="text-sm text-slate-500">/landing-assets/benefits1.png</p>
             <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
           </div>
         </div>

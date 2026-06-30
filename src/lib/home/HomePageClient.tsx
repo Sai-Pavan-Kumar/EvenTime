@@ -209,11 +209,15 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
 
                     {/* GUEST-ONLY INTRO — explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-        {!user && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-            <LandingIntro />
-          </div>
-        )}
+          {!user && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+              {/* Nuvvu database nunchi fetch chese admin settings object variable ni ikkada update chey (e.g. settings.leaderboard_active) */}
+              <LandingIntro 
+                isLeaderboardEnabled={false} 
+                isSmartAlertsEnabled={false} 
+              />
+            </div>
+          )}
           </>
         )}
 
