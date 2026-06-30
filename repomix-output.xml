@@ -125,6 +125,7 @@ public/hero-section-v2.png
 public/icon-192.png
 public/landing-assets/benefits1.png
 public/landing-assets/what1.png
+public/landing-assets/why1.png
 public/llms.txt
 public/logo.png
 public/manifest.json
@@ -4744,6 +4745,79 @@ export function getMatchLabel(
 }
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  const cities = Array.from(cityMap.entries()).sort((a, b) => {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+     {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/EmptyState.tsx">
 import Link from "next/link";
 import { SearchX } from "lucide-react";
@@ -6274,6 +6348,157 @@ export function useEventSubmit() {
 }
 </file>
 
+<file path="src/lib/city-config.ts">
+export const CITY_CONFIG: Record<string, {
+  backgroundImage: string;
+  accentColor: string;
+}> = {
+  'hyderabad': {
+    backgroundImage: '/cities/hyderabad.webp',
+    accentColor: '#6C47FF',
+  },
+   'bengaluru': {
+    backgroundImage: '/cities/bengaluru.webp', 
+    accentColor: '#0EA5E9',
+  },
+  'mumbai': {
+    backgroundImage: '/cities/mumbai.webp',
+    accentColor: '#F59E0B',
+  },
+  'new-delhi': {
+    backgroundImage: '/cities/new-delhi.webp', 
+    accentColor: '#EF4444',
+  },
+  'chennai': {
+    backgroundImage: '/cities/chennai.webp',
+    accentColor: '#10B981',
+  },
+  'pune': {
+    backgroundImage: '/cities/pune.webp',
+    accentColor: '#8B5CF6',
+  },
+  'kolkata': {
+    backgroundImage: '/cities/kolkata.webp',
+    accentColor: '#F97316',
+  },
+  'jaipur': {
+    backgroundImage: '/cities/jaipur.webp',
+    accentColor: '#EC4899',
+  },
+  'ahmedabad': {
+    backgroundImage: '/cities/ahmedabad.webp',
+    accentColor: '#14B8A6',
+  },
+  'kochi': {
+    backgroundImage: '/cities/kochi.webp',
+    accentColor: '#22C55E',
+  },
+  'visakhapatnam': {
+    backgroundImage: '/cities/visakhapatnam.webp', 
+    accentColor: '#6366F1',
+  },
+  'coimbatore': {
+    backgroundImage: '/cities/coimbatore.webp',
+    accentColor: '#A855F7',
+  },
+  'nizamabad': {
+    backgroundImage: '/cities/nizamabad.webp',
+    accentColor: '#6C47FF',
+  },
+  'online': {
+    backgroundImage: '/cities/online.webp',
+    accentColor: '#6366F1',
+  },
+  'bhopal': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#3B82F6',
+  },
+  'guntur': {
+    backgroundImage: '/cities/guntur.webp', 
+    accentColor: '#6366F1',
+  },
+  'gurugram': {
+    backgroundImage: '/cities/gurugram.webp', 
+    accentColor: '#6366F1',
+  },
+  'indore': {
+    backgroundImage: '/cities/indore.webp', 
+    accentColor: '#6366F1',
+  },
+  'kakinada': {
+    backgroundImage: '/cities/kakinada.webp', 
+    accentColor: '#6366F1',
+  },
+  'kanpur': {
+    backgroundImage: '/cities/kanpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'karimnagar': {
+    backgroundImage: '/cities/karimnagar.webp', 
+    accentColor: '#6366F1',
+  },
+  'khammam': {
+    backgroundImage: '/cities/khammam.webp', 
+    accentColor: '#6366F1',
+  },
+  'lucknow': {
+    backgroundImage: '/cities/lucknow.webp', 
+    accentColor: '#6366F1',
+  },
+  'mangaluru': {
+    backgroundImage: '/cities/mangaluru.webp', 
+    accentColor: '#6366F1',
+  },
+  'mysuru': {
+    backgroundImage: '/cities/mysuru.webp', 
+    accentColor: '#6366F1',
+  },
+  'nagpur': {
+    backgroundImage: '/cities/nagpur.webp', 
+    accentColor: '#6366F1',
+  },
+  'noida': {
+    backgroundImage: '/cities/noida.webp', 
+    accentColor: '#6366F1',
+  },
+  'thiruvananthapuram': {
+    backgroundImage: '/cities/thiruvananthapuram.webp', 
+    accentColor: '#6366F1',
+  },
+  'tirupati': {
+    backgroundImage: '/cities/tirupati.webp', 
+    accentColor: '#6366F1',
+  },
+  'vijayawada': {
+    backgroundImage: '/cities/bhopal.webp', 
+    accentColor: '#6366F1',
+  },
+  'warangal': {
+    backgroundImage: '/cities/vijayawada.webp', 
+    accentColor: '#6366F1',
+  },
+};
+
+export const getCityConfig = (city: string) => {
+  const fallback = { 
+    backgroundImage: '/cities/default.webp', 
+    coverImage: '/cities/default.webp', 
+    accentColor: '#6C47FF' 
+  };
+  
+  if (!city) return fallback;
+  
+  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
+  const config = CITY_CONFIG[key];
+  
+  if (!config) return fallback;
+  return {
+    ...config,
+    coverImage: `/cities/covers/${key}.webp`
+  };
+};
+</file>
+
 <file path="package.json">
 {
   "name": "eventime",
@@ -6815,405 +7040,6 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
         })}
       </div>
     </div>
-  );
-}
-</file>
-
-<file path="src/lib/city-config.ts">
-export const CITY_CONFIG: Record<string, {
-  backgroundImage: string;
-  accentColor: string;
-}> = {
-  'hyderabad': {
-    backgroundImage: '/cities/hyderabad.webp',
-    accentColor: '#6C47FF',
-  },
-   'bengaluru': {
-    backgroundImage: '/cities/bengaluru.webp', 
-    accentColor: '#0EA5E9',
-  },
-  'mumbai': {
-    backgroundImage: '/cities/mumbai.webp',
-    accentColor: '#F59E0B',
-  },
-  'new-delhi': {
-    backgroundImage: '/cities/new-delhi.webp', 
-    accentColor: '#EF4444',
-  },
-  'chennai': {
-    backgroundImage: '/cities/chennai.webp',
-    accentColor: '#10B981',
-  },
-  'pune': {
-    backgroundImage: '/cities/pune.webp',
-    accentColor: '#8B5CF6',
-  },
-  'kolkata': {
-    backgroundImage: '/cities/kolkata.webp',
-    accentColor: '#F97316',
-  },
-  'jaipur': {
-    backgroundImage: '/cities/jaipur.webp',
-    accentColor: '#EC4899',
-  },
-  'ahmedabad': {
-    backgroundImage: '/cities/ahmedabad.webp',
-    accentColor: '#14B8A6',
-  },
-  'kochi': {
-    backgroundImage: '/cities/kochi.webp',
-    accentColor: '#22C55E',
-  },
-  'visakhapatnam': {
-    backgroundImage: '/cities/visakhapatnam.webp', 
-    accentColor: '#6366F1',
-  },
-  'coimbatore': {
-    backgroundImage: '/cities/coimbatore.webp',
-    accentColor: '#A855F7',
-  },
-  'nizamabad': {
-    backgroundImage: '/cities/nizamabad.webp',
-    accentColor: '#6C47FF',
-  },
-  'online': {
-    backgroundImage: '/cities/online.webp',
-    accentColor: '#6366F1',
-  },
-  'bhopal': {
-    backgroundImage: '/cities/bhopal.webp', 
-    accentColor: '#3B82F6',
-  },
-  'guntur': {
-    backgroundImage: '/cities/guntur.webp', 
-    accentColor: '#6366F1',
-  },
-  'gurugram': {
-    backgroundImage: '/cities/gurugram.webp', 
-    accentColor: '#6366F1',
-  },
-  'indore': {
-    backgroundImage: '/cities/indore.webp', 
-    accentColor: '#6366F1',
-  },
-  'kakinada': {
-    backgroundImage: '/cities/kakinada.webp', 
-    accentColor: '#6366F1',
-  },
-  'kanpur': {
-    backgroundImage: '/cities/kanpur.webp', 
-    accentColor: '#6366F1',
-  },
-  'karimnagar': {
-    backgroundImage: '/cities/karimnagar.webp', 
-    accentColor: '#6366F1',
-  },
-  'khammam': {
-    backgroundImage: '/cities/khammam.webp', 
-    accentColor: '#6366F1',
-  },
-  'lucknow': {
-    backgroundImage: '/cities/lucknow.webp', 
-    accentColor: '#6366F1',
-  },
-  'mangaluru': {
-    backgroundImage: '/cities/mangaluru.webp', 
-    accentColor: '#6366F1',
-  },
-  'mysuru': {
-    backgroundImage: '/cities/mysuru.webp', 
-    accentColor: '#6366F1',
-  },
-  'nagpur': {
-    backgroundImage: '/cities/nagpur.webp', 
-    accentColor: '#6366F1',
-  },
-  'noida': {
-    backgroundImage: '/cities/noida.webp', 
-    accentColor: '#6366F1',
-  },
-  'thiruvananthapuram': {
-    backgroundImage: '/cities/thiruvananthapuram.webp', 
-    accentColor: '#6366F1',
-  },
-  'tirupati': {
-    backgroundImage: '/cities/tirupati.webp', 
-    accentColor: '#6366F1',
-  },
-  'vijayawada': {
-    backgroundImage: '/cities/bhopal.webp', 
-    accentColor: '#6366F1',
-  },
-  'warangal': {
-    backgroundImage: '/cities/vijayawada.webp', 
-    accentColor: '#6366F1',
-  },
-};
-
-export const getCityConfig = (city: string) => {
-  const fallback = { 
-    backgroundImage: '/cities/default.webp', 
-    coverImage: '/cities/default.webp', 
-    accentColor: '#6C47FF' 
-  };
-  
-  if (!city) return fallback;
-  
-  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  const config = CITY_CONFIG[key];
-  
-  if (!config) return fallback;
-  return {
-    ...config,
-    coverImage: `/cities/covers/${key}.webp`
-  };
-};
-</file>
-
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-     {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/LandingIntro.tsx">
-import Image from "next/image";
-import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
-
-export function LandingIntro({ 
-  isLeaderboardEnabled = false, 
-  isSmartAlertsEnabled = false 
-}: { 
-  isLeaderboardEnabled?: boolean;
-  isSmartAlertsEnabled?: boolean;
-}) {
-  return (
-    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      
-      {/* SECTION 1: What is it? */}
-      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
-        <div className="flex-1 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold">
-            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
-          </div>
-          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for college, tech, startup events & etc
-          </h2>
-          <p className="text-lg text-slate-500 leading-relaxed font-medium">
-            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
-            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
-          </p>
-        </div>
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden group">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/what1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: People looking at a giant clean calendar)</p>
-          </div>
-        </div>
-      </div>
-
-      {/* SECTION 2: How it works */}
-      <div className="mb-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
-          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
-          ].map((item, i) => (
-            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
-                {item.step}
-              </div>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
-              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION 3: Why we built it */}
-      <div className="flex flex-col-reverse md:flex-row items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/why1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: Frustrated student looking at multiple messy apps vs happy student on EvenTime)</p>
-          </div>
-        </div>
-        <div className="flex-1 space-y-6">
-            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
-              Built for event enthusiasts.
-            </h2>
-            <p className="text-lg text-slate-600 leading-relaxed font-medium">
-              We were tired of finding out about an amazing event two days after registrations closed. 
-              Information is scattered, and people lose out on opportunities simply because they didn't know. 
-            </p>
-          <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
-          </p>
-        </div>
-      </div>
-
-      {/* SECTION 4: Why Sign In? */}
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        <div className="flex-1 space-y-8">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
-              Unlock the full experience
-            </h2>
-            <p className="text-lg text-slate-500 font-medium">
-              Guest mode is great, but an account is better. Takes 10 seconds via Google.
-            </p>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Star className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
-                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    ET Score Leaderboard
-                    {!isLeaderboardEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
-                    )}
-                  </h4>
-                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-[#6C47FF]" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    Smart Alerts
-                    {!isSmartAlertsEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
-                    )}
-                  </h4>
-                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 w-full relative aspect-square rounded-2xl bg-slate-100 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
-          <div className="text-center p-6">
-            <p className="text-slate-400 font-bold mb-2">PLACEHOLDER</p>
-            <p className="text-sm text-slate-500">/landing-assets/benefits1.png</p>
-            <p className="text-xs text-slate-400 mt-4">(Vector: User profile dashboard with points, notifications, and personalized cards floating around)</p>
-          </div>
-        </div>
-      </div>
-      
-    </div>
-  );
-}
-
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
   );
 }
 </file>
@@ -8869,6 +8695,178 @@ export function Footer() {
 }
 </file>
 
+<file path="src/features/create-event/CreateEventForm.tsx">
+"use client";
+
+import { useState, useEffect, SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { FieldStatus, CreateEventFormProps } from "./types";
+import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+function toLocalDateString(d: Date) { 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Hooks
+import { useEventExtraction } from "./hooks/useEventExtraction";
+import { useImageCrop } from "./hooks/useImageCrop";
+import { useEventSubmit } from "./hooks/useEventSubmit";
+
+// New 2-Step Components
+import { StepMandatory } from "./components/StepMandatory";
+import { StepFeatured } from "./components/StepFeatured";
+
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+}
+
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
+  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const supabase = createClient();
+
+  // Unified State Object
+  const [eventData, setEventData] = useState({
+    regLink: initialData?.registration_link || "",
+    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
+    title: initialData?.title || "",
+    category: initialData?.category || "",
+    isCreatingNewCategory: false,
+    selectedAudience: initialData?.target_audience || [],
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    city: initialData?.city || "",
+    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
+    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
+    collegeBranch: initialData?.college_branch || "",
+    collegeYear: initialData?.college_year || "",
+    collegeOnly: initialData?.college_only || false,
+    collegeId: initialData?.college_id || null,
+    collegeName: initialData?.colleges?.name || "",
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
+    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
+    hasEndTime: !!initialData?.end_time,
+    hasEndDate: !!initialData?.end_date_string,
+    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
+    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
+    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
+    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
+    isOnline: initialData?.is_virtual || false,
+    isFree: initialData?.is_free ?? true,
+    price: initialData?.price?.toString() || "",
+    // Step 2 Adv/Featured
+    isFeatured: initialData?.is_featured || false,
+    organizer: initialData?.organizer_name || "",
+    prizes: initialData?.prizes || "",
+    teamSize: initialData?.team_size || "",
+    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
+    website: initialData?.website || ""
+  });
+
+  const updateData = (updates: Partial<typeof eventData>) => {
+    setEventData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  const extraction = useEventExtraction({ 
+    setTitle: (v) => updateData({ title: v }), 
+    setDescription: (v) => updateData({ description: v }), 
+    setLocation: (v) => updateData({ location: v }), 
+    setSelectedDate: (v) => updateData({ selectedDate: v }), 
+    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
+    initialLink: initialData?.registration_link ?? undefined,
+    currentEventId: initialData?.id,
+    initialIsTrusted: eventData.isTrustedDomain
+  });
+  
+  const crop = useImageCrop(initialData?.poster_url ?? undefined);
+  const { isSubmitting, submitEvent } = useEventSubmit();
+
+   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
+   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
+  const handleSubmit = () => {
+    submitEvent({
+      title: eventData.title,
+      category: eventData.category,
+      organizer_name: eventData.organizer,
+      description: eventData.description,
+      target_audience: eventData.selectedAudience,
+      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
+      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
+      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
+      location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
+      is_virtual: eventData.isOnline,
+      is_free: eventData.isFree,
+      price: eventData.isFree ? 0 : Number(eventData.price),
+      registration_link: eventData.regLink,
+      prizes: eventData.prizes,
+      team_size: eventData.teamSize,
+      website: eventData.website,
+      is_featured: eventData.isFeatured,
+      status: eventData.isTrustedDomain ? "approved" : "pending",
+      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
+      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
+      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
+      college_year: isCollegeCategory ? eventData.collegeYear : null,
+      college_only: isCollegeCategory ? eventData.collegeOnly : null,
+      college_id: isCollegeCategory && eventData.collegeOnly ? eventData.collegeId : null,
+      imageFile: crop.imageFile, 
+      previewUrl: crop.previewUrl
+    }, isEditing, initialData?.id);
+  };
+
+  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="mb-10 text-center">
+        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
+          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+        </h1>
+        <p className="text-slate-500 text-sm">
+          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        </p>
+      </div>
+
+      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepMandatory 
+              data={eventData} 
+              updateData={updateData} 
+              isCollegeCategory={isCollegeCategory}
+              extraction={extraction}
+              onNext={() => {
+                if (isAdminFeatureEnabled) setStep(1);
+                else handleSubmit(); // Skip straight to submit if feature is off
+              }}
+              isValid={Boolean(step0Valid)}
+              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
+              onSubmit={handleSubmit}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+              isEditing={isEditing}
+            />
+          )}
+          {step === 1 && (
+            <StepFeatured 
+              data={eventData} 
+              updateData={updateData} 
+              crop={crop}
+              onBack={() => setStep(0)} 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+              isEditing={isEditing}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/events/[slug]/page.tsx">
 import { Metadata } from "next";
 import { createClient as createServerClient } from "@/lib/supabase/server";
@@ -9598,178 +9596,6 @@ Promise<{ tab?: string }>; }) {
 }
 </file>
 
-<file path="src/features/create-event/CreateEventForm.tsx">
-"use client";
-
-import { useState, useEffect, SetStateAction } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-function toLocalDateString(d: Date) { 
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-// Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
-import { useImageCrop } from "./hooks/useImageCrop";
-import { useEventSubmit } from "./hooks/useEventSubmit";
-
-// New 2-Step Components
-import { StepMandatory } from "./components/StepMandatory";
-import { StepFeatured } from "./components/StepFeatured";
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
-}
-
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
-  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
-  const supabase = createClient();
-
-  // Unified State Object
-  const [eventData, setEventData] = useState({
-    regLink: initialData?.registration_link || "",
-    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
-    title: initialData?.title || "",
-    category: initialData?.category || "",
-    isCreatingNewCategory: false,
-    selectedAudience: initialData?.target_audience || [],
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
-    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
-    collegeBranch: initialData?.college_branch || "",
-    collegeYear: initialData?.college_year || "",
-    collegeOnly: initialData?.college_only || false,
-    collegeId: initialData?.college_id || null,
-    collegeName: initialData?.colleges?.name || "",
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
-    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
-    hasEndTime: !!initialData?.end_time,
-    hasEndDate: !!initialData?.end_date_string,
-    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
-    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
-    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
-    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    isOnline: initialData?.is_virtual || false,
-    isFree: initialData?.is_free ?? true,
-    price: initialData?.price?.toString() || "",
-    // Step 2 Adv/Featured
-    isFeatured: initialData?.is_featured || false,
-    organizer: initialData?.organizer_name || "",
-    prizes: initialData?.prizes || "",
-    teamSize: initialData?.team_size || "",
-    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
-    website: initialData?.website || ""
-  });
-
-  const updateData = (updates: Partial<typeof eventData>) => {
-    setEventData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined,
-    currentEventId: initialData?.id,
-    initialIsTrusted: eventData.isTrustedDomain
-  });
-  
-  const crop = useImageCrop(initialData?.poster_url ?? undefined);
-  const { isSubmitting, submitEvent } = useEventSubmit();
-
-   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
-  const handleSubmit = () => {
-    submitEvent({
-      title: eventData.title,
-      category: eventData.category,
-      organizer_name: eventData.organizer,
-      description: eventData.description,
-      target_audience: eventData.selectedAudience,
-      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
-      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
-      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
-      location: eventData.isOnline ? "Virtual Event" : eventData.location,
-      city: eventData.isOnline ? "online" : eventData.city,
-      is_virtual: eventData.isOnline,
-      is_free: eventData.isFree,
-      price: eventData.isFree ? 0 : Number(eventData.price),
-      registration_link: eventData.regLink,
-      prizes: eventData.prizes,
-      team_size: eventData.teamSize,
-      website: eventData.website,
-      is_featured: eventData.isFeatured,
-      status: eventData.isTrustedDomain ? "approved" : "pending",
-      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
-      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
-      college_year: isCollegeCategory ? eventData.collegeYear : null,
-      college_only: isCollegeCategory ? eventData.collegeOnly : null,
-      college_id: isCollegeCategory && eventData.collegeOnly ? eventData.collegeId : null,
-      imageFile: crop.imageFile, 
-      previewUrl: crop.previewUrl
-    }, isEditing, initialData?.id);
-  };
-
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
-
-  return (
-    <div className="max-w-3xl mx-auto w-full">
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
-        </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
-        </p>
-      </div>
-
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepMandatory 
-              data={eventData} 
-              updateData={updateData} 
-              isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); // Skip straight to submit if feature is off
-              }}
-              isValid={Boolean(step0Valid)}
-              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
-              onSubmit={handleSubmit}
-              isAdminFeatureEnabled={isAdminFeatureEnabled}
-              isEditing={isEditing}
-            />
-          )}
-          {step === 1 && (
-            <StepFeatured 
-              data={eventData} 
-              updateData={updateData} 
-              crop={crop}
-              onBack={() => setStep(0)} 
-              onSubmit={handleSubmit} 
-              isSubmitting={isSubmitting}
-              isEditing={isEditing}
-            />
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/profile/settings/SettingsClient.tsx">
 "use client";
 
@@ -10310,6 +10136,222 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
       </div>
     </main>
 
+  );
+}
+</file>
+
+<file path="src/lib/home/LandingIntro.tsx">
+import Image from "next/image";
+import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
+
+export function LandingIntro({ 
+  isLeaderboardEnabled = false, 
+  isSmartAlertsEnabled = false 
+}: { 
+  isLeaderboardEnabled?: boolean;
+  isSmartAlertsEnabled?: boolean;
+}) {
+  return (
+    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      
+      {/* SECTION 1: What is it? */}
+      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
+        <div className="flex-1 space-y-6 flex flex-col">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold w-fit">
+            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
+          </div>
+          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
+            India's cleanest directory for college, tech, startup & all other event categories.
+          </h2>
+          
+          {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
+          <div className="w-full relative aspect-video block md:hidden mt-2 mb-2">
+            <Image 
+              src="/landing-assets/what1.png" 
+              alt="What is EvenTime" 
+              fill 
+              className="object-contain"
+            />
+          </div>
+
+          <p className="text-lg text-slate-500 leading-relaxed font-medium">
+            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
+            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
+          </p>
+        </div>
+        
+        {/* DESKTOP ONLY IMAGE - Appears normally on the right side */}
+        <div className="flex-1 w-full relative aspect-video hidden md:block">
+          <Image 
+            src="/landing-assets/what1.png" 
+            alt="What is EvenTime" 
+            fill 
+            className="object-contain"
+          />
+        </div>
+      </div>
+
+      {/* SECTION 2: How it works */}
+      <div className="mb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
+          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
+          ].map((item, i) => (
+            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
+                {item.step}
+              </div>
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
+              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: Why we built it */}
+      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+        <div className="flex-1 space-y-6 flex flex-col">
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
+              Built for event enthusiasts.
+            </h2>
+
+            {/* MOBILE ONLY IMAGE */}
+            <div className="w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 block md:hidden mt-2 mb-2">
+              <Image 
+                src="/landing-assets/why1.png" 
+                alt="Why EvenTime" 
+                fill 
+                className="object-cover"
+              />
+            </div>
+
+            <p className="text-lg text-slate-600 leading-relaxed font-medium">
+              We were tired of finding out about an amazing event two days after registrations closed. 
+              Information is scattered, and people lose out on opportunities simply because they didn't know. 
+            </p>
+          <p className="text-lg text-slate-600 leading-relaxed font-medium">
+            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
+          </p>
+        </div>
+        
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 hidden md:block">
+          <Image 
+            src="/landing-assets/why1.png" 
+            alt="Why EvenTime" 
+            fill 
+            className="object-cover"
+          />
+        </div>
+      </div>
+
+      {/* SECTION 4: Why Sign In? */}
+      <div className="flex flex-col md:flex-row items-center gap-12">
+        <div className="flex-1 space-y-8 flex flex-col">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
+              Unlock the full experience
+            </h2>
+            <p className="text-lg text-slate-500 font-medium">
+              Guest mode is great, but an account is better. Takes 10 seconds via Google.
+            </p>
+          </div>
+
+          {/* MOBILE ONLY IMAGE - exactly between heading and features list */}
+          <div className="w-full relative aspect-square block md:hidden mt-2 mb-2">
+            <Image 
+              src="/landing-assets/benefits1.png" 
+              alt="EvenTime Benefits" 
+              fill 
+              className="object-contain"
+            />
+          </div>
+          
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
+                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    ET Score Leaderboard
+                    {!isLeaderboardEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
+                    )}
+                  </h4>
+                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    Smart Alerts
+                    {!isSmartAlertsEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
+                    )}
+                  </h4>
+                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-square hidden md:block">
+          <Image 
+            src="/landing-assets/benefits1.png" 
+            alt="EvenTime Benefits" 
+            fill 
+            className="object-contain"
+          />
+        </div>
+      </div>
+      
+    </div>
+  );
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   );
 }
 </file>
