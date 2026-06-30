@@ -13,19 +13,18 @@ export function LandingIntro({
       
       {/* SECTION 1: What is it? */}
       <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
-        <div className="flex-1 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold">
+        <div className="flex-1 space-y-6 flex flex-col">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold w-fit">
             <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for college, tech, startup events & etc
+            India's cleanest directory for <br />
+            college, tech, startup <br />
+            & all other event categories.
           </h2>
-          <p className="text-lg text-slate-500 leading-relaxed font-medium">
-            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
-            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
-          </p>
-        </div>
-          <div className="flex-1 w-full relative aspect-video">
+          
+          {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
+          <div className="w-full relative aspect-video block md:hidden mt-2 mb-2">
             <Image 
               src="/landing-assets/what1.png" 
               alt="What is EvenTime" 
@@ -33,6 +32,22 @@ export function LandingIntro({
               className="object-contain"
             />
           </div>
+
+          <p className="text-lg text-slate-500 leading-relaxed font-medium">
+            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
+            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
+          </p>
+        </div>
+        
+        {/* DESKTOP ONLY IMAGE - Appears normally on the right side */}
+        <div className="flex-1 w-full relative aspect-video hidden md:block">
+          <Image 
+            src="/landing-assets/what1.png" 
+            alt="What is EvenTime" 
+            fill 
+            className="object-contain"
+          />
+        </div>
       </div>
 
       {/* SECTION 2: How it works */}
@@ -114,10 +129,10 @@ export function LandingIntro({
                 <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
               </div>
               <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                     ET Score Leaderboard
                     {!isLeaderboardEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
                     )}
                   </h4>
                   <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
@@ -129,10 +144,10 @@ export function LandingIntro({
                   <Bell className="w-5 h-5 text-[#6C47FF]" />
                 </div>
                 <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                     Smart Alerts
                     {!isSmartAlertsEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Coming Soon</span>
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
                     )}
                   </h4>
                 <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
