@@ -25,12 +25,12 @@ export function LandingIntro({
             We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
           </p>
         </div>
-          <div className="flex-1 w-full relative aspect-video rounded-2xl overflow-hidden shadow-lg border border-slate-100 bg-white">
+          <div className="flex-1 w-full relative aspect-video">
             <Image 
               src="/landing-assets/what1.png" 
               alt="What is EvenTime" 
               fill 
-              className="object-contain p-4"
+              className="object-contain"
             />
           </div>
       </div>
@@ -140,12 +140,12 @@ export function LandingIntro({
             </div>
           </div>
         </div>
-          <div className="flex-1 w-full relative aspect-square rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+          <div className="flex-1 w-full relative aspect-square">
             <Image 
               src="/landing-assets/benefits1.png" 
               alt="EvenTime Benefits" 
               fill 
-              className="object-cover"
+              className="object-contain"
             />
           </div>
       </div>
