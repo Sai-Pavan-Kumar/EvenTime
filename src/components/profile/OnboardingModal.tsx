@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Sparkles, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, X, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
@@ -356,11 +356,35 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                     </motion.div>
                   )}
                 </AnimatePresence>
+              </div>
 
-                {/* 4. Categories Selector */}
+              <button 
+                onClick={() => setStep(3)} 
+                disabled={!username.trim() || cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch))}
+                className="w-full bg-text-primary hover:bg-black disabled:bg-slate-100 disabled:text-slate-400 text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4 flex items-center justify-center gap-2"
+              >
+                Next Step <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* STEP 3: Categories Selection */}
+          {step === 3 && !isSaving && (
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setStep(2)}
+                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h2 className="text-xl font-heading font-extrabold text-text-primary">Your Interests</h2>
+              </div>
+              
+              <div className="space-y-4">
                 <div className="space-y-3 pt-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What categories do you want to see?</label>
-                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
+                  <div className="flex flex-wrap gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                     {categoriesList.map(opt => {
                       const isSelected = categories.includes(opt);
                       const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
@@ -384,7 +408,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
               <button 
                 onClick={handleSave} 
-                disabled={!username.trim() || cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch)) || categories.length === 0}
+                disabled={categories.length === 0}
                 className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
                 Complete Profile

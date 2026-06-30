@@ -220,6 +220,7 @@ src/lib/home/FilterChips.tsx
 src/lib/home/HeroSection.tsx
 src/lib/home/HomePageClient.tsx
 src/lib/home/LandingIntro.tsx
+src/lib/home/not-found.tsx
 src/lib/supabase/admin.ts
 src/lib/supabase/client.ts
 src/lib/supabase/server.ts
@@ -1699,7 +1700,8 @@ export default async function CategoryPage({
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
 
 export default function GlobalError({
   error,
@@ -1709,36 +1711,43 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service if needed
     console.error("Global App Error:", error);
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-surface-basebase flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="bg-white p-8 md:p-12 rounded-[32px] shadow-sm border border-slate-100 max-w-md w-full flex flex-col items-center">
-        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mb-6">
-          <AlertTriangle className="w-10 h-10 text-red-500" />
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error-state.png" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
         </div>
         
-        <h1 className="text-3xl font-heading font-black text-slate-900 mb-3 tracking-tight">
-          Oops! Something broke.
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
         </h1>
         
-        <p className="text-slate-500 font-medium text-base mb-8 leading-relaxed">
-          We encountered an unexpected error on our end. Don't worry, the stage is still here.
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
           <button
             onClick={() => reset()}
-            className="w-full flex items-center justify-center gap-2 bg-text-primary hover:bg-black text-white px-6 py-3.5 rounded-full font-bold active:scale-95 transition-all shadow-md"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
           >
             <RefreshCcw className="w-4 h-4" /> Try Again
           </button>
           
           <Link 
             href="/"
-            className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-3.5 rounded-full font-bold active:scale-95 transition-all"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
           >
             <Home className="w-4 h-4" /> Go Home
           </Link>
@@ -3197,6 +3206,47 @@ export const CAREER_GOALS = [
 export type CareerGoal = typeof CAREER_GOALS[number];
 </file>
 
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404-state.png" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/supabase/client.ts">
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
@@ -4154,146 +4204,6 @@ export default function TermsOfServicePage() {
 }
 </file>
 
-<file path="src/components/profile/DelayedActionModal.tsx">
-"use client";
-
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { AuthUser, ProfileRow } from "@/types";
-
-interface DelayedPromptProps {
-  user: AuthUser | null;
-  profile: Partial<ProfileRow> | null;
-  onOpen: () => void;
-}
-
-const GUEST_PROMPT_KEY = "EvevnTime_guest_prompt_seen";
-const USER_PROMPT_KEY = "EvenTime_user_prompt_seen";
-
-export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isClosed, setIsClosed] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (profile?.is_onboarded) return;
-
-    const storageKey = !user ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
-    if (localStorage.getItem(storageKey)) return;
-
-    const timer = setTimeout(() => setIsVisible(true), 10000);
-    return () => clearTimeout(timer);
-  }, [profile, user]);
-
-  if (!mounted || !isVisible || isClosed || profile?.is_onboarded) return null;
-
-  const isGuest = !user;
-  const storageKey = isGuest ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
-
-  const handleClose = () => {
-    localStorage.setItem(storageKey, "true");
-    setIsClosed(true);
-  };
-
-  const handleCTA = () => {
-    localStorage.setItem(storageKey, "true");
-    setIsClosed(true);
-    if (isGuest) {
-      router.push("/login");
-    } else {
-      onOpen();
-    }
-  };
-
-  return createPortal(
-    <AnimatePresence>
-      {!isClosed && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-            style={{ position: "fixed", inset: 0, zIndex: 99998 }}
-            className="bg-slate-900/60 pointer-events-auto"
-          />
-
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 99999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "24px",
-              pointerEvents: "none",
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              style={{
-                width: "100%",
-                maxWidth: "360px",
-                pointerEvents: "auto",
-              }}
-            >
-              <div className="bg-white border border-slate-200 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.35)] rounded-[32px] p-8 relative overflow-hidden">
-
-                <button
-                  onClick={handleClose}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 transition-colors bg-slate-50 hover:bg-slate-100 rounded-full p-1.5"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex gap-4">
-                  <div className="w-12 h-12 bg-brand-primary/10 rounded-2xl flex items-center justify-center shrink-0">
-                    {isGuest
-                      ? <UserPlus className="w-6 h-6 text-brand-primary" />
-                      : <UserPlus className="w-6 h-6 text-brand-primary" />
-                    }
-                  </div>
-                  <div className="pr-2">
-                    <h4 className="text-sm font-heading font-black text-slate-900 mb-1.5 leading-tight">
-                      {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
-                    </h4>
-                    <p className="text-xs text-slate-500 font-medium mb-4 leading-relaxed">
-                      {isGuest
-                        ? "Sign in to save events, host your own, and get tailored recommendations."
-                        : "Tell us your interests to see events that actually matter to you."}
-                    </p>
-                    <button
-                      onClick={handleCTA}
-                      className="w-full text-xs font-bold bg-text-primary hover:bg-black text-white px-4 py-3 rounded-xl transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-black/10"
-                    >
-                      {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepMedia.tsx">
 "use client";
 
@@ -4820,13 +4730,12 @@ export function CityGrid({ events }: CityGridProps) {
 
 <file path="src/lib/home/EmptyState.tsx">
 import Link from "next/link";
-import { SearchX } from "lucide-react";
-import { ReactNode } from "react";
+import Image from "next/image";
 
 export interface EmptyStateProps {
   title: string;
   message: string;
-  icon?: ReactNode;
+  imageSrc?: string;
   buttonText?: string;
   showButton?: boolean;
   variant?: "default" | "foryou";
@@ -4835,7 +4744,7 @@ export interface EmptyStateProps {
 export function EmptyState({ 
   title, 
   message, 
-  icon, 
+  imageSrc = "/illustrations/empty-state.png", 
   buttonText = "Host an Event", 
   showButton = true, 
   variant = "default" 
@@ -4843,14 +4752,23 @@ export function EmptyState({
   const isForYou = variant === "foryou";
   
   return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card border border-dashed border-border-default relative overflow-hidden w-full`}>
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
       <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
 
       <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        <div className={`${isForYou ? 'w-20 h-20 rounded-lg' : 'w-24 h-24 rounded-xl'} bg-surface-base flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500 border border-border-default`}>
-          {icon || <SearchX className={`${isForYou ? 'w-8 h-8' : 'w-10 h-10'} text-text-muted`} />}
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+          <Image 
+            src={imageSrc} 
+            alt="Empty State Illustration" 
+            fill 
+            className="object-contain" 
+          />
         </div>
+
         <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
           {title}
         </h3>
@@ -4858,7 +4776,7 @@ export function EmptyState({
           {message}
         </p>
        {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
             {buttonText}
           </Link>
         )}
@@ -6041,6 +5959,141 @@ export async function updateProfileSettings(formData: FormData) {
 }
 </file>
 
+<file path="src/components/profile/DelayedActionModal.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, ArrowRight, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { AuthUser, ProfileRow } from "@/types";
+
+interface DelayedPromptProps {
+  user: AuthUser | null;
+  profile: Partial<ProfileRow> | null;
+  onOpen: () => void;
+}
+
+const GUEST_PROMPT_KEY = "EvevnTime_guest_prompt_seen";
+const USER_PROMPT_KEY = "EvenTime_user_prompt_seen";
+
+export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (profile?.is_onboarded) return;
+
+    const storageKey = !user ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
+    if (localStorage.getItem(storageKey)) return;
+
+    const timer = setTimeout(() => setIsVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [profile, user]);
+
+  if (!mounted || !isVisible || isClosed || profile?.is_onboarded) return null;
+
+  const isGuest = !user;
+  const storageKey = isGuest ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
+
+  const handleClose = () => {
+    localStorage.setItem(storageKey, "true");
+    setIsClosed(true);
+  };
+
+  const handleCTA = () => {
+    localStorage.setItem(storageKey, "true");
+    setIsClosed(true);
+    if (isGuest) {
+      router.push("/login");
+    } else {
+      onOpen();
+    }
+  };
+
+  return createPortal(
+    <AnimatePresence>
+      {!isClosed && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            style={{ position: "fixed", inset: 0, zIndex: 99998 }}
+            className="bg-slate-900/60 pointer-events-auto"
+          />
+
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 99999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+              pointerEvents: "none",
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              style={{
+                width: "100%",
+                maxWidth: "360px",
+                pointerEvents: "auto",
+              }}
+            >
+                              <div className="bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center relative z-10">
+                  <button
+                    onClick={handleClose}
+                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+  
+                  <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2 shrink-0">
+                    {isGuest
+                      ? <UserPlus className="w-6 h-6 text-[#6C47FF]" />
+                      : <UserPlus className="w-6 h-6 text-[#6C47FF]" />
+                    }
+                  </div>
+                  
+                  <h4 className="font-heading font-bold text-xl text-slate-900 leading-tight">
+                    {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
+                  </h4>
+                  <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">
+                    {isGuest
+                      ? "Sign in to save events, host your own, and get tailored recommendations."
+                      : "Tell us your interests to see events that actually matter to you."}
+                  </p>
+                  <button
+                    onClick={handleCTA}
+                    className="w-full bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
+                  >
+                    {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+}
+</file>
+
 <file path="src/features/create-event/components/StepFeatured.tsx">
 "use client";
 
@@ -7139,6 +7192,106 @@ export default function RootLayout({
         <Toaster />
       </body>
     </html>
+  );
+}
+</file>
+
+<file path="src/components/layout/Footer.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
+
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
+
+export function Footer() {
+  return (
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+
+        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
+
+                {/* Brand */}
+        <div className="flex flex-col items-center gap-2 lg:items-start">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              EvenTime
+            </h3>
+          </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+          {/* Action Pages Links */}
+          <div className="flex items-center gap-3 mt-1">
+            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
+          </div>
+        </div>
+
+
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3 lg:items-start">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
+          </div>
+        </div>
+
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4 lg:items-start">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        </div>
+
+        {/* Divider with pill sitting on it */}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="w-full h-px bg-white/10" />
+          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            The SurfBoard
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <p className="text-xs font-medium text-white/30 -mt-2">
+          © {new Date().getFullYear()} EvenTime. All rights reserved.
+        </p>
+
+      </div>
+    </footer>
   );
 }
 </file>
@@ -8595,106 +8748,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
-<file path="src/components/layout/Footer.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
-
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
-
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
-
-export function Footer() {
-  return (
-    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
-
-        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
-
-                {/* Brand */}
-        <div className="flex flex-col items-center gap-2 lg:items-start">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
-            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
-              EvenTime
-            </h3>
-          </div>
-          <p className="text-white/40 text-sm font-medium">
-            Your event search struggles end here.
-          </p>
-          {/* Action Pages Links */}
-          <div className="flex items-center gap-3 mt-1">
-            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
-          </div>
-        </div>
-
-
-        {/* For any Queries */}
-        <div className="flex flex-col items-center gap-3 lg:items-start">
-          <h4 className="text-base font-bold text-white">For any Queries</h4>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
-            <InstagramIcon className="w-4 h-4" />
-            Message us on Instagram
-          </a>
-          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
-            <MapPin className="w-4 h-4" />
-            Hyderabad, India
-          </div>
-        </div>
-
-        {/* Join the Family */}
-        <div className="flex flex-col items-center gap-4 lg:items-start">
-          <h4 className="text-base font-bold text-white">Join the Family</h4>
-          <div className="flex items-center gap-4">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <InstagramIcon className="w-5 h-5" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <YoutubeIcon className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        </div>
-
-        {/* Divider with pill sitting on it */}
-        <div className="relative w-full flex items-center justify-center">
-          <div className="w-full h-px bg-white/10" />
-          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
-            The SurfBoard
-          </div>
-        </div>
-
-        {/* Copyright */}
-        <p className="text-xs font-medium text-white/30 -mt-2">
-          © {new Date().getFullYear()} EvenTime. All rights reserved.
-        </p>
-
-      </div>
-    </footer>
-  );
-}
-</file>
-
 <file path="src/features/create-event/CreateEventForm.tsx">
 "use client";
 
@@ -10140,6 +10193,87 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
 }
 </file>
 
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event, index) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/LandingIntro.tsx">
 import Image from "next/image";
 import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
@@ -10354,504 +10488,6 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event, index) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { createClient } from "@/lib/supabase/client";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-    collegeName?: string; // NEW: college that hosts the event
-    priority?: boolean; // NEW: For LCP image optimization
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-    collegeName,
-    priority = false,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-        setIsSaving(true);
-      const newState = !savedState;
-      setSavedState(newState); // optimistic update
-      
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to save event:", err);
-      }
-      if (onSaveToggle) {        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      }  
-    }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > exactCheckDate.getTime();
-          
-          if (pastDate || pastTime) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    unoptimized={true}
-                    priority={priority}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                   {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* NEW: Auth Modal Overlay */}
-        {showAuthModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowAuthModal(false)} />
-            <div className="relative w-full max-w-sm bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100 z-10">
-              <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Bookmark className="w-6 h-6 text-brand" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900">Save Events</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6">Please sign in to save this event to your profile.</p>
-              <Link href="/login" className="w-full bg-brand hover:brightness-110 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all text-center">
-                Sign In
-              </Link>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
 </file>
 
 <file path="src/components/profile/OnboardingModal.tsx">
@@ -11261,66 +10897,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
         </AnimatePresence>
       </motion.div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/HeroSection.tsx">
-"use client";
-
-import Image from "next/image";
-
-interface PlatformStats {
-  event_count: number;
-  city_count: number;
-  category_count: number;
-  user_count: number;
-}
-
-export function HeroSection({ stats }: { stats?: PlatformStats }) {
-  return (
-    <div className="relative w-full bg-white overflow-hidden">
-      
-      {/* Background Image Layer (DESKTOP ONLY) */}
-      <div className="absolute inset-0 z-0 hidden md:block">
-        <Image 
-          src="/hero-section-v2.png" 
-          alt="EvenTime Hero Background" 
-          fill
-          priority
-          unoptimized={true}
-          // object-right-bottom ensures the stage (which is on the right) and the bottom edge are perfectly visible
-          className="object-cover object-right-bottom"
-        />
-      </div>
-      
-      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between md:min-h-[450px] lg:min-h-[550px]">
-        
-        {/* Text Layer: Left Aligned always. 
-            Mobile: -mb-10 pulls the image up so text overlaps it (saves height).
-            Desktop: mb-20 pushes the text upwards from center for better visibility. */}
-        <div className="relative z-20 w-full px-4 sm:px-8 pt-12 -mb-10 sm:-mb-14 md:mt-0 md:mb-24 lg:mb-32 md:w-3/5 text-left">
-          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The Dictionary
-            <br />
-            for <span className="text-[#6C47FF]">Events.</span>
-          </h1>    
-        </div>
-
-        {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
-        <div className="w-full md:hidden relative z-0 aspect-[2.5/1] mb-12 sm:mb-16">
-          <Image 
-            src="/hero-section-v2.png" 
-            alt="EvenTime Hero Background" 
-            fill
-            priority
-            unoptimized={true}
-            className="object-contain object-bottom"
-          />
-        </div>
-
-      </div>
     </div>
   );
 }
@@ -11849,6 +11425,488 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         )}
       </AnimatePresence>
     </main>
+  );
+}
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
+    priority?: boolean; // NEW: For LCP image optimization
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+    collegeName,
+    priority = false,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > exactEventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      }  
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          const pastTime = today.getTime() > exactCheckDate.getTime();
+          
+          if (pastDate || pastTime) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    unoptimized={true}
+                    priority={priority}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.png') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                   {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+          {/* NEW: Auth Modal Overlay */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+              <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <Bookmark className="w-6 h-6 text-slate-700" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
+                <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+                    Cancel
+                  </button>
+                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+      </>
+    );
+  }
+</file>
+
+<file path="src/lib/home/HeroSection.tsx">
+"use client";
+
+import Image from "next/image";
+
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
+  return (
+    <div className="relative w-full bg-white overflow-hidden">
+      
+      {/* Background Image Layer (DESKTOP ONLY) */}
+      <div className="absolute inset-0 z-0 hidden md:block">
+        <Image 
+          src="/hero-section-v2.png" 
+          alt="EvenTime Hero Background" 
+          fill
+          priority
+          unoptimized={true}
+          // object-right-bottom ensures the stage (which is on the right) and the bottom edge are perfectly visible
+          className="object-cover object-right-bottom"
+        />
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between md:min-h-[450px] lg:min-h-[550px]">
+        
+        {/* Text Layer: Left Aligned always. 
+            Mobile: -mb-10 pulls the image up so text overlaps it (saves height).
+            Desktop: mb-20 pushes the text upwards from center for better visibility. */}
+        <div className="relative z-20 w-full px-4 sm:px-8 pt-12 -mb-10 sm:-mb-14 md:mt-0 md:mb-24 lg:mb-32 md:w-3/5 text-left">
+          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            The Dictionary
+            <br />
+            for <span className="text-[#6C47FF]">Events.</span>
+          </h1>    
+        </div>
+
+        {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
+        <div className="w-full md:hidden relative z-0 aspect-[2.5/1] mb-12 sm:mb-16">
+          <Image 
+            src="/hero-section-v2.png" 
+            alt="EvenTime Hero Background" 
+            fill
+            priority
+            unoptimized={true}
+            className="object-contain object-bottom"
+          />
+        </div>
+
+      </div>
+    </div>
   );
 }
 </file>

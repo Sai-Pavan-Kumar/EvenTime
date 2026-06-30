@@ -51,6 +51,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
   const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
   const eventUrl = typeof window !== "undefined" ? window.location.href : "";
+  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
   const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
 
   const googleCalendarUrl = (() => {
@@ -197,14 +198,16 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
-              <a
-                href={safeRegistrationLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
-              >
-                Register <ExternalLink className="w-4 h-4" />
-              </a>
+              {!isPastEvent && (
+                <a
+                  href={safeRegistrationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
+                >
+                  Register <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
               <button
                 onClick={handleInterestedClick}
                 disabled={isLoadingInterest || isCuratorOrAdmin}
@@ -382,24 +385,22 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
       
 
-      {/* Mobile Floating Bottom Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-white/95 backdrop-blur-md border-t border-slate-200 z-[60] flex gap-3 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+      {/* Mobile Sticky Action Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex gap-3 z-40 pb-safe">
         <button
           onClick={handleInterestedClick}
           disabled={isLoadingInterest || isCuratorOrAdmin}
           className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-            isCuratorOrAdmin
-              ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-              : isInterested
-                ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                : "bg-slate-100 text-slate-900"
+            isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-900"
           }`}
         >
-          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))}
+          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
         </button>
-        <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-          Register <ExternalLink className="w-4 h-4" />
-        </a>
+        {!isPastEvent && (
+          <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+            Register <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
       </div>
 
       {/* Auth Modal */}

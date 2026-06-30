@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { SearchX } from "lucide-react";
-import { ReactNode } from "react";
+import Image from "next/image";
 
 export interface EmptyStateProps {
   title: string;
   message: string;
-  icon?: ReactNode;
+  imageSrc?: string;
   buttonText?: string;
   showButton?: boolean;
   variant?: "default" | "foryou";
@@ -14,7 +13,7 @@ export interface EmptyStateProps {
 export function EmptyState({ 
   title, 
   message, 
-  icon, 
+  imageSrc = "/illustrations/empty-state.png", 
   buttonText = "Host an Event", 
   showButton = true, 
   variant = "default" 
@@ -22,14 +21,23 @@ export function EmptyState({
   const isForYou = variant === "foryou";
   
   return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card border border-dashed border-border-default relative overflow-hidden w-full`}>
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
       <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
 
       <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        <div className={`${isForYou ? 'w-20 h-20 rounded-lg' : 'w-24 h-24 rounded-xl'} bg-surface-base flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500 border border-border-default`}>
-          {icon || <SearchX className={`${isForYou ? 'w-8 h-8' : 'w-10 h-10'} text-text-muted`} />}
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+          <Image 
+            src={imageSrc} 
+            alt="Empty State Illustration" 
+            fill 
+            className="object-contain" 
+          />
         </div>
+
         <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
           {title}
         </h3>
@@ -37,7 +45,7 @@ export function EmptyState({
           {message}
         </p>
        {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
             {buttonText}
           </Link>
         )}
