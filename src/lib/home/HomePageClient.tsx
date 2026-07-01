@@ -136,10 +136,16 @@ export function HomePageClient(props: HomePageClientProps) {
   if (!noFiltersActive) {
     filteredAllEvents = filteredAllEvents.filter(e => {
       let match = true;
-      if (branch && !e.branch_tags?.includes(branch)) match = false;
-      if (category && e.category !== category) match = false;
-      if (date && e.date_string !== date) match = false;
-      if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+      
+      if (date) {
+        // If a specific date is selected, ignore category, branch, and location filters
+        if (e.date_string !== date) match = false;
+      } else {
+        if (branch && !e.branch_tags?.includes(branch)) match = false;
+        if (category && e.category !== category) match = false;
+        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+      }
+
       if (q) {
         const query = q.toLowerCase();
         if (!e.title?.toLowerCase().includes(query) && 

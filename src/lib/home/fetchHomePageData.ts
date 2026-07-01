@@ -153,23 +153,24 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     query = query.eq("date_string", date);
   } else {
     query = query.gte("date_string", todayStr);
+    
+    // Only apply category, branch, and location filters if a specific date is NOT selected.
+    // This ensures that when a user clicks a calendar date, they see ALL events on that date regardless of their preferences.
+    if (branch) query = query.contains("branch_tags", [branch]);
+    
+    if (category) query = query.eq("category", category);
+
+    if (location) {
+      query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
+    } else {
+      // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
+      const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
+      query = query.or(`${cityFilterList},is_virtual.eq.true`);
+    }
   }
   
   // Final Order: Featured first, then Created Date
   query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
-
-  if (branch) query = query.contains("branch_tags", [branch]);
-  
-  if (category) query = query.eq("category", category);
-
-  if (location) {
-    query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
-  } else if (!date) {
-    // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
-    // When a specific date IS picked, skip city scoping so past/other-city events on that date still show.
-    const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
-    query = query.or(`${cityFilterList},is_virtual.eq.true`);
-  }
   
   if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
 
