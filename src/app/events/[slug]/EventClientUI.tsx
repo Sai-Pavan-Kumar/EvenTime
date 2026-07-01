@@ -180,7 +180,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         </div>
 
         {/* Full-width centered title */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-[#6C47FF] font-heading leading-[1.1] text-center">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-primary font-heading leading-[1.1] text-center">
           {safeTitle}
         </h1>
 
@@ -191,7 +191,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
           <div className="lg:sticky lg:top-8 space-y-6">
 
             {imageUrl ? (
-              <div className="relative w-full rounded-[24px] overflow-hidden">
+              <div className="relative w-full rounded-3x1 overflow-hidden">
                 <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
               </div>
             ) : null}
@@ -203,7 +203,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   href={safeRegistrationLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
                 >
                   Register <ExternalLink className="w-4 h-4" />
                 </a>
@@ -240,7 +240,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             </div>
 
             {/* Event Details Card */}
-            <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-5">
+            <div className="bg-slate-50 rounded-3x1 p-6 border border-slate-100 space-y-5">
 
               {/* Curated by */}
               <div className="flex items-center gap-3">
@@ -299,7 +299,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                     href={googleCalendarUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[14px] font-bold text-[#6C47FF] hover:underline"
+                    className="text-[14px] font-bold text-brand-primary hover:underline"
                   >
                     Add to Google Calendar &rarr;
                   </a>
@@ -316,7 +316,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                           {u.avatar_url ? (
                             <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
                           ) : (
-                            <div className="w-full h-full bg-[#6C47FF]/20 flex items-center justify-center text-[10px] font-bold text-[#6C47FF]">
+                            <div className="w-full h-full bg-brand-primary/20 flex items-center justify-center text-[10px] font-bold text-brand-primary">
                               {(u.username || "?")[0].toUpperCase()}
                             </div>
                           )}
@@ -342,7 +342,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
                 </button>
                 {!isPastEvent && (
-                  <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                  <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
                     Register <ExternalLink className="w-4 h-4" />
                   </a>
                 )}
@@ -382,7 +382,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
               }
               return eventDate.getTime() > new Date().getTime();
             }).map((simEvent) => (
-              <div key={simEvent.id} className="w-[280px] shrink-0">
+              <div key={simEvent.id} className="w-70 shrink-0">
                 <EventCard
                   id={simEvent.id!}
                   slug={simEvent.slug || simEvent.id!}
@@ -422,7 +422,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
               <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
               <div className="flex gap-3">
                 <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
+                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
               </div>
             </motion.div>
           </div>
@@ -447,11 +447,11 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 </button>
               </div>
               <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
-                <div className="relative w-full aspect-[9/16] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
+                <div className="relative w-full aspect-9/16 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
                   <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
                 </div>
                 <div className="flex flex-col gap-3 w-full">
-                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-[#1D1D1F] hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
+                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-text-primary hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
                     {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
                     {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
                   </button>
