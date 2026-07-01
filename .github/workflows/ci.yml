@@ -29,8 +29,8 @@ jobs:
       - name: Build Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: "mock_url"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mock_key"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 
   lighthouse:
     name: Lighthouse Audit
