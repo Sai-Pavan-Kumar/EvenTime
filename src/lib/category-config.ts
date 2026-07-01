@@ -4,163 +4,163 @@ export const CATEGORY_CONFIG: Record<string, {
   dateColor: string;
 }> = {
   'ai-event': {
-  backgroundImage: '/card-backgrounds/ai-event.png',
+  backgroundImage: '/card-backgrounds/ai-event.webp',
   accentColor: '#7C3AED',
   dateColor: '#7C3AED',
 },
 
 'auto-ev-expo': {
-  backgroundImage: '/card-backgrounds/auto-ev-expo.png',
+  backgroundImage: '/card-backgrounds/auto-ev-expo.webp',
   accentColor: '#06B6D4',
   dateColor: '#06B6D4',
 },
 
 'awards-night': {
-  backgroundImage: '/card-backgrounds/awards-night.png',
+  backgroundImage: '/card-backgrounds/awards-night.webp',
   accentColor: '#EAB308',
   dateColor: '#EAB308',
 },
 
 'career-event': {
-  backgroundImage: '/card-backgrounds/career-event.png',
+  backgroundImage: '/card-backgrounds/career-event.webp',
   accentColor: '#0EA5E9',
   dateColor: '#0EA5E9',
 },
 
 'charity-event': {
-  backgroundImage: '/card-backgrounds/charity-event.png',
+  backgroundImage: '/card-backgrounds/charity-event.webp',
   accentColor: '#06B6D4',
   dateColor: '#06B6D4',
 },
 
 'college-event': {
-  backgroundImage: '/card-backgrounds/college-event.png',
+  backgroundImage: '/card-backgrounds/college-event.webp',
   accentColor: '#2563EB',
   dateColor: '#2563EB',
 },
 
 'college-fest': {
-  backgroundImage: '/card-backgrounds/college-fest.png',
+  backgroundImage: '/card-backgrounds/college-fest.webp',
   accentColor: '#9333EA',
   dateColor: '#9333EA',
 },
 
 'comedy-show': {
-  backgroundImage: '/card-backgrounds/comedy-show.png',
+  backgroundImage: '/card-backgrounds/comedy-show.webp',
   accentColor: '#FACC15',
   dateColor: '#FACC15',
 },
 
 'community-event': {
-  backgroundImage: '/card-backgrounds/community-event.png',
+  backgroundImage: '/card-backgrounds/community-event.webp',
   accentColor: '#14B8A6',
   dateColor: '#14B8A6',
 },
 
 'concert': {
-  backgroundImage: '/card-backgrounds/concert.png',
+  backgroundImage: '/card-backgrounds/concert.webp',
   accentColor: '#D946EF',
   dateColor: '#D946EF',
 },
 
 'conference': {
-  backgroundImage: '/card-backgrounds/conference.png',
+  backgroundImage: '/card-backgrounds/conference.webp',
   accentColor: '#6366F1',
   dateColor: '#6366F1',
 },
 
 'creator-meetup': {
-  backgroundImage: '/card-backgrounds/creator-meetup.png',
+  backgroundImage: '/card-backgrounds/creator-meetup.webp',
   accentColor: '#F97316',
   dateColor: '#F97316',
 },
 
 'default-event': {
-  backgroundImage: '/card-backgrounds/default-event.png',
+  backgroundImage: '/card-backgrounds/default-event.webp',
   accentColor: '#6C47FF',
   dateColor: '#6C47FF',
 },
 
 'developer-event': {
-  backgroundImage: '/card-backgrounds/developer-event.png',
+  backgroundImage: '/card-backgrounds/developer-event.webp',
   accentColor: '#2563EB',
   dateColor: '#2563EB',
 },
 
 'exhibition': {
-  backgroundImage: '/card-backgrounds/exhibition.png',
+  backgroundImage: '/card-backgrounds/exhibition.webp',
   accentColor: '#EC4899',
   dateColor: '#EC4899',
 },
 
 'film-festival': {
-  backgroundImage: '/card-backgrounds/film-festival.png',
+  backgroundImage: '/card-backgrounds/film-festival.webp',
   accentColor: '#DC2626',
   dateColor: '#DC2626',
 },
 
 'fitness-event': {
-  backgroundImage: '/card-backgrounds/fitness-event.png',
+  backgroundImage: '/card-backgrounds/fitness-event.webp',
   accentColor: '#22C55E',
   dateColor: '#22C55E',
 },
 
 'food-festival': {
-  backgroundImage: '/card-backgrounds/food-festival.png',
+  backgroundImage: '/card-backgrounds/food-festival.webp',
   accentColor: '#F59E0B',
   dateColor: '#F59E0B',
 },
 
 'founder-meetup': {
-  backgroundImage: '/card-backgrounds/founder-meetup.png',
+  backgroundImage: '/card-backgrounds/founder-meetup.webp',
   accentColor: '#A855F7',
   dateColor: '#A855F7',
 },
 
 'gaming-esports': {
-  backgroundImage: '/card-backgrounds/gaming-esports.png',
+  backgroundImage: '/card-backgrounds/gaming-esports.webp',
   accentColor: '#3B82F6',
   dateColor: '#3B82F6',
 },
 
 'hackathon': {
-  backgroundImage: '/card-backgrounds/hackathon.png',
+  backgroundImage: '/card-backgrounds/hackathon.webp',
   accentColor: '#3B82F6',
   dateColor: '#3B82F6',
 },
 
 'investor-event': {
-  backgroundImage: '/card-backgrounds/investor-event.png',
+  backgroundImage: '/card-backgrounds/investor-event.webp',
   accentColor: '#10B981',
   dateColor: '#10B981',
 },
 
 'music-festival': {
-  backgroundImage: '/card-backgrounds/music-festival.png',
+  backgroundImage: '/card-backgrounds/music-festival.webp',
   accentColor: '#8B5CF6',
   dateColor: '#8B5CF6',
 },
 
 'open-mic': {
-  backgroundImage: '/card-backgrounds/open-mic.png',
+  backgroundImage: '/card-backgrounds/open-mic.webp',
   accentColor: '#FB923C',
   dateColor: '#FB923C',
 },
 
 'pet-event': {
-  backgroundImage: '/card-backgrounds/pet-event.png',
+  backgroundImage: '/card-backgrounds/pet-event.webp',
   accentColor: '#10B981',
   dateColor: '#10B981',
 },
 
 'running-event': {
-  backgroundImage: '/card-backgrounds/running-event.png',
+  backgroundImage: '/card-backgrounds/running-event.webp',
   accentColor: '#F97316',
   dateColor: '#F97316',
 },
 
 'sports-tournament': {
-  backgroundImage: '/card-backgrounds/sports-tournament.png',
+  backgroundImage: '/card-backgrounds/sports-tournament.webp',
   accentColor: '#EF4444',
   dateColor: '#EF4444',
 },
@@ -172,31 +172,31 @@ export const CATEGORY_CONFIG: Record<string, {
 },
 
 'summit': {
-  backgroundImage: '/card-backgrounds/summit.png',
+  backgroundImage: '/card-backgrounds/summit.webp',
   accentColor: '#1E3A8A',
   dateColor: '#1E3A8A',
 },
 
 'tech-event': {
-  backgroundImage: '/card-backgrounds/tech-event.png',
+  backgroundImage: '/card-backgrounds/tech-event.webp',
   accentColor: '#4F46E5',
   dateColor: '#4F46E5',
 },
 
 'wellness-event': {
-  backgroundImage: '/card-backgrounds/wellness-event.png',
+  backgroundImage: '/card-backgrounds/wellness-event.webp',
   accentColor: '#84CC16',
   dateColor: '#84CC16',
 },
 
 'women-event': {
-  backgroundImage: '/card-backgrounds/women-event.png',
+  backgroundImage: '/card-backgrounds/women-event.webp',
   accentColor: '#EC4899',
   dateColor: '#EC4899',
 },
 
 'workshop': {
-  backgroundImage: '/card-backgrounds/workshop.png',
+  backgroundImage: '/card-backgrounds/workshop.webp',
   accentColor: '#F59E0B',
   dateColor: '#F59E0B',
 },

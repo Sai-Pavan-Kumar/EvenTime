@@ -16,7 +16,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
       {/* Background Image Layer (DESKTOP ONLY) */}
       <div className="absolute inset-0 z-0 hidden md:block">
         <Image 
-          src="/hero-section-v2.png" 
+          src="/hero-section-v2.webp" 
           alt="EvenTime Hero Background" 
           fill
           priority
@@ -42,7 +42,7 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
         {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
         <div className="w-full md:hidden relative z-0 aspect-[2.5/1] mb-12 sm:mb-16">
           <Image 
-            src="/hero-section-v2.png" 
+            src="/hero-section-v2.webp" 
             alt="EvenTime Hero Background" 
             fill
             priority

@@ -115,7 +115,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.png`;
+      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.webp`;
       document.body.appendChild(a);
       a.click();
       a.remove();

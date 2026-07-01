@@ -68,10 +68,10 @@ export default function RootLayout({
          <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
          {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
          <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-         <link rel="preload" href="/hero-section-v2.png" as="image" />
+         
         
         {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
+        <Script id="microsoft-clarity" strategy="lazyOnload">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -82,8 +82,8 @@ export default function RootLayout({
         </Script>
 
         {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="lazyOnload" />
+        <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}

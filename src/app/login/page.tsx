@@ -90,7 +90,7 @@ export default function LoginPage() {
 
           {/* Top Logo */}
           <div className="relative z-10 w-16 h-16">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
           </div>
 
           {/* Center Pitch */}
@@ -115,7 +115,7 @@ export default function LoginPage() {
           
           {/* Mobile Logo (Visible only on small screens) */}
           <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
           </div>
 
           <div className="mb-8">

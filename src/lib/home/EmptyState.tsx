@@ -13,7 +13,7 @@ export interface EmptyStateProps {
 export function EmptyState({ 
   title, 
   message, 
-  imageSrc = "/illustrations/empty-state.png", 
+  imageSrc = "/illustrations/empty-state.webp", 
   buttonText = "Host an Event", 
   showButton = true, 
   variant = "default" 

@@ -252,7 +252,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
             <Link href="/" className="shrink-0 flex items-center gap-2">
               <div className="w-9 h-9 relative shrink-0"> 
-                <Image src="/logo.png" alt="logo" fill sizes="100px" className="object-contain" priority />
+                <Image src="/logo.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
               </div>
               <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
                 <span className="text-[#6C47FF]">Even</span>

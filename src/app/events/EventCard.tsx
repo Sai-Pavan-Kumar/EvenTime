@@ -182,7 +182,7 @@
     
     // --- NEW: TEMPLATE ENGINE LOGIC ---
     // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.png', dateColor: '#6C47FF' };
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.webp', dateColor: '#6C47FF' };
     // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
     const isCustomUpload = imageUrl && imageUrl.startsWith('http');
     const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
@@ -251,7 +251,7 @@
                   />
                   
                     {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.png') && (
+                    {finalImageSrc.includes('default.webp') && (
                       <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
                         <span 
                           className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"

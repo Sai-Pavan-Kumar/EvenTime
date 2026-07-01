@@ -24,7 +24,7 @@ export function LandingIntro({
           {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
           <div className="w-full relative aspect-video block md:hidden mt-2 mb-2">
             <Image 
-              src="/landing-assets/what1.png" 
+              src="/landing-assets/what1.webp" 
               alt="What is EvenTime" 
               fill 
               className="object-contain"
@@ -40,7 +40,7 @@ export function LandingIntro({
         {/* DESKTOP ONLY IMAGE - Appears normally on the right side */}
         <div className="flex-1 w-full relative aspect-video hidden md:block">
           <Image 
-            src="/landing-assets/what1.png" 
+            src="/landing-assets/what1.webp" 
             alt="What is EvenTime" 
             fill 
             className="object-contain"
@@ -85,7 +85,7 @@ export function LandingIntro({
             {/* MOBILE ONLY IMAGE */}
             <div className="w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 block md:hidden mt-2 mb-2">
               <Image 
-                src="/landing-assets/why1.png" 
+                src="/landing-assets/why1.webp" 
                 alt="Why EvenTime" 
                 fill 
                 className="object-cover"
@@ -104,7 +104,7 @@ export function LandingIntro({
         {/* DESKTOP ONLY IMAGE */}
         <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 hidden md:block">
           <Image 
-            src="/landing-assets/why1.png" 
+            src="/landing-assets/why1.webp" 
             alt="Why EvenTime" 
             fill 
             className="object-cover"
@@ -127,7 +127,7 @@ export function LandingIntro({
           {/* MOBILE ONLY IMAGE - exactly between heading and features list */}
           <div className="w-full relative aspect-square block md:hidden mt-2 mb-2">
             <Image 
-              src="/landing-assets/benefits1.png" 
+              src="/landing-assets/benefits1.webp" 
               alt="EvenTime Benefits" 
               fill 
               className="object-contain"
@@ -180,7 +180,7 @@ export function LandingIntro({
         {/* DESKTOP ONLY IMAGE */}
         <div className="flex-1 w-full relative aspect-square hidden md:block">
           <Image 
-            src="/landing-assets/benefits1.png" 
+            src="/landing-assets/benefits1.webp" 
             alt="EvenTime Benefits" 
             fill 
             className="object-contain"

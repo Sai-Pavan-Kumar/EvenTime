@@ -29,7 +29,7 @@ export function Footer() {
                 {/* Brand */}
         <div className="flex flex-col items-center gap-2 lg:items-start">
           <div className="flex items-center gap-3">
-            <Image src="/logo.png" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
               EvenTime
             </h3>
@@ -81,7 +81,7 @@ export function Footer() {
           <div className="w-full h-px bg-white/10" />
           <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
             Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo.png" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
             The SurfBoard
           </div>
         </div>

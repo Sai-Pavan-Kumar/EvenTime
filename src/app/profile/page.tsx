@@ -363,7 +363,7 @@ Promise<{ tab?: string }>; }) {
                 ) : (
                   <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                     <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-profile.png" alt="Empty Profile" fill className="object-contain" priority />
+                      <Image src="/empty-profile.webp" alt="Empty Profile" fill className="object-contain" priority />
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
@@ -402,7 +402,7 @@ Promise<{ tab?: string }>; }) {
                 ) : (
                   <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                     <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-saved.png" alt="No Saved Events" fill className="object-contain" priority />
+                      <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
@@ -440,7 +440,7 @@ Promise<{ tab?: string }>; }) {
                 ) : (
                   <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                     <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-alerts.png" alt="No Alerts" fill className="object-contain" priority />
+                      <Image src="/empty-alerts.webp" alt="No Alerts" fill className="object-contain" priority />
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
@@ -465,7 +465,7 @@ Promise<{ tab?: string }>; }) {
                 ) : (
                   <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                     <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-category.png" alt="No Requests" fill className="object-contain" priority />
+                      <Image src="/empty-category.webp" alt="No Requests" fill className="object-contain" priority />
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
