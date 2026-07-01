@@ -508,30 +508,6 @@ Hackathon, Workshop, College Fest, Startup Event, Networking Event, Webinar, and
 College students and young professionals in India.
 </file>
 
-<file path="public/manifest.json">
-{
-  "name": "EvenTime",
-  "short_name": "EvenTime",
-  "description": "India's cleanest directory for tech and startup events.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#6C47FF",
-  "icons": [
-    {
-      "src": "/icon-192.webp",
-      "sizes": "192x192",
-      "type": "image/webp"
-    },
-    {
-      "src": "/icon-512.webp",
-      "sizes": "512x512",
-      "type": "image/webp"
-    }
-  ]
-}
-</file>
-
 <file path="public/next.svg">
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
 </file>
@@ -3216,98 +3192,6 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 }
 </file>
 
-<file path="src/components/layout/LaunchScreen.tsx">
-"use client";
-
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-
-export default function LaunchScreen() {
-  const [show, setShow] = useState(true); 
-
-  useEffect(() => {
-    // 1. Check if the user has already seen the splash screen in this session
-    const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
-    
-    if (hasSeenSplash) {
-      setShow(false);
-      return;
-    }
-
-    // 2. If not seen, show it for 2.5 seconds and then mark it as seen
-    const timer = setTimeout(() => {
-      setShow(false);
-      sessionStorage.setItem("hasSeenSplash", "true");
-    }, 2500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="splash"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 bg-[#6C47FF] flex flex-col items-center justify-center overflow-hidden"
-          style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          {/* Animated Logo */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
-          >
-            <Image 
-              src="/logo.webp" 
-              alt="EvenTime" 
-              fill 
-              sizes="(max-width: 768px) 80px, 96px"
-              className="object-contain" 
-              priority 
-            />
-          </motion.div>
-
-          {/* Animated Text */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="text-center"
-          >
-            <h1 className="text-3xl md:text-4xl font-heading font-black text-white tracking-tight mb-2">
-              EvenTime
-            </h1>
-            <p className="text-white/80 font-medium text-xs md:text-sm tracking-widest uppercase">
-              Stop Searching. Start Attending.
-            </p>
-          </motion.div>
-
-          {/* Loading Indicator */}
-          <motion.div 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "200px", opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6, ease: "easeInOut" }}
-            className="h-[2px] bg-white/20 rounded-full mt-12 overflow-hidden relative"
-          >
-            <motion.div 
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-              className="w-1/2 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-            />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-</file>
-
 <file path="src/components/profile/FollowButton.tsx">
 "use client";
 
@@ -3804,218 +3688,6 @@ export async function requireAdmin(supabase: SupabaseClient, userId: string): Pr
 }
 </file>
 
-<file path="src/lib/category-config.ts">
-export const CATEGORY_CONFIG: Record<string, {
-  backgroundImage: string;
-  accentColor: string;
-  dateColor: string;
-}> = {
-  'ai-event': {
-  backgroundImage: '/card-backgrounds/ai-event.webp',
-  accentColor: '#7C3AED',
-  dateColor: '#7C3AED',
-},
-
-'auto-ev-expo': {
-  backgroundImage: '/card-backgrounds/auto-ev-expo.webp',
-  accentColor: '#06B6D4',
-  dateColor: '#06B6D4',
-},
-
-'awards-night': {
-  backgroundImage: '/card-backgrounds/awards-night.webp',
-  accentColor: '#EAB308',
-  dateColor: '#EAB308',
-},
-
-'career-event': {
-  backgroundImage: '/card-backgrounds/career-event.webp',
-  accentColor: '#0EA5E9',
-  dateColor: '#0EA5E9',
-},
-
-'charity-event': {
-  backgroundImage: '/card-backgrounds/charity-event.webp',
-  accentColor: '#06B6D4',
-  dateColor: '#06B6D4',
-},
-
-'college-event': {
-  backgroundImage: '/card-backgrounds/college-event.webp',
-  accentColor: '#2563EB',
-  dateColor: '#2563EB',
-},
-
-'college-fest': {
-  backgroundImage: '/card-backgrounds/college-fest.webp',
-  accentColor: '#9333EA',
-  dateColor: '#9333EA',
-},
-
-'comedy-show': {
-  backgroundImage: '/card-backgrounds/comedy-show.webp',
-  accentColor: '#FACC15',
-  dateColor: '#FACC15',
-},
-
-'community-event': {
-  backgroundImage: '/card-backgrounds/community-event.webp',
-  accentColor: '#14B8A6',
-  dateColor: '#14B8A6',
-},
-
-'concert': {
-  backgroundImage: '/card-backgrounds/concert.webp',
-  accentColor: '#D946EF',
-  dateColor: '#D946EF',
-},
-
-'conference': {
-  backgroundImage: '/card-backgrounds/conference.webp',
-  accentColor: '#6366F1',
-  dateColor: '#6366F1',
-},
-
-'creator-meetup': {
-  backgroundImage: '/card-backgrounds/creator-meetup.webp',
-  accentColor: '#F97316',
-  dateColor: '#F97316',
-},
-
-'default-event': {
-  backgroundImage: '/card-backgrounds/default-event.webp',
-  accentColor: '#6C47FF',
-  dateColor: '#6C47FF',
-},
-
-'developer-event': {
-  backgroundImage: '/card-backgrounds/developer-event.webp',
-  accentColor: '#2563EB',
-  dateColor: '#2563EB',
-},
-
-'exhibition': {
-  backgroundImage: '/card-backgrounds/exhibition.webp',
-  accentColor: '#EC4899',
-  dateColor: '#EC4899',
-},
-
-'film-festival': {
-  backgroundImage: '/card-backgrounds/film-festival.webp',
-  accentColor: '#DC2626',
-  dateColor: '#DC2626',
-},
-
-'fitness-event': {
-  backgroundImage: '/card-backgrounds/fitness-event.webp',
-  accentColor: '#22C55E',
-  dateColor: '#22C55E',
-},
-
-'food-festival': {
-  backgroundImage: '/card-backgrounds/food-festival.webp',
-  accentColor: '#F59E0B',
-  dateColor: '#F59E0B',
-},
-
-'founder-meetup': {
-  backgroundImage: '/card-backgrounds/founder-meetup.webp',
-  accentColor: '#A855F7',
-  dateColor: '#A855F7',
-},
-
-'gaming-esports': {
-  backgroundImage: '/card-backgrounds/gaming-esports.webp',
-  accentColor: '#3B82F6',
-  dateColor: '#3B82F6',
-},
-
-'hackathon': {
-  backgroundImage: '/card-backgrounds/hackathon.webp',
-  accentColor: '#3B82F6',
-  dateColor: '#3B82F6',
-},
-
-'investor-event': {
-  backgroundImage: '/card-backgrounds/investor-event.webp',
-  accentColor: '#10B981',
-  dateColor: '#10B981',
-},
-
-'music-festival': {
-  backgroundImage: '/card-backgrounds/music-festival.webp',
-  accentColor: '#8B5CF6',
-  dateColor: '#8B5CF6',
-},
-
-'open-mic': {
-  backgroundImage: '/card-backgrounds/open-mic.webp',
-  accentColor: '#FB923C',
-  dateColor: '#FB923C',
-},
-
-'pet-event': {
-  backgroundImage: '/card-backgrounds/pet-event.webp',
-  accentColor: '#10B981',
-  dateColor: '#10B981',
-},
-
-'running-event': {
-  backgroundImage: '/card-backgrounds/running-event.webp',
-  accentColor: '#F97316',
-  dateColor: '#F97316',
-},
-
-'sports-tournament': {
-  backgroundImage: '/card-backgrounds/sports-tournament.webp',
-  accentColor: '#EF4444',
-  dateColor: '#EF4444',
-},
-
-'startup-event': {
-  backgroundImage: '/card-backgrounds/startup-event.webp',
-  accentColor: '#8B5CF6',
-  dateColor: '#8B5CF6',
-},
-
-'summit': {
-  backgroundImage: '/card-backgrounds/summit.webp',
-  accentColor: '#1E3A8A',
-  dateColor: '#1E3A8A',
-},
-
-'tech-event': {
-  backgroundImage: '/card-backgrounds/tech-event.webp',
-  accentColor: '#4F46E5',
-  dateColor: '#4F46E5',
-},
-
-'wellness-event': {
-  backgroundImage: '/card-backgrounds/wellness-event.webp',
-  accentColor: '#84CC16',
-  dateColor: '#84CC16',
-},
-
-'women-event': {
-  backgroundImage: '/card-backgrounds/women-event.webp',
-  accentColor: '#EC4899',
-  dateColor: '#EC4899',
-},
-
-'workshop': {
-  backgroundImage: '/card-backgrounds/workshop.webp',
-  accentColor: '#F59E0B',
-  dateColor: '#F59E0B',
-},
-};
-
-export const getCategoryConfig = (category: string) => {
-  if (!category) return CATEGORY_CONFIG['default'];
-  const key = category.toLowerCase().trim().replace(/\s+/g, '-');
-  return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
-};
-</file>
-
 <file path="src/lib/constants/cookies.ts">
 export const COOKIE_OPTIONS = {
   secure: process.env.NODE_ENV === 'production',
@@ -4225,6 +3897,30 @@ v1.60.4
     "**/*.mts"
   ],
   "exclude": ["node_modules"]
+}
+</file>
+
+<file path="public/manifest.json">
+{
+  "name": "EvenTime",
+  "short_name": "EvenTime",
+  "description": "India's cleanest directory for tech and startup events.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6C47FF",
+  "icons": [
+    {
+      "src": "/icon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp"
+    },
+    {
+      "src": "/icon-512.webp",
+      "sizes": "512x512",
+      "type": "image/webp"
+    }
+  ]
 }
 </file>
 
@@ -4645,69 +4341,6 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
   }
-}
-</file>
-
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error-state.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
 }
 </file>
 
@@ -5211,102 +4844,94 @@ export default function TermsOfServicePage() {
 }
 </file>
 
-<file path="src/components/layout/Footer.tsx">
-import Link from "next/link";
+<file path="src/components/layout/LaunchScreen.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
 
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
+export default function LaunchScreen() {
+  const [show, setShow] = useState(true); 
 
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
+  useEffect(() => {
+    // 1. Check if the user has already seen the splash screen in this session
+    const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
+    
+    if (hasSeenSplash) {
+      setShow(false);
+      return;
+    }
 
-export function Footer() {
+    // 2. If not seen, show it for 2.5 seconds and then mark it as seen
+    const timer = setTimeout(() => {
+      setShow(false);
+      sessionStorage.setItem("hasSeenSplash", "true");
+    }, 2500);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          key="splash"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed inset-0 bg-[#6C47FF] flex flex-col items-center justify-center overflow-hidden"
+          style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          {/* Animated Logo */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
+          >
+            <Image 
+              src="/logo.webp" 
+              alt="EvenTime" 
+              fill 
+              sizes="(max-width: 768px) 80px, 96px"
+              className="object-contain" 
+              priority 
+            />
+          </motion.div>
 
-        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
-
-                {/* Brand */}
-        <div className="flex flex-col items-center gap-2 lg:items-start">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
-            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+          {/* Animated Text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            className="text-center"
+          >
+            <h1 className="text-3xl md:text-4xl font-heading font-black text-white tracking-tight mb-2">
               EvenTime
-            </h3>
-          </div>
-          <p className="text-white/40 text-sm font-medium">
-            Your event search struggles end here.
-          </p>
-          {/* Action Pages Links */}
-          <div className="flex items-center gap-3 mt-1">
-            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
-          </div>
-        </div>
+            </h1>
+            <p className="text-white/80 font-medium text-xs md:text-sm tracking-widest uppercase">
+              Stop Searching. Start Attending.
+            </p>
+          </motion.div>
 
-
-        {/* For any Queries */}
-        <div className="flex flex-col items-center gap-3 lg:items-start">
-          <h4 className="text-base font-bold text-white">For any Queries</h4>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
-            <InstagramIcon className="w-4 h-4" />
-            Message us on Instagram
-          </a>
-          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
-            <MapPin className="w-4 h-4" />
-            Hyderabad, India
-          </div>
-        </div>
-
-        {/* Join the Family */}
-        <div className="flex flex-col items-center gap-4 lg:items-start">
-          <h4 className="text-base font-bold text-white">Join the Family</h4>
-          <div className="flex items-center gap-4">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <InstagramIcon className="w-5 h-5" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <YoutubeIcon className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        </div>
-
-        {/* Divider with pill sitting on it */}
-        <div className="relative w-full flex items-center justify-center">
-          <div className="w-full h-px bg-white/10" />
-          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
-            The SurfBoard
-          </div>
-        </div>
-
-        {/* Copyright */}
-        <p className="text-xs font-medium text-white/30 -mt-2">
-          © {new Date().getFullYear()} EvenTime. All rights reserved.
-        </p>
-
-      </div>
-    </footer>
+          {/* Loading Indicator */}
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "200px", opacity: 1 }}
+            transition={{ duration: 1, delay: 0.6, ease: "easeInOut" }}
+            className="h-[2px] bg-white/20 rounded-full mt-12 overflow-hidden relative"
+          >
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="w-1/2 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+            />
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 </file>
@@ -5547,6 +5172,218 @@ export interface GeoResult {
   lon: string;
   address: { city?: string; town?: string; village?: string; country?: string; state?: string; };
 }
+</file>
+
+<file path="src/lib/category-config.ts">
+export const CATEGORY_CONFIG: Record<string, {
+  backgroundImage: string;
+  accentColor: string;
+  dateColor: string;
+}> = {
+  'ai-event': {
+  backgroundImage: '/card-backgrounds/ai-event.webp',
+  accentColor: '#7C3AED',
+  dateColor: '#7C3AED',
+},
+
+'auto-ev-expo': {
+  backgroundImage: '/card-backgrounds/auto-ev-expo.webp',
+  accentColor: '#06B6D4',
+  dateColor: '#06B6D4',
+},
+
+'awards-night': {
+  backgroundImage: '/card-backgrounds/awards-night.webp',
+  accentColor: '#EAB308',
+  dateColor: '#EAB308',
+},
+
+'career-event': {
+  backgroundImage: '/card-backgrounds/career-event.webp',
+  accentColor: '#0EA5E9',
+  dateColor: '#0EA5E9',
+},
+
+'charity-event': {
+  backgroundImage: '/card-backgrounds/charity-event.webp',
+  accentColor: '#06B6D4',
+  dateColor: '#06B6D4',
+},
+
+'college-event': {
+  backgroundImage: '/card-backgrounds/college-event.webp',
+  accentColor: '#2563EB',
+  dateColor: '#2563EB',
+},
+
+'college-fest': {
+  backgroundImage: '/card-backgrounds/college-fest.webp',
+  accentColor: '#9333EA',
+  dateColor: '#9333EA',
+},
+
+'comedy-show': {
+  backgroundImage: '/card-backgrounds/comedy-show.webp',
+  accentColor: '#FACC15',
+  dateColor: '#FACC15',
+},
+
+'community-event': {
+  backgroundImage: '/card-backgrounds/community-event.webp',
+  accentColor: '#14B8A6',
+  dateColor: '#14B8A6',
+},
+
+'concert': {
+  backgroundImage: '/card-backgrounds/concert.webp',
+  accentColor: '#D946EF',
+  dateColor: '#D946EF',
+},
+
+'conference': {
+  backgroundImage: '/card-backgrounds/conference.webp',
+  accentColor: '#6366F1',
+  dateColor: '#6366F1',
+},
+
+'creator-meetup': {
+  backgroundImage: '/card-backgrounds/creator-meetup.webp',
+  accentColor: '#F97316',
+  dateColor: '#F97316',
+},
+
+'default-event': {
+  backgroundImage: '/card-backgrounds/default-event.webp',
+  accentColor: '#6C47FF',
+  dateColor: '#6C47FF',
+},
+
+'developer-event': {
+  backgroundImage: '/card-backgrounds/developer-event.webp',
+  accentColor: '#2563EB',
+  dateColor: '#2563EB',
+},
+
+'exhibition': {
+  backgroundImage: '/card-backgrounds/exhibition.webp',
+  accentColor: '#EC4899',
+  dateColor: '#EC4899',
+},
+
+'film-festival': {
+  backgroundImage: '/card-backgrounds/film-festival.webp',
+  accentColor: '#DC2626',
+  dateColor: '#DC2626',
+},
+
+'fitness-event': {
+  backgroundImage: '/card-backgrounds/fitness-event.webp',
+  accentColor: '#22C55E',
+  dateColor: '#22C55E',
+},
+
+'food-festival': {
+  backgroundImage: '/card-backgrounds/food-festival.webp',
+  accentColor: '#F59E0B',
+  dateColor: '#F59E0B',
+},
+
+'founder-meetup': {
+  backgroundImage: '/card-backgrounds/founder-meetup.webp',
+  accentColor: '#A855F7',
+  dateColor: '#A855F7',
+},
+
+'gaming-esports': {
+  backgroundImage: '/card-backgrounds/gaming-esports.webp',
+  accentColor: '#3B82F6',
+  dateColor: '#3B82F6',
+},
+
+'hackathon': {
+  backgroundImage: '/card-backgrounds/hackathon.webp',
+  accentColor: '#3B82F6',
+  dateColor: '#3B82F6',
+},
+
+'investor-event': {
+  backgroundImage: '/card-backgrounds/investor-event.webp',
+  accentColor: '#10B981',
+  dateColor: '#10B981',
+},
+
+'music-festival': {
+  backgroundImage: '/card-backgrounds/music-festival.webp',
+  accentColor: '#8B5CF6',
+  dateColor: '#8B5CF6',
+},
+
+'open-mic': {
+  backgroundImage: '/card-backgrounds/open-mic.webp',
+  accentColor: '#FB923C',
+  dateColor: '#FB923C',
+},
+
+'pet-event': {
+  backgroundImage: '/card-backgrounds/pet-event.webp',
+  accentColor: '#10B981',
+  dateColor: '#10B981',
+},
+
+'running-event': {
+  backgroundImage: '/card-backgrounds/running-event.webp',
+  accentColor: '#F97316',
+  dateColor: '#F97316',
+},
+
+'sports-tournament': {
+  backgroundImage: '/card-backgrounds/sports-tournament.webp',
+  accentColor: '#EF4444',
+  dateColor: '#EF4444',
+},
+
+'startup-event': {
+  backgroundImage: '/card-backgrounds/startup-event.webp',
+  accentColor: '#8B5CF6',
+  dateColor: '#8B5CF6',
+},
+
+'summit': {
+  backgroundImage: '/card-backgrounds/summit.webp',
+  accentColor: '#1E3A8A',
+  dateColor: '#1E3A8A',
+},
+
+'tech-event': {
+  backgroundImage: '/card-backgrounds/tech-event.webp',
+  accentColor: '#4F46E5',
+  dateColor: '#4F46E5',
+},
+
+'wellness-event': {
+  backgroundImage: '/card-backgrounds/wellness-event.webp',
+  accentColor: '#84CC16',
+  dateColor: '#84CC16',
+},
+
+'women-event': {
+  backgroundImage: '/card-backgrounds/women-event.webp',
+  accentColor: '#EC4899',
+  dateColor: '#EC4899',
+},
+
+'workshop': {
+  backgroundImage: '/card-backgrounds/workshop.webp',
+  accentColor: '#F59E0B',
+  dateColor: '#F59E0B',
+},
+};
+
+export const getCategoryConfig = (category: string) => {
+  if (!category) return CATEGORY_CONFIG['default'];
+  const key = category.toLowerCase().trim().replace(/\s+/g, '-');
+  return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
+};
 </file>
 
 <file path="src/lib/constants/branches.ts">
@@ -5835,47 +5672,6 @@ export function CityGrid({ events }: CityGridProps) {
 }
 </file>
 
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404-state.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/types/nprogress.d.ts">
 declare module 'nprogress' {
   interface NProgressOptions {
@@ -5955,195 +5751,65 @@ export default function AboutPage() {
 }
 </file>
 
-<file path="src/app/login/page.tsx">
+<file path="src/app/error.tsx">
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock } from "lucide-react";
+import { useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { toast } from "sonner";
+import { RefreshCcw, Home } from "lucide-react";
 
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-    const [hasConsented, setHasConsented] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
- const handleLogin = async (provider: 'google' | 'github') => {
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    setIsLoading(provider);
-    await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
-
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
-    setIsLoading('email');
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 5) {
-        toast.error("Too many failed attempts. Please wait before trying again.");
-        setIsLockedOut(true);
-        
-        // Disable button for 30s
-        setTimeout(() => {
-          setIsLockedOut(false);
-          setAttempts(0); // Reset attempts so they can try again
-        }, 30000);
-      } else {
-        toast.error("Invalid email or password.");
-      }
-      setIsLoading(null);
-    } else {
-      setAttempts(0); // Reset attempts on success
-      router.push("/");
-      router.refresh();
-    }
-  };
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+  }, [error]);
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
-      {/* THE PERFECT 2:1 SPLIT LAYOUT
-        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
-        - Mobile: auto height, vertical stack
-      */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
-      >
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
-        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
-          {/* Aesthetic Background Glows */}
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
-
-          {/* Top Logo */}
-          <div className="relative z-10 w-16 h-16">
-            <Image src="/logo.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
-          </div>
-
-          {/* Center Pitch */}
-          <div className="relative z-10 mt-auto mb-16">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              Stop Searching.<br />Start Attending.
-            </h1>
-            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
-              The ultimate stage for Gen-Z curators and seekers to discover the best events.
-            </p>
-          </div>
-
-          {/* Bottom Footer Area */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="h-1 w-8 bg-white/30 rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
-          </div>
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error-state.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
         </div>
-
-        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
-        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
           
-          {/* Mobile Logo (Visible only on small screens) */}
-          <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
-            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
-                <input 
-                  type="password" name="password" required placeholder="••••••••" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
-                </label>
-            </div>
-            <button 
-              type="submit" disabled={!!isLoading || isLockedOut}
-              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-            >
-              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
         </div>
-      </motion.div>
-    </main>
+      </div>
+    </div>
   );
 }
 </file>
@@ -6251,6 +5917,106 @@ export async function updateProfileSettings(formData: FormData) {
   revalidatePath("/profile/settings");
 
   return { success: true };
+}
+</file>
+
+<file path="src/components/layout/Footer.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
+
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
+
+export function Footer() {
+  return (
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+
+        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
+
+                {/* Brand */}
+        <div className="flex flex-col items-center gap-2 lg:items-start">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              EvenTime
+            </h3>
+          </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+          {/* Action Pages Links */}
+          <div className="flex items-center gap-3 mt-1">
+            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
+          </div>
+        </div>
+
+
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3 lg:items-start">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
+          </div>
+        </div>
+
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4 lg:items-start">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        </div>
+
+        {/* Divider with pill sitting on it */}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="w-full h-px bg-white/10" />
+          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            The SurfBoard
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <p className="text-xs font-medium text-white/30 -mt-2">
+          © {new Date().getFullYear()} EvenTime. All rights reserved.
+        </p>
+
+      </div>
+    </footer>
+  );
 }
 </file>
 
@@ -6847,58 +6613,41 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
-<file path="src/lib/home/EmptyState.tsx">
+<file path="src/lib/home/not-found.tsx">
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty-state.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
+export default function NotFound() {
   return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
           <Image 
-            src={imageSrc} 
-            alt="Empty State Illustration" 
+            src="/illustrations/404-state.webp" 
+            alt="404 Not Found Illustration" 
             fill 
-            className="object-contain" 
+            className="object-contain"
+            priority 
           />
         </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
         </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
       </div>
     </div>
   );
@@ -7610,6 +7359,199 @@ export const Constants = {
 }
 </file>
 
+<file path="src/app/login/page.tsx">
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Lock } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+    const [hasConsented, setHasConsented] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    setIsLoading(provider);
+    await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    if (isLockedOut) {
+      toast.error("Too many failed attempts. Please wait before trying again.");
+      return;
+    }
+
+    setIsLoading('email');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      
+      if (newAttempts >= 5) {
+        toast.error("Too many failed attempts. Please wait before trying again.");
+        setIsLockedOut(true);
+        
+        // Disable button for 30s
+        setTimeout(() => {
+          setIsLockedOut(false);
+          setAttempts(0); // Reset attempts so they can try again
+        }, 30000);
+      } else {
+        toast.error("Invalid email or password.");
+      }
+      setIsLoading(null);
+    } else {
+      setAttempts(0); // Reset attempts on success
+      router.push("/");
+      router.refresh();
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
+      {/* THE PERFECT 2:1 SPLIT LAYOUT
+        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
+        - Mobile: auto height, vertical stack
+      */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
+      >
+        
+        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
+        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+          {/* Aesthetic Background Glows */}
+          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
+
+          {/* Top Logo */}
+          <div className="relative z-10 w-16 h-16">
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+          </div>
+
+          {/* Center Pitch */}
+          <div className="relative z-10 mt-auto mb-16">
+            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
+              Stop Searching.<br />Start Attending.
+            </h1>
+            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
+              The ultimate stage for Gen-Z curators and seekers to discover the best events.
+            </p>
+          </div>
+
+          {/* Bottom Footer Area */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="h-1 w-8 bg-white/30 rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
+        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
+          
+          {/* Mobile Logo (Visible only on small screens) */}
+          <div className="md:hidden w-14 h-14 relative mb-8">
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
+            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="email" name="email" required placeholder="name@email.com" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
+                <input 
+                  type="password" name="password" required placeholder="••••••••" 
+                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-[#6C47FF] focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-[#6C47FF] hover:underline">Privacy Policy</a>.
+                </label>
+            </div>
+            <button 
+              type="submit" disabled={!!isLoading || isLockedOut}
+              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+            >
+              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          {/* Clean Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
+          </div>
+
+          {/* Social Logins */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
+              GitHub
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/profile/settings/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -7851,6 +7793,64 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
 }
 </file>
 
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty-state.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+          <Image 
+            src={imageSrc} 
+            alt="Empty State Illustration" 
+            fill 
+            className="object-contain" 
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path=".github/workflows/ci.yml">
 name: CI/CD Pipeline
 
@@ -8055,128 +8055,6 @@ export default async function CityPage({
         )}
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
- 
- // 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-       <head>
-         {/* Forcing the browser to load Switzer directly */}
-         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-         <link rel="preload" href="/hero-section-v2.webp" as="image" />
-        
-        {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "xfihu5m5yg");
-          `}
-        </Script>
-
-        {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-2JE8ES9P65');
-          `}
-        </Script>
-       </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
   );
 }
 </file>
@@ -8820,6 +8698,128 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+ 
+ // 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+       <head>
+         {/* Forcing the browser to load Switzer directly */}
+         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         
+        
+        {/* Microsoft Clarity */}
+        <Script id="microsoft-clarity" strategy="lazyOnload">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xfihu5m5yg");
+          `}
+        </Script>
+
+        {/* Google Analytics GA4 */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="lazyOnload" />
+        <Script id="google-analytics" strategy="lazyOnload">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-2JE8ES9P65');
+          `}
+        </Script>
+       </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+</file>
+
 <file path="src/features/create-event/CreateEventForm.tsx">
 "use client";
 
@@ -9233,490 +9233,6 @@ export default async function EventPage({
       />
       <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
     </>
-  );
-}
-</file>
-
-<file path="src/app/profile/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
-import Image from "next/image";
-import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { getCategoryConfig } from "@/lib/category-config";
-import { deleteEventAction } from "./action";
-import type { ProfileRow } from "@/types";
-
-export const dynamic = "force-dynamic";
-
-type ReportWithEventSlug = {
-  id: string;
-  reason: string;
-  status: string | null;
-  created_at: string;
-  events: { title: string; slug: string | null } | null;
-};
-
-type ProfileEvent = {
-  id: string;
-  slug: string | null;
-  title: string;
-  category: string;
-  date_string: string | null;
-  status: string;
-  poster_url: string | null;
-  is_featured: boolean;
-  interested_events: any;
-  saved_events: any;
-};
-
-const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
-  if (!prof) return 0;
-  let score = 0;
-  if (prof.avatar_url) score += 20;
-  if (prof.username) score += 20;
-  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
-  if (prof.goals && prof.goals.length > 0) score += 20;
-  const isStudent = (prof as any).user_type === "student";
-  if (!isStudent) {
-    score += 20;
-  } else if (prof.college && (prof as any).graduation_year) {
-    score += 20;
-  }
-  return score;
-};
-
-export default async function ProfilePage({ searchParams, }: { searchParams:
-Promise<{ tab?: string }>; }) { 
-  const { tab } = await searchParams; 
-  const activeTab = (tab && tab !== "menu") ? tab : "posted";
-  const isMobileMenu = !tab || tab === "menu";
-  
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const [
-    { data: profile },
-    { data: myEventsRaw },
-    { data: savedEventsData },
-    { data: myReportsRaw, error: reportsError },
-    { data: appSettings }
-  ] = await Promise.all([
-    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
-    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
-  ]);
-
-  if (!profile) {
-    redirect("/profile/settings");
-  }
-
-  // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
-  const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
-  const audienceRequests = reqError ? [] : (audienceReqsRaw || []);
-
-  if (reportsError) {
-    console.error("Error fetching reports:", reportsError);
-  }
-
-  // Debugging logs to verify if queries return data or empty arrays due to RLS
-  console.log("--- Profile Page Data Fetch Debug ---");
-  console.log("myEventsRaw:", myEventsRaw);
-  console.log("savedEventsData:", savedEventsData);
-  console.log("myReportsRaw:", myReportsRaw);
-  console.log("-------------------------------------");
-
-  const myReports = myReportsRaw as ReportWithEventSlug[] | null;
-  const myEvents = myEventsRaw as ProfileEvent[] | null;
-
-  const etScore = profile?.et_score || 100;
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
-  const completionPercentage = calculateCompletion(profile);
-  const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
-
-  // NEW: What's missing checklist, mirrors the calculateCompletion formula
-  const missingItems: string[] = [];
-  if (!profile?.avatar_url) missingItems.push("Profile photo");
-  if (!(profile as any)?.username) missingItems.push("Username");
-  if (!(profile as any)?.preferred_cities || (profile as any).preferred_cities.length === 0) missingItems.push("Preferred cities");
-  if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
-  if ((profile as any)?.user_type === "student" && (!profile?.college || !(profile as any)?.graduation_year)) missingItems.push("College & graduation year");
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
-  }
-
-  const eventCount = myEvents?.length || 0;
-  let totalSaves = 0;
-  let totalInterested = 0;
-
-  if (myEvents && myEvents.length > 0) {
-      myEvents.forEach(ev => {
-      // Extract the aggregated counts returned natively by the Supabase join
-      const eventSaves = ev.saved_events?.[0]?.count || 0;
-      const eventInterested = ev.interested_events?.[0]?.count || 0;
-      
-      totalSaves += eventSaves;
-      totalInterested += eventInterested;
-    });
-  }
-  // This exactly saves the bookmarks done by the user
-  totalSaves = savedEvents.length;
-
-  let strokeColor = "#005AE0"; 
-  if (eventCount >= 69) {
-    strokeColor = "#F59E0B";
-  } else if (eventCount >= 30) {
-    strokeColor = "#94A3B8";
-  } else if (eventCount >= 10) {
-    strokeColor = "#B45309";
-  }
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar variant="centered" />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    {/* Unified Master Box enclosing both Sidebar and Content */}
-    <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[700px]">
-      
-      {/* LEFT SIDEBAR */}
-      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 ${isMobileMenu ? "block" : "hidden lg:block"}`}>
-        <div className="flex flex-col h-full">
-              
-              {/* Profile Info Section */}
-              <div className="p-6 flex flex-col items-center text-center">
-                <div className="relative w-28 h-28 mb-4 flex items-center justify-center shrink-0">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
-                    <circle cx="64" cy="64" r="58" fill="none" className="stroke-slate-100" strokeWidth="4" />
-                    <circle 
-                      cx="64" 
-                      cy="64" 
-                      r="58" 
-                      fill="none" 
-                      stroke={strokeColor} 
-                      strokeWidth="4" 
-                      strokeDasharray="364" 
-                      strokeDashoffset={364 - (completionPercentage / 100) * 364} 
-                      strokeLinecap="round" 
-                      className="transition-all duration-1000 ease-out" 
-                    />
-                  </svg>
-                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-50 border border-slate-100 shadow-inner">
-                    <Image src={profilePic} alt="Profile" fill unoptimized={true} sizes="96px" className="object-cover" />
-                  </div>
-                </div>
-
-                <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
-                  {profile?.full_name || user.user_metadata?.full_name || "Curator"}
-                </h1>
-                
-               <div className="flex items-center gap-1.5 text-slate-400 mt-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="font-medium text-xs break-all px-2">{user.email}</span>
-                </div>
-
-                {missingItems.length > 0 && (
-                  <Link href="/profile/settings" className="w-full mt-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2 hover:bg-amber-100 transition-colors">
-                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide shrink-0">{completionPercentage}%</span>
-                    <span className="text-[11px] font-medium text-amber-600 text-left">Missing: {missingItems.join(" · ")}</span>
-                  </Link>
-                )}
-                {missingItems.length === 0 && <div className="mb-6" />}
-
-                {/* Unified Minimal Stats Panel */}
-                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
-                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
-                  </div>
-                   {leaderboardEnabled && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
-                    </div>
-                  )}                  <div className="flex flex-col items-center">
-                    <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
-                  </div>
-                  {leaderboardEnabled && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
-                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="h-px bg-slate-100 w-full"></div>
-
-              {/* Vertical Menu Navigation */}
-              <div className="flex flex-col p-3 gap-1">
-                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <LayoutGrid className="w-4 h-4" /> My Events
-                </Link>
-                
-                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
-                  <div className="flex items-center gap-3">
-                    <Bookmark className="w-4 h-4" /> Saved Events
-                  </div>
-                  {savedEvents.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-[#6C47FF]" : "bg-slate-100 text-slate-500"}`}>
-                      {savedEvents.length}
-                    </span>
-                  )}
-                </Link>
-                
-                <Link href="?tab=alerts" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "alerts" ? "bg-red-50 text-red-600" : "text-slate-500 hover:bg-red-50 hover:text-red-600"}`}>
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-4 h-4" /> Alerts
-                  </div>
-                  {myReports && myReports.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "alerts" ? "bg-red-100 text-red-600" : "bg-red-100 text-red-600"}`}>
-                      {myReports.length}
-                    </span>
-                  )}
-                </Link>
-                
-                <div className="h-px bg-slate-100 my-2 mx-2"></div>
-                
-                <Link 
-                  href={eventCount >= 15 ? "?tab=requests" : "#"} 
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
-                  title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
-                >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-4 h-4" /> Audience Requests
-                  </div>
-                  {eventCount < 15 && (
-                    <div className="flex items-center gap-1 bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-500 scale-90">
-                      <Lock className="w-3 h-3" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">15 Events</span>
-                    </div>
-                  )}
-                </Link>
-
-                {leaderboardEnabled && (
-                  <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-                    <Trophy className="w-4 h-4" /> Leaderboard
-                  </Link>
-                )}
-
-                <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
-                  <Settings className="w-4 h-4" /> Profile Settings
-                </Link>
-              </div>
-
-              <div className="p-4 pt-1 mb-2 mt-auto">
-                <Link href="/events/new" className="w-full bg-[#6C47FF] hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
-                  <Plus className="w-4 h-4" /> Create New Event
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT CONTENT AREA */}
-      <div className={`flex-1 p-6 sm:p-8 lg:p-10 flex-col ${isMobileMenu ? "hidden lg:flex" : "flex"}`}>
-        
-        {/* Mobile Back Button */}
-        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-[#6C47FF] font-bold text-sm mb-6 transition-colors w-fit">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Profile
-        </Link>
-
-        {/* Content Tab Header */}
-            <div className="mb-8">
-              <h2 className="text-xl font-heading font-bold text-slate-900 tracking-tight">
-                {activeTab === 'posted' && "My Posted Events"}
-                {activeTab === 'saved' && "Saved Events"}
-                {activeTab === 'alerts' && "Action Required"}
-                {activeTab === 'requests' && "Audience Requests"}
-              </h2>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">
-                {activeTab === 'posted' && "Manage and track the events you've created."}
-                {activeTab === 'saved' && "Events you've bookmarked for later."}
-                {activeTab === 'alerts' && "Events reported by users that need your attention."}
-                {activeTab === 'requests' && "See what kind of events your audience wants next."}
-              </p>
-            </div>
-
-            {/* Structured Grid Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              
-              {/* POSTED EVENTS GRID */}
-              {activeTab === "posted" && (
-                myEvents && myEvents.length > 0 ? (
-                  myEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
-                          {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
-                          {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
-                        </div>
-                      </div>
-                      
-                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                        
-                        <div className="flex items-center justify-between mt-auto mb-3.5">
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          {leaderboardEnabled && (
-                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
-                              <Bookmark className="w-2.5 h-2.5" />
-                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
-                            </div>
-                          )}                        </div>
-
-                        {/* Management Icon Controls */}
-                        <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
-                          <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                          <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Edit3 className="w-4 h-4" />
-                          </Link>
-                          <form action={handleDelete} className="flex-1">
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </form>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-profile.webp" alt="Empty Profile" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
-                    <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
-                      <Plus className="w-4 h-4" /> Create Your First Event
-                    </Link>
-                  </div>
-                )
-              )}
-
-              {/* SAVED EVENTS GRID */}
-              {activeTab === "saved" && (
-                savedEvents.length > 0 ? (
-                  savedEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                          <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        </div>
-                        <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                          <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          <div className="mt-auto border-t border-slate-100 pt-3">
-                            <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
-                              <Eye className="w-3.5 h-3.5" /> View Details
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
-                  </div>
-                )
-              )}
-
-              {/* ALERTS SECTION */}
-              {activeTab === "alerts" && (
-                myReports && myReports.length > 0 ? (
-                  myReports.map((report) => {
-                    const eventData = report.events;
-                    return (
-                      <div key={report.id} className="col-span-full bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow">
-                        <div className="flex gap-3.5 items-start">
-                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-red-100|0">
-                            <AlertTriangle className="w-5 h-5 text-red-500" />
-                          </div>
-                          <div>
-                            <span className="inline-block px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold uppercase tracking-wider rounded border border-red-100 mb-1.5">
-                              Action Required: {report.reason}
-                            </span>
-                            <h4 className="font-bold text-slate-900 text-base">{eventData?.title || "Unknown Event"}</h4>
-                            <p className="text-xs text-slate-400 mt-0.5 font-medium">A community member reported an accuracy problem. Please review updates immediately.</p>
-                          </div>
-                        </div>
-                        {eventData?.slug && (
-                          <Link href={`/events/${eventData.slug}/edit`} className="bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap active:scale-98 shadow-sm">
-                            Fix Issue
-                          </Link>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-alerts.webp" alt="No Alerts" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
-                  </div>
-                )
-              )}
-
-              {/* AUDIENCE REQUESTS */}
-              {activeTab === "requests" && eventCount >= 15 && (
-                audienceRequests && audienceRequests.length > 0 ? (
-                  audienceRequests.map((req: any) => (
-                    <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
-                          Requested Category: {req.category || "General"}
-                        </span>
-                        <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
-                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-category.webp" alt="No Requests" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
   );
 }
 </file>
@@ -10261,6 +9777,490 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
       </div>
     </main>
 
+  );
+}
+</file>
+
+<file path="src/app/profile/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import Image from "next/image";
+import Link from "next/link";
+import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { getCategoryConfig } from "@/lib/category-config";
+import { deleteEventAction } from "./action";
+import type { ProfileRow } from "@/types";
+
+export const dynamic = "force-dynamic";
+
+type ReportWithEventSlug = {
+  id: string;
+  reason: string;
+  status: string | null;
+  created_at: string;
+  events: { title: string; slug: string | null } | null;
+};
+
+type ProfileEvent = {
+  id: string;
+  slug: string | null;
+  title: string;
+  category: string;
+  date_string: string | null;
+  status: string;
+  poster_url: string | null;
+  is_featured: boolean;
+  interested_events: any;
+  saved_events: any;
+};
+
+const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
+  if (!prof) return 0;
+  let score = 0;
+  if (prof.avatar_url) score += 20;
+  if (prof.username) score += 20;
+  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
+  if (prof.goals && prof.goals.length > 0) score += 20;
+  const isStudent = (prof as any).user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (prof.college && (prof as any).graduation_year) {
+    score += 20;
+  }
+  return score;
+};
+
+export default async function ProfilePage({ searchParams, }: { searchParams:
+Promise<{ tab?: string }>; }) { 
+  const { tab } = await searchParams; 
+  const activeTab = (tab && tab !== "menu") ? tab : "posted";
+  const isMobileMenu = !tab || tab === "menu";
+  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const [
+    { data: profile },
+    { data: myEventsRaw },
+    { data: savedEventsData },
+    { data: myReportsRaw, error: reportsError },
+    { data: appSettings }
+  ] = await Promise.all([
+    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
+    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+  ]);
+
+  if (!profile) {
+    redirect("/profile/settings");
+  }
+
+  // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
+  const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
+  const audienceRequests = reqError ? [] : (audienceReqsRaw || []);
+
+  if (reportsError) {
+    console.error("Error fetching reports:", reportsError);
+  }
+
+  // Debugging logs to verify if queries return data or empty arrays due to RLS
+  console.log("--- Profile Page Data Fetch Debug ---");
+  console.log("myEventsRaw:", myEventsRaw);
+  console.log("savedEventsData:", savedEventsData);
+  console.log("myReportsRaw:", myReportsRaw);
+  console.log("-------------------------------------");
+
+  const myReports = myReportsRaw as ReportWithEventSlug[] | null;
+  const myEvents = myEventsRaw as ProfileEvent[] | null;
+
+  const etScore = profile?.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
+  const completionPercentage = calculateCompletion(profile);
+  const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
+
+  // NEW: What's missing checklist, mirrors the calculateCompletion formula
+  const missingItems: string[] = [];
+  if (!profile?.avatar_url) missingItems.push("Profile photo");
+  if (!(profile as any)?.username) missingItems.push("Username");
+  if (!(profile as any)?.preferred_cities || (profile as any).preferred_cities.length === 0) missingItems.push("Preferred cities");
+  if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
+  if ((profile as any)?.user_type === "student" && (!profile?.college || !(profile as any)?.graduation_year)) missingItems.push("College & graduation year");
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    await deleteEventAction(formData);
+  }
+
+  const eventCount = myEvents?.length || 0;
+  let totalSaves = 0;
+  let totalInterested = 0;
+
+  if (myEvents && myEvents.length > 0) {
+      myEvents.forEach(ev => {
+      // Extract the aggregated counts returned natively by the Supabase join
+      const eventSaves = ev.saved_events?.[0]?.count || 0;
+      const eventInterested = ev.interested_events?.[0]?.count || 0;
+      
+      totalSaves += eventSaves;
+      totalInterested += eventInterested;
+    });
+  }
+  // This exactly saves the bookmarks done by the user
+  totalSaves = savedEvents.length;
+
+  let strokeColor = "#005AE0"; 
+  if (eventCount >= 69) {
+    strokeColor = "#F59E0B";
+  } else if (eventCount >= 30) {
+    strokeColor = "#94A3B8";
+  } else if (eventCount >= 10) {
+    strokeColor = "#B45309";
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <Navbar variant="centered" />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    {/* Unified Master Box enclosing both Sidebar and Content */}
+    <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[700px]">
+      
+      {/* LEFT SIDEBAR */}
+      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 ${isMobileMenu ? "block" : "hidden lg:block"}`}>
+        <div className="flex flex-col h-full">
+              
+              {/* Profile Info Section */}
+              <div className="p-6 flex flex-col items-center text-center">
+                <div className="relative w-28 h-28 mb-4 flex items-center justify-center shrink-0">
+                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
+                    <circle cx="64" cy="64" r="58" fill="none" className="stroke-slate-100" strokeWidth="4" />
+                    <circle 
+                      cx="64" 
+                      cy="64" 
+                      r="58" 
+                      fill="none" 
+                      stroke={strokeColor} 
+                      strokeWidth="4" 
+                      strokeDasharray="364" 
+                      strokeDashoffset={364 - (completionPercentage / 100) * 364} 
+                      strokeLinecap="round" 
+                      className="transition-all duration-1000 ease-out" 
+                    />
+                  </svg>
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-slate-50 border border-slate-100 shadow-inner">
+                    <Image src={profilePic} alt="Profile" fill unoptimized={true} sizes="96px" className="object-cover" />
+                  </div>
+                </div>
+
+                <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
+                  {profile?.full_name || user.user_metadata?.full_name || "Curator"}
+                </h1>
+                
+               <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+                  <Mail className="w-3.5 h-3.5" />
+                  <span className="font-medium text-xs break-all px-2">{user.email}</span>
+                </div>
+
+                {missingItems.length > 0 && (
+                  <Link href="/profile/settings" className="w-full mt-3 mb-3 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 flex items-center gap-2 hover:bg-amber-100 transition-colors">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wide shrink-0">{completionPercentage}%</span>
+                    <span className="text-[11px] font-medium text-amber-600 text-left">Missing: {missingItems.join(" · ")}</span>
+                  </Link>
+                )}
+                {missingItems.length === 0 && <div className="mb-6" />}
+
+                {/* Unified Minimal Stats Panel */}
+                <div className={`grid ${leaderboardEnabled ? 'grid-cols-4' : 'grid-cols-3'} w-full border-t border-slate-100 pt-5 text-center divide-x divide-slate-100`}>
+                  <div className="flex flex-col items-center">
+                    <span className="text-base font-bold text-slate-900 leading-none">{eventCount}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Events</span>
+                  </div>
+                   {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Saves</span>
+                    </div>
+                  )}                  <div className="flex flex-col items-center">
+                    <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
+                  </div>
+                  {leaderboardEnabled && (
+                    <div className="flex flex-col items-center">
+                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
+                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px bg-slate-100 w-full"></div>
+
+              {/* Vertical Menu Navigation */}
+              <div className="flex flex-col p-3 gap-1">
+                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                  <LayoutGrid className="w-4 h-4" /> My Events
+                </Link>
+                
+                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="w-4 h-4" /> Saved Events
+                  </div>
+                  {savedEvents.length > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-[#6C47FF]" : "bg-slate-100 text-slate-500"}`}>
+                      {savedEvents.length}
+                    </span>
+                  )}
+                </Link>
+                
+                <Link href="?tab=alerts" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "alerts" ? "bg-red-50 text-red-600" : "text-slate-500 hover:bg-red-50 hover:text-red-600"}`}>
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-4 h-4" /> Alerts
+                  </div>
+                  {myReports && myReports.length > 0 && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "alerts" ? "bg-red-100 text-red-600" : "bg-red-100 text-red-600"}`}>
+                      {myReports.length}
+                    </span>
+                  )}
+                </Link>
+                
+                <div className="h-px bg-slate-100 my-2 mx-2"></div>
+                
+                <Link 
+                  href={eventCount >= 15 ? "?tab=requests" : "#"} 
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
+                  title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
+                >
+                  <div className="flex items-center gap-3">
+                    <MessageSquare className="w-4 h-4" /> Audience Requests
+                  </div>
+                  {eventCount < 15 && (
+                    <div className="flex items-center gap-1 bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-500 scale-90">
+                      <Lock className="w-3 h-3" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">15 Events</span>
+                    </div>
+                  )}
+                </Link>
+
+                {leaderboardEnabled && (
+                  <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Trophy className="w-4 h-4" /> Leaderboard
+                  </Link>
+                )}
+
+                <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                  <Settings className="w-4 h-4" /> Profile Settings
+                </Link>
+              </div>
+
+              <div className="p-4 pt-1 mb-2 mt-auto">
+                <Link href="/events/new" className="w-full bg-[#6C47FF] hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
+                  <Plus className="w-4 h-4" /> Create New Event
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT CONTENT AREA */}
+      <div className={`flex-1 p-6 sm:p-8 lg:p-10 flex-col ${isMobileMenu ? "hidden lg:flex" : "flex"}`}>
+        
+        {/* Mobile Back Button */}
+        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-[#6C47FF] font-bold text-sm mb-6 transition-colors w-fit">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Profile
+        </Link>
+
+        {/* Content Tab Header */}
+            <div className="mb-8">
+              <h2 className="text-xl font-heading font-bold text-slate-900 tracking-tight">
+                {activeTab === 'posted' && "My Posted Events"}
+                {activeTab === 'saved' && "Saved Events"}
+                {activeTab === 'alerts' && "Action Required"}
+                {activeTab === 'requests' && "Audience Requests"}
+              </h2>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                {activeTab === 'posted' && "Manage and track the events you've created."}
+                {activeTab === 'saved' && "Events you've bookmarked for later."}
+                {activeTab === 'alerts' && "Events reported by users that need your attention."}
+                {activeTab === 'requests' && "See what kind of events your audience wants next."}
+              </p>
+            </div>
+
+            {/* Structured Grid Layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              
+              {/* POSTED EVENTS GRID */}
+              {activeTab === "posted" && (
+                myEvents && myEvents.length > 0 ? (
+                  myEvents.map((event) => (
+                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
+                          {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
+                          {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
+                        </div>
+                      </div>
+                      
+                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                        
+                        <div className="flex items-center justify-between mt-auto mb-3.5">
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
+                          </div>
+                          
+                          {leaderboardEnabled && (
+                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
+                              <Bookmark className="w-2.5 h-2.5" />
+                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
+                            </div>
+                          )}                        </div>
+
+                        {/* Management Icon Controls */}
+                        <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
+                          <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                            <Edit3 className="w-4 h-4" />
+                          </Link>
+                          <form action={handleDelete} className="flex-1">
+                            <input type="hidden" name="eventId" value={event.id} />
+                            <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-profile.webp" alt="Empty Profile" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
+                    <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
+                      <Plus className="w-4 h-4" /> Create Your First Event
+                    </Link>
+                  </div>
+                )
+              )}
+
+              {/* SAVED EVENTS GRID */}
+              {activeTab === "saved" && (
+                savedEvents.length > 0 ? (
+                  savedEvents.map((event) => (
+                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                      <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
+                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                          <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                        </div>
+                        <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                          <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
+                          </div>
+                          
+                          <div className="mt-auto border-t border-slate-100 pt-3">
+                            <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
+                              <Eye className="w-3.5 h-3.5" /> View Details
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
+                  </div>
+                )
+              )}
+
+              {/* ALERTS SECTION */}
+              {activeTab === "alerts" && (
+                myReports && myReports.length > 0 ? (
+                  myReports.map((report) => {
+                    const eventData = report.events;
+                    return (
+                      <div key={report.id} className="col-span-full bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow">
+                        <div className="flex gap-3.5 items-start">
+                          <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0 mt-0.5 border border-red-100|0">
+                            <AlertTriangle className="w-5 h-5 text-red-500" />
+                          </div>
+                          <div>
+                            <span className="inline-block px-2 py-0.5 bg-red-50 text-red-600 text-[9px] font-bold uppercase tracking-wider rounded border border-red-100 mb-1.5">
+                              Action Required: {report.reason}
+                            </span>
+                            <h4 className="font-bold text-slate-900 text-base">{eventData?.title || "Unknown Event"}</h4>
+                            <p className="text-xs text-slate-400 mt-0.5 font-medium">A community member reported an accuracy problem. Please review updates immediately.</p>
+                          </div>
+                        </div>
+                        {eventData?.slug && (
+                          <Link href={`/events/${eventData.slug}/edit`} className="bg-slate-900 hover:bg-black text-white px-5 py-2.5 rounded-lg text-xs font-bold transition-all text-center whitespace-nowrap active:scale-98 shadow-sm">
+                            Fix Issue
+                          </Link>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-alerts.webp" alt="No Alerts" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
+                  </div>
+                )
+              )}
+
+              {/* AUDIENCE REQUESTS */}
+              {activeTab === "requests" && eventCount >= 15 && (
+                audienceRequests && audienceRequests.length > 0 ? (
+                  audienceRequests.map((req: any) => (
+                    <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div>
+                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
+                          Requested Category: {req.category || "General"}
+                        </span>
+                        <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                      <Image src="/empty-category.webp" alt="No Requests" fill className="object-contain" priority />
+                    </div>
+                    <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
+                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
 </file>

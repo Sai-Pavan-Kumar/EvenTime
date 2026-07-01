@@ -68,6 +68,7 @@ export default function RootLayout({
          <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
          {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
          <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         <link rel="preload" href="/hero-section-v2.webp" as="image" />
          
         
         {/* Microsoft Clarity */}
