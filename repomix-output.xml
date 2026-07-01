@@ -582,6 +582,258 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
+<file path="src/app/admin/actions.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+async function verifyAdmin(supabase: SupabaseClient<Database>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  return requireAdmin(supabase, user.id);
+}
+
+export async function approveEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Derive creator server-side — never trust client
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  const { error: eventError } = await supabase
+    .from("events")
+    .update({ status: "approved" })
+    .eq("id", eventId);
+
+  if (eventError) return { error: "Event update failed" };
+
+  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
+    p_user_id: event.creator_id,
+    p_event_id: eventId
+  });
+
+  if (profileError) return { error: "Score update failed" };
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function rejectEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  const reason = formData.get("reason") as string | null;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, title")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  await supabase
+    .from("events")
+    .update({ status: "rejected" })
+    .eq("id", eventId);
+
+  revalidatePath("/admin");
+  return { success: true, creatorId: event.creator_id, title: event.title };
+}
+export async function resolveReportAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+
+  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
+
+  revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function punishCuratorAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+  if (!reportId) return { error: "Missing reportId." };
+
+  // Derive curator and event from the report — never trust client
+  const { data: report } = await supabase
+    .from("event_reports")
+    .select("curator_id, event_id")
+    .eq("id", reportId)
+    .single();
+
+  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
+
+  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
+  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  const { data: allReports } = await supabase
+    .from("event_reports")
+    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .eq("event_id", report.event_id);
+
+  const trustedReporterIds = new Set(
+    (allReports || [])
+      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
+      .map((r: any) => r.reporter_id)
+  );
+
+  if (trustedReporterIds.size < 5) {
+    revalidatePath("/admin");
+    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
+  }
+
+  await supabase.rpc('increment_et_score', {
+    user_id: report.curator_id,
+    delta: -150
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Soft Delete: Just update the status to 'deleted'
+  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
+  if (error) throw new Error("Delete failed: " + error.message);
+  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  if (!userId) return { error: "Missing userId." };
+
+  // Soft delete: mark the row, then ban login immediately.
+  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) return { error: "Failed to delete user." };
+
+  const adminClient = createAdminClient();
+  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  const newRole = formData.get("role") as string;
+  
+  if (!userId || !newRole) return { error: "Missing required fields." };
+
+  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateEventDetailsAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  const category = formData.get("category") as string;
+  const newStatus = formData.get("status") as string;
+  
+  if (!eventId) return { error: "Missing eventId." };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) return { error: "Event not found." };
+
+  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
+  if (updateError) throw new Error("Update failed: " + updateError.message);
+  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  // Award points if manually changed to approved, deduct if reverted
+  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
+    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
+  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
+    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function toggleLeaderboardAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle leaderboard failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/admin");
+
+  revalidatePath("/");
+  revalidatePath("/leaderboard");
+  return { success: true };
+}
+</file>
+
 <file path="src/app/admin/colleges/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -1556,6 +1808,204 @@ export default async function AdminReportsPage() {
 }
 </file>
 
+<file path="src/app/admin/users/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Navbar } from "@/components/layout/Navbar";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+import { deleteUserAction, updateUserRoleAction } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminUsersPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) redirect("/");
+
+  // Fetch all profiles (exclude soft-deleted users, they're in the 30-day trash)
+  const { data: users, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
+    .is("deleted_at", null);
+
+  if (error) {
+    console.error("Error fetching users:", error.message || JSON.stringify(error));
+  }
+
+  // Wrapper functions for server actions
+  async function handleRoleUpdate(formData: FormData) {
+    "use server";
+    await updateUserRoleAction(formData);
+  }
+
+  async function handleDeleteUser(formData: FormData) {
+    "use server";
+    await deleteUserAction(formData);
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <Navbar />
+      
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Header Section */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link href="/admin" className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-slate-900">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">User Management</h1>
+            <p className="text-slate-500 font-medium mt-1">View, edit, and manage all registered users.</p>
+          </div>
+        </div>
+
+        {/* Data Table Container */}
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User Type</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Interested Cities</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Categories</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Role</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">ET Score</th>
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {users && users.length > 0 ? (
+                  users.map((profile) => (
+                    <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors">
+                      
+                      {/* Avatar & Info */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
+                            {profile.avatar_url ? (
+                              <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={40} height={40} className="object-cover w-full h-full" />
+                            ) : (
+                              <UserIcon className="w-5 h-5 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 leading-tight">{profile.full_name || "Anonymous User"}</p>
+                            <p className="text-xs font-medium text-slate-500 mt-0.5">{profile.email}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* User Type */}
+                      <td className="px-6 py-4">
+                        {profile.user_type ? (
+                          <span className="text-sm font-bold text-slate-700 whitespace-normal break-words">{profile.user_type}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
+                      </td>
+
+                      {/* Interested Cities */}
+                      <td className="px-6 py-4">
+                        {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
+                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.preferred_cities.join(", ")}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
+                      </td>
+
+                      {/* Categories */}
+                      <td className="px-6 py-4">
+                        {profile.goals && profile.goals.length > 0 ? (
+                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.goals.join(", ")}</span>
+                        ) : (
+                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
+                        )}
+                      </td>
+
+                      {/* Role Badge */}
+                      <td className="px-6 py-4">
+                        {profile.role === "admin" ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-wider">
+                            <Shield className="w-3 h-3" /> Admin
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+                            <UserIcon className="w-3 h-3" /> User
+                          </span>
+                        )}
+                      </td>
+
+                      {/* ET Score */}
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-black text-slate-900">{profile.et_score || 0}</span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          
+                          {/* Role Toggle Form */}
+                          {profile.id !== user.id && (
+                            <form action={handleRoleUpdate}>
+                              <input type="hidden" name="userId" value={profile.id} />
+                              <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
+                              <button 
+                                type="submit" 
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                                  profile.role === "admin" 
+                                    ? "bg-slate-100 text-slate-600 hover:bg-slate-200" 
+                                    : "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20"
+                                }`}
+                              >
+                                {profile.role === "admin" ? "Demote" : "Make Admin"}
+                              </button>
+                            </form>
+                          )}
+
+                          {/* Delete User Form */}
+                          {profile.id !== user.id && (
+                            <form action={handleDeleteUser}>
+                              <input type="hidden" name="userId" value={profile.id} />
+                              <button 
+                                type="submit" 
+                                className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                title="Delete User"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </form>
+                          )}
+
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/api/og/leaderboard/route.tsx">
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
@@ -2318,6 +2768,113 @@ export default function Loading() {
       </div>
     </main>
   );
+}
+</file>
+
+<file path="src/app/profile/action.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Unauthorized" };
+  
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "No event ID" };
+  
+  // Verify ownership before deleting AND fetch the poster_url
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, poster_url")
+    .eq("id", eventId)
+    .single();
+    
+  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
+  
+  // Soft delete: just mark the event, move it to the 30-day trash.
+  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
+  // since the event can still be viewed/restored from trash before then.
+  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
+  redirect("/profile");
+}
+
+// NEW: Server action for creating a college securely
+export async function createCollegeAction(collegeName: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return { error: "Unauthorized" };
+  
+  const trimmed = collegeName.trim();
+  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
+    return { error: "College name must be between 3 and 100 characters." };
+  }
+  
+  // Check for near-duplicate first
+  const { data: existing } = await supabase
+    .from("colleges")
+    .select("id, name")
+    .ilike("name", trimmed)
+    .maybeSingle();
+    
+  if (existing) return { data: existing }; // return existing, don't duplicate
+  
+  const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const { data, error } = await supabase
+    .from("colleges")
+    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
+    .select("id, name, slug")
+    .single();
+    
+  if (error) return { error: "Failed to add college." };
+  
+  revalidatePath("/");
+  return { data };
+}
+
+// NEW: Server action for platform feedback
+export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const trimmedMessage = message?.trim() || "";
+  if (!trimmedMessage) {
+    return { error: "Message cannot be empty." };
+  }
+  if (trimmedMessage.length > 500) {
+    return { error: "Message must be 500 characters or less." };
+  }
+
+  if (user) {
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    const { data: recent } = await supabase
+      .from("platform_feedback")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", oneMinuteAgo)
+      .limit(1);
+      
+    if (recent && recent.length > 0) {
+      return { error: "Please wait a minute before submitting again." };
+    }
+  }
+  
+  const { error } = await supabase
+    .from("platform_feedback")
+    .insert([{ 
+      type, 
+      message: trimmedMessage,
+      user_id: user?.id || null 
+    }]);
+    
+  if (error) return { error: "Failed to submit feedback." };
+  
+  return { success: true };
 }
 </file>
 
@@ -3478,6 +4035,23 @@ export const CAREER_GOALS = [
 export type CareerGoal = typeof CAREER_GOALS[number];
 </file>
 
+<file path="src/lib/supabase/admin.ts">
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+
+// SERVICE ROLE client — only use in server actions (never import in client components).
+// Needed to ban/delete auth.users accounts, which the normal anon/cookie client cannot do.
+export function createAdminClient() {
+  return createSupabaseClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: { autoRefreshToken: false, persistSession: false },
+    }
+  );
+}
+</file>
+
 <file path="src/lib/supabase/client.ts">
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
@@ -3650,456 +4224,6 @@ v1.60.4
     "**/*.mts"
   ],
   "exclude": ["node_modules"]
-}
-</file>
-
-<file path="src/app/admin/actions.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { revalidatePath } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-async function verifyAdmin(supabase: SupabaseClient<Database>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  return requireAdmin(supabase, user.id);
-}
-
-export async function approveEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  // Derive creator server-side — never trust client
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) return { error: "Event not found." };
-
-  const { error: eventError } = await supabase
-    .from("events")
-    .update({ status: "approved" })
-    .eq("id", eventId);
-
-  if (eventError) return { error: "Event update failed" };
-
-  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
-    p_user_id: event.creator_id,
-    p_event_id: eventId
-  });
-
-  if (profileError) return { error: "Score update failed" };
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  return { success: true };
-}
-
-export async function rejectEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  const reason = formData.get("reason") as string | null;
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id, title")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) return { error: "Event not found." };
-
-  await supabase
-    .from("events")
-    .update({ status: "rejected" })
-    .eq("id", eventId);
-
-  revalidatePath("/admin");
-  return { success: true, creatorId: event.creator_id, title: event.title };
-}
-export async function resolveReportAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-
-  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
-
-  revalidatePath("/admin");
-  return { success: true };
-}
-
-export async function punishCuratorAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-  if (!reportId) return { error: "Missing reportId." };
-
-  // Derive curator and event from the report — never trust client
-  const { data: report } = await supabase
-    .from("event_reports")
-    .select("curator_id, event_id")
-    .eq("id", reportId)
-    .single();
-
-  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
-
-  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
-
-  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
-  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
-  const { data: allReports } = await supabase
-    .from("event_reports")
-    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
-    .eq("event_id", report.event_id);
-
-  const trustedReporterIds = new Set(
-    (allReports || [])
-      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
-      .map((r: any) => r.reporter_id)
-  );
-
-  if (trustedReporterIds.size < 5) {
-    revalidatePath("/admin");
-    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
-  }
-
-  await supabase.rpc('increment_et_score', {
-    user_id: report.curator_id,
-    delta: -150
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/profile");
-  return { success: true };
-}
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  // Soft Delete: Just update the status to 'deleted'
-  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
-  if (error) throw new Error("Delete failed: " + error.message);
-  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  return { success: true };
-}
-
-export async function deleteUserAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  if (!userId) return { error: "Missing userId." };
-
-  // Soft delete: mark the row, then ban login immediately.
-  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
-  const { error } = await supabase
-    .from("profiles")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", userId);
-  if (error) return { error: "Failed to delete user." };
-
-  const adminClient = createAdminClient();
-  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateUserRoleAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  const newRole = formData.get("role") as string;
-  
-  if (!userId || !newRole) return { error: "Missing required fields." };
-
-  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
-  
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateEventDetailsAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  const category = formData.get("category") as string;
-  const newStatus = formData.get("status") as string;
-  
-  if (!eventId) return { error: "Missing eventId." };
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) return { error: "Event not found." };
-
-  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
-  if (updateError) throw new Error("Update failed: " + updateError.message);
-  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-  // Award points if manually changed to approved, deduct if reverted
-  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
-  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
-    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  return { success: true };
-}
-
-export async function toggleLeaderboardAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const enabled = formData.get("enabled") === "true";
-
-  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle leaderboard failed:", error);
-    return { error: "Failed to update setting." };
-  }
-
-  revalidatePath("/admin");
-
-  revalidatePath("/");
-  revalidatePath("/leaderboard");
-  return { success: true };
-}
-</file>
-
-<file path="src/app/admin/users/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-import { deleteUserAction, updateUserRoleAction } from "../actions";
-
-export const dynamic = "force-dynamic";
-
-export default async function AdminUsersPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) redirect("/");
-
-  // Fetch all profiles (exclude soft-deleted users, they're in the 30-day trash)
-  const { data: users, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
-    .is("deleted_at", null);
-
-  if (error) {
-    console.error("Error fetching users:", error.message || JSON.stringify(error));
-  }
-
-  // Wrapper functions for server actions
-  async function handleRoleUpdate(formData: FormData) {
-    "use server";
-    await updateUserRoleAction(formData);
-  }
-
-  async function handleDeleteUser(formData: FormData) {
-    "use server";
-    await deleteUserAction(formData);
-  }
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Section */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin" className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-slate-900">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">User Management</h1>
-            <p className="text-slate-500 font-medium mt-1">View, edit, and manage all registered users.</p>
-          </div>
-        </div>
-
-        {/* Data Table Container */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User Type</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Interested Cities</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Categories</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Role</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">ET Score</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {users && users.length > 0 ? (
-                  users.map((profile) => (
-                    <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors">
-                      
-                      {/* Avatar & Info */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                            {profile.avatar_url ? (
-                              <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={40} height={40} className="object-cover w-full h-full" />
-                            ) : (
-                              <UserIcon className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 leading-tight">{profile.full_name || "Anonymous User"}</p>
-                            <p className="text-xs font-medium text-slate-500 mt-0.5">{profile.email}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* User Type */}
-                      <td className="px-6 py-4">
-                        {profile.user_type ? (
-                          <span className="text-sm font-bold text-slate-700 whitespace-normal break-words">{profile.user_type}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Interested Cities */}
-                      <td className="px-6 py-4">
-                        {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
-                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.preferred_cities.join(", ")}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Categories */}
-                      <td className="px-6 py-4">
-                        {profile.goals && profile.goals.length > 0 ? (
-                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.goals.join(", ")}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Role Badge */}
-                      <td className="px-6 py-4">
-                        {profile.role === "admin" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-wider">
-                            <Shield className="w-3 h-3" /> Admin
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
-                            <UserIcon className="w-3 h-3" /> User
-                          </span>
-                        )}
-                      </td>
-
-                      {/* ET Score */}
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-black text-slate-900">{profile.et_score || 0}</span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          
-                          {/* Role Toggle Form */}
-                          {profile.id !== user.id && (
-                            <form action={handleRoleUpdate}>
-                              <input type="hidden" name="userId" value={profile.id} />
-                              <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
-                              <button 
-                                type="submit" 
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                                  profile.role === "admin" 
-                                    ? "bg-slate-100 text-slate-600 hover:bg-slate-200" 
-                                    : "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20"
-                                }`}
-                              >
-                                {profile.role === "admin" ? "Demote" : "Make Admin"}
-                              </button>
-                            </form>
-                          )}
-
-                          {/* Delete User Form */}
-                          {profile.id !== user.id && (
-                            <form action={handleDeleteUser}>
-                              <input type="hidden" name="userId" value={profile.id} />
-                              <button 
-                                type="submit" 
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                                title="Delete User"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </form>
-                          )}
-
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                      No users found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-    </main>
-  );
 }
 </file>
 
@@ -5011,113 +5135,6 @@ export default function PrivacyPolicyPage() {
 }
 </file>
 
-<file path="src/app/profile/action.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Unauthorized" };
-  
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "No event ID" };
-  
-  // Verify ownership before deleting AND fetch the poster_url
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id, poster_url")
-    .eq("id", eventId)
-    .single();
-    
-  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
-  
-  // Soft delete: just mark the event, move it to the 30-day trash.
-  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
-  // since the event can still be viewed/restored from trash before then.
-  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
-  redirect("/profile");
-}
-
-// NEW: Server action for creating a college securely
-export async function createCollegeAction(collegeName: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return { error: "Unauthorized" };
-  
-  const trimmed = collegeName.trim();
-  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
-    return { error: "College name must be between 3 and 100 characters." };
-  }
-  
-  // Check for near-duplicate first
-  const { data: existing } = await supabase
-    .from("colleges")
-    .select("id, name")
-    .ilike("name", trimmed)
-    .maybeSingle();
-    
-  if (existing) return { data: existing }; // return existing, don't duplicate
-  
-  const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const { data, error } = await supabase
-    .from("colleges")
-    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
-    .select("id, name, slug")
-    .single();
-    
-  if (error) return { error: "Failed to add college." };
-  
-  revalidatePath("/");
-  return { data };
-}
-
-// NEW: Server action for platform feedback
-export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const trimmedMessage = message?.trim() || "";
-  if (!trimmedMessage) {
-    return { error: "Message cannot be empty." };
-  }
-  if (trimmedMessage.length > 500) {
-    return { error: "Message must be 500 characters or less." };
-  }
-
-  if (user) {
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const { data: recent } = await supabase
-      .from("platform_feedback")
-      .select("id")
-      .eq("user_id", user.id)
-      .gte("created_at", oneMinuteAgo)
-      .limit(1);
-      
-    if (recent && recent.length > 0) {
-      return { error: "Please wait a minute before submitting again." };
-    }
-  }
-  
-  const { error } = await supabase
-    .from("platform_feedback")
-    .insert([{ 
-      type, 
-      message: trimmedMessage,
-      user_id: user?.id || null 
-    }]);
-    
-  if (error) return { error: "Failed to submit feedback." };
-  
-  return { success: true };
-}
-</file>
-
 <file path="src/app/terms/page.tsx">
 import { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
@@ -5754,23 +5771,6 @@ export default function NotFound() {
         </Link>
       </div>
     </div>
-  );
-}
-</file>
-
-<file path="src/lib/supabase/admin.ts">
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
-
-// SERVICE ROLE client — only use in server actions (never import in client components).
-// Needed to ban/delete auth.users accounts, which the normal anon/cookie client cannot do.
-export function createAdminClient() {
-  return createSupabaseClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: { autoRefreshToken: false, persistSession: false },
-    }
   );
 }
 </file>
@@ -6904,470 +6904,6 @@ export function EmptyState({
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "eventime",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "context": "npx code-to-text . -o project_context.txt",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/s3-request-presigner": "^3.1045.0",
-    "@base-ui/react": "^1.4.1",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@phosphor-icons/react": "^2.1.10",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
-    "browser-image-compression": "^2.0.2",
-    "cheerio": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.14.0",
-    "next": "16.2.6",
-    "nextjs-toploader": "^3.9.17",
-    "react": "19.2.6",
-    "react-day-picker": "^10.0.0",
-    "react-dom": "^19.2.6",
-    "react-easy-crop": "^5.5.7",
-    "shadcn": "^4.7.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^25",
-    "@types/nprogress": "^0.2.3",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^10",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^6"
-  }
-}
-</file>
-
-<file path="src/app/profile/settings/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import SettingsClient from "./SettingsClient";
-
-export const dynamic = "force-dynamic";
-
-export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // Fetch existing profile data
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, full_name, username, avatar_url, preferred_cities, user_type, college, college_id, branch, graduation_year, goals, is_onboarded")
-    .eq("id", user.id)
-    .single();
-  // College list is fetched client-side in SettingsClient for better search UX
-
-  // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
-  const { data: activeEvents } = await supabase
-    .from("events")
-    .select("category")
-    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
-    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
-
-  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
-  const categoryCounts: Record<string, number> = {};
-  if (activeEvents) {
-    activeEvents.forEach(event => {
-      if (event.category) {
-        let cats: string[] = [];
-        if (Array.isArray(event.category)) {
-          cats = event.category;
-        } else if (typeof event.category === 'string') {
-          try {
-            const parsed = JSON.parse(event.category);
-            cats = Array.isArray(parsed) ? parsed : [event.category];
-          } catch {
-            cats = [event.category];
-          }
-        }
-        cats.forEach(c => {
-          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
-        });
-      }
-    });
-  }
-
-  // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
-}
-</file>
-
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect, useTransition } from "react";
-import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import NProgress from "nprogress";
-
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    NProgress.start();
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    startTransition(() => {
-      if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-        // Deselect if clicked again (Goes back to default future events)
-        router.push(`/?${params.toString()}`, { scroll: false });
-      } else {
-        params.set("date", queryDateStr);
-        router.push(`/?${params.toString()}`, { scroll: false });
-      }
-    });
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        <link rel="preload" href="/hero-section-v2.png" as="image" />
-      </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
-  );
-}
-</file>
-
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import NProgress from "nprogress";
-
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          NProgress.start();
-          const val = e.target.value;
-          const params = new URLSearchParams();
-
-          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-          } else {
-            if (val) params.set("location", val);
-          }
-
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          
-          startTransition(() => {
-            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-          });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-</file>
-
 <file path="src/types/database.ts">
 export type Json =
   | string
@@ -8019,6 +7555,470 @@ export const Constants = {
     Enums: {},
   },
 } as const
+</file>
+
+<file path="package.json">
+{
+  "name": "eventime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "context": "npx code-to-text . -o project_context.txt",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
+    "@base-ui/react": "^1.4.1",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "nextjs-toploader": "^3.9.17",
+    "react": "19.2.6",
+    "react-day-picker": "^10.0.0",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "shadcn": "^4.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^25",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^10",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
+</file>
+
+<file path="src/app/profile/settings/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import SettingsClient from "./SettingsClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  // Fetch existing profile data
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, avatar_url, preferred_cities, user_type, college, college_id, branch, graduation_year, goals, is_onboarded")
+    .eq("id", user.id)
+    .single();
+  // College list is fetched client-side in SettingsClient for better search UX
+
+  // NEW: Fetch active events to calculate counts per category
+  const today = new Date().toISOString();
+  const { data: activeEvents } = await supabase
+    .from("events")
+    .select("category")
+    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
+    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
+
+  // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
+  const categoryCounts: Record<string, number> = {};
+  if (activeEvents) {
+    activeEvents.forEach(event => {
+      if (event.category) {
+        let cats: string[] = [];
+        if (Array.isArray(event.category)) {
+          cats = event.category;
+        } else if (typeof event.category === 'string') {
+          try {
+            const parsed = JSON.parse(event.category);
+            cats = Array.isArray(parsed) ? parsed : [event.category];
+          } catch {
+            cats = [event.category];
+          }
+        }
+        cats.forEach(c => {
+          categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+        });
+      }
+    });
+  }
+
+  // Cast profile to any to bypass strict Typescript errors until global types are updated
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+}
+</file>
+
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect, useTransition } from "react";
+import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import NProgress from "nprogress";
+
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    NProgress.start();
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    startTransition(() => {
+      if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+        // Deselect if clicked again (Goes back to default future events)
+        router.push(`/?${params.toString()}`, { scroll: false });
+      } else {
+        params.set("date", queryDateStr);
+        router.push(`/?${params.toString()}`, { scroll: false });
+      }
+    });
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+
+// 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {/* Forcing the browser to load Switzer directly */}
+        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+        <link rel="preload" href="/hero-section-v2.png" as="image" />
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import NProgress from "nprogress";
+
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          NProgress.start();
+          const val = e.target.value;
+          const params = new URLSearchParams();
+
+          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+          } else {
+            if (val) params.set("location", val);
+          }
+
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          
+          startTransition(() => {
+            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+          });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 </file>
 
 <file path="src/app/cities/[city]/page.tsx">
@@ -10972,534 +10972,6 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
 }
 </file>
 
-<file path="src/app/events/[slug]/EventClientUI.tsx">
-"use client";
-
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { submitReportAction } from "../report-actions";
-import { getCategoryConfig } from "@/lib/category-config";
-import { EventCard } from "@/app/events/EventCard";
-import type { EventRow } from "@/types";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
-
-export interface EventUIProps {
-  event: any;
-  similarEvents?: any[];
-  curatorUsername?: string | null;
-  same_college_interested_count?: number;
-  interestedAvatars?: { avatar_url: string | null; username: string | null }[];
-  collegeName?: string | null;
-}
-
-export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [], collegeName = null }: EventUIProps) {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [isReported, setIsReported] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isInterested, setIsInterested] = useState(false);
-  const [isLoadingInterest, setIsLoadingInterest] = useState(true);
-  const totalInterested = event.interested_events?.[0]?.count || 0;
-  const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
-
-  const safeTitle = event.title ?? "Event Details";
-  const safeCategory = event.category ?? "General";
-  const safeOrganizer = curatorUsername || event.organizer_name || "Unknown Organizer";
-  const safeRegistrationLink = event.registration_link ?? "#";
-  const safeId = event.id ?? "";
-  const safeCreatorId = event.creator_id ?? "";
-
-  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
-  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
-  const eventUrl = typeof window !== "undefined" ? window.location.href : "";
-  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
-  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
-
-  const googleCalendarUrl = (() => {
-    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
-    const title = encodeURIComponent(`${safeTitle} · via EvenTime`);
-    const dateStr = event.date_string?.replace(/-/g, "") ?? "";
-    const dates = dateStr ? `${dateStr}/${dateStr}` : "";
-    const details = encodeURIComponent(event.description ?? "");
-    const location = encodeURIComponent(event.is_virtual ? "Online" : (event.location ?? ""));
-    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
-  })();
-
-  useEffect(() => {
-    const fetchInitialState = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setIsLoadingInterest(false); return; }
-        setCurrentUser(user);
-
-        let isAdmin = false;
-        if (user.id !== safeCreatorId) {
-          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-          isAdmin = profile?.role === "admin";
-        }
-
-        if (user.id === safeCreatorId || isAdmin) {
-          setIsCuratorOrAdmin(true);
-          setIsLoadingInterest(false);
-          return;
-        }
-
-        if (safeId) {
-          const { data, error } = await supabase
-            .from("interested_events" as any)
-            .select("id")
-            .eq("event_id", safeId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (data && !error) setIsInterested(true);
-        }
-      } catch (err) {
-        console.error("Error fetching interest state:", err);
-      } finally {
-        setIsLoadingInterest(false);
-      }
-    };
-    fetchInitialState();
-  }, [safeId, safeCreatorId, supabase]);
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(eventUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const downloadStory = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(storyImageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err) {
-      console.error("Failed to download image", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleInterestedClick = async () => {
-    if (isLoadingInterest) return;
-    if (!currentUser) { setIsAuthModalOpen(true); return; }
-    if (isCuratorOrAdmin) return;
-
-    const previousState = isInterested;
-    setIsInterested(!previousState);
-    setLocalInterestCount((prev: number) => !previousState ? prev + 1 : Math.max(0, prev - 1));
-
-    try {
-      if (!previousState) {
-        const { error } = await supabase.from("interested_events" as any).insert({ event_id: safeId, user_id: currentUser.id }).select();
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      } else {
-        const { error } = await supabase.from("interested_events" as any).delete().eq("event_id", safeId).eq("user_id", currentUser.id);
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      }
-    } catch (error: any) {
-      console.error("Failed to update interest status:", error.message || error);
-      setIsInterested(previousState);
-      setLocalInterestCount((prev: number) => previousState ? prev + 1 : Math.max(0, prev - 1));
-      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
-    }
-  };
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-white pb-8">
-      <Navbar />
-
-      <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
-
-        {/* Back + Actions */}
-        <div className="flex justify-between items-center w-full">
-          <button onClick={() => router.push("/")} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-slate-900" />
-          </button>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
-              <Flag className="w-5 h-5" />
-            </button>
-            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-              <Share2 className="w-5 h-5 text-slate-900" />
-            </button>
-          </div>
-        </div>
-
-        {/* Full-width centered title */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-[#6C47FF] font-heading leading-[1.1] text-center">
-          {safeTitle}
-        </h1>
-
-        {/* TWO-COLUMN LAYOUT */}
-        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
-
-          {/* LEFT COLUMN — sticky */}
-          <div className="lg:sticky lg:top-8 space-y-6">
-
-            {imageUrl ? (
-              <div className="relative w-full rounded-[24px] overflow-hidden">
-                <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
-              </div>
-            ) : null}
-
-            {/* Desktop Action Buttons */}
-            <div className="hidden md:flex gap-4">
-              {!isPastEvent && (
-                <a
-                  href={safeRegistrationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
-                >
-                  Register <ExternalLink className="w-4 h-4" />
-                </a>
-              )}
-              <button
-                onClick={handleInterestedClick}
-                disabled={isLoadingInterest || isCuratorOrAdmin}
-                className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                  isCuratorOrAdmin
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : isInterested
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                      : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                {isLoadingInterest
-                  ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))
-                }
-              </button>
-            </div>
-
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="space-y-8">
-
-            {/* About Event */}
-            <div className="space-y-3">
-              <h2 className="text-xl font-bold text-slate-900">About Event</h2>
-              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
-                {event.description}
-              </div>
-            </div>
-
-            {/* Event Details Card */}
-            <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-5">
-
-              {/* Curated by */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">✍️</span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Curated by</p>
-                  <p className="text-[14px] font-bold text-slate-900">{safeOrganizer}</p>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-5 h-5 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Date & Time</p>
-                  <p className="text-[14px] font-bold text-slate-900">{displayDate} · {event.start_time || "TBA"}</p>
-                </div>
-              </div>
-
-              {/* Location */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Location</p>
-                  <p className="text-[14px] font-bold text-slate-900">{event.is_virtual ? "Online Platform" : event.location}</p>
-                </div>
-              </div>
-
-              {/* College (if applicable) */}
-              {collegeName && (
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                    <span className="text-base">🏢</span>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hosted by</p>
-                    <p className="text-[14px] font-bold text-slate-900">{collegeName}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Add to Calendar */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">📅</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Add to Calendar</p>
-                  <a
-                    href={googleCalendarUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[14px] font-bold text-[#6C47FF] hover:underline"
-                  >
-                    Add to Google Calendar &rarr;
-                  </a>
-                </div>
-              </div>
-
-              {/* Interested people with avatars */}
-              {localInterestCount > 0 && (
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
-                  {interestedAvatars.length > 0 && (
-                    <div className="flex -space-x-2">
-                      {interestedAvatars.map((u, i) => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0">
-                          {u.avatar_url ? (
-                            <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
-                          ) : (
-                            <div className="w-full h-full bg-[#6C47FF]/20 flex items-center justify-center text-[10px] font-bold text-[#6C47FF]">
-                              {(u.username || "?")[0].toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="text-sm font-semibold text-slate-700">
-                    {localInterestCount} {localInterestCount === 1 ? "person" : "people"} interested
-                  </p>
-                </div>
-              )}
-
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Similar Events — separate full-width section */}
-      {similarEvents && similarEvents.length > 0 && (
-        <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
-            <div className="hidden md:flex gap-2">
-              <button onClick={() => scroll("left")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
-                <ChevronLeft className="w-5 h-5 text-slate-600" />
-              </button>
-              <button onClick={() => scroll("right")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
-                <ChevronRight className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
-          </div>
-          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {similarEvents.filter((simEvent) => {
-              // FIX: Filter out events that are today but whose time has already passed
-              if (!simEvent.date_string) return true;
-              const eventDate = new Date(simEvent.date_string);
-              if (simEvent.start_time) {
-                const [time, modifier] = simEvent.start_time.split(" ");
-                let [hours, minutes] = time.split(":");
-                if (hours === "12") hours = "00";
-                if (modifier === "PM") hours = parseInt(hours, 10) + 12;
-                eventDate.setHours(hours, minutes, 0, 0);
-              }
-              return eventDate.getTime() > new Date().getTime();
-            }).map((simEvent) => (
-              <div key={simEvent.id} className="w-[280px] shrink-0">
-                <EventCard
-                  id={simEvent.id!}
-                  slug={simEvent.slug || simEvent.id!}
-                  title={simEvent.title || "Untitled Event"}
-                  category={simEvent.category || "General"}
-                  date={simEvent.date_string || "TBA"}
-                  city={simEvent.location || simEvent.city || "Online"}
-                  imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
-                  isFree={simEvent.is_free ?? false}
-                  audience={simEvent.target_audience ?? []}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      
-
-      {/* Mobile Sticky Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 flex gap-3 z-40 pb-safe">
-        <button
-          onClick={handleInterestedClick}
-          disabled={isLoadingInterest || isCuratorOrAdmin}
-          className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-            isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-900"
-          }`}
-        >
-          {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
-        </button>
-        {!isPastEvent && (
-          <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-            Register <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
-      </div>
-
-      {/* Auth Modal */}
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
-            >
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Users className="w-7 h-7 text-slate-600" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Share Modal */}
-      <AnimatePresence>
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-slate-100">
-                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
-                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
-                <div className="relative w-full aspect-[9/16] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
-                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
-                </div>
-                <div className="flex flex-col gap-3 w-full">
-                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-[#1D1D1F] hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
-                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
-                  </button>
-                  <button onClick={copyLink} className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
-                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    {isCopied ? "Link Copied!" : "Copy Event Link"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Report Modal */}
-      <AnimatePresence>
-        {isReportModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
-            >
-              <div className="p-6 text-center border-b border-slate-100 relative">
-                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                  <AlertTriangle className="w-6 h-6 text-red-500" />
-                </div>
-                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
-                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
-              </div>
-              <div className="p-6">
-                {isReported ? (
-                  <div className="text-center py-4">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                    <p className="font-bold text-slate-900">Report Submitted</p>
-                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
-                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
-                  </div>
-                ) : (
-                  <form action={async (formData) => { await submitReportAction(formData); setIsReported(true); }} className="flex flex-col gap-3">
-                    <input type="hidden" name="eventId" value={safeId} />
-                    <input type="hidden" name="curatorId" value={safeCreatorId} />
-                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
-                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
-                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
-                        </div>
-                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
-                      </label>
-                    ))}
-                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
-                      Submit Report
-                    </button>
-                  </form>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
-</file>
-
 <file path="src/components/layout/Navbar.tsx">
 "use client";
 
@@ -12034,6 +11506,532 @@ export function Navbar({ variant = 'default', categoryChips, locationChips }: { 
     <Suspense fallback={null}>
       <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
     </Suspense>
+  );
+}
+</file>
+
+<file path="src/app/events/[slug]/EventClientUI.tsx">
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { submitReportAction } from "../report-actions";
+import { getCategoryConfig } from "@/lib/category-config";
+import { EventCard } from "@/app/events/EventCard";
+import type { EventRow } from "@/types";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Navbar } from "@/components/layout/Navbar";
+
+export interface EventUIProps {
+  event: any;
+  similarEvents?: any[];
+  curatorUsername?: string | null;
+  same_college_interested_count?: number;
+  interestedAvatars?: { avatar_url: string | null; username: string | null }[];
+  collegeName?: string | null;
+}
+
+export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [], collegeName = null }: EventUIProps) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReported, setIsReported] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
+  const [isLoadingInterest, setIsLoadingInterest] = useState(true);
+  const totalInterested = event.interested_events?.[0]?.count || 0;
+  const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
+
+  const safeTitle = event.title ?? "Event Details";
+  const safeCategory = event.category ?? "General";
+  const safeOrganizer = curatorUsername || event.organizer_name || "Unknown Organizer";
+  const safeRegistrationLink = event.registration_link ?? "#";
+  const safeId = event.id ?? "";
+  const safeCreatorId = event.creator_id ?? "";
+
+  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
+  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
+  const eventUrl = typeof window !== "undefined" ? window.location.href : "";
+  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
+  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
+
+  const googleCalendarUrl = (() => {
+    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    const title = encodeURIComponent(`${safeTitle} · via EvenTime`);
+    const dateStr = event.date_string?.replace(/-/g, "") ?? "";
+    const dates = dateStr ? `${dateStr}/${dateStr}` : "";
+    const details = encodeURIComponent(event.description ?? "");
+    const location = encodeURIComponent(event.is_virtual ? "Online" : (event.location ?? ""));
+    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+  })();
+
+  useEffect(() => {
+    const fetchInitialState = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setIsLoadingInterest(false); return; }
+        setCurrentUser(user);
+
+        let isAdmin = false;
+        if (user.id !== safeCreatorId) {
+          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+          isAdmin = profile?.role === "admin";
+        }
+
+        if (user.id === safeCreatorId || isAdmin) {
+          setIsCuratorOrAdmin(true);
+          setIsLoadingInterest(false);
+          return;
+        }
+
+        if (safeId) {
+          const { data, error } = await supabase
+            .from("interested_events" as any)
+            .select("id")
+            .eq("event_id", safeId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (data && !error) setIsInterested(true);
+        }
+      } catch (err) {
+        console.error("Error fetching interest state:", err);
+      } finally {
+        setIsLoadingInterest(false);
+      }
+    };
+    fetchInitialState();
+  }, [safeId, safeCreatorId, supabase]);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(eventUrl);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const downloadStory = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(storyImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error("Failed to download image", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleInterestedClick = async () => {
+    if (isLoadingInterest) return;
+    if (!currentUser) { setIsAuthModalOpen(true); return; }
+    if (isCuratorOrAdmin) return;
+
+    const previousState = isInterested;
+    setIsInterested(!previousState);
+    setLocalInterestCount((prev: number) => !previousState ? prev + 1 : Math.max(0, prev - 1));
+
+    try {
+      if (!previousState) {
+        const { error } = await supabase.from("interested_events" as any).insert({ event_id: safeId, user_id: currentUser.id }).select();
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      } else {
+        const { error } = await supabase.from("interested_events" as any).delete().eq("event_id", safeId).eq("user_id", currentUser.id);
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      }
+    } catch (error: any) {
+      console.error("Failed to update interest status:", error.message || error);
+      setIsInterested(previousState);
+      setLocalInterestCount((prev: number) => previousState ? prev + 1 : Math.max(0, prev - 1));
+      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
+    }
+  };
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-white pb-8">
+      <Navbar />
+
+      <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
+
+        {/* Back + Actions */}
+        <div className="flex justify-between items-center w-full">
+          <button onClick={() => router.push("/")} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+              <Flag className="w-5 h-5" />
+            </button>
+            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-slate-900" />
+            </button>
+          </div>
+        </div>
+
+        {/* Full-width centered title */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-[#6C47FF] font-heading leading-[1.1] text-center">
+          {safeTitle}
+        </h1>
+
+        {/* TWO-COLUMN LAYOUT */}
+        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+
+          {/* LEFT COLUMN — sticky */}
+          <div className="lg:sticky lg:top-8 space-y-6">
+
+            {imageUrl ? (
+              <div className="relative w-full rounded-[24px] overflow-hidden">
+                <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
+              </div>
+            ) : null}
+
+            {/* Desktop Action Buttons */}
+            <div className="hidden md:flex gap-4">
+              {!isPastEvent && (
+                <a
+                  href={safeRegistrationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
+                >
+                  Register <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+              <button
+                onClick={handleInterestedClick}
+                disabled={isLoadingInterest || isCuratorOrAdmin}
+                className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                  isCuratorOrAdmin
+                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                    : isInterested
+                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                      : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                }`}
+              >
+                {isLoadingInterest
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))
+                }
+              </button>
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-8">
+
+            {/* About Event */}
+            <div className="space-y-3">
+              <h2 className="text-xl font-bold text-slate-900">About Event</h2>
+              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
+                {event.description}
+              </div>
+            </div>
+
+            {/* Event Details Card */}
+            <div className="bg-slate-50 rounded-[24px] p-6 border border-slate-100 space-y-5">
+
+              {/* Curated by */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-base">✍️</span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Curated by</p>
+                  <p className="text-[14px] font-bold text-slate-900">{safeOrganizer}</p>
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Date & Time</p>
+                  <p className="text-[14px] font-bold text-slate-900">{displayDate} · {event.start_time || "TBA"}</p>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Location</p>
+                  <p className="text-[14px] font-bold text-slate-900">{event.is_virtual ? "Online Platform" : event.location}</p>
+                </div>
+              </div>
+
+              {/* College (if applicable) */}
+              {collegeName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-base">🏢</span>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hosted by</p>
+                    <p className="text-[14px] font-bold text-slate-900">{collegeName}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Calendar */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-base">📅</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Add to Calendar</p>
+                  <a
+                    href={googleCalendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] font-bold text-[#6C47FF] hover:underline"
+                  >
+                    Add to Google Calendar &rarr;
+                  </a>
+                </div>
+              </div>
+
+              {/* Interested people with avatars */}
+              {localInterestCount > 0 && (
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
+                  {interestedAvatars.length > 0 && (
+                    <div className="flex -space-x-2">
+                      {interestedAvatars.map((u, i) => (
+                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0">
+                          {u.avatar_url ? (
+                            <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
+                          ) : (
+                            <div className="w-full h-full bg-[#6C47FF]/20 flex items-center justify-center text-[10px] font-bold text-[#6C47FF]">
+                              {(u.username || "?")[0].toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                                    <p className="text-sm font-semibold text-slate-700">
+                    {localInterestCount} {localInterestCount === 1 ? "person" : "people"} interested
+                  </p>
+                </div>
+              )}
+
+              {/* Mobile Action Buttons (Inline) */}
+              <div className="md:hidden flex gap-3 pt-2 border-t border-slate-200 mt-2">
+                <button
+                  onClick={handleInterestedClick}
+                  disabled={isLoadingInterest || isCuratorOrAdmin}
+                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
+                  }`}
+                >
+                  {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
+                </button>
+                {!isPastEvent && (
+                  <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-[#6C47FF] text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                    Register <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Similar Events - separate full-width section */}
+      {similarEvents && similarEvents.length > 0 && (
+        <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
+            <div className="hidden md:flex gap-2">
+              <button onClick={() => scroll("left")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
+              </button>
+              <button onClick={() => scroll("right")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
+                <ChevronRight className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          </div>
+          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {similarEvents.filter((simEvent) => {
+              // FIX: Filter out events that are today but whose time has already passed
+              if (!simEvent.date_string) return true;
+              const eventDate = new Date(simEvent.date_string);
+              if (simEvent.start_time) {
+                const [time, modifier] = simEvent.start_time.split(" ");
+                let [hours, minutes] = time.split(":");
+                if (hours === "12") hours = "00";
+                if (modifier === "PM") hours = parseInt(hours, 10) + 12;
+                eventDate.setHours(hours, minutes, 0, 0);
+              }
+              return eventDate.getTime() > new Date().getTime();
+            }).map((simEvent) => (
+              <div key={simEvent.id} className="w-[280px] shrink-0">
+                <EventCard
+                  id={simEvent.id!}
+                  slug={simEvent.slug || simEvent.id!}
+                  title={simEvent.title || "Untitled Event"}
+                  category={simEvent.category || "General"}
+                  date={simEvent.date_string || "TBA"}
+                  city={simEvent.location || simEvent.city || "Online"}
+                  imageUrl={simEvent.poster_url || "/window.svg"}
+                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
+                  isFree={simEvent.is_free ?? false}
+                  audience={simEvent.target_audience ?? []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {isAuthModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
+            >
+              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Users className="w-7 h-7 text-slate-600" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-5 border-b border-slate-100">
+                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
+                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
+                <div className="relative w-full aspect-[9/16] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
+                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
+                </div>
+                <div className="flex flex-col gap-3 w-full">
+                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-[#1D1D1F] hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
+                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
+                  </button>
+                  <button onClick={copyLink} className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? "Link Copied!" : "Copy Event Link"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {isReportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 text-center border-b border-slate-100 relative">
+                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
+                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
+              </div>
+              <div className="p-6">
+                {isReported ? (
+                  <div className="text-center py-4">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                    <p className="font-bold text-slate-900">Report Submitted</p>
+                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
+                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
+                  </div>
+                ) : (
+                  <form action={async (formData) => { await submitReportAction(formData); setIsReported(true); }} className="flex flex-col gap-3">
+                    <input type="hidden" name="eventId" value={safeId} />
+                    <input type="hidden" name="curatorId" value={safeCreatorId} />
+                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
+                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
+                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                        </div>
+                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
+                      </label>
+                    ))}
+                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
+                      Submit Report
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </main>
   );
 }
 </file>

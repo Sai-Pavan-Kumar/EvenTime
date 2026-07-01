@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
 import { Footer } from "@/components/layout/Footer";
 import NextTopLoader from "nextjs-toploader";
-
-// 1. Load Outfit font for your headings
+import Script from "next/script";
+ 
+ // 1. Load Outfit font for your headings
 const outfit = Outfit({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
@@ -62,13 +63,35 @@ export default function RootLayout({
       className={cn("h-full antialiased scroll-smooth", outfit.variable)}
       data-scroll-behavior="smooth"
     >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        <link rel="preload" href="/hero-section-v2.png" as="image" />
-      </head>
+       <head>
+         {/* Forcing the browser to load Switzer directly */}
+         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         <link rel="preload" href="/hero-section-v2.png" as="image" />
+        
+        {/* Microsoft Clarity */}
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xfihu5m5yg");
+          `}
+        </Script>
+
+        {/* Google Analytics GA4 */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-2JE8ES9P65');
+          `}
+        </Script>
+       </head>
       <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
         <NextTopLoader 
           color="#6C47FF"
