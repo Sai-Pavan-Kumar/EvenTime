@@ -63,9 +63,21 @@ export default function RootLayout({
       className={cn("h-full antialiased scroll-smooth", outfit.variable)}
       data-scroll-behavior="smooth"
     >
-       <head>
-         {/* Forcing the browser to load Switzer directly */}
-         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+              <head>
+         {/* Async Font Loading (Prevents Render Blocking) */}
+         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+         <link 
+           rel="stylesheet" 
+           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
+           media="print" 
+           onLoad={(e) => {
+             e.currentTarget.media = 'all';
+           }}
+         />
+         <noscript>
+           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         </noscript>
+
          {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
          <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
          <link rel="preload" href="/hero-section-v2.webp" as="image" />
