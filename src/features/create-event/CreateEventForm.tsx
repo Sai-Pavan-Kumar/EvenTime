@@ -113,7 +113,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       college_branch: isCollegeCategory ? eventData.collegeBranch : null,
       college_year: isCollegeCategory ? eventData.collegeYear : null,
       college_only: isCollegeCategory ? eventData.collegeOnly : null,
-      college_id: isCollegeCategory && eventData.collegeOnly ? eventData.collegeId : null,
+      college_id: isCollegeCategory ? eventData.collegeId : null,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);

@@ -198,7 +198,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!data.collegeOnly ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
-               {data.collegeOnly && (
                   <div className="space-y-2 relative">
                     <label className="block text-xs font-bold text-slate-500">Which College? <span className="text-red-500">*</span></label>
                     <input
@@ -247,7 +246,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                       </div>
                     )}
                   </div>
-                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="block text-xs font-bold text-slate-500">Branch</label>
