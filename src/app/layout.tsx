@@ -67,11 +67,14 @@ export default function RootLayout({
          {/* Async Font Loading (Prevents Render Blocking) */}
          <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
          <link 
+           id="switzer-font"
            rel="stylesheet" 
            href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
            media="print" 
-           onLoad={(e) => {
-             e.currentTarget.media = 'all';
+         />
+         <script
+           dangerouslySetInnerHTML={{
+             __html: `document.getElementById('switzer-font').media='all';`
            }}
          />
          <noscript>
