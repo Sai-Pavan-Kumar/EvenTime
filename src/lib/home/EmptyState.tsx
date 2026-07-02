@@ -29,12 +29,12 @@ export function EmptyState({
       <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
         
         {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+        <div className={`${isForYou ? 'w-56 h-40 md:w-72 md:h-56' : 'w-72 h-56 md:w-96 md:h-72'} relative mb-2 transition-transform duration-500 hover:scale-105`}>
           <Image 
             src={imageSrc} 
             alt="Empty State Illustration" 
             fill 
-            className="object-contain" 
+            className="object-contain scale-125" 
           />
         </div>
 
