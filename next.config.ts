@@ -47,15 +47,16 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
+                    {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://www.clarity.ms https://www.googletagmanager.com https://static.cloudflareinsights.com https://browser.sentry-cdn.com`,
               "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
               "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://*.sentry.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms",              "frame-ancestors 'none'",
+              "img-src 'self' data: blob: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' ws: wss: https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://*.sentry.io https://*.clarity.ms https://*.google-analytics.com https://*.analytics.google.com https://cloudflareinsights.com",
+              "frame-ancestors 'none'",
             ].join("; "),
           },
           

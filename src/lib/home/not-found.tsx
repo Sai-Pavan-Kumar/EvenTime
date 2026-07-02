@@ -10,7 +10,7 @@ export default function NotFound() {
         {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
         <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
           <Image 
-            src="/illustrations/404_state.webp" 
+            src="/illustrations/404_state2.webp" 
             alt="404 Not Found Illustration" 
             fill 
             className="object-contain"
