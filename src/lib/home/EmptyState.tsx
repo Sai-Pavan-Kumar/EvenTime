@@ -29,7 +29,7 @@ export function EmptyState({
       <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
         
         {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-2`}>
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
           <Image 
             src={imageSrc} 
             alt={title} 
@@ -39,19 +39,10 @@ export function EmptyState({
           />
         </div>
 
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-3 tracking-[-0.02em]`}>
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
           {title}
         </h3>
         
-        {/* Premium purple star divider from your mockup */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-[1px] w-8 bg-gradient-to-r from-transparent to-brand/40"></div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-brand stroke-[2.5px]">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          <div className="h-[1px] w-8 bg-gradient-to-l from-transparent to-brand/40"></div>
-        </div>
-
         <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
           {message}
         </p>
