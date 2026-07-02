@@ -25,7 +25,7 @@ export default function GlobalError({
         {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
         <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
           <Image 
-            src="/illustrations/error_state2.webp" 
+            src="/illustrations/error_state3.webp" 
             alt="Error Illustration" 
             fill 
             className="object-contain" 
