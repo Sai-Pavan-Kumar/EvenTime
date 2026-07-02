@@ -3876,115 +3876,6 @@ v1.60.4
 legacy-peer-deps=true
 </file>
 
-<file path="next.config.ts">
-import { withSentryConfig } from "@sentry/nextjs";
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
-              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
-              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
-              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
-              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://*.sentry.io",
-              "frame-ancestors 'none'",
-            ].join("; "),
-          },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withSentryConfig(withPWA(nextConfig), {
-  // For all available options, see:
-  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
-
-  org: "eventime",
-
-  project: "javascript-nextjs",
-
-  // Only print logs for uploading source maps in CI
-  silent: !process.env.CI,
-
-  // For all available options, see:
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
-
-  // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
-
-  // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-  // This can increase your server load as well as your hosting bill.
-  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
-  // side errors will fail.
-  // tunnelRoute: "/monitoring",
-
-  webpack: {
-    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
-    // See the following for more information:
-    // https://docs.sentry.io/product/crons/
-    // https://vercel.com/docs/cron-jobs
-    automaticVercelMonitors: true,
-
-    // Tree-shaking options for reducing bundle size
-    treeshake: {
-      // Automatically tree-shake Sentry logger statements to reduce bundle size
-      removeDebugLogging: true,
-    },
-  }
-});
-</file>
-
 <file path="public/manifest.json">
 {
   "name": "EvenTime",
@@ -6580,6 +6471,114 @@ declare module 'nprogress' {
   const nprogress: NProgress;
   export default nprogress;
 }
+</file>
+
+<file path="next.config.ts">
+import { withSentryConfig } from "@sentry/nextjs";
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,  // tighten after audit
+              "style-src 'self' 'unsafe-inline' https://api.fontshare.com",
+              "font-src 'self' https://api.fontshare.com https://cdn.fontshare.com https://cdn.sbhub.in",
+              "img-src 'self' data: https://cdn.sbhub.in https://lh3.googleusercontent.com https://images.unsplash.com https://avatars.githubusercontent.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org",
+              "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org https://*.sentry.io https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://*.clarity.ms",              "frame-ancestors 'none'",
+            ].join("; "),
+          },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withSentryConfig(withPWA(nextConfig), {
+  // For all available options, see:
+  // https://www.npmjs.com/package/@sentry/webpack-plugin#options
+
+  org: "eventime",
+
+  project: "javascript-nextjs",
+
+  // Only print logs for uploading source maps in CI
+  silent: !process.env.CI,
+
+  // For all available options, see:
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+
+  // Upload a larger set of source maps for prettier stack traces (increases build time)
+  widenClientFileUpload: true,
+
+  // Uncomment to route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
+  // This can increase your server load as well as your hosting bill.
+  // Note: Check that the configured route will not match with your Next.js middleware, otherwise reporting of client-
+  // side errors will fail.
+  // tunnelRoute: "/monitoring",
+
+  webpack: {
+    // Enables automatic instrumentation of Vercel Cron Monitors. (Does not yet work with App Router route handlers.)
+    // See the following for more information:
+    // https://docs.sentry.io/product/crons/
+    // https://vercel.com/docs/cron-jobs
+    automaticVercelMonitors: true,
+
+    // Tree-shaking options for reducing bundle size
+    treeshake: {
+      // Automatically tree-shake Sentry logger statements to reduce bundle size
+      removeDebugLogging: true,
+    },
+  }
+});
 </file>
 
 <file path="src/app/about/page.tsx">
@@ -11146,19 +11145,19 @@ export default function RootLayout({
          
         
         {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="lazyOnload">
+        <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
                 y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
             })(window, document, "clarity", "script", "xfz36sbk56");
           `}
         </Script>
 
         {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="lazyOnload" />
-        <Script id="google-analytics" strategy="lazyOnload">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
@@ -12231,6 +12230,338 @@ export function Navbar({ variant = 'default', categoryChips, locationChips }: { 
 }
 </file>
 
+<file path="src/lib/home/fetchHomePageData.ts">
+import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
+import { getMatchLabel } from "@/lib/events/match";
+import type { ProfileRow, EventRow } from "@/types";
+import type { HomePageClientProps } from "./HomePageClient";
+
+export interface HomePageParams {
+  branch?: string;
+  q?: string;
+  date?: string;
+  category?: string;
+  location?: string;
+  view?: string;
+  tab?: string;
+  show_cal?: string;
+}
+
+export async function fetchHomePageData(searchParams: HomePageParams) {
+  const { branch, q, date, category, location, view, tab, show_cal } = searchParams;
+  const supabase = await createClient();
+  const activeTab = tab || "around_you";
+
+  // NEW: Dynamically get today's date using IST timezone.
+  // The server runs on UTC time. By forcing it to calculate the date in 'Asia/Kolkata', 
+  // we prevent the server from fetching yesterday's events during early morning hours in India,
+  // which stops the client-side hydration flashing.
+  const serverTime = new Date();
+  const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  
+  const day = todayIST.getDate();
+  const month = todayIST.toLocaleDateString('en-US', { month: 'short' });
+  const displayToday = `${day} ${month}`; // Formats to "24 May"
+
+  const yyyy = todayIST.getFullYear();
+  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
+  const dd = String(todayIST.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  // 1. Fetch user session and profile for onboarding check
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  // FIX: Extend the ProfileRow type to include 'city' so TypeScript stops complaining
+  let profile: (Partial<ProfileRow> & { city?: string }) | null = null; 
+  
+  // FIX: Properly type personalizedEvents to include matchReason so we don't use 'any'
+  let personalizedEvents: (Partial<EventRow> & { matchReason?: string })[] = [];
+  let aroundYouEvents: Partial<EventRow>[] = [];
+  let collegeEvents: Partial<EventRow>[] = [];
+  let otherCollegeEvents: Partial<EventRow>[] = [];
+  let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
+  let activeCities: string[] = ["Hyderabad"]; // Default city for guests / non-onboarded users
+
+  // Define exact fields needed globally for all queries in this file
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
+
+  if (user) {
+    // FIX: Removed 'as any' from the select statement
+    const { data } = await supabase.from("profiles").select("is_onboarded, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
+    profile = data as (Partial<ProfileRow> & { city?: string }) | null;
+
+    // City scope: use ALL the user's chosen cities, default stays "Hyderabad" if they haven't picked any
+    activeCities = (profile?.preferred_cities?.length ?? 0) > 0 ? (profile!.preferred_cities as string[]) : ["Hyderabad"];
+
+    // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
+    if (profile?.user_type === 'student' && profile?.college_id) {
+      let collegeQuery = supabase
+        .from("events")
+        .select(EVENT_FIELDS) // Replaced "*"
+        .eq("status", "approved")
+        .eq("college_id", profile.college_id);
+        
+      collegeQuery = date ? collegeQuery.eq("date_string", date) : collegeQuery.gte("date_string", todayStr);
+
+      const { data: cEvents } = await collegeQuery
+        .order("created_at", { ascending: false })
+        .limit(8);
+      
+      collegeEvents = (cEvents || []) as Partial<EventRow>[];
+
+      // NEW: "In Other College" pill — college events hosted elsewhere but open to any student
+      let otherCollegeQuery = supabase
+        .from("events")
+        .select(EVENT_FIELDS)
+        .eq("status", "approved")
+        .eq("college_only", true)
+        .neq("college_id", profile.college_id)
+        .contains("target_audience", ["Anyone"]);
+
+      otherCollegeQuery = date ? otherCollegeQuery.eq("date_string", date) : otherCollegeQuery.gte("date_string", todayStr);
+
+      const { data: ocEvents } = await otherCollegeQuery
+        .order("created_at", { ascending: false })
+        .limit(8);
+
+      otherCollegeEvents = (ocEvents || []) as Partial<EventRow>[];
+    }
+  }
+
+  // 3. Fetch All Events with Dynamic Filters
+  
+  // NEW: Get followed curator IDs first
+  let followedCuratorIds: string[] = [];
+  if (user) {
+    const { data: follows } = await supabase
+      .from("followers")
+      .select("curator_id")
+      .eq("follower_id", user.id);
+    // FIX: Typed f parameter to include null, as expected by Supabase types
+    followedCuratorIds = follows?.map((f: { curator_id: string | null }) => f.curator_id as string) || [];
+  }
+
+  // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
+// CACHED: Fetch all public active events. This runs once and serves 10M users without hitting DB.
+  const getCachedGlobalData = unstable_cache(
+  async (todayStr: string) => {
+    // Non-cookie client for static caching
+    const supabaseAnon = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } }
+    );
+    
+    // 1. Fetch all public events starting from today (ignore past events)
+    const { data: rawAllEvents } = await supabaseAnon
+      .from("events")
+      .select(PUBLIC_EVENT_FIELDS)
+      .eq("status", "approved")
+      .gte("date_string", todayStr)
+      .order("is_featured", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    // 2. Fetch platform stats
+    const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
+    const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
+    
+    return {
+      rawAllEvents: rawAllEvents || [],
+      platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
+    };
+  },
+  ['global_events_cache'],
+  { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
+);
+  let query = supabase
+    .from("events")
+    .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
+    .eq("status", "approved");
+
+  // Filter past events at DB level instead of JS to prevent scalability crashes
+  if (date) {
+    // Matches the start of the ISO string (YYYY-MM-DD)
+    query = query.eq("date_string", date);
+  } else {
+    query = query.gte("date_string", todayStr);
+    
+    // Only apply category, branch, and location filters if a specific date is NOT selected.
+    // This ensures that when a user clicks a calendar date, they see ALL events on that date regardless of their preferences.
+    if (branch) query = query.contains("branch_tags", [branch]);
+    
+    if (category) query = query.eq("category", category);
+
+    if (location) {
+      query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
+    } else {
+      // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
+      const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
+      query = query.or(`${cityFilterList},is_virtual.eq.true`);
+    }
+  }
+  
+  // Final Order: Featured first, then Created Date
+  query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
+  
+  if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
+
+  // EVENT VISIBILITY LOGIC (Applied universally to prevent ghost dots/cities)
+  // 1. Public events (college_only = false or Audience includes Anyone)
+  // 2. Or if the user created the event themselves
+  // 3. Or if the user is a student at the exact college the event is restricted to
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+  query = query.or(visibilityFilter);
+
+  const { data: rawAllEvents } = await query;
+
+  // NEW: Fetch user profiles if search query starts with '@'
+  let userProfiles: Partial<ProfileRow>[] = [];
+  if (q && q.startsWith('@')) {
+    const usernameQuery = q.substring(1).trim();
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("*")
+      .ilike("username", `%${usernameQuery}%`)
+      .limit(10);
+    
+    if (profilesData) {
+      userProfiles = profilesData as Partial<ProfileRow>[];
+    }
+  }
+
+ const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
+
+  // Own-college events already show in the "Your Campus" pill — exclude them here
+  // so the same event doesn't repeat in "For You" / "Around You".
+  const nonCampusEvents = (profile?.user_type === 'student' && profile?.college_id)
+    ? allEvents.filter((e) => e.college_id !== profile!.college_id)
+    : allEvents;
+
+  // Split the city-scoped feed: "For You" = chosen categories, "Around You" = everything else
+  if ((profile?.goals?.length ?? 0) > 0) {
+    const goalSet = new Set(profile!.goals);
+    const forYou = nonCampusEvents.filter((e) => e.category && goalSet.has(e.category));
+    const others = nonCampusEvents.filter((e) => !(e.category && goalSet.has(e.category)));
+    personalizedEvents = forYou;
+    aroundYouEvents = others;
+  } else {
+    aroundYouEvents = nonCampusEvents;
+  }
+
+  // NEW: Check if there are any events in the user's city (Empty City State Fallback)
+  let hasCityEvents = true;
+  const primaryCity = profile?.preferred_cities?.[0];
+  if (primaryCity && allEvents && allEvents.length > 0 && !q && !category && !branch) {
+    // FIX: Added (event: Partial<EventRow>) type
+    hasCityEvents = allEvents.some((event: Partial<EventRow>) => 
+      event.location?.toLowerCase().includes(primaryCity.toLowerCase()) || 
+      event.city?.toLowerCase().includes(primaryCity.toLowerCase())
+    );
+  }
+
+  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
+  const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
+  const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
+
+  // Fetch ALL approved event dates (unfiltered by date param) so calendar dots persist after date selection
+  const { data: allDateRows } = await supabase
+    .from("events")
+    .select("date_string")
+    .eq("status", "approved")
+    .or(visibilityFilter);
+
+  const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
+
+  // Fetch approved + LIVE event cities only (unfiltered by location param) so the location dropdown always shows every city
+  const { data: allCityRows } = await supabase
+    .from("events")
+    .select("city")
+    .eq("status", "approved")
+    .gte("date_string", todayStr)
+    .or(visibilityFilter);
+
+  const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
+    
+  // Only create the chips array (including 'All') if there are actual categories
+  const dynamicChips = activeCategories.length > 0 
+    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat as string }))]
+    : [];
+  
+  const dynamicLocationChips = activeLocations.length > 0
+    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc as string, value: loc as string }))]
+    : [];
+
+  // NEW: Filter out featured events for the top scrolling section
+  // FIX: Added (event: Partial<EventRow>) type
+  const featuredEvents = allEvents?.filter((event: Partial<EventRow>) => event.is_featured) || [];
+
+  // --- NEW: EMPTY STATE FALLBACK LOGIC ---
+  let isFallback = false;
+
+  // If user searched/filtered and found nothing, fetch some virtual events
+  if ((!allEvents || allEvents.length === 0) && (q || category || location || branch)) {
+    isFallback = true;
+    let virtualQuery = supabase
+      .from("events")
+      .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
+      .eq("status", "approved")
+      .eq("is_virtual", true);
+      
+    virtualQuery = date ? virtualQuery.eq("date_string", date) : virtualQuery.gte("date_string", todayStr);
+
+    const { data: virtualEvents } = await virtualQuery
+      .order("created_at", { ascending: false })
+      .limit(4);
+    
+   // AFTER
+    // Typecast to ensure it matches the Partial<EventRow>[] declaration
+    fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
+  }
+
+  // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
+  const { data: statsData } = await supabase.rpc("get_platform_stats" as any).single();
+  const platformStats = (statsData as any) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
+
+  return {
+    user,
+    profile,
+    activeTab,
+    displayToday,
+    date,
+    eventDates,
+    allEventDates,
+    personalizedEvents,
+    aroundYouEvents,
+    collegeEvents,
+    otherCollegeEvents,
+    fallbackEvents,
+    allEvents,
+    hasCityEvents,
+    activeCities,
+    dynamicChips,
+    dynamicLocationChips,
+    featuredEvents,
+    isFallback,
+    userProfiles,
+    branch,
+    q,
+    category,
+    location,
+    view,
+    platformStats
+  };
+}
+</file>
+
 <file path="src/app/events/[slug]/EventClientUI.tsx">
 "use client";
 
@@ -12754,338 +13085,6 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
       </AnimatePresence>
     </main>
   );
-}
-</file>
-
-<file path="src/lib/home/fetchHomePageData.ts">
-import { createClient } from "@/lib/supabase/server";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { unstable_cache } from "next/cache";
-import { getMatchLabel } from "@/lib/events/match";
-import type { ProfileRow, EventRow } from "@/types";
-import type { HomePageClientProps } from "./HomePageClient";
-
-export interface HomePageParams {
-  branch?: string;
-  q?: string;
-  date?: string;
-  category?: string;
-  location?: string;
-  view?: string;
-  tab?: string;
-  show_cal?: string;
-}
-
-export async function fetchHomePageData(searchParams: HomePageParams) {
-  const { branch, q, date, category, location, view, tab, show_cal } = searchParams;
-  const supabase = await createClient();
-  const activeTab = tab || "around_you";
-
-  // NEW: Dynamically get today's date using IST timezone.
-  // The server runs on UTC time. By forcing it to calculate the date in 'Asia/Kolkata', 
-  // we prevent the server from fetching yesterday's events during early morning hours in India,
-  // which stops the client-side hydration flashing.
-  const serverTime = new Date();
-  const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  
-  const day = todayIST.getDate();
-  const month = todayIST.toLocaleDateString('en-US', { month: 'short' });
-  const displayToday = `${day} ${month}`; // Formats to "24 May"
-
-  const yyyy = todayIST.getFullYear();
-  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
-  const dd = String(todayIST.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  // 1. Fetch user session and profile for onboarding check
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  // FIX: Extend the ProfileRow type to include 'city' so TypeScript stops complaining
-  let profile: (Partial<ProfileRow> & { city?: string }) | null = null; 
-  
-  // FIX: Properly type personalizedEvents to include matchReason so we don't use 'any'
-  let personalizedEvents: (Partial<EventRow> & { matchReason?: string })[] = [];
-  let aroundYouEvents: Partial<EventRow>[] = [];
-  let collegeEvents: Partial<EventRow>[] = [];
-  let otherCollegeEvents: Partial<EventRow>[] = [];
-  let fallbackEvents: Partial<EventRow>[] = []; // Properly defined once
-  let activeCities: string[] = ["Hyderabad"]; // Default city for guests / non-onboarded users
-
-  // Define exact fields needed globally for all queries in this file
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
-
-  if (user) {
-    // FIX: Removed 'as any' from the select statement
-    const { data } = await supabase.from("profiles").select("is_onboarded, goals, user_type, college_id, preferred_cities").eq("id", user.id).single();
-    profile = data as (Partial<ProfileRow> & { city?: string }) | null;
-
-    // City scope: use ALL the user's chosen cities, default stays "Hyderabad" if they haven't picked any
-    activeCities = (profile?.preferred_cities?.length ?? 0) > 0 ? (profile!.preferred_cities as string[]) : ["Hyderabad"];
-
-    // NEW: Fetch events specifically for the student's college (STRICTLY STUDENTS ONLY)
-    if (profile?.user_type === 'student' && profile?.college_id) {
-      let collegeQuery = supabase
-        .from("events")
-        .select(EVENT_FIELDS) // Replaced "*"
-        .eq("status", "approved")
-        .eq("college_id", profile.college_id);
-        
-      collegeQuery = date ? collegeQuery.eq("date_string", date) : collegeQuery.gte("date_string", todayStr);
-
-      const { data: cEvents } = await collegeQuery
-        .order("created_at", { ascending: false })
-        .limit(8);
-      
-      collegeEvents = (cEvents || []) as Partial<EventRow>[];
-
-      // NEW: "In Other College" pill — college events hosted elsewhere but open to any student
-      let otherCollegeQuery = supabase
-        .from("events")
-        .select(EVENT_FIELDS)
-        .eq("status", "approved")
-        .eq("college_only", true)
-        .neq("college_id", profile.college_id)
-        .contains("target_audience", ["Anyone"]);
-
-      otherCollegeQuery = date ? otherCollegeQuery.eq("date_string", date) : otherCollegeQuery.gte("date_string", todayStr);
-
-      const { data: ocEvents } = await otherCollegeQuery
-        .order("created_at", { ascending: false })
-        .limit(8);
-
-      otherCollegeEvents = (ocEvents || []) as Partial<EventRow>[];
-    }
-  }
-
-  // 3. Fetch All Events with Dynamic Filters
-  
-  // NEW: Get followed curator IDs first
-  let followedCuratorIds: string[] = [];
-  if (user) {
-    const { data: follows } = await supabase
-      .from("followers")
-      .select("curator_id")
-      .eq("follower_id", user.id);
-    // FIX: Typed f parameter to include null, as expected by Supabase types
-    followedCuratorIds = follows?.map((f: { curator_id: string | null }) => f.curator_id as string) || [];
-  }
-
-  // If the EVENT_FIELDS variable wasn't defined above (due to user not being logged in), define it here safely
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
-// CACHED: Fetch all public active events. This runs once and serves 10M users without hitting DB.
-  const getCachedGlobalData = unstable_cache(
-  async (todayStr: string) => {
-    // Non-cookie client for static caching
-    const supabaseAnon = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      { auth: { persistSession: false } }
-    );
-    
-    // 1. Fetch all public events starting from today (ignore past events)
-    const { data: rawAllEvents } = await supabaseAnon
-      .from("events")
-      .select(PUBLIC_EVENT_FIELDS)
-      .eq("status", "approved")
-      .gte("date_string", todayStr)
-      .order("is_featured", { ascending: false })
-      .order("created_at", { ascending: false });
-
-    // 2. Fetch platform stats
-    const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
-    const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
-    
-    return {
-      rawAllEvents: rawAllEvents || [],
-      platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
-    };
-  },
-  ['global_events_cache'],
-  { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
-);
-  let query = supabase
-    .from("events")
-    .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
-    .eq("status", "approved");
-
-  // Filter past events at DB level instead of JS to prevent scalability crashes
-  if (date) {
-    // Matches the start of the ISO string (YYYY-MM-DD)
-    query = query.eq("date_string", date);
-  } else {
-    query = query.gte("date_string", todayStr);
-    
-    // Only apply category, branch, and location filters if a specific date is NOT selected.
-    // This ensures that when a user clicks a calendar date, they see ALL events on that date regardless of their preferences.
-    if (branch) query = query.contains("branch_tags", [branch]);
-    
-    if (category) query = query.eq("category", category);
-
-    if (location) {
-      query = query.or(`city.ilike.%${location}%,location.ilike.%${location}%`);
-    } else {
-      // No explicit location AND no specific calendar date picked? Scope to the user's chosen cities, but always let virtual/online events through.
-      const cityFilterList = activeCities.map((c) => `city.eq.${c}`).join(",");
-      query = query.or(`${cityFilterList},is_virtual.eq.true`);
-    }
-  }
-  
-  // Final Order: Featured first, then Created Date
-  query = query.order("is_featured", { ascending: false }).order("created_at", { ascending: false });
-  
-  if (q) query = query.or(`title.ilike.%${q}%,location.ilike.%${q}%,category.ilike.%${q}%`);
-
-  // EVENT VISIBILITY LOGIC (Applied universally to prevent ghost dots/cities)
-  // 1. Public events (college_only = false or Audience includes Anyone)
-  // 2. Or if the user created the event themselves
-  // 3. Or if the user is a student at the exact college the event is restricted to
-  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
-  
-  if (user) {
-    visibilityFilter += `,creator_id.eq.${user.id}`;
-  }
-  if (profile?.user_type === 'student' && profile?.college_id) {
-       visibilityFilter += `,college_id.eq.${profile.college_id}`;
-  }
-  query = query.or(visibilityFilter);
-
-  const { data: rawAllEvents } = await query;
-
-  // NEW: Fetch user profiles if search query starts with '@'
-  let userProfiles: Partial<ProfileRow>[] = [];
-  if (q && q.startsWith('@')) {
-    const usernameQuery = q.substring(1).trim();
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("*")
-      .ilike("username", `%${usernameQuery}%`)
-      .limit(10);
-    
-    if (profilesData) {
-      userProfiles = profilesData as Partial<ProfileRow>[];
-    }
-  }
-
- const allEvents = (rawAllEvents || []) as Partial<EventRow>[];
-
-  // Own-college events already show in the "Your Campus" pill — exclude them here
-  // so the same event doesn't repeat in "For You" / "Around You".
-  const nonCampusEvents = (profile?.user_type === 'student' && profile?.college_id)
-    ? allEvents.filter((e) => e.college_id !== profile!.college_id)
-    : allEvents;
-
-  // Split the city-scoped feed: "For You" = chosen categories, "Around You" = everything else
-  if ((profile?.goals?.length ?? 0) > 0) {
-    const goalSet = new Set(profile!.goals);
-    const forYou = nonCampusEvents.filter((e) => e.category && goalSet.has(e.category));
-    const others = nonCampusEvents.filter((e) => !(e.category && goalSet.has(e.category)));
-    personalizedEvents = forYou;
-    aroundYouEvents = others;
-  } else {
-    aroundYouEvents = nonCampusEvents;
-  }
-
-  // NEW: Check if there are any events in the user's city (Empty City State Fallback)
-  let hasCityEvents = true;
-  const primaryCity = profile?.preferred_cities?.[0];
-  if (primaryCity && allEvents && allEvents.length > 0 && !q && !category && !branch) {
-    // FIX: Added (event: Partial<EventRow>) type
-    hasCityEvents = allEvents.some((event: Partial<EventRow>) => 
-      event.location?.toLowerCase().includes(primaryCity.toLowerCase()) || 
-      event.city?.toLowerCase().includes(primaryCity.toLowerCase())
-    );
-  }
-
-  // 4. Fetch Active Categories & Event Dates for Dynamic Chips and Calendar Grid (Derived from allEvents to save a query)
-  const activeCategories = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.category).filter(Boolean) as string[]));
-  const eventDates = Array.from(new Set(allEvents.map((e: Partial<EventRow>) => e.date_string).filter(Boolean) as string[]));
-
-  // Fetch ALL approved event dates (unfiltered by date param) so calendar dots persist after date selection
-  const { data: allDateRows } = await supabase
-    .from("events")
-    .select("date_string")
-    .eq("status", "approved")
-    .or(visibilityFilter);
-
-  const allEventDates = Array.from(new Set((allDateRows || []).map((r: { date_string: string | null }) => r.date_string).filter(Boolean) as string[]));
-
-  // Fetch approved + LIVE event cities only (unfiltered by location param) so the location dropdown always shows every city
-  const { data: allCityRows } = await supabase
-    .from("events")
-    .select("city")
-    .eq("status", "approved")
-    .gte("date_string", todayStr)
-    .or(visibilityFilter);
-
-  const activeLocations = Array.from(new Set((allCityRows || []).map((r: { city: string | null }) => r.city).filter(Boolean) as string[]));
-    
-  // Only create the chips array (including 'All') if there are actual categories
-  const dynamicChips = activeCategories.length > 0 
-    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat as string }))]
-    : [];
-  
-  const dynamicLocationChips = activeLocations.length > 0
-    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc as string, value: loc as string }))]
-    : [];
-
-  // NEW: Filter out featured events for the top scrolling section
-  // FIX: Added (event: Partial<EventRow>) type
-  const featuredEvents = allEvents?.filter((event: Partial<EventRow>) => event.is_featured) || [];
-
-  // --- NEW: EMPTY STATE FALLBACK LOGIC ---
-  let isFallback = false;
-
-  // If user searched/filtered and found nothing, fetch some virtual events
-  if ((!allEvents || allEvents.length === 0) && (q || category || location || branch)) {
-    isFallback = true;
-    let virtualQuery = supabase
-      .from("events")
-      .select(PUBLIC_EVENT_FIELDS) // Replaced "*"
-      .eq("status", "approved")
-      .eq("is_virtual", true);
-      
-    virtualQuery = date ? virtualQuery.eq("date_string", date) : virtualQuery.gte("date_string", todayStr);
-
-    const { data: virtualEvents } = await virtualQuery
-      .order("created_at", { ascending: false })
-      .limit(4);
-    
-   // AFTER
-    // Typecast to ensure it matches the Partial<EventRow>[] declaration
-    fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
-  }
-
-  // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
-  const { data: statsData } = await supabase.rpc("get_platform_stats" as any).single();
-  const platformStats = (statsData as any) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
-
-  return {
-    user,
-    profile,
-    activeTab,
-    displayToday,
-    date,
-    eventDates,
-    allEventDates,
-    personalizedEvents,
-    aroundYouEvents,
-    collegeEvents,
-    otherCollegeEvents,
-    fallbackEvents,
-    allEvents,
-    hasCityEvents,
-    activeCities,
-    dynamicChips,
-    dynamicLocationChips,
-    featuredEvents,
-    isFallback,
-    userProfiles,
-    branch,
-    q,
-    category,
-    location,
-    view,
-    platformStats
-  };
 }
 </file>
 

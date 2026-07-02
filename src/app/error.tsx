@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
 
 export default function GlobalError({
   error,
@@ -14,6 +15,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("Global App Error:", error);
+    Sentry.captureException(error);
   }, [error]);
 
   return (
