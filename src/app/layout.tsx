@@ -93,18 +93,18 @@ export default function RootLayout({
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
                 t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
                 y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "xfihu5m5yg");
+            })(window, document, "clarity", "script", "xfz36sbk56");
           `}
         </Script>
 
         {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="lazyOnload" />
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="lazyOnload" />
         <Script id="google-analytics" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', 'G-2JE8ES9P65');
+            gtag('config', 'G-SHL5VFD860');
           `}
         </Script>
        </head>
