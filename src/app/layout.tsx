@@ -87,7 +87,7 @@ export default function RootLayout({
          
         
         {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="lazyOnload">
+        <Script id="microsoft-clarity" strategy="afterInteractive">
           {`
             (function(c,l,a,r,i,t,y){
                 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -98,8 +98,8 @@ export default function RootLayout({
         </Script>
 
         {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="lazyOnload" />
-        <Script id="google-analytics" strategy="lazyOnload">
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
