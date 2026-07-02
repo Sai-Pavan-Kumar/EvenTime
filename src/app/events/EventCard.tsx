@@ -171,9 +171,11 @@
           }
 
           const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > exactCheckDate.getTime();
           
-          if (pastDate || pastTime) {
+          // Fix: We no longer check `pastTime` to hide the card.
+          // This ensures same-day past events stay visible (with a "Past Event" badge),
+          // keeping the UI counts perfectly synchronized with the server counts.
+          if (pastDate) {
             setIsVisible(false);
           }
         }
