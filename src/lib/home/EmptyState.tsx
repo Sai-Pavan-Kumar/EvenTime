@@ -28,22 +28,22 @@ export function EmptyState({
 
       <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
         
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-56 h-40 md:w-72 md:h-56' : 'w-72 h-56 md:w-96 md:h-72'} relative mb-2 transition-transform duration-500 hover:scale-105`}>
+        {/* BIG TECH PREMIUM ILLUSTRATION WITH BAKED TEXT */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-80 md:h-64' : 'w-full max-w-[500px] aspect-[4/3]'} relative mb-8`}>
           <Image 
             src={imageSrc} 
-            alt="Empty State Illustration" 
+            alt={title} 
             fill 
-            className="object-contain scale-125" 
+            className="object-contain" 
+            priority
           />
         </div>
 
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
+        {/* SR-ONLY TEXT (Visually hidden but screen-reader & SEO friendly) */}
+        <div className="sr-only">
+          <h3>{title}</h3>
+          <p>{message}</p>
+        </div>
        {showButton && (
           <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
             {buttonText}
