@@ -125,6 +125,9 @@ public/form-illustrations/stepmedia.webp
 public/globe.svg
 public/hero-section-v2.webp
 public/icon-192.webp
+public/illustrations/404_state.webp
+public/illustrations/empty_state.webp
+public/illustrations/error_state.webp
 public/landing-assets/benefits1.webp
 public/landing-assets/what1.webp
 public/landing-assets/why1.webp
@@ -7192,112 +7195,6 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
 }
 </file>
 
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404-state.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error-state.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/login/page.tsx">
 "use client";
 
@@ -7973,58 +7870,41 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
 }
 </file>
 
-<file path="src/lib/home/EmptyState.tsx">
+<file path="src/lib/home/not-found.tsx">
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty-state.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
+export default function NotFound() {
   return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
           <Image 
-            src={imageSrc} 
-            alt="Empty State Illustration" 
+            src="/illustrations/404_state.webp" 
+            alt="404 Not Found Illustration" 
             fill 
-            className="object-contain" 
+            className="object-contain"
+            priority 
           />
         </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
         </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
       </div>
     </div>
   );
@@ -8129,6 +8009,129 @@ jobs:
     "tailwindcss": "^4",
     "typescript": "^6"
   }
+}
+</file>
+
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-40 h-40 md:w-48 md:h-48' : 'w-48 h-48 md:w-64 md:h-64'} relative mb-6 transition-transform duration-500 hover:scale-105`}>
+          <Image 
+            src={imageSrc} 
+            alt="Empty State Illustration" 
+            fill 
+            className="object-contain" 
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -11093,144 +11096,6 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 </file>
 
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
- 
- // 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-              <head>
-         {/* Async Font Loading (Prevents Render Blocking) */}
-         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-         <link 
-           id="switzer-font"
-           rel="stylesheet" 
-           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
-           media="print" 
-         />
-         <script
-           dangerouslySetInnerHTML={{
-             __html: `document.getElementById('switzer-font').media='all';`
-           }}
-         />
-         <noscript>
-           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-         </noscript>
-
-         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-         <link rel="preload" href="/hero-section-v2.webp" as="image" />
-         
-        
-        {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "xfz36sbk56");
-          `}
-        </Script>
-
-        {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SHL5VFD860');
-          `}
-        </Script>
-       </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
-  );
-}
-</file>
-
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -11999,6 +11864,144 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     view,
     platformStats
   };
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+ 
+ // 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+              <head>
+         {/* Async Font Loading (Prevents Render Blocking) */}
+         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+         <link 
+           id="switzer-font"
+           rel="stylesheet" 
+           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
+           media="print" 
+         />
+         <script
+           dangerouslySetInnerHTML={{
+             __html: `document.getElementById('switzer-font').media='all';`
+           }}
+         />
+         <noscript>
+           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         </noscript>
+
+         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         <link rel="preload" href="/hero-section-v2.webp" as="image" />
+         
+        
+        {/* Microsoft Clarity */}
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xfz36sbk56");
+          `}
+        </Script>
+
+        {/* Google Analytics GA4 */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SHL5VFD860');
+          `}
+        </Script>
+       </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+      </body>
+    </html>
+  );
 }
 </file>
 
