@@ -30,7 +30,9 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
     if (profile?.is_onboarded) return;
 
     const storageKey = !user ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
-    if (localStorage.getItem(storageKey)) return;
+    try {
+      if (localStorage.getItem(storageKey)) return;
+    } catch (e) {}
 
     const timer = setTimeout(() => setIsVisible(true), 10000);
     return () => clearTimeout(timer);
@@ -42,12 +44,16 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
   const storageKey = isGuest ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
 
   const handleClose = () => {
-    localStorage.setItem(storageKey, "true");
+    try {
+      localStorage.setItem(storageKey, "true");
+    } catch (e) {}
     setIsClosed(true);
   };
 
   const handleCTA = () => {
-    localStorage.setItem(storageKey, "true");
+     try {
+      localStorage.setItem(storageKey, "true");
+    } catch (e) {}
     setIsClosed(true);
     if (isGuest) {
       router.push("/login");

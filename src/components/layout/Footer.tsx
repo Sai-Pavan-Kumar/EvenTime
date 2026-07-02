@@ -51,7 +51,7 @@ export function Footer() {
         {/* For any Queries */}
         <div className="flex flex-col items-center gap-3 lg:items-start">
           <h4 className="text-base font-bold text-white">For any Queries</h4>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+          <a href="https://www.instagram.com/the_surfboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
             <InstagramIcon className="w-4 h-4" />
             Message us on Instagram
           </a>
@@ -65,10 +65,10 @@ export function Footer() {
         <div className="flex flex-col items-center gap-4 lg:items-start">
           <h4 className="text-base font-bold text-white">Join the Family</h4>
           <div className="flex items-center gap-4">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+            <a href="https://www.instagram.com/the_surfboard" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
               <InstagramIcon className="w-5 h-5" />
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+            <a href="https://youtube.com/@the_surfboard?sub_confirmation=1" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
               <YoutubeIcon className="w-5 h-5" />
             </a>
           </div>

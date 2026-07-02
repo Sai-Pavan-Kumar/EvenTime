@@ -47,7 +47,7 @@ export default function PrivacyPolicyPage() {
             <section>
               <h2 className="text-xl font-bold text-slate-900 mb-3">4. Contact Us</h2>
               <p>
-                If you have any questions or concerns about this Privacy Policy, please contact us at support@eventime.in.
+                If you have any questions or concerns about this Privacy Policy, please contact us at  eventime.admin@gmail.com.
               </p>
             </section>
           </div>

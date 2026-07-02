@@ -61,7 +61,7 @@ export default function TermsOfServicePage() {
             <section>
               <h2 className="text-xl font-bold text-slate-900 mb-3">6. Contact Information</h2>
               <p>
-                For any questions regarding these Terms of Service, please contact us at support@eventime.in.
+                For any questions regarding these Terms of Service, please contact us at  eventime.admin@gmail.com.
               </p>
             </section>
           </div>
