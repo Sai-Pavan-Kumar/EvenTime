@@ -4722,234 +4722,6 @@ export default async function Home({
 }
 </file>
 
-<file path="src/app/privacy/page.tsx">
-import { Metadata } from "next";
-import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-
-export const metadata: Metadata = {
-  title: "Privacy Policy | EvenTime",
-  description: "Privacy policy and data handling practices for EvenTime.",
-};
-
-export default function PrivacyPolicyPage() {
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
-      <Navbar />
-      
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
-        </Link>
-        
-        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
-          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Privacy Policy</h1>
-          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
-          
-          <div className="space-y-8 text-slate-700 leading-relaxed">
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Information We Collect</h2>
-              <p>
-                When you sign up for EvenTime, we collect your email address and basic profile details (like your username and location preferences). This helps us personalize your event feed and verify your identity securely.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">2. How We Use Your Data</h2>
-              <p>
-                We use your data strictly to improve your experience on our platform. This includes showing you events in your city, recommending categories you care about, and keeping your account secure.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">3. Data Security (DPDP Compliant)</h2>
-              <p>
-                We value your privacy. Your passwords are encrypted using secure hashing algorithms, and we do not sell your personal data to third parties. You have the full right to request account deletion and data erasure at any time from your settings page.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Contact Us</h2>
-              <p>
-                If you have any questions or concerns about this Privacy Policy, please contact us at support@eventime.in.
-              </p>
-            </section>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/terms/page.tsx">
-import { Metadata } from "next";
-import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
-
-export const metadata: Metadata = {
-  title: "Terms of Service | EvenTime",
-  description: "Terms of service and user agreements for EvenTime.",
-};
-
-export default function TermsOfServicePage() {
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
-      <Navbar />
-      
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
-        </Link>
-        
-        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
-          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Terms of Service</h1>
-          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
-          
-          <div className="space-y-8 text-slate-700 leading-relaxed">
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Acceptance of Terms</h2>
-              <p>
-                By accessing and using EvenTime ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">2. User Accounts</h2>
-              <p>
-                To access certain features, you must register for an account. You agree to provide accurate information and are solely responsible for maintaining the confidentiality of your account credentials. We reserve the right to suspend or terminate accounts that violate our policies.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">3. User Conduct and Content</h2>
-              <p>
-                You agree not to use the Platform for any unlawful purpose. When submitting events or content, you ensure that you have the right to share such information and that it does not infringe on any third-party rights or contain malicious intent. EvenTime reserves the right to remove any content that violates these terms.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Intellectual Property</h2>
-              <p>
-                The Platform, including its original content, features, and functionality, are owned by EvenTime and are protected by international copyright, trademark, and other intellectual property laws.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">5. Disclaimer of Warranties</h2>
-              <p>
-                EvenTime serves as a discovery platform. We do not guarantee the accuracy, quality, or safety of any events listed by third parties. Your attendance at any event is solely at your own risk.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">6. Contact Information</h2>
-              <p>
-                For any questions regarding these Terms of Service, please contact us at support@eventime.in.
-              </p>
-            </section>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/components/layout/LaunchScreen.tsx">
-"use client";
-
-import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
-
-export default function LaunchScreen() {
-  const [show, setShow] = useState(true); 
-
-  useEffect(() => {
-    // 1. Check if the user has already seen the splash screen in this session
-    const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
-    
-    if (hasSeenSplash) {
-      setShow(false);
-      return;
-    }
-
-    // 2. If not seen, show it for 2.5 seconds and then mark it as seen
-    const timer = setTimeout(() => {
-      setShow(false);
-      sessionStorage.setItem("hasSeenSplash", "true");
-    }, 2500);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          key="splash"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 bg-[#6C47FF] flex flex-col items-center justify-center overflow-hidden"
-          style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          {/* Animated Logo */}
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
-          >
-            <Image 
-              src="/logo.webp" 
-              alt="EvenTime" 
-              fill 
-              sizes="(max-width: 768px) 80px, 96px"
-              className="object-contain" 
-              priority 
-            />
-          </motion.div>
-
-          {/* Animated Text */}
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-            className="text-center"
-          >
-            <h1 className="text-3xl md:text-4xl font-heading font-black text-white tracking-tight mb-2">
-              EvenTime
-            </h1>
-            <p className="text-white/80 font-medium text-xs md:text-sm tracking-widest uppercase">
-              Stop Searching. Start Attending.
-            </p>
-          </motion.div>
-
-          {/* Loading Indicator */}
-          <motion.div 
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "200px", opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6, ease: "easeInOut" }}
-            className="h-[2px] bg-white/20 rounded-full mt-12 overflow-hidden relative"
-          >
-            <motion.div 
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-              className="w-1/2 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
-            />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepMedia.tsx">
 "use client";
 
@@ -5965,6 +5737,67 @@ export default function GlobalError({
 }
 </file>
 
+<file path="src/app/privacy/page.tsx">
+import { Metadata } from "next";
+import { Navbar } from "@/components/layout/Navbar";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | EvenTime",
+  description: "Privacy policy and data handling practices for EvenTime.",
+};
+
+export default function PrivacyPolicyPage() {
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        
+        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
+          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Privacy Policy</h1>
+          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
+          
+          <div className="space-y-8 text-slate-700 leading-relaxed">
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Information We Collect</h2>
+              <p>
+                When you sign up for EvenTime, we collect your email address and basic profile details (like your username and location preferences). This helps us personalize your event feed and verify your identity securely.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">2. How We Use Your Data</h2>
+              <p>
+                We use your data strictly to improve your experience on our platform. This includes showing you events in your city, recommending categories you care about, and keeping your account secure.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">3. Data Security (DPDP Compliant)</h2>
+              <p>
+                We value your privacy. Your passwords are encrypted using secure hashing algorithms, and we do not sell your personal data to third parties. You have the full right to request account deletion and data erasure at any time from your settings page.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Contact Us</h2>
+              <p>
+                If you have any questions or concerns about this Privacy Policy, please contact us at  eventime.admin@gmail.com.
+              </p>
+            </section>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/profile/settings/actions.ts">
 "use server";
 
@@ -6071,237 +5904,176 @@ export async function updateProfileSettings(formData: FormData) {
 }
 </file>
 
-<file path="src/components/layout/Footer.tsx">
+<file path="src/app/terms/page.tsx">
+import { Metadata } from "next";
+import { Navbar } from "@/components/layout/Navbar";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
-import { MapPin, Heart } from "lucide-react";
 
-// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
-const InstagramIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-  </svg>
-);
+export const metadata: Metadata = {
+  title: "Terms of Service | EvenTime",
+  description: "Terms of service and user agreements for EvenTime.",
+};
 
-const YoutubeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
-    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
-  </svg>
-);
-// --------------------------------------------------------------
-
-export function Footer() {
+export default function TermsOfServicePage() {
   return (
-    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
-      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Home
+        </Link>
+        
+        <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
+          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Terms of Service</h1>
+          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
+          
+          <div className="space-y-8 text-slate-700 leading-relaxed">
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Acceptance of Terms</h2>
+              <p>
+                By accessing and using EvenTime ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">2. User Accounts</h2>
+              <p>
+                To access certain features, you must register for an account. You agree to provide accurate information and are solely responsible for maintaining the confidentiality of your account credentials. We reserve the right to suspend or terminate accounts that violate our policies.
+              </p>
+            </section>
+            
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">3. User Conduct and Content</h2>
+              <p>
+                You agree not to use the Platform for any unlawful purpose. When submitting events or content, you ensure that you have the right to share such information and that it does not infringe on any third-party rights or contain malicious intent. EvenTime reserves the right to remove any content that violates these terms.
+              </p>
+            </section>
 
-        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Intellectual Property</h2>
+              <p>
+                The Platform, including its original content, features, and functionality, are owned by EvenTime and are protected by international copyright, trademark, and other intellectual property laws.
+              </p>
+            </section>
 
-                {/* Brand */}
-        <div className="flex flex-col items-center gap-2 lg:items-start">
-          <div className="flex items-center gap-3">
-            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
-            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
-              EvenTime
-            </h3>
-          </div>
-          <p className="text-white/40 text-sm font-medium">
-            Your event search struggles end here.
-          </p>
-          {/* Action Pages Links */}
-          <div className="flex items-center gap-3 mt-1">
-            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
-            <span className="text-white/20 text-[13px]">•</span>
-            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
-          </div>
-        </div>
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">5. Disclaimer of Warranties</h2>
+              <p>
+                EvenTime serves as a discovery platform. We do not guarantee the accuracy, quality, or safety of any events listed by third parties. Your attendance at any event is solely at your own risk.
+              </p>
+            </section>
 
-
-        {/* For any Queries */}
-        <div className="flex flex-col items-center gap-3 lg:items-start">
-          <h4 className="text-base font-bold text-white">For any Queries</h4>
-          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
-            <InstagramIcon className="w-4 h-4" />
-            Message us on Instagram
-          </a>
-          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
-            <MapPin className="w-4 h-4" />
-            Hyderabad, India
-          </div>
-        </div>
-
-        {/* Join the Family */}
-        <div className="flex flex-col items-center gap-4 lg:items-start">
-          <h4 className="text-base font-bold text-white">Join the Family</h4>
-          <div className="flex items-center gap-4">
-            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <InstagramIcon className="w-5 h-5" />
-            </a>
-            <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
-              <YoutubeIcon className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-
-        </div>
-
-        {/* Divider with pill sitting on it */}
-        <div className="relative w-full flex items-center justify-center">
-          <div className="w-full h-px bg-white/10" />
-          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
-            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
-            The SurfBoard
+            <section>
+              <h2 className="text-xl font-bold text-slate-900 mb-3">6. Contact Information</h2>
+              <p>
+                For any questions regarding these Terms of Service, please contact us at  eventime.admin@gmail.com.
+              </p>
+            </section>
           </div>
         </div>
-
-        {/* Copyright */}
-        <p className="text-xs font-medium text-white/30 -mt-2">
-          © {new Date().getFullYear()} EvenTime. All rights reserved.
-        </p>
-
       </div>
-    </footer>
+    </main>
   );
 }
 </file>
 
-<file path="src/components/profile/DelayedActionModal.tsx">
+<file path="src/components/layout/LaunchScreen.tsx">
 "use client";
 
-import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import type { AuthUser, ProfileRow } from "@/types";
+import Image from "next/image";
 
-interface DelayedPromptProps {
-  user: AuthUser | null;
-  profile: Partial<ProfileRow> | null;
-  onOpen: () => void;
-}
-
-const GUEST_PROMPT_KEY = "EvevnTime_guest_prompt_seen";
-const USER_PROMPT_KEY = "EvenTime_user_prompt_seen";
-
-export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isClosed, setIsClosed] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const router = useRouter();
+export default function LaunchScreen() {
+  const [show, setShow] = useState(true); 
 
   useEffect(() => {
-    setMounted(true);
+    // 1. Check if the user has already seen the splash screen in this session
+   let hasSeenSplash = false;
+    try {
+      hasSeenSplash = !!sessionStorage.getItem("hasSeenSplash");
+    } catch (e) {
+      console.warn("sessionStorage is blocked by browser settings");
+    }
+    
+    if (hasSeenSplash) {
+      setShow(false);
+      return;
+    }
+
+    // 2. If not seen, show it for 2.5 seconds and then mark it as seen
+    const timer = setTimeout(() => {
+      setShow(false);
+     try {
+        sessionStorage.setItem("hasSeenSplash", "true");
+      } catch (e) {}
+    }, 2500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (profile?.is_onboarded) return;
-
-    const storageKey = !user ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
-    if (localStorage.getItem(storageKey)) return;
-
-    const timer = setTimeout(() => setIsVisible(true), 10000);
-    return () => clearTimeout(timer);
-  }, [profile, user]);
-
-  if (!mounted || !isVisible || isClosed || profile?.is_onboarded) return null;
-
-  const isGuest = !user;
-  const storageKey = isGuest ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
-
-  const handleClose = () => {
-    localStorage.setItem(storageKey, "true");
-    setIsClosed(true);
-  };
-
-  const handleCTA = () => {
-    localStorage.setItem(storageKey, "true");
-    setIsClosed(true);
-    if (isGuest) {
-      router.push("/login");
-    } else {
-      onOpen();
-    }
-  };
-
-  return createPortal(
+  return (
     <AnimatePresence>
-      {!isClosed && (
-        <>
+      {show && (
+        <motion.div
+          key="splash"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed inset-0 bg-[#6C47FF] flex flex-col items-center justify-center overflow-hidden"
+          style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+        >
+          {/* Animated Logo */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-            style={{ position: "fixed", inset: 0, zIndex: 99998 }}
-            className="bg-slate-900/60 pointer-events-auto"
-          />
-
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 99999,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "24px",
-              pointerEvents: "none",
-            }}
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              style={{
-                width: "100%",
-                maxWidth: "360px",
-                pointerEvents: "auto",
-              }}
-            >
-                              <div className="bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center relative z-10">
-                  <button
-                    onClick={handleClose}
-                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-  
-                  <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2 shrink-0">
-                    {isGuest
-                      ? <UserPlus className="w-6 h-6 text-[#6C47FF]" />
-                      : <UserPlus className="w-6 h-6 text-[#6C47FF]" />
-                    }
-                  </div>
-                  
-                  <h4 className="font-heading font-bold text-xl text-slate-900 leading-tight">
-                    {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
-                  </h4>
-                  <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">
-                    {isGuest
-                      ? "Sign in to save events, host your own, and get tailored recommendations."
-                      : "Tell us your interests to see events that actually matter to you."}
-                  </p>
-                  <button
-                    onClick={handleCTA}
-                    className="w-full bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
-                  >
-                    {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-            </motion.div>
-          </div>
-        </>
+            <Image 
+              src="/logo.webp" 
+              alt="EvenTime" 
+              fill 
+              sizes="(max-width: 768px) 80px, 96px"
+              className="object-contain" 
+              priority 
+            />
+          </motion.div>
+
+          {/* Animated Text */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+            className="text-center"
+          >
+            <h1 className="text-3xl md:text-4xl font-heading font-black text-white tracking-tight mb-2">
+              EvenTime
+            </h1>
+            <p className="text-white/80 font-medium text-xs md:text-sm tracking-widest uppercase">
+              Stop Searching. Start Attending.
+            </p>
+          </motion.div>
+
+          {/* Loading Indicator */}
+          <motion.div 
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: "200px", opacity: 1 }}
+            transition={{ duration: 1, delay: 0.6, ease: "easeInOut" }}
+            className="h-[2px] bg-white/20 rounded-full mt-12 overflow-hidden relative"
+          >
+            <motion.div 
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+              className="w-1/2 h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+            />
+          </motion.div>
+        </motion.div>
       )}
-    </AnimatePresence>,
-    document.body
+    </AnimatePresence>
   );
 }
 </file>
@@ -7789,6 +7561,247 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
         })}
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="src/components/layout/Footer.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { MapPin, Heart } from "lucide-react";
+
+// --- Custom SVG Icons to replace missing Lucide Brand Icons ---
+const InstagramIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
+const YoutubeIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/>
+    <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/>
+  </svg>
+);
+// --------------------------------------------------------------
+
+export function Footer() {
+  return (
+    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+      <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
+
+        <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">
+
+                {/* Brand */}
+        <div className="flex flex-col items-center gap-2 lg:items-start">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <h3 className="text-2xl font-black text-white font-heading tracking-tight">
+              EvenTime
+            </h3>
+          </div>
+          <p className="text-white/40 text-sm font-medium">
+            Your event search struggles end here.
+          </p>
+          {/* Action Pages Links */}
+          <div className="flex items-center gap-3 mt-1">
+            <Link href="/about" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">About Us</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/terms" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Terms</Link>
+            <span className="text-white/20 text-[13px]">•</span>
+            <Link href="/privacy" className="text-white/50 hover:text-white transition-colors text-[13px] font-semibold">Privacy Policy</Link>
+          </div>
+        </div>
+
+
+        {/* For any Queries */}
+        <div className="flex flex-col items-center gap-3 lg:items-start">
+          <h4 className="text-base font-bold text-white">For any Queries</h4>
+          <a href="https://www.instagram.com/the_surfboard" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-medium">
+            <InstagramIcon className="w-4 h-4" />
+            Message us on Instagram
+          </a>
+          <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <MapPin className="w-4 h-4" />
+            Hyderabad, India
+          </div>
+        </div>
+
+        {/* Join the Family */}
+        <div className="flex flex-col items-center gap-4 lg:items-start">
+          <h4 className="text-base font-bold text-white">Join the Family</h4>
+          <div className="flex items-center gap-4">
+            <a href="https://www.instagram.com/the_surfboard" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <InstagramIcon className="w-5 h-5" />
+            </a>
+            <a href="https://youtube.com/@the_surfboard?sub_confirmation=1" target="_blank" rel="noopener noreferrer" className="w-11 h-11 rounded-full border border-white/10 flex items-center justify-center text-white/60 hover:text-white hover:border-white/30 transition-all">
+              <YoutubeIcon className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+
+        </div>
+
+        {/* Divider with pill sitting on it */}
+        <div className="relative w-full flex items-center justify-center">
+          <div className="w-full h-px bg-white/10" />
+          <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
+            Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
+            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            The SurfBoard
+          </div>
+        </div>
+
+        {/* Copyright */}
+        <p className="text-xs font-medium text-white/30 -mt-2">
+          © {new Date().getFullYear()} EvenTime. All rights reserved.
+        </p>
+
+      </div>
+    </footer>
+  );
+}
+</file>
+
+<file path="src/components/profile/DelayedActionModal.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, ArrowRight, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type { AuthUser, ProfileRow } from "@/types";
+
+interface DelayedPromptProps {
+  user: AuthUser | null;
+  profile: Partial<ProfileRow> | null;
+  onOpen: () => void;
+}
+
+const GUEST_PROMPT_KEY = "EvevnTime_guest_prompt_seen";
+const USER_PROMPT_KEY = "EvenTime_user_prompt_seen";
+
+export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isClosed, setIsClosed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (profile?.is_onboarded) return;
+
+    const storageKey = !user ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
+    try {
+      if (localStorage.getItem(storageKey)) return;
+    } catch (e) {}
+
+    const timer = setTimeout(() => setIsVisible(true), 10000);
+    return () => clearTimeout(timer);
+  }, [profile, user]);
+
+  if (!mounted || !isVisible || isClosed || profile?.is_onboarded) return null;
+
+  const isGuest = !user;
+  const storageKey = isGuest ? GUEST_PROMPT_KEY : USER_PROMPT_KEY;
+
+  const handleClose = () => {
+    try {
+      localStorage.setItem(storageKey, "true");
+    } catch (e) {}
+    setIsClosed(true);
+  };
+
+  const handleCTA = () => {
+     try {
+      localStorage.setItem(storageKey, "true");
+    } catch (e) {}
+    setIsClosed(true);
+    if (isGuest) {
+      router.push("/login");
+    } else {
+      onOpen();
+    }
+  };
+
+  return createPortal(
+    <AnimatePresence>
+      {!isClosed && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleClose}
+            style={{ position: "fixed", inset: 0, zIndex: 99998 }}
+            className="bg-slate-900/60 pointer-events-auto"
+          />
+
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 99999,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "24px",
+              pointerEvents: "none",
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              style={{
+                width: "100%",
+                maxWidth: "360px",
+                pointerEvents: "auto",
+              }}
+            >
+                              <div className="bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center relative z-10">
+                  <button
+                    onClick={handleClose}
+                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+  
+                  <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2 shrink-0">
+                    {isGuest
+                      ? <UserPlus className="w-6 h-6 text-[#6C47FF]" />
+                      : <UserPlus className="w-6 h-6 text-[#6C47FF]" />
+                    }
+                  </div>
+                  
+                  <h4 className="font-heading font-bold text-xl text-slate-900 leading-tight">
+                    {isGuest ? "Unlock Full Access" : "Complete Your Profile"}
+                  </h4>
+                  <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">
+                    {isGuest
+                      ? "Sign in to save events, host your own, and get tailored recommendations."
+                      : "Tell us your interests to see events that actually matter to you."}
+                  </p>
+                  <button
+                    onClick={handleCTA}
+                    className="w-full bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
+                  >
+                    {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+            </motion.div>
+          </div>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
   );
 }
 </file>
@@ -10222,360 +10235,6 @@ export function EventGrid({
 }
 </file>
 
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
- 
- // 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-              <head>
-         {/* Async Font Loading (Prevents Render Blocking) */}
-         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-         <link 
-           id="switzer-font"
-           rel="stylesheet" 
-           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
-           media="print" 
-         />
-         <script
-           dangerouslySetInnerHTML={{
-             __html: `document.getElementById('switzer-font').media='all';`
-           }}
-         />
-         <noscript>
-           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-         </noscript>
-
-         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-         <link rel="preload" href="/hero-section-v2.webp" as="image" />
-         
-        
-        {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="lazyOnload">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "xfihu5m5yg");
-          `}
-        </Script>
-
-        {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="lazyOnload" />
-        <Script id="google-analytics" strategy="lazyOnload">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-2JE8ES9P65');
-          `}
-        </Script>
-       </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
-  );
-}
-</file>
-
-<file path="src/lib/home/LandingIntro.tsx">
-import Image from "next/image";
-import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
-
-export function LandingIntro({ 
-  isLeaderboardEnabled = false, 
-  isSmartAlertsEnabled = false 
-}: { 
-  isLeaderboardEnabled?: boolean;
-  isSmartAlertsEnabled?: boolean;
-}) {
-  return (
-    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-      
-      {/* SECTION 1: What is it? */}
-      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
-        <div className="flex-1 space-y-6 flex flex-col">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold w-fit">
-            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
-          </div>
-          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for college, tech, startup & all other event categories.
-          </h2>
-          
-          {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
-          <div className="w-full relative aspect-video block md:hidden mt-2 mb-2">
-            <Image 
-              src="/landing-assets/what1.webp" 
-              alt="What is EvenTime" 
-              fill 
-              className="object-contain"
-            />
-          </div>
-
-          <p className="text-lg text-slate-500 leading-relaxed font-medium">
-            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
-            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
-          </p>
-        </div>
-        
-        {/* DESKTOP ONLY IMAGE - Appears normally on the right side */}
-        <div className="flex-1 w-full relative aspect-video hidden md:block">
-          <Image 
-            src="/landing-assets/what1.webp" 
-            alt="What is EvenTime" 
-            fill 
-            className="object-contain"
-          />
-        </div>
-      </div>
-
-      {/* SECTION 2: How it works */}
-      <div className="mb-24">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
-          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
-        </div>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
-          ].map((item, i) => (
-            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
-                {item.step}
-              </div>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
-                {item.icon}
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
-              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* SECTION 3: Why we built it */}
-      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
-        <div className="flex-1 space-y-6 flex flex-col">
-            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
-              Built for event enthusiasts.
-            </h2>
-
-            {/* MOBILE ONLY IMAGE */}
-            <div className="w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 block md:hidden mt-2 mb-2">
-              <Image 
-                src="/landing-assets/why1.webp" 
-                alt="Why EvenTime" 
-                fill 
-                className="object-cover"
-              />
-            </div>
-
-            <p className="text-lg text-slate-600 leading-relaxed font-medium">
-              We were tired of finding out about an amazing event two days after registrations closed. 
-              Information is scattered, and people lose out on opportunities simply because they didn't know. 
-            </p>
-          <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
-          </p>
-        </div>
-        
-        {/* DESKTOP ONLY IMAGE */}
-        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 hidden md:block">
-          <Image 
-            src="/landing-assets/why1.webp" 
-            alt="Why EvenTime" 
-            fill 
-            className="object-cover"
-          />
-        </div>
-      </div>
-
-      {/* SECTION 4: Why Sign In? */}
-      <div className="flex flex-col md:flex-row items-center gap-12">
-        <div className="flex-1 space-y-8 flex flex-col">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
-              Unlock the full experience
-            </h2>
-            <p className="text-lg text-slate-500 font-medium">
-              Guest mode is great, but an account is better. Takes 10 seconds via Google.
-            </p>
-          </div>
-
-          {/* MOBILE ONLY IMAGE - exactly between heading and features list */}
-          <div className="w-full relative aspect-square block md:hidden mt-2 mb-2">
-            <Image 
-              src="/landing-assets/benefits1.webp" 
-              alt="EvenTime Benefits" 
-              fill 
-              className="object-contain"
-            />
-          </div>
-          
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Star className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
-                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
-              </div>
-              <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                    ET Score Leaderboard
-                    {!isLeaderboardEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
-                    )}
-                  </h4>
-                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-[#6C47FF]" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                    Smart Alerts
-                    {!isSmartAlertsEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
-                    )}
-                  </h4>
-                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* DESKTOP ONLY IMAGE */}
-        <div className="flex-1 w-full relative aspect-square hidden md:block">
-          <Image 
-            src="/landing-assets/benefits1.webp" 
-            alt="EvenTime Benefits" 
-            fill 
-            className="object-contain"
-          />
-        </div>
-      </div>
-      
-    </div>
-  );
-}
-
-function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  );
-}
-</file>
-
 <file path="src/app/events/EventCard.tsx">
 "use client";
 
@@ -10996,6 +10655,360 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
       </>
     );
   }
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+ 
+ // 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+              <head>
+         {/* Async Font Loading (Prevents Render Blocking) */}
+         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+         <link 
+           id="switzer-font"
+           rel="stylesheet" 
+           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
+           media="print" 
+         />
+         <script
+           dangerouslySetInnerHTML={{
+             __html: `document.getElementById('switzer-font').media='all';`
+           }}
+         />
+         <noscript>
+           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         </noscript>
+
+         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         <link rel="preload" href="/hero-section-v2.webp" as="image" />
+         
+        
+        {/* Microsoft Clarity */}
+        <Script id="microsoft-clarity" strategy="lazyOnload">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xfihu5m5yg");
+          `}
+        </Script>
+
+        {/* Google Analytics GA4 */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-2JE8ES9P65" strategy="lazyOnload" />
+        <Script id="google-analytics" strategy="lazyOnload">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-2JE8ES9P65');
+          `}
+        </Script>
+       </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/lib/home/LandingIntro.tsx">
+import Image from "next/image";
+import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
+
+export function LandingIntro({ 
+  isLeaderboardEnabled = false, 
+  isSmartAlertsEnabled = false 
+}: { 
+  isLeaderboardEnabled?: boolean;
+  isSmartAlertsEnabled?: boolean;
+}) {
+  return (
+    <div className="w-full bg-white rounded-3xl p-6 md:p-12 shadow-sm border border-slate-100 mb-16 mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      
+      {/* SECTION 1: What is it? */}
+      <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
+        <div className="flex-1 space-y-6 flex flex-col">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold w-fit">
+            <Star className="w-4 h-4 fill-current" /> What is EvenTime?
+          </div>
+          <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
+            India's cleanest directory for college, tech, startup & all other event categories.
+          </h2>
+          
+          {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
+          <div className="w-full relative aspect-video block md:hidden mt-2 mb-2">
+            <Image 
+              src="/landing-assets/what1.webp" 
+              alt="What is EvenTime" 
+              fill 
+              className="object-contain"
+            />
+          </div>
+
+          <p className="text-lg text-slate-500 leading-relaxed font-medium">
+            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
+            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
+          </p>
+        </div>
+        
+        {/* DESKTOP ONLY IMAGE - Appears normally on the right side */}
+        <div className="flex-1 w-full relative aspect-video hidden md:block">
+          <Image 
+            src="/landing-assets/what1.webp" 
+            alt="What is EvenTime" 
+            fill 
+            className="object-contain"
+          />
+        </div>
+      </div>
+
+      {/* SECTION 2: How it works */}
+      <div className="mb-24">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
+          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
+        </div>
+        
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
+          ].map((item, i) => (
+            <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
+                {item.step}
+              </div>
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-3 relative z-10">{item.title}</h3>
+              <p className="text-slate-500 relative z-10 font-medium">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SECTION 3: Why we built it */}
+      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+        <div className="flex-1 space-y-6 flex flex-col">
+            <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
+              Built for event enthusiasts.
+            </h2>
+
+            {/* MOBILE ONLY IMAGE */}
+            <div className="w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 block md:hidden mt-2 mb-2">
+              <Image 
+                src="/landing-assets/why1.webp" 
+                alt="Why EvenTime" 
+                fill 
+                className="object-cover"
+              />
+            </div>
+
+            <p className="text-lg text-slate-600 leading-relaxed font-medium">
+              We were tired of finding out about an amazing event two days after registrations closed. 
+              Information is scattered, and people lose out on opportunities simply because they didn't know. 
+            </p>
+          <p className="text-lg text-slate-600 leading-relaxed font-medium">
+            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
+          </p>
+        </div>
+        
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-[4/3] rounded-2xl overflow-hidden shadow-lg border border-slate-100 hidden md:block">
+          <Image 
+            src="/landing-assets/why1.webp" 
+            alt="Why EvenTime" 
+            fill 
+            className="object-cover"
+          />
+        </div>
+      </div>
+
+      {/* SECTION 4: Why Sign In? */}
+      <div className="flex flex-col md:flex-row items-center gap-12">
+        <div className="flex-1 space-y-8 flex flex-col">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4">
+              Unlock the full experience
+            </h2>
+            <p className="text-lg text-slate-500 font-medium">
+              Guest mode is great, but an account is better. Takes 10 seconds via Google.
+            </p>
+          </div>
+
+          {/* MOBILE ONLY IMAGE - exactly between heading and features list */}
+          <div className="w-full relative aspect-square block md:hidden mt-2 mb-2">
+            <Image 
+              src="/landing-assets/benefits1.webp" 
+              alt="EvenTime Benefits" 
+              fill 
+              className="object-contain"
+            />
+          </div>
+          
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <Star className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
+                <p className="text-slate-500 font-medium">Events tailored to your college, branch, and goals.</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
+              </div>
+              <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    ET Score Leaderboard
+                    {!isLeaderboardEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
+                    )}
+                  </h4>
+                  <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
+                  <Bell className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    Smart Alerts
+                    {!isSmartAlertsEnabled && (
+                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
+                    )}
+                  </h4>
+                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* DESKTOP ONLY IMAGE */}
+        <div className="flex-1 w-full relative aspect-square hidden md:block">
+          <Image 
+            src="/landing-assets/benefits1.webp" 
+            alt="EvenTime Benefits" 
+            fill 
+            className="object-contain"
+          />
+        </div>
+      </div>
+      
+    </div>
+  );
+}
+
+function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
 </file>
 
 <file path="src/lib/home/HeroSection.tsx">

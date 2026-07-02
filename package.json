@@ -15,6 +15,7 @@
     "@base-ui/react": "^1.4.1",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.63.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "browser-image-compression": "^2.0.2",
@@ -41,7 +42,7 @@
     "@types/nprogress": "^0.2.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^10",
+    "eslint": "^9.21.0",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "typescript": "^6"
