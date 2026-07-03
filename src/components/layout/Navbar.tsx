@@ -420,9 +420,14 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-5">
+        <div className="flex-1 overflow-y-auto px-4 py-5 bg-white">
           {!searchQuery.trim() && !categoryParam && !locationParam ? (
-              <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing or pick a filter to see events...</p>
+              <div className="flex flex-col items-center justify-center mt-12">
+                <div className="relative w-64 h-64 mb-4">
+                  <Image src="/illustrations/search_state.webp" alt="Search events" fill className="object-contain" />
+                </div>
+                <p className="text-sm text-slate-400 font-medium text-center">Start typing or pick a filter to see events...</p>
+              </div>
           ) : isSearchingMobile ? (
             <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
           ) : mobileSearchResults.length === 0 ? (

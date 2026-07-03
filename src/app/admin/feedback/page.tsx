@@ -24,6 +24,15 @@ export default async function AdminFeedbackPage() {
     .select("id, type, message, created_at, user_id")
     .order("created_at", { ascending: false });
 
+  // Manually fetch user profiles since FK is missing
+  const userIds = platformFeedback?.map((f: any) => f.user_id).filter(Boolean) || [];
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, username")
+    .in("id", userIds);
+    
+  const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
+
   if (error) {
     console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
   }

@@ -149,6 +149,7 @@ src/app/admin/events/DeleteConfirmButton.tsx
 src/app/admin/events/page.tsx
 src/app/admin/events/StatusSelect.tsx
 src/app/admin/feedback/page.tsx
+src/app/admin/layout.tsx
 src/app/admin/loading.tsx
 src/app/admin/page.tsx
 src/app/admin/reports/page.tsx
@@ -747,6 +748,23 @@ export async function toggleLeaderboardAction(formData: FormData) {
   revalidatePath("/leaderboard");
   return { success: true };
 }
+export async function toggleFeaturedAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ featured_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle featured failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { success: true };
+}
 </file>
 
 <file path="src/app/admin/colleges/page.tsx">
@@ -1110,6 +1128,15 @@ export default async function AdminFeedbackPage() {
     .select("id, type, message, created_at, user_id")
     .order("created_at", { ascending: false });
 
+  // Manually fetch user profiles since FK is missing
+  const userIds = platformFeedback?.map((f: any) => f.user_id).filter(Boolean) || [];
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, username")
+    .in("id", userIds);
+    
+  const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
+
   if (error) {
     console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
   }
@@ -1168,6 +1195,39 @@ export default async function AdminFeedbackPage() {
         </div>
       </div>
     </main>
+  );
+}
+</file>
+
+<file path="src/app/admin/layout.tsx">
+import { Navbar } from "@/components/layout/Navbar";
+import Link from "next/link";
+import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2 } from "lucide-react";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-[#F8F9FB] flex flex-col">
+      <Navbar />
+      <div className="flex flex-1 max-w-[1600px] w-full mx-auto">
+        {/* SaaS Sidebar */}
+        <aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 bg-white pt-8 px-4 h-[calc(100vh-64px)] sticky top-16 shrink-0">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-3">Admin Menu</p>
+          <nav className="space-y-1">
+            <Link href="/admin" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-[#6C47FF] hover:bg-[#6C47FF]/10 font-bold transition-all"><LayoutDashboard className="w-5 h-5" /> Dashboard</Link>
+            <Link href="/admin/events" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 font-bold transition-all"><CalendarDays className="w-5 h-5" /> Events</Link>
+            <Link href="/admin/users" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 font-bold transition-all"><Users className="w-5 h-5" /> Users</Link>
+            <Link href="/admin/reports" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-red-600 hover:bg-red-50 font-bold transition-all"><ShieldAlert className="w-5 h-5" /> Reports</Link>
+            <Link href="/admin/feedback" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-amber-600 hover:bg-amber-50 font-bold transition-all"><MessageSquareWarning className="w-5 h-5" /> Feedback</Link>
+            <Link href="/admin/colleges" className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:text-purple-600 hover:bg-purple-50 font-bold transition-all"><Building2 className="w-5 h-5" /> Colleges</Link>
+          </nav>
+        </aside>
+        
+        {/* Main Content Area */}
+        <main className="flex-1 w-full p-6 lg:p-10">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
 </file>
@@ -1275,7 +1335,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction } from "./actions";
+import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
 import { requireAdmin } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
@@ -1328,6 +1388,11 @@ export default async function AdminDashboard() {
     await toggleLeaderboardAction(formData);
   }
 
+  async function handleToggleFeatured(formData: FormData) {
+    "use server";
+    await toggleFeaturedAction(formData);
+  }
+
   // 1. Fetch Global Dashboard Analytics
   const [
     { count: totalUsers },
@@ -1340,10 +1405,11 @@ export default async function AdminDashboard() {
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("college").not("college", "is", null),
     supabase.from("platform_feedback").select("id, type, message, created_at, user_id").order("created_at", { ascending: false }).limit(20),
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle()
   ]);
 
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const featuredEnabled = appSettings?.featured_enabled ?? true;
 
   // Calculate top performing colleges
   const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
@@ -1393,19 +1459,21 @@ export default async function AdminDashboard() {
             <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
           </div>
 
-          <form action={handleToggleLeaderboard}>
-            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
-            <button
-              type="submit"
-              className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${
-                leaderboardEnabled
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                  : "bg-slate-200 text-slate-500 hover:bg-slate-300"
-              }`}
-            >
-              Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            <form action={handleToggleLeaderboard}>
+              <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
+              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${leaderboardEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
+                Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
+              </button>
+            </form>
+            
+            <form action={handleToggleFeatured}>
+              <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
+              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${featuredEnabled ? "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
+                Featured System: {featuredEnabled ? "ON" : "OFF"}
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -2361,16 +2429,36 @@ export default async function CategoryPage({
   const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
   const supabase = await createClient();
 
-  // Fetch all approved events matching this category using ilike for case-insensitive matching
+  // 1. Fetch user session to determine if they are a student
+  const { data: { user } } = await supabase.auth.getUser();
+  let profile = null;
+  
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 2. Build the strict visibility filter (exactly like the homepage)
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+
+  // 3. Fetch all approved events securely by applying the filter
   const { data: events } = await supabase
     .from("events")
     .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
     .eq("status", "approved")
     .ilike("category", decodedCategory)
+    .or(visibilityFilter) // SECURE: Apply the privacy rules here!
     .order("date_string", { ascending: true });
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-10">
@@ -8314,12 +8402,31 @@ export default async function CityPage({
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
+  // 1. Fetch user session to determine if they are a student
+  const { data: { user } } = await supabase.auth.getUser();
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 2. Build the strict visibility filter
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+
+  // 3. Fetch events securely
   const { data: events } = await supabase
     .from("events")
     .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
     .eq("status", "approved")
     .ilike("city", decodedCity)
     .gte("date_string", todayStr)
+    .or(visibilityFilter)
     .order("date_string", { ascending: true });
 
   const cityConfig = getCityConfig(decodedCity);
@@ -8859,9 +8966,10 @@ import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
+import { FeedbackModal } from "@/components/layout/FeedbackModal";
 import { createClient } from "@/lib/supabase/client";
 import type { ProfileRow, CollegeRow } from "@/types";
 import { categoriesList } from "@/features/create-event/constants";
@@ -8877,6 +8985,7 @@ export default function SettingsClient({
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
   // Immutability flag: If profile is fully onboarded, lock identity/education fields.
   const isLocked = !!profile?.is_onboarded;
@@ -9337,7 +9446,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
               </div>
-              <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
+                            <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
             </div>
             <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
               Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
@@ -9371,6 +9480,30 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
             </div>
           </div>
 
+          {/* Support & Feedback */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <Bug className="w-4 h-4 text-blue-500" />
+                </div>
+                <h2 className="font-bold text-lg text-slate-900">Support & Feedback</h2>
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
+              Found a bug or have a feature suggestion? Let us know so we can improve EvenTime!
+            </p>
+            <div className="ml-11">
+              <button 
+                type="button"
+                onClick={() => setIsFeedbackOpen(true)}
+                className="px-6 py-3 bg-white border border-slate-200 text-slate-700 hover:bg-[#6C47FF] hover:text-white hover:border-transparent rounded-xl text-sm font-bold transition-all shadow-sm"
+              >
+                Submit Feedback
+              </button>
+            </div>
+          </div>
+
           {/* Fixed Save Button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
             <button 
@@ -9390,8 +9523,10 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
 
         </form>
       </div>
-    </main>
 
+      {/* NEW: Feedback Modal */}
+      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+    </main>
   );
 }
 </file>
@@ -10295,6 +10430,544 @@ export default async function EventPage({
 }
 </file>
 
+<file path="src/components/layout/Navbar.tsx">
+"use client";
+
+import { useEffect, useState, useRef, Suspense, useTransition } from "react";
+import Link from "next/link";
+import Image from "next/image"; 
+import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug, CalendarDays } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { CalendarStrip } from "./CalendarStrip";
+import { FilterChips } from "@/lib/home/FilterChips";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { FeedbackModal } from "./FeedbackModal";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import type { AuthUser } from "@/types";
+import NProgress from "nprogress";
+
+
+const calculateCompletion = (profile: any) => {
+  if (!profile) return 0;
+  let score = 0;
+  if (profile.avatar_url) score += 20;
+  if (profile.username) score += 20;
+  if (profile.preferred_cities && profile.preferred_cities.length > 0) score += 20;
+  if (profile.goals && profile.goals.length > 0) score += 20;
+  const isStudent = profile.user_type === "student";
+  if (!isStudent) {
+    score += 20;
+  } else if (profile.college && profile.graduation_year) {
+    score += 20;
+  }
+  return score;
+};
+
+type ChipType = { name: string; value: string; count?: number };
+
+function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [] }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+  const [supabase] = useState(() => createClient());
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [profileDetails, setProfileDetails] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [imgError, setImgError] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [leaderboardEnabled, setLeaderboardEnabled] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const [showMobileCalendar, setShowMobileCalendar] = useState(false);
+  const [calendarEventDates, setCalendarEventDates] = useState<string[]>([]);
+  const mobileCalendarRef = useRef<HTMLDivElement>(null);
+  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
+  const desktopSearchRef = useRef<HTMLFormElement>(null);
+  const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
+  const [isSearchingMobile, setIsSearchingMobile] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
+  const categoryParam = searchParams.get("category") || undefined;
+  const locationParam = searchParams.get("location") || undefined;
+  const branchParam = searchParams.get("branch") || undefined;
+  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
+
+  useEffect(() => {
+    NProgress.done();
+  }, [pathname, searchParams]);
+
+  const handleProtectedAction = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault();
+      setShowAuthModal(true);
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchProfile = async (userId: string) => {
+      try {
+        const { data: profile, error } = await supabase
+          .from("profiles")
+          .select("role, avatar_url, college, goals, username, preferred_cities, user_type, graduation_year")
+          .eq("id", userId)
+          .single();        
+        if (mounted && !error && profile) {
+          setIsAdmin(profile.role === "admin");
+          setProfileDetails(profile);
+        }
+      } catch (err) {
+        console.error("Profile fetch error:", err);
+      }
+    };
+
+    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
+    const initUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!mounted) return;
+      
+      setUser(user);
+      if (user) {
+        fetchProfile(user.id);
+      } else if (mounted) {
+        setIsLoading(false);
+      }
+    };
+    initUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        fetchProfile(currentUser.id);
+      } else {
+        setIsAdmin(false);
+        setProfileDetails(null);
+      }
+      
+      if (mounted) setIsLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setSearchQuery(q);
+    else setSearchQuery("");
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (showMobileSearch) mobileSearchInputRef.current?.focus();
+  }, [showMobileSearch]);
+
+  useEffect(() => {
+    supabase
+      .from("app_settings")
+      .select("leaderboard_enabled")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLeaderboardEnabled(data.leaderboard_enabled);
+      });
+  }, [supabase]);
+
+  useEffect(() => {
+    supabase
+      .from("events")
+      .select("date_string")
+      .eq("status", "approved")
+      .then(({ data }) => {
+        if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
+      });
+  }, [supabase]);
+
+  useEffect(() => {
+    const hasQuery = searchQuery.trim().length > 0;
+    const hasFilter = !!categoryParam || !!locationParam;
+    if (!showMobileSearch || (!hasQuery && !hasFilter)) {
+      setMobileSearchResults([]);
+      return;
+    }
+    setIsSearchingMobile(true);
+    const timer = setTimeout(() => {
+      let query = supabase
+        .from("events")
+        .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+        .eq("status", "approved");
+      if (hasQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
+      }
+      if (categoryParam) query = query.eq("category", categoryParam);
+      if (locationParam) query = query.eq("location", locationParam);
+      query.limit(20).then(({ data }) => {
+        setMobileSearchResults(data || []);
+        setIsSearchingMobile(false);
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, showMobileSearch, supabase, categoryParam, locationParam]);
+
+  useEffect(() => {
+    if (!showMobileSearch) return;
+    window.history.pushState({ mobileSearch: true }, "");
+    const handlePop = () => setShowMobileSearch(false);
+    window.addEventListener("popstate", handlePop);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, [showMobileSearch]);
+
+  const closeMobileSearch = () => {
+    if (window.history.state?.mobileSearch) {
+      window.history.back();
+    } else {
+      setShowMobileSearch(false);
+    }
+  };
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (mobileCalendarRef.current && !mobileCalendarRef.current.contains(e.target as Node)) {
+        setShowMobileCalendar(false);
+      }
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        setShowDesktopFilters(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    NProgress.start();
+    startTransition(() => {
+      if (searchQuery.trim()) {
+        router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+      } else {
+        router.push(`/`);
+      }
+    });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.refresh();
+  };
+
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const completionPercent = calculateCompletion(profileDetails);
+
+  const selectedDate = searchParams.get("date");
+  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const todayObj = new Date();
+  let mobileDateDisplay = `${todayObj.getDate()} ${monthNames[todayObj.getMonth()]}`;
+  if (selectedDate) {
+    const [year, month, day] = selectedDate.split("-");
+    const monthIndex = parseInt(month, 10) - 1;
+    if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
+  }
+
+  return (
+    <>
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-4 relative">
+          
+          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
+            <Link href="/" className="shrink-0 flex items-center gap-2">
+              <div className="w-9 h-9 relative shrink-0"> 
+                <Image src="/logo.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
+              </div>
+              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
+                <span className="text-[#6C47FF]">Even</span>
+                <span className="text-[#1D1D1F]">Time</span>
+              </span>
+            </Link>
+          </div>
+
+          {variant !== 'centered' && (
+            <>
+              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowDesktopFilters(true)}
+                  placeholder="Search hackathons, meetups..."
+                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                />
+                {showDesktopFilters && hasFilterChips && (
+                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-4 z-20">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+                      <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+                      <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+                    </div>
+                  </div>
+                )}
+              </form>
+
+              <div ref={mobileCalendarRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowMobileCalendar((v) => !v)}
+                  className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
+                >
+                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  {mobileDateDisplay}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowMobileCalendar((v) => !v)}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all"
+                >
+                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  {mobileDateDisplay}
+                </button>
+
+                {showMobileCalendar && (
+                  <div className="absolute right-0 mt-2 w-[min(calc(100vw-2rem),340px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
+                    <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
+                      <CalendarStrip eventDates={calendarEventDates} onDateSelect={() => setShowMobileCalendar(false)} />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
+            
+            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+              <MapPin className="w-4 h-4 shrink-0" /> Map
+            </button>
+
+            {leaderboardEnabled && (
+              <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
+                <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
+              </Link>
+            )}
+
+            {isAdmin && (
+              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
+                <Settings className="w-4 h-4 shrink-0" /> Admin
+              </Link>
+            )}
+
+            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
+              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
+            </Link>
+
+            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
+              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
+                <Bug className="w-4 h-4" />
+              </button>
+
+              {isLoading ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
+                  <div className="w-9 h-9 rounded-full bg-slate-100" />
+                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
+                </div>
+              ) : user ? (
+                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
+                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
+                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+                    </svg>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
+                      {avatarUrl && !imgError ? (
+                        <img 
+                          src={avatarUrl} 
+                          alt="Profile" 
+                          className="object-cover w-full h-full"
+                          referrerPolicy="no-referrer"
+                          onError={() => setImgError(true)}
+                        />
+                      ) : (
+                        <User className="w-4 h-4 text-slate-400" />
+                      )}
+                    </div>
+                  </Link>
+                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
+                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </div>
+          </>
+          )}
+
+        </div>
+      </div>
+    </nav>
+
+    {showMobileSearch && (
+      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <form
+          onSubmit={(e) => { handleSearch(e); closeMobileSearch(); }}
+          className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
+        >
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+            <input
+              ref={mobileSearchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search hackathons, meetups..."
+              className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+            />
+          </div>
+          <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
+            <X className="w-5 h-5" />
+          </button>
+        </form>
+
+        {hasFilterChips && (
+          <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
+              <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
+              <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto px-4 py-5">
+          {!searchQuery.trim() && !categoryParam && !locationParam ? (
+              <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing or pick a filter to see events...</p>
+          ) : isSearchingMobile ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
+          ) : mobileSearchResults.length === 0 ? (
+            <p className="text-sm text-slate-400 font-medium text-center mt-10">{searchQuery.trim() ? `No events found for "${searchQuery}"` : "No events found for the selected filters"}</p>
+          ) : (
+            <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
+          )}
+        </div>
+      </div>
+    )}
+
+    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
+  <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
+    
+    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <Home className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
+    </Link>
+
+    <button type="button" onClick={() => setShowMobileSearch(true)} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform text-text-secondary hover:text-[#6C47FF]">
+      <Search className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
+    </button>
+
+    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full">
+      <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
+        <SquarePlus className="w-6 h-6 text-white" />
+      </div>
+    </Link>
+
+    <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+      <MapPin className="w-5 h-5" />
+      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
+    </button>
+
+    {isLoading ? (
+     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
+       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
+       <div className="w-6 h-2 bg-slate-200 rounded-full" />
+     </div>
+     ) : user ? (
+      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <div className="relative w-7 h-7 flex items-center justify-center">
+          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
+            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+          </svg>
+          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
+            {avatarUrl && !imgError ? (
+              <img 
+                src={avatarUrl} 
+                alt="Profile" 
+                className="object-cover w-full h-full"
+                referrerPolicy="no-referrer"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <User className="w-3.5 h-3.5" />
+            )}
+          </div>
+        </div>
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
+      </Link>
+    ) : (
+      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <User className="w-5 h-5" />
+        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
+      </Link>
+    )}
+
+  </div>
+</div>
+
+    {/* NEW: Auth Modal Overlay for Guest Users */}
+    {showAuthModal && (
+      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+            <Plus className="w-6 h-6 text-text-primary" />
+          </div>
+          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
+          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+              Cancel
+            </button>
+            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+    </>
+  );
+}
+
+export function Navbar({ variant = 'default', categoryChips, locationChips }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+  return (
+    <Suspense fallback={null}>
+      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
+    </Suspense>
+  );
+}
+</file>
+
 <file path="src/lib/home/fetchHomePageData.ts">
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
@@ -10907,9 +11580,11 @@ export default function GlobalError({
           }
 
           const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          const pastTime = today.getTime() > exactCheckDate.getTime();
           
-          if (pastDate || pastTime) {
+          // Fix: We no longer check `pastTime` to hide the card.
+          // This ensures same-day past events stay visible (with a "Past Event" badge),
+          // keeping the UI counts perfectly synchronized with the server counts.
+          if (pastDate) {
             setIsVisible(false);
           }
         }
@@ -11153,544 +11828,6 @@ export default function GlobalError({
       </>
     );
   }
-</file>
-
-<file path="src/components/layout/Navbar.tsx">
-"use client";
-
-import { useEffect, useState, useRef, Suspense, useTransition } from "react";
-import Link from "next/link";
-import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug, CalendarDays } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { CalendarStrip } from "./CalendarStrip";
-import { FilterChips } from "@/lib/home/FilterChips";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { FeedbackModal } from "./FeedbackModal";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { AuthUser } from "@/types";
-import NProgress from "nprogress";
-
-
-const calculateCompletion = (profile: any) => {
-  if (!profile) return 0;
-  let score = 0;
-  if (profile.avatar_url) score += 20;
-  if (profile.username) score += 20;
-  if (profile.preferred_cities && profile.preferred_cities.length > 0) score += 20;
-  if (profile.goals && profile.goals.length > 0) score += 20;
-  const isStudent = profile.user_type === "student";
-  if (!isStudent) {
-    score += 20;
-  } else if (profile.college && profile.graduation_year) {
-    score += 20;
-  }
-  return score;
-};
-
-type ChipType = { name: string; value: string; count?: number };
-
-function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [] }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
-  const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profileDetails, setProfileDetails] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [imgError, setImgError] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [leaderboardEnabled, setLeaderboardEnabled] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
-  const [showMobileCalendar, setShowMobileCalendar] = useState(false);
-  const [calendarEventDates, setCalendarEventDates] = useState<string[]>([]);
-  const mobileCalendarRef = useRef<HTMLDivElement>(null);
-  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
-  const desktopSearchRef = useRef<HTMLFormElement>(null);
-  const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
-  const [isSearchingMobile, setIsSearchingMobile] = useState(false);
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const [isPending, startTransition] = useTransition();
-  const categoryParam = searchParams.get("category") || undefined;
-  const locationParam = searchParams.get("location") || undefined;
-  const branchParam = searchParams.get("branch") || undefined;
-  const hasFilterChips = categoryChips.length > 0 || locationChips.length > 0;
-
-  useEffect(() => {
-    NProgress.done();
-  }, [pathname, searchParams]);
-
-  const handleProtectedAction = (e: React.MouseEvent) => {
-    if (!user) {
-      e.preventDefault();
-      setShowAuthModal(true);
-    }
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("role, avatar_url, college, goals, username, preferred_cities, user_type, graduation_year")
-          .eq("id", userId)
-          .single();        
-        if (mounted && !error && profile) {
-          setIsAdmin(profile.role === "admin");
-          setProfileDetails(profile);
-        }
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-
-    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
-    const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      
-      setUser(user);
-      if (user) {
-        fetchProfile(user.id);
-      } else if (mounted) {
-        setIsLoading(false);
-      }
-    };
-    initUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setIsAdmin(false);
-        setProfileDetails(null);
-      }
-      
-      if (mounted) setIsLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase]);
-
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setSearchQuery(q);
-    else setSearchQuery("");
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (showMobileSearch) mobileSearchInputRef.current?.focus();
-  }, [showMobileSearch]);
-
-  useEffect(() => {
-    supabase
-      .from("app_settings")
-      .select("leaderboard_enabled")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setLeaderboardEnabled(data.leaderboard_enabled);
-      });
-  }, [supabase]);
-
-  useEffect(() => {
-    supabase
-      .from("events")
-      .select("date_string")
-      .eq("status", "approved")
-      .then(({ data }) => {
-        if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
-      });
-  }, [supabase]);
-
-  useEffect(() => {
-    const hasQuery = searchQuery.trim().length > 0;
-    const hasFilter = !!categoryParam || !!locationParam;
-    if (!showMobileSearch || (!hasQuery && !hasFilter)) {
-      setMobileSearchResults([]);
-      return;
-    }
-    setIsSearchingMobile(true);
-    const timer = setTimeout(() => {
-      let query = supabase
-        .from("events")
-        .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-        .eq("status", "approved");
-      if (hasQuery) {
-        query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
-      }
-      if (categoryParam) query = query.eq("category", categoryParam);
-      if (locationParam) query = query.eq("location", locationParam);
-      query.limit(20).then(({ data }) => {
-        setMobileSearchResults(data || []);
-        setIsSearchingMobile(false);
-      });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, showMobileSearch, supabase, categoryParam, locationParam]);
-
-  useEffect(() => {
-    if (!showMobileSearch) return;
-    window.history.pushState({ mobileSearch: true }, "");
-    const handlePop = () => setShowMobileSearch(false);
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
-  }, [showMobileSearch]);
-
-  const closeMobileSearch = () => {
-    if (window.history.state?.mobileSearch) {
-      window.history.back();
-    } else {
-      setShowMobileSearch(false);
-    }
-  };
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (mobileCalendarRef.current && !mobileCalendarRef.current.contains(e.target as Node)) {
-        setShowMobileCalendar(false);
-      }
-      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
-        setShowDesktopFilters(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    NProgress.start();
-    startTransition(() => {
-      if (searchQuery.trim()) {
-        router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
-      } else {
-        router.push(`/`);
-      }
-    });
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-  };
-
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
-  const completionPercent = calculateCompletion(profileDetails);
-
-  const selectedDate = searchParams.get("date");
-  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const todayObj = new Date();
-  let mobileDateDisplay = `${todayObj.getDate()} ${monthNames[todayObj.getMonth()]}`;
-  if (selectedDate) {
-    const [year, month, day] = selectedDate.split("-");
-    const monthIndex = parseInt(month, 10) - 1;
-    if (monthIndex >= 0 && monthIndex <= 11) mobileDateDisplay = `${parseInt(day, 10)} ${monthNames[monthIndex]}`;
-  }
-
-  return (
-    <>
-    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-4 relative">
-          
-          <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
-            <Link href="/" className="shrink-0 flex items-center gap-2">
-              <div className="w-9 h-9 relative shrink-0"> 
-                <Image src="/logo.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
-              </div>
-              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
-                <span className="text-[#6C47FF]">Even</span>
-                <span className="text-[#1D1D1F]">Time</span>
-              </span>
-            </Link>
-          </div>
-
-          {variant !== 'centered' && (
-            <>
-              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowDesktopFilters(true)}
-                  placeholder="Search hackathons, meetups..."
-                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                />
-                {showDesktopFilters && hasFilterChips && (
-                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-4 z-20">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
-                      <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
-                      <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
-                    </div>
-                  </div>
-                )}
-              </form>
-
-              <div ref={mobileCalendarRef} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowMobileCalendar((v) => !v)}
-                  className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
-                >
-                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
-                  {mobileDateDisplay}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowMobileCalendar((v) => !v)}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all"
-                >
-                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
-                  {mobileDateDisplay}
-                </button>
-
-                {showMobileCalendar && (
-                  <div className="absolute right-0 mt-2 w-[min(calc(100vw-2rem),340px)] -translate-x-[max(0px,calc(100%-100vw+2rem))] sm:translate-x-0 animate-in fade-in slide-in-from-top-2 duration-300 origin-top-right z-50">
-                    <div className="bg-white rounded-3xl p-4 border border-slate-100 shadow-2xl shadow-black/10">
-                      <CalendarStrip eventDates={calendarEventDates} onDateSelect={() => setShowMobileCalendar(false)} />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
-            
-            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
-              <MapPin className="w-4 h-4 shrink-0" /> Map
-            </button>
-
-            {leaderboardEnabled && (
-              <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
-                <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
-              </Link>
-            )}
-
-            {isAdmin && (
-              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
-                <Settings className="w-4 h-4 shrink-0" /> Admin
-              </Link>
-            )}
-
-            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
-              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
-            </Link>
-
-            <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
-              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
-                <Bug className="w-4 h-4" />
-              </button>
-
-              {isLoading ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
-                  <div className="w-9 h-9 rounded-full bg-slate-100" />
-                  <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
-                </div>
-              ) : user ? (
-                <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
-                  <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
-                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-surface-elevated" strokeWidth="2" />
-                      <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-                    </svg>
-                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
-                      {avatarUrl && !imgError ? (
-                        <img 
-                          src={avatarUrl} 
-                          alt="Profile" 
-                          className="object-cover w-full h-full"
-                          referrerPolicy="no-referrer"
-                          onError={() => setImgError(true)}
-                        />
-                      ) : (
-                        <User className="w-4 h-4 text-slate-400" />
-                      )}
-                    </div>
-                  </Link>
-                  <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
-                    <LogOut className="w-4 h-4 shrink-0 ml-0.5" />
-                  </button>
-                </div>
-              ) : (
-                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-          </>
-          )}
-
-        </div>
-      </div>
-    </nav>
-
-    {showMobileSearch && (
-      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
-        <form
-          onSubmit={(e) => { handleSearch(e); closeMobileSearch(); }}
-          className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-            <input
-              ref={mobileSearchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hackathons, meetups..."
-              className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-            />
-          </div>
-          <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
-            <X className="w-5 h-5" />
-          </button>
-        </form>
-
-        {hasFilterChips && (
-          <div className="flex flex-col gap-4 px-4 py-5 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
-              <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
-              <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
-            </div>
-          </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto px-4 py-5">
-          {!searchQuery.trim() && !categoryParam && !locationParam ? (
-              <p className="text-sm text-slate-400 font-medium text-center mt-10">Start typing or pick a filter to see events...</p>
-          ) : isSearchingMobile ? (
-            <p className="text-sm text-slate-400 font-medium text-center mt-10">Searching...</p>
-          ) : mobileSearchResults.length === 0 ? (
-            <p className="text-sm text-slate-400 font-medium text-center mt-10">{searchQuery.trim() ? `No events found for "${searchQuery}"` : "No events found for the selected filters"}</p>
-          ) : (
-            <EventGrid events={mobileSearchResults} gridClass="grid grid-cols-1 gap-4" />
-          )}
-        </div>
-      </div>
-    )}
-
-    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
-  <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
-    
-    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Home className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
-    </Link>
-
-    <button type="button" onClick={() => setShowMobileSearch(true)} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform text-text-secondary hover:text-[#6C47FF]">
-      <Search className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
-    </button>
-
-    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full">
-      <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
-        <SquarePlus className="w-6 h-6 text-white" />
-      </div>
-    </Link>
-
-    <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <MapPin className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
-    </button>
-
-    {isLoading ? (
-     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
-       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
-       <div className="w-6 h-2 bg-slate-200 rounded-full" />
-     </div>
-     ) : user ? (
-      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <div className="relative w-7 h-7 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-          </svg>
-          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
-            {avatarUrl && !imgError ? (
-              <img 
-                src={avatarUrl} 
-                alt="Profile" 
-                className="object-cover w-full h-full"
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <User className="w-3.5 h-3.5" />
-            )}
-          </div>
-        </div>
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
-      </Link>
-    ) : (
-      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <User className="w-5 h-5" />
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
-      </Link>
-    )}
-
-  </div>
-</div>
-
-    {/* NEW: Auth Modal Overlay for Guest Users */}
-    {showAuthModal && (
-      <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-        <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-          <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-surface-base text-text-secondary hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-          <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-            <Plus className="w-6 h-6 text-text-primary" />
-          </div>
-          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
-          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
-          <div className="flex gap-3">
-            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
-              Cancel
-            </button>
-            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
-              Sign In
-            </Link>
-          </div>
-        </div>
-      </div>
-    )}
-
-    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </>
-  );
-}
-
-export function Navbar({ variant = 'default', categoryChips, locationChips }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
-  return (
-    <Suspense fallback={null}>
-      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
-    </Suspense>
-  );
-}
 </file>
 
 <file path="src/lib/home/LandingIntro.tsx">
@@ -12085,7 +12222,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     
     // Immediately navigate — the animation IS the feedback
     router.refresh();
-    setIsSaving(false);
+    // This keeps the loading spinner visible until the page fully reloads and unmounts the modal!
   };
 
   return (
@@ -12125,13 +12262,17 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                 {/* 0. Username */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="e.g. john_doe"
-                    value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                  />
+                    <input
+                      type="text"
+                      placeholder="e.g. johndoe"
+                      value={username}
+                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                      minLength={3}
+                      maxLength={12}
+                      pattern="[a-z0-9]+"
+                      title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
+                      className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                    />
                 </div>
 
                 {/* 1. Location Selection */}
@@ -12242,7 +12383,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                         </div>
 
                         {/* YEAR SELECTOR */}
-                          <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>
+                          <input 
                             type="text" 
                             placeholder="Year (e.g. 2026)" 
                             value={yearSearchQuery} 

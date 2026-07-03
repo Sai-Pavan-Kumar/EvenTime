@@ -31,12 +31,31 @@ export default async function CityPage({
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
+  // 1. Fetch user session to determine if they are a student
+  const { data: { user } } = await supabase.auth.getUser();
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 2. Build the strict visibility filter
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+
+  // 3. Fetch events securely
   const { data: events } = await supabase
     .from("events")
     .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
     .eq("status", "approved")
     .ilike("city", decodedCity)
     .gte("date_string", todayStr)
+    .or(visibilityFilter)
     .order("date_string", { ascending: true });
 
   const cityConfig = getCityConfig(decodedCity);

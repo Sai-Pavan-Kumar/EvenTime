@@ -4,7 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction } from "./actions";
+import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
 import { requireAdmin } from "@/lib/auth/permissions";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +57,11 @@ export default async function AdminDashboard() {
     await toggleLeaderboardAction(formData);
   }
 
+  async function handleToggleFeatured(formData: FormData) {
+    "use server";
+    await toggleFeaturedAction(formData);
+  }
+
   // 1. Fetch Global Dashboard Analytics
   const [
     { count: totalUsers },
@@ -69,10 +74,11 @@ export default async function AdminDashboard() {
     supabase.from("events").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("college").not("college", "is", null),
     supabase.from("platform_feedback").select("id, type, message, created_at, user_id").order("created_at", { ascending: false }).limit(20),
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle()
   ]);
 
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const featuredEnabled = appSettings?.featured_enabled ?? true;
 
   // Calculate top performing colleges
   const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
@@ -122,19 +128,21 @@ export default async function AdminDashboard() {
             <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
           </div>
 
-          <form action={handleToggleLeaderboard}>
-            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
-            <button
-              type="submit"
-              className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${
-                leaderboardEnabled
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                  : "bg-slate-200 text-slate-500 hover:bg-slate-300"
-              }`}
-            >
-              Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
-            </button>
-          </form>
+          <div className="flex items-center gap-3">
+            <form action={handleToggleLeaderboard}>
+              <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
+              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${leaderboardEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
+                Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
+              </button>
+            </form>
+            
+            <form action={handleToggleFeatured}>
+              <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
+              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${featuredEnabled ? "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
+                Featured System: {featuredEnabled ? "ON" : "OFF"}
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Stats Grid */}

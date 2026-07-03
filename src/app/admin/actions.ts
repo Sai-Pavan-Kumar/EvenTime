@@ -247,3 +247,20 @@ export async function toggleLeaderboardAction(formData: FormData) {
   revalidatePath("/leaderboard");
   return { success: true };
 }
+export async function toggleFeaturedAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ featured_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle featured failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { success: true };
+}

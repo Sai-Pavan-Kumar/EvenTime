@@ -173,7 +173,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     
     // Immediately navigate — the animation IS the feedback
     router.refresh();
-    setIsSaving(false);
+    // This keeps the loading spinner visible until the page fully reloads and unmounts the modal!
   };
 
   return (
@@ -213,13 +213,17 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                 {/* 0. Username */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    placeholder="e.g. john_doe"
-                    value={username}
-                    onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ""))}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                  />
+                    <input
+                      type="text"
+                      placeholder="e.g. johndoe"
+                      value={username}
+                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                      minLength={3}
+                      maxLength={12}
+                      pattern="[a-z0-9]+"
+                      title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
+                      className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                    />
                 </div>
 
                 {/* 1. Location Selection */}
@@ -330,7 +334,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
                         </div>
 
                         {/* YEAR SELECTOR */}
-                          <div className="relative" onClick={(e) => e.stopPropagation()}>                          <input 
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>
+                          <input 
                             type="text" 
                             placeholder="Year (e.g. 2026)" 
                             value={yearSearchQuery} 
