@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
 import { AlertTriangle } from "lucide-react";
 import { resolveReportAction, punishCuratorAction } from "../actions";
 import { requireAdmin } from "@/lib/auth/permissions";
@@ -58,7 +57,7 @@ export default async function AdminReportsPage() {
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
+
       
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-8">

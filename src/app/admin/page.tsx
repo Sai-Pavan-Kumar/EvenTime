@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
 import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -143,7 +142,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Stats Grid */}
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {/* Global Users */}
           <Link href="/admin/users" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500/20 transition-all cursor-pointer">
             <Users className="w-6 h-6 text-blue-500 mb-4" />

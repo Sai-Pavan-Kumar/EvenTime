@@ -4,6 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
+import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { format, parseISO } from "date-fns";
 import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
@@ -273,6 +274,9 @@ Promise<{ tab?: string }>; }) {
                 <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
                   <Settings className="w-4 h-4" /> Profile Settings
                 </Link>
+                
+                {/* Mobile Only Feedback Button */}
+                <MobileFeedbackWrapper />
               </div>
 
               <div className="p-4 pt-1 mb-2 mt-auto">

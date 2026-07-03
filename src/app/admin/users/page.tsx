@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Navbar } from "@/components/layout/Navbar";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
@@ -41,7 +40,7 @@ export default async function AdminUsersPage() {
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
+
       
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header Section */}

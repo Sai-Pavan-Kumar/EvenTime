@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
-import { FeedbackModal } from "@/components/layout/FeedbackModal";
 import { createClient } from "@/lib/supabase/client";
 import type { ProfileRow, CollegeRow } from "@/types";
 import { categoriesList } from "@/features/create-event/constants";
@@ -534,15 +533,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
             <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
               Found a bug or have a feature suggestion? Let us know so we can improve EvenTime!
             </p>
-            <div className="ml-11">
-              <button 
-                type="button"
-                onClick={() => setIsFeedbackOpen(true)}
-                className="px-6 py-3 bg-white border border-slate-200 text-slate-700 hover:bg-[#6C47FF] hover:text-white hover:border-transparent rounded-xl text-sm font-bold transition-all shadow-sm"
-              >
-                Submit Feedback
-              </button>
-            </div>
           </div>
 
           {/* Fixed Save Button */}
@@ -565,8 +555,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
         </form>
       </div>
 
-      {/* NEW: Feedback Modal */}
-      <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
-    </main>
-  );
-}
+            </main>
+    );
+  }

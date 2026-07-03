@@ -19,7 +19,13 @@ export async function updateProfileSettings(formData: FormData) {
   const branch = formData.get("branch") as string;
   const user_type = formData.get("user_type") as string;
 
+  // Verify true admin status for bypasses
+  const { data: currentProfile } = await supabase.from("profiles").select("user_type, role").eq("id", user.id).single();
+  const isAdmin = currentProfile?.user_type === 'admin' || currentProfile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+
   const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
+  if (isAdmin) ALLOWED_USER_TYPES.push("admin"); // Allow admin to bypass user_type validation
+
   if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
     return { error: "Please select what you are." };
   }
@@ -39,7 +45,7 @@ export async function updateProfileSettings(formData: FormData) {
       if (!Array.isArray(parsed)) throw new Error();
       preferred_cities = parsed
         .filter((c): c is string => typeof c === "string" && c.length > 0)
-        .slice(0, 3);
+        .slice(0, isAdmin ? 100 : 3);
     } catch {
       return { error: "Invalid cities format." };
     }
@@ -52,9 +58,9 @@ export async function updateProfileSettings(formData: FormData) {
     try {
       const parsed = JSON.parse(goalsString);
       if (!Array.isArray(parsed)) throw new Error();
-      goals = parsed
+        goals = parsed
         .filter((g): g is string => typeof g === "string")
-        .slice(0, 6)
+        .slice(0, isAdmin ? 100 : 6)
         .map(g => g.slice(0, 50));
     } catch {
       return { error: "Invalid goals format." };
