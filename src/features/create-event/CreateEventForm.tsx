@@ -151,17 +151,18 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               isEditing={isEditing}
             />
           )}
-          {step === 1 && (
-            <StepFeatured 
-              data={eventData} 
-              updateData={updateData} 
-              crop={crop}
-              onBack={() => setStep(0)} 
-              onSubmit={handleSubmit} 
-              isSubmitting={isSubmitting}
-              isEditing={isEditing}
-            />
-          )}
+            {step === 1 && (
+              <StepFeatured 
+                data={eventData} 
+                updateData={updateData} 
+                crop={crop}
+                onBack={() => setStep(0)} 
+                onSubmit={handleSubmit} 
+                isSubmitting={isSubmitting}
+                isEditing={isEditing}
+                isAdminFeatureEnabled={isAdminFeatureEnabled}
+              />
+            )}
         </AnimatePresence>
       </div>
     </div>

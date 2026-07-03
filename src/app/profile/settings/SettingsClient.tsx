@@ -16,10 +16,12 @@ import { createCollegeAction } from "@/app/profile/action";
 
 export default function SettingsClient({ 
   profile, 
-  categoryCounts = {}
+  categoryCounts = {},
+  userEmail
 }: { 
   profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number>
+  categoryCounts?: Record<string, number>,
+  userEmail?: string
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +54,8 @@ export default function SettingsClient({
 const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   
-  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin';
+  // Align admin check with OnboardingModal exactly (checks role, type, and specific email)
+  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin' || userEmail === 'eventime.admin@gmail.com';
 
  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
   useEffect(() => {

@@ -50,5 +50,5 @@ export default async function SettingsPage() {
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} />;
+  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
 }

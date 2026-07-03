@@ -118,10 +118,7 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
+    <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Admin Control</h1>
@@ -334,7 +331,6 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-      </div>
-    </main>
+    </div>
   );
 }

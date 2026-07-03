@@ -4,24 +4,26 @@ import { motion } from "framer-motion";
 import { ArrowLeft, CheckCircle2, UploadCloud, Crop } from "lucide-react";
 import Cropper from "react-easy-crop";
 
-export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing }: any) {
+export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmitting, isEditing, isAdminFeatureEnabled }: any) {
   
   return (
     <motion.div key="stepFeatured" initial={{ x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 24, opacity: 0 }} className="space-y-8">
       
-      {/* FEATURE TOGGLE */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
-        <div>
-          <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">Feature this Event</h4>
-          <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
+      {/* FEATURE TOGGLE - ONLY VISIBLE IF ENABLED GLOBALLY */}
+      {isAdminFeatureEnabled && (
+        <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
+          <div>
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">Feature this Event</h4>
+            <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
+          </div>
+          <button type="button" onClick={() => updateData({ isFeatured: !data.isFeatured })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.isFeatured ? "bg-amber-500" : "bg-slate-300"}`}>
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isFeatured ? "translate-x-6" : "translate-x-1"}`} />
+          </button>
         </div>
-        <button type="button" onClick={() => updateData({ isFeatured: !data.isFeatured })} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${data.isFeatured ? "bg-amber-500" : "bg-slate-300"}`}>
-          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isFeatured ? "translate-x-6" : "translate-x-1"}`} />
-        </button>
-      </div>
+      )}
 
       {/* FEATURED POSTER UPLOAD (1:1 Ratio) */}
-      {data.isFeatured && (
+      {isAdminFeatureEnabled && data.isFeatured && (
         <div className="space-y-3 pt-4">
           <label className="block text-sm font-semibold text-slate-700">1:1 Square Featured Poster <span className="text-red-500">*</span></label>
           
