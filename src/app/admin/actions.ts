@@ -262,5 +262,6 @@ export async function toggleFeaturedAction(formData: FormData) {
 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidatePath("/events/new"); // IDI MAIN FIX (Cache theesesthundi)
   return { success: true };
 }

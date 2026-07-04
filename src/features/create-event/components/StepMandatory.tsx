@@ -382,6 +382,9 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>
             )}
+            {/* Note: extraction hook gives trustWarning based on admin status automatically now, so we don't need additional logic if the hook is updated. But to be extra safe, if you want it completely hidden for admin, replace the above condition with:
+              {!extraction.isTrusted && data.regLink && !extraction.isExtracting && extraction.trustWarning !== "" && ( 
+            */}
             
            {isAdmin && data.isFeatured ? (
               <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">

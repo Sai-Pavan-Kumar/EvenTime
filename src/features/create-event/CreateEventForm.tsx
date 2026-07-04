@@ -19,9 +19,10 @@ import { StepFeatured } from "./components/StepFeatured";
 
 interface ExtendedFormProps extends CreateEventFormProps {
   isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+  isCurrentUserAdmin?: boolean; // FIX: Controls the admin warnings
 }
 
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false, isCurrentUserAdmin = false }: ExtendedFormProps) {
   const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
   const supabase = createClient();
 
@@ -79,7 +80,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     initialLink: initialData?.registration_link ?? undefined,
     currentEventId: initialData?.id,
     initialIsTrusted: eventData.isTrustedDomain,
-    isAdmin: isAdminFeatureEnabled
+    isAdmin: isCurrentUserAdmin // FIX: Idhi actual admin parameter
   });
   
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
