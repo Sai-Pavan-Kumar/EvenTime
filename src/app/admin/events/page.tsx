@@ -57,8 +57,8 @@ export default async function AdminEventsPage(props: PageProps) {
     await deleteEventAction(formData);
   }
 
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    return (
+    <div className="w-full">
       
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Header Section */}
@@ -186,6 +186,6 @@ export default async function AdminEventsPage(props: PageProps) {
         </div>
 
       </div>
-    </main>
+    </div>
   );
 }

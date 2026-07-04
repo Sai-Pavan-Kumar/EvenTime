@@ -62,16 +62,15 @@ export function useEventSubmit() {
 
       if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
 
+      // 1. Fetch profile data from your database (MOVED TO TOP LEVEL SCOPE)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, username, user_type, role")
+        .eq("id", user.id)
+        .single();
+
       // NEW: Auto-fetch and assign curator name if organizer_name is empty
       if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
-        
-        // 1. Fetch profile data from your database
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, username")
-          .eq("id", user.id)
-          .single();
-        
         // 2. Extract name from Supabase/Google Auth metadata
         // Google usually stores this under 'name' or 'full_name'
         const authName = user.user_metadata?.full_name || user.user_metadata?.name;
@@ -84,8 +83,7 @@ export function useEventSubmit() {
           "Event Curator";
       }
 
-           if (isEditing && eventId) {
-
+      if (isEditing && eventId) {
         console.log("[useEventSubmit] Updating event with creator_id:", user.id);
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
         
@@ -98,8 +96,16 @@ export function useEventSubmit() {
           .eq("status", "pending");
           
       } else {
+        // Removed hardcoded admin email, strictly relies on database role
+        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+
         console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
-        const { error } = await supabase.from("events").insert([{ ...finalPayload, slug: uniqueSlug, creator_id: user.id }]);
+        const { error } = await supabase.from("events").insert([{ 
+          ...finalPayload, 
+          slug: uniqueSlug, 
+          creator_id: user.id,
+          status: isAdmin ? "approved" : "pending" 
+        }]);
         if (error) throw error;
       }
       

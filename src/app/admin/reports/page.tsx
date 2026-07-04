@@ -56,7 +56,7 @@ export default async function AdminReportsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <div className="w-full">
 
       
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -111,6 +111,6 @@ export default async function AdminReportsPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

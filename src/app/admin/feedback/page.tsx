@@ -36,8 +36,8 @@ export default async function AdminFeedbackPage() {
     console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
   }
 
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    return (
+    <div className="w-full">
       
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="mb-8">
@@ -88,6 +88,6 @@ export default async function AdminFeedbackPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

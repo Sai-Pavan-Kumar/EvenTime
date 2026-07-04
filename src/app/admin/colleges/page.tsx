@@ -34,7 +34,7 @@ export default async function AdminCollegesPage() {
   const allColleges = Object.entries(collegeCounts).sort(([, a], [, b]) => b - a);
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <div className="w-full">
 
       
       <div className="max-w-4xl mx-auto px-6 py-12">
@@ -74,6 +74,6 @@ export default async function AdminCollegesPage() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
