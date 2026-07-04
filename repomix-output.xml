@@ -557,102 +557,6 @@ export function StatusSelect({ eventId, initialStatus }: { eventId: string, init
 }
 </file>
 
-<file path="src/app/admin/loading.tsx">
-import { Navbar } from "@/components/layout/Navbar";
-import { Skeleton } from "@/components/ui/skeleton";
-
-export default function AdminLoading() {
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar />
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <Skeleton className="h-10 w-64 rounded-lg mb-2" />
-          <Skeleton className="h-5 w-72 rounded-md" />
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
-              <Skeleton className="w-6 h-6 rounded-md mb-4" />
-              <Skeleton className="w-24 h-4 rounded-md mb-3" />
-              <Skeleton className="w-16 h-10 rounded-md" />
-            </div>
-          ))}
-        </div>
-
-        {/* Top Colleges Skeleton */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
-          <div className="flex justify-between mb-6">
-            <Skeleton className="h-6 w-48 rounded-md" />
-            <Skeleton className="h-6 w-6 rounded-md" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-xl bg-slate-50" />
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom Split Grids */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Approval Queue */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-slate-100 flex justify-between">
-              <Skeleton className="h-6 w-48 rounded-md" />
-            </div>
-            <div className="divide-y divide-slate-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-6 flex flex-col gap-4">
-                  <div className="flex gap-4">
-                    <Skeleton className="w-20 h-14 rounded-xl shrink-0" />
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-full rounded-md" />
-                      <Skeleton className="h-4 w-1/2 rounded-md" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 flex-1 rounded-full" />
-                    <Skeleton className="h-8 flex-1 rounded-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* User Reports */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-slate-100 bg-red-50/30 flex justify-between">
-              <Skeleton className="h-6 w-32 rounded-md" />
-            </div>
-            <div className="divide-y divide-slate-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-6">
-                  <div className="flex justify-between mb-3">
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-20 rounded-md" />
-                      <Skeleton className="h-5 w-3/4 rounded-md mt-2" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-md" />
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Skeleton className="h-8 flex-1 rounded-lg" />
-                    <Skeleton className="h-8 flex-1 rounded-lg" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/api/og/leaderboard/route.tsx">
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
@@ -2749,275 +2653,6 @@ Sentry.init({
 });
 </file>
 
-<file path="src/app/admin/actions.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { revalidatePath } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-async function verifyAdmin(supabase: SupabaseClient<Database>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  return requireAdmin(supabase, user.id);
-}
-
-export async function approveEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  // Derive creator server-side — never trust client
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) return { error: "Event not found." };
-
-  const { error: eventError } = await supabase
-    .from("events")
-    .update({ status: "approved" })
-    .eq("id", eventId);
-
-  if (eventError) return { error: "Event update failed" };
-
-  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
-    p_user_id: event.creator_id,
-    p_event_id: eventId
-  });
-
-  if (profileError) return { error: "Score update failed" };
-
-  revalidatePath("/admin");
-  revalidatePath("/");
-  return { success: true };
-}
-
-export async function rejectEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  const reason = formData.get("reason") as string | null;
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id, title")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) return { error: "Event not found." };
-
-  await supabase
-    .from("events")
-    .update({ status: "rejected" })
-    .eq("id", eventId);
-
-  revalidatePath("/admin");
-  return { success: true, creatorId: event.creator_id, title: event.title };
-}
-export async function resolveReportAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-
-  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
-
-  revalidatePath("/admin");
-  return { success: true };
-}
-
-export async function punishCuratorAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-  if (!reportId) return { error: "Missing reportId." };
-
-  // Derive curator and event from the report — never trust client
-  const { data: report } = await supabase
-    .from("event_reports")
-    .select("curator_id, event_id")
-    .eq("id", reportId)
-    .single();
-
-  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
-
-  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
-
-  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
-  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
-  const { data: allReports } = await supabase
-    .from("event_reports")
-    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
-    .eq("event_id", report.event_id);
-
-  const trustedReporterIds = new Set(
-    (allReports || [])
-      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
-      .map((r: any) => r.reporter_id)
-  );
-
-  if (trustedReporterIds.size < 5) {
-    revalidatePath("/admin");
-    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
-  }
-
-  await supabase.rpc('increment_et_score', {
-    user_id: report.curator_id,
-    delta: -150
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/profile");
-  return { success: true };
-}
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  // Soft Delete: Just update the status to 'deleted'
-  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
-  if (error) throw new Error("Delete failed: " + error.message);
-  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  return { success: true };
-}
-
-export async function deleteUserAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  if (!userId) return { error: "Missing userId." };
-
-  // Soft delete: mark the row, then ban login immediately.
-  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
-  const { error } = await supabase
-    .from("profiles")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", userId);
-  if (error) return { error: "Failed to delete user." };
-
-  const adminClient = createAdminClient();
-  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateUserRoleAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  const newRole = formData.get("role") as string;
-  
-  if (!userId || !newRole) return { error: "Missing required fields." };
-
-  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
-  
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateEventDetailsAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  const category = formData.get("category") as string;
-  const newStatus = formData.get("status") as string;
-  
-  if (!eventId) return { error: "Missing eventId." };
-
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) return { error: "Event not found." };
-
-  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
-  if (updateError) throw new Error("Update failed: " + updateError.message);
-  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-  // Award points if manually changed to approved, deduct if reverted
-  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
-  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
-    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
-  }
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  return { success: true };
-}
-
-export async function toggleLeaderboardAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const enabled = formData.get("enabled") === "true";
-
-  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle leaderboard failed:", error);
-    return { error: "Failed to update setting." };
-  }
-
-  revalidatePath("/admin");
-
-  revalidatePath("/");
-  revalidatePath("/leaderboard");
-  return { success: true };
-}
-export async function toggleFeaturedAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const enabled = formData.get("enabled") === "true";
-
-  const { error } = await supabase.from("app_settings").update({ featured_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle featured failed:", error);
-    return { error: "Failed to update setting." };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/admin");
-  return { success: true };
-}
-</file>
-
 <file path="src/app/admin/AdminHeader.tsx">
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -3079,6 +2714,99 @@ export function AdminSidebar() {
         })}
       </nav>
     </aside>
+  );
+}
+</file>
+
+<file path="src/app/admin/loading.tsx">
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function AdminLoading() {
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Header */}
+        <div className="mb-8">
+          <Skeleton className="h-10 w-64 rounded-lg mb-2" />
+          <Skeleton className="h-5 w-72 rounded-md" />
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
+              <Skeleton className="w-6 h-6 rounded-md mb-4" />
+              <Skeleton className="w-24 h-4 rounded-md mb-3" />
+              <Skeleton className="w-16 h-10 rounded-md" />
+            </div>
+          ))}
+        </div>
+
+        {/* Top Colleges Skeleton */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
+          <div className="flex justify-between mb-6">
+            <Skeleton className="h-6 w-48 rounded-md" />
+            <Skeleton className="h-6 w-6 rounded-md" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-xl bg-slate-50" />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Split Grids */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Approval Queue */}
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 flex justify-between">
+              <Skeleton className="h-6 w-48 rounded-md" />
+            </div>
+            <div className="divide-y divide-slate-100">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-6 flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    <Skeleton className="w-20 h-14 rounded-xl shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-full rounded-md" />
+                      <Skeleton className="h-4 w-1/2 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 flex-1 rounded-full" />
+                    <Skeleton className="h-8 flex-1 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* User Reports */}
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 bg-red-50/30 flex justify-between">
+              <Skeleton className="h-6 w-32 rounded-md" />
+            </div>
+            <div className="divide-y divide-slate-100">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-6">
+                  <div className="flex justify-between mb-3">
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-20 rounded-md" />
+                      <Skeleton className="h-5 w-3/4 rounded-md mt-2" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Skeleton className="h-8 flex-1 rounded-lg" />
+                    <Skeleton className="h-8 flex-1 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
 </file>
@@ -3641,26 +3369,6 @@ return (
     <CreateEventForm initialData={event} isEditing={true} />
   </main>
 );
-}
-</file>
-
-<file path="src/app/events/new/page.tsx">
-import { Navbar } from "@/components/layout/Navbar";
-import { CreateEventForm } from "@/features/create-event/CreateEventForm";
-import { createClient } from "@/lib/supabase/server";
-
-export default async function NewEventPage() {
-  const supabase = await createClient();
-  const { data: appSettings } = await supabase.from("app_settings").select("featured_enabled").eq("id", 1).maybeSingle();
-  
-  return (
-    <main className="min-h-screen bg-slate-50/50">
-      <Navbar />
-      <div className="py-12 px-4 sm:px-6">
-        <CreateEventForm isAdminFeatureEnabled={appSettings?.featured_enabled ?? true} />
-      </div>
-    </main>
-  );
 }
 </file>
 
@@ -5677,6 +5385,276 @@ export default function AboutPage() {
 }
 </file>
 
+<file path="src/app/admin/actions.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+async function verifyAdmin(supabase: SupabaseClient<Database>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  return requireAdmin(supabase, user.id);
+}
+
+export async function approveEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Derive creator server-side — never trust client
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  const { error: eventError } = await supabase
+    .from("events")
+    .update({ status: "approved" })
+    .eq("id", eventId);
+
+  if (eventError) return { error: "Event update failed" };
+
+  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
+    p_user_id: event.creator_id,
+    p_event_id: eventId
+  });
+
+  if (profileError) return { error: "Score update failed" };
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function rejectEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  const reason = formData.get("reason") as string | null;
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, title")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) return { error: "Event not found." };
+
+  await supabase
+    .from("events")
+    .update({ status: "rejected" })
+    .eq("id", eventId);
+
+  revalidatePath("/admin");
+  return { success: true, creatorId: event.creator_id, title: event.title };
+}
+export async function resolveReportAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+
+  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
+
+  revalidatePath("/admin");
+  return { success: true };
+}
+
+export async function punishCuratorAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+  if (!reportId) return { error: "Missing reportId." };
+
+  // Derive curator and event from the report — never trust client
+  const { data: report } = await supabase
+    .from("event_reports")
+    .select("curator_id, event_id")
+    .eq("id", reportId)
+    .single();
+
+  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
+
+  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
+  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  const { data: allReports } = await supabase
+    .from("event_reports")
+    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .eq("event_id", report.event_id);
+
+  const trustedReporterIds = new Set(
+    (allReports || [])
+      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
+      .map((r: any) => r.reporter_id)
+  );
+
+  if (trustedReporterIds.size < 5) {
+    revalidatePath("/admin");
+    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
+  }
+
+  await supabase.rpc('increment_et_score', {
+    user_id: report.curator_id,
+    delta: -150
+  });
+
+  revalidatePath("/admin");
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  // Soft Delete: Just update the status to 'deleted'
+  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
+  if (error) throw new Error("Delete failed: " + error.message);
+  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  if (!userId) return { error: "Missing userId." };
+
+  // Soft delete: mark the row, then ban login immediately.
+  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) return { error: "Failed to delete user." };
+
+  const adminClient = createAdminClient();
+  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  const newRole = formData.get("role") as string;
+  
+  if (!userId || !newRole) return { error: "Missing required fields." };
+
+  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+  
+  revalidatePath("/admin");
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function updateEventDetailsAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  const category = formData.get("category") as string;
+  const newStatus = formData.get("status") as string;
+  
+  if (!eventId) return { error: "Missing eventId." };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("status, creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event) return { error: "Event not found." };
+
+  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
+  if (updateError) throw new Error("Update failed: " + updateError.message);
+  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  // Award points if manually changed to approved, deduct if reverted
+  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
+    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
+  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
+    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/events");
+  return { success: true };
+}
+
+export async function toggleLeaderboardAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle leaderboard failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/admin");
+
+  revalidatePath("/");
+  revalidatePath("/leaderboard");
+  return { success: true };
+}
+export async function toggleFeaturedAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ featured_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle featured failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/events/new"); // IDI MAIN FIX (Cache theesesthundi)
+  return { success: true };
+}
+</file>
+
 <file path="src/app/admin/colleges/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -6330,121 +6308,6 @@ export default function PrivacyPolicyPage() {
 }
 </file>
 
-<file path="src/app/profile/settings/actions.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
-
-export async function updateProfileSettings(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "Please login to update settings." };
-  }
-
-  // Fetch profile to check if user is admin
-  const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).single();
-  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
-
-  const fullName = formData.get("fullName") as string;
-  const username = (formData.get("username") as string).toLowerCase().trim();
-  const college = formData.get("college") as string;
-  const collegeId = formData.get("collegeId") as string | null;
-  const graduationYear = formData.get("graduationYear") as string;
-  const branch = formData.get("branch") as string;
-  const user_type = formData.get("user_type") as string;
-
-  const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
-  if (isAdmin) ALLOWED_USER_TYPES.push("admin"); // Allow admin to bypass user_type validation
-
-  if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
-    return { error: "Please select what you are." };
-  }
-
-  // Validate username
-  const USERNAME_REGEX = /^[a-z0-9_.-]{3,30}$/;
-  if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
-  if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
-  if (college && college.length > 200) return { error: "College name too long." };
-
-  // Parse preferred_cities (array, max 3)
-  const citiesString = formData.get("preferred_cities") as string;
-  let preferred_cities: string[] = [];
-  if (citiesString) {
-    try {
-      const parsed = JSON.parse(citiesString);
-      if (!Array.isArray(parsed)) throw new Error();
-      preferred_cities = parsed.filter((c): c is string => typeof c === "string" && c.length > 0);
-      
-      if (!isAdmin) {
-        preferred_cities = preferred_cities.slice(0, 3);
-      }
-    } catch {
-      return { error: "Invalid cities format." };
-    }
-  }
-
-  // Parse goals (categories, max 6)
-  const goalsString = formData.get("goals") as string;
-  let goals: string[] = [];
-  if (goalsString) {
-    try {
-      const parsed = JSON.parse(goalsString);
-      if (!Array.isArray(parsed)) throw new Error();
-      goals = parsed.filter((g): g is string => typeof g === "string").map(g => g.slice(0, 50));
-      
-      if (!isAdmin) {
-        goals = goals.slice(0, 6);
-      }
-    } catch {
-      return { error: "Invalid goals format." };
-    }
-  }
-
-  // Check username uniqueness
-  const { data: existingUser } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("username", username)
-    .neq("id", user.id)
-    .single();
-
-  if (existingUser) {
-    return { error: "This username is already taken. Please choose another." };
-  }
-
-  const isStudent = user_type.toLowerCase() === "student";
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      username,
-      full_name: fullName,
-      user_type: user_type.toLowerCase(),
-      preferred_cities,
-      college: isStudent ? college : null,
-      college_id: isStudent ? (collegeId || null) : null,
-      graduation_year: isStudent ? graduationYear : null,
-      branch: isStudent ? branch : null,
-      goals,
-      is_onboarded: true,
-    })
-    .eq("id", user.id);
-
-  if (error) {
-    console.error("Settings Update Error: ", error);
-    return { error: "Failed to update profile. Please try again." };
-  }
-
-  revalidatePath("/profile");
-  revalidatePath("/profile/settings");
-
-  return { success: true };
-}
-</file>
-
 <file path="src/app/profile/settings/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -6673,125 +6536,6 @@ export default function LaunchScreen() {
       )}
     </AnimatePresence>
   );
-}
-</file>
-
-<file path="src/features/create-event/hooks/useEventExtraction.ts">
-import { useState } from "react";
-import { useDuplicateCheck } from "./useDuplicateCheck";
-import type { EventRow } from "@/types";
-import type { FieldStatus } from "../types";
-
-interface ExtractionProps {
-  setTitle: (t: string) => void;
-  setDescription: (d: string) => void;
-  setLocation: (l: string) => void;
-  setSelectedDate: (d: Date) => void;
-  setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
-  initialLink?: string;
-  initialIsTrusted?: boolean;
-  currentEventId?: string;
-  isAdmin?: boolean;
-}
-
-export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, initialIsTrusted = false, currentEventId, isAdmin = false }: ExtractionProps) {  
-  const [regLink, setRegLink] = useState(initialLink || "");
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [linkDuplicateError, setLinkDuplicateError] = useState("");
-  const [extractError, setExtractError] = useState("");
-  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);  const [trustWarning, setTrustWarning] = useState("");
-  const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
-  
-  const { checkDuplicateLink } = useDuplicateCheck();
-
-  const handleLinkInput = async (val: string) => {
-    setRegLink(val);
-    setLinkDuplicateError("");
-    setExtractError("");
-
-    if (!val) {
-      setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
-      setFieldStatus({ title: "idle", description: "idle", location: "idle" });
-      return;
-    }
-    if (!val.startsWith("http")) return;
-
-    setIsExtracting(true);
-    try {
-      const existing = await checkDuplicateLink(val, currentEventId);
-      if (existing) {
-        setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
-        setIsExtracting(false); return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: val }),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-      const data = await res.json();
-
-      const confidence: number = data.confidence ?? 0;
-      setExtractionConfidence(confidence);
-
-      if (data.title) setTitle(data.title);
-      if (data.description) setDescription(data.description);
-      if (data.date) {
-        const parsedDate = new Date(data.date);
-        if (!isNaN(parsedDate.getTime())) setSelectedDate(parsedDate);
-      }
-      if (data.location) setLocation(data.location);
-
-      if (data.finalUrl && data.finalUrl !== val) {
-        setRegLink(data.finalUrl);
-      }
-
-      const isHigh = confidence >= 0.8;
-      setFieldStatus({
-        title: data.title ? (isHigh ? "success" : "warning") : "idle",
-        description: data.description ? (isHigh ? "success" : "warning") : "idle",
-        location: data.location ? (isHigh ? "success" : "warning") : "idle",
-      });
-
-      setIsTrusted(data.isTrusted === true);
-      if (data.isTrusted === false) {
-        if (!isAdmin) {
-          setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
-        } else {
-          setTrustWarning("");
-        }
-      } else {
-        setTrustWarning("");
-      }
-
-      if (!data.title) {
-        setExtractError("Could not fetch details, please enter manually");
-      }
-    } catch (err) {
-      setExtractError("Could not fetch details, please enter manually");
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const handleSkipLink = (setStep: (s: number) => void) => {
-    setRegLink("");
-    setLinkDuplicateError("");
-    setExtractError("");
-    setTrustWarning("");
-    setStep(1);
-  };
-
-  return {
-    regLink, setRegLink, isExtracting, linkDuplicateError, extractError,
-    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink
-  };
 }
 </file>
 
@@ -7357,6 +7101,33 @@ export default async function AdminDashboard() {
 }
 </file>
 
+<file path="src/app/events/new/page.tsx">
+import { Navbar } from "@/components/layout/Navbar";
+import { CreateEventForm } from "@/features/create-event/CreateEventForm";
+import { createClient } from "@/lib/supabase/server";
+
+export default async function NewEventPage() {
+  const supabase = await createClient();
+  const { data: appSettings } = await supabase.from("app_settings").select("featured_enabled").eq("id", 1).maybeSingle();
+  
+  const { data: { user } } = await supabase.auth.getUser();
+  let isAdmin = false;
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).maybeSingle();
+    isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50/50">
+      <Navbar />
+      <div className="py-12 px-4 sm:px-6">
+        <CreateEventForm isAdminFeatureEnabled={appSettings?.featured_enabled ?? true} isCurrentUserAdmin={isAdmin} />
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/login/page.tsx">
 "use client";
 
@@ -7547,6 +7318,121 @@ export default function LoginPage() {
       </motion.div>
     </main>
   );
+}
+</file>
+
+<file path="src/app/profile/settings/actions.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+
+export async function updateProfileSettings(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Please login to update settings." };
+  }
+
+  // Fetch profile to check if user is admin
+  const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).single();
+  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+
+  const fullName = formData.get("fullName") as string;
+  const username = (formData.get("username") as string).toLowerCase().trim();
+  const college = formData.get("college") as string;
+  const collegeId = formData.get("collegeId") as string | null;
+  const graduationYear = formData.get("graduationYear") as string;
+  const branch = formData.get("branch") as string;
+  const user_type = formData.get("user_type") as string;
+
+  const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
+  if (isAdmin) ALLOWED_USER_TYPES.push("admin"); // Allow admin to bypass user_type validation
+
+  if (!user_type || !ALLOWED_USER_TYPES.includes(user_type.toLowerCase())) {
+    return { error: "Please select what you are." };
+  }
+
+  // Validate username
+  const USERNAME_REGEX = /^[a-z0-9_.-]{3,30}$/;
+  if (!fullName || fullName.length > 100) return { error: "Full name must be 1–100 characters." };
+  if (!USERNAME_REGEX.test(username)) return { error: "Username: 3–30 chars, letters/numbers/._- only." };
+  if (college && college.length > 200) return { error: "College name too long." };
+
+  // Parse preferred_cities (array, max 3)
+  const citiesString = formData.get("preferred_cities") as string;
+  let preferred_cities: string[] = [];
+  if (citiesString) {
+    try {
+      const parsed = JSON.parse(citiesString);
+      if (!Array.isArray(parsed)) throw new Error();
+      preferred_cities = parsed.filter((c): c is string => typeof c === "string" && c.length > 0);
+      
+      if (!isAdmin) {
+        preferred_cities = preferred_cities.slice(0, 3);
+      }
+    } catch {
+      return { error: "Invalid cities format." };
+    }
+  }
+
+  // Parse goals (categories, max 6)
+  const goalsString = formData.get("goals") as string;
+  let goals: string[] = [];
+  if (goalsString) {
+    try {
+      const parsed = JSON.parse(goalsString);
+      if (!Array.isArray(parsed)) throw new Error();
+      goals = parsed.filter((g): g is string => typeof g === "string").map(g => g.slice(0, 50));
+      
+      if (!isAdmin) {
+        goals = goals.slice(0, 6);
+      }
+    } catch {
+      return { error: "Invalid goals format." };
+    }
+  }
+
+  // Check username uniqueness
+  const { data: existingUser } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .neq("id", user.id)
+    .single();
+
+  if (existingUser) {
+    return { error: "This username is already taken. Please choose another." };
+  }
+
+  const isStudent = user_type.toLowerCase() === "student";
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      username,
+      full_name: fullName,
+      user_type: user_type.toLowerCase(),
+      preferred_cities,
+      college: isStudent ? college : null,
+      college_id: isStudent ? (collegeId || null) : null,
+      graduation_year: isStudent ? graduationYear : null,
+      branch: isStudent ? branch : null,
+      goals,
+      is_onboarded: true,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Settings Update Error: ", error);
+    return { error: "Failed to update profile. Please try again." };
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/profile/settings");
+
+  return { success: true };
 }
 </file>
 
@@ -8049,6 +7935,125 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
       </div>
     </motion.div>
   );
+}
+</file>
+
+<file path="src/features/create-event/hooks/useEventExtraction.ts">
+import { useState } from "react";
+import { useDuplicateCheck } from "./useDuplicateCheck";
+import type { EventRow } from "@/types";
+import type { FieldStatus } from "../types";
+
+interface ExtractionProps {
+  setTitle: (t: string) => void;
+  setDescription: (d: string) => void;
+  setLocation: (l: string) => void;
+  setSelectedDate: (d: Date) => void;
+  setFieldStatus: React.Dispatch<React.SetStateAction<Record<string, FieldStatus>>>;
+  initialLink?: string;
+  initialIsTrusted?: boolean;
+  currentEventId?: string;
+  isAdmin?: boolean;
+}
+
+export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, initialIsTrusted = false, currentEventId, isAdmin = false }: ExtractionProps) {  
+  const [regLink, setRegLink] = useState(initialLink || "");
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [linkDuplicateError, setLinkDuplicateError] = useState("");
+  const [extractError, setExtractError] = useState("");
+  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);  const [trustWarning, setTrustWarning] = useState("");
+  const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
+  
+  const { checkDuplicateLink } = useDuplicateCheck();
+
+  const handleLinkInput = async (val: string) => {
+    setRegLink(val);
+    setLinkDuplicateError("");
+    setExtractError("");
+
+    if (!val) {
+      setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
+      setFieldStatus({ title: "idle", description: "idle", location: "idle" });
+      return;
+    }
+    if (!val.startsWith("http")) return;
+
+    setIsExtracting(true);
+    try {
+      const existing = await checkDuplicateLink(val, currentEventId);
+      if (existing) {
+        setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
+        setIsExtracting(false); return;
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: val }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+      const data = await res.json();
+
+      const confidence: number = data.confidence ?? 0;
+      setExtractionConfidence(confidence);
+
+      if (data.title) setTitle(data.title);
+      if (data.description) setDescription(data.description);
+      if (data.date) {
+        const parsedDate = new Date(data.date);
+        if (!isNaN(parsedDate.getTime())) setSelectedDate(parsedDate);
+      }
+      if (data.location) setLocation(data.location);
+
+      if (data.finalUrl && data.finalUrl !== val) {
+        setRegLink(data.finalUrl);
+      }
+
+      const isHigh = confidence >= 0.8;
+      setFieldStatus({
+        title: data.title ? (isHigh ? "success" : "warning") : "idle",
+        description: data.description ? (isHigh ? "success" : "warning") : "idle",
+        location: data.location ? (isHigh ? "success" : "warning") : "idle",
+      });
+
+      setIsTrusted(data.isTrusted === true);
+      if (data.isTrusted === false) {
+        if (!isAdmin) {
+          setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
+        } else {
+          setTrustWarning("");
+        }
+      } else {
+        setTrustWarning("");
+      }
+
+      if (!data.title) {
+        setExtractError("Could not fetch details, please enter manually");
+      }
+    } catch (err) {
+      setExtractError("Could not fetch details, please enter manually");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleSkipLink = (setStep: (s: number) => void) => {
+    setRegLink("");
+    setLinkDuplicateError("");
+    setExtractError("");
+    setTrustWarning("");
+    setStep(1);
+  };
+
+  return {
+    regLink, setRegLink, isExtracting, linkDuplicateError, extractError,
+    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink
+  };
 }
 </file>
 
@@ -9492,6 +9497,358 @@ export function Navbar({ variant = 'default', categoryChips, locationChips }: { 
 }
 </file>
 
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // 1. Fetch user session to determine if they are a student
+  const { data: { user } } = await supabase.auth.getUser();
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 2. Build the strict visibility filter
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+
+  // 3. Fetch events securely
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
+    .eq("status", "approved")
+    .ilike("city", decodedCity)
+    .gte("date_string", todayStr)
+    .or(visibilityFilter)
+    .order("date_string", { ascending: true });
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero */}
+      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+          <img 
+            src={cityConfig.backgroundImage} 
+            alt={decodedCity} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/events/[slug]/page.tsx">
+import { Metadata } from "next";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import EventClientUI from "./EventClientUI";
+
+// Helper function to check if the slug is a valid UUID
+const isValidUUID = (id: string) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+  
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select("title, category, date_string, description, status");
+    
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: event } = await query.maybeSingle();
+
+  if (!event || event.status !== "approved") return { title: "Event Not Found" };
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const ogUrl = new URL(`${baseUrl}/api/og`);
+
+  ogUrl.searchParams.set("title", event.title);
+  ogUrl.searchParams.set("category", event.category);
+  ogUrl.searchParams.set("date", event.date_string || "TBA");
+
+  return {
+    title: `${event.title} | EvenTime`,
+    description: event.description || `Join this ${event.category} event on EvenTime!`,
+    alternates: {
+      canonical: `${baseUrl}/events/${slug}`,
+    },
+    openGraph: {
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      url: `${baseUrl}/events/${slug}`,
+      type: "website",
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: event.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      images: [ogUrl.toString()],
+    },
+  };
+}
+
+export default async function EventPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+
+ const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select(EVENT_DETAIL_FIELDS);
+
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: finalEvent } = await query.maybeSingle();
+
+  // NEW: Fetch curator's username (shorter than full_name) for display on the event page
+  let curatorUsername: string | null = null;
+  if (finalEvent?.creator_id) {
+    const { data: curatorProfile } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", finalEvent.creator_id)
+      .maybeSingle();
+    curatorUsername = curatorProfile?.username || null;
+  }
+
+  if (!finalEvent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
+        Event not found.
+      </div>
+    );
+  }
+
+  // Ensure pending/rejected events are only visible to the creator or an admin
+  if (finalEvent.status !== "approved") {
+    const { data: { user } } = await supabase.auth.getUser();
+    const isCreator = user?.id === finalEvent.creator_id;
+    
+    let isAdmin = false;
+    if (user && !isCreator) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      isAdmin = profile?.role === "admin";
+    }
+
+    if (!isCreator && !isAdmin) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-[#F5F5F7]">
+          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
+          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
+        </div>
+      );
+    }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: finalEvent.title,
+    description: finalEvent.description,
+    startDate: finalEvent.date_string ? `${finalEvent.date_string}${finalEvent.start_time ? `T${finalEvent.start_time}` : ""}` : undefined,
+    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}${finalEvent.end_time ? `T${finalEvent.end_time}` : ""}` : undefined,
+    eventAttendanceMode: finalEvent.is_virtual 
+      ? "https://schema.org/OnlineEventAttendanceMode" 
+      : "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    location: finalEvent.is_virtual
+      ? {
+          "@type": "VirtualLocation",
+          url: finalEvent.registration_link || finalEvent.website || eventUrl,
+        }
+      : {
+          "@type": "Place",
+          name: finalEvent.location || "TBA",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: finalEvent.city || "TBA",
+          },
+        },
+    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
+    offers: {
+      "@type": "Offer",
+      url: finalEvent.registration_link || eventUrl,
+      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
+      priceCurrency: "INR", 
+      availability: "https://schema.org/InStock"
+    },
+    organizer: {
+      "@type": "Organization",
+      name: finalEvent.organizer_name || "EvenTime",
+    }
+  };
+
+  // NEW: Fetch Similar Events based on the same category
+  let similarEvents: any[] = [];
+  if (finalEvent.category) {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("events")
+      .select(EVENT_DETAIL_FIELDS)
+      .eq("category", finalEvent.category)
+      .eq("status", "approved")
+      .gte("date_string", todayStr) // NEW: Removes past events!
+      .neq("id", finalEvent.id)
+      .order("created_at", { ascending: false })
+      .limit(6); // Increased limit to 6 so slider looks good
+    
+    if (data) {
+      similarEvents = data;
+      // FIX: Fetch curator usernames for similar events
+      const creatorIds = similarEvents.map(e => e.creator_id).filter(Boolean);
+      if (creatorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", creatorIds);
+        
+        if (profiles) {
+          similarEvents = similarEvents.map(e => {
+            const profile = profiles.find(p => p.id === e.creator_id);
+            if (profile) return { ...e, profiles: { username: profile.username } };
+            return e;
+          });
+        }
+      }
+    }
+  }
+
+ // Fetch up to 3 interested user avatars for social proof
+  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
+  {
+    const { data: interestedRows } = await supabase
+      .from("interested_events" as any)
+      .select("user_id")
+      .eq("event_id", finalEvent.id)
+      .limit(3);
+
+    if (interestedRows && interestedRows.length > 0) {
+      const userIds = interestedRows.map((r: any) => r.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("avatar_url, username")
+        .in("id", userIds);
+      if (profiles) interestedAvatars = profiles;
+    }
+  }
+
+  // Pass the data cleanly to the client UI
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+    </>
+  );
+}
+</file>
+
 <file path="src/features/create-event/components/StepMandatory.tsx">
 "use client";
 
@@ -9507,7 +9864,7 @@ import type { CollegeRow } from "@/types";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled }: any) {
   
   // SECURE ADMIN CHECK
   const [isAdmin, setIsAdmin] = useState(false);
@@ -9856,7 +10213,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                </div>
              )}
 
-             {isAdmin && (
+             {isAdmin && isAdminFeatureEnabled && (
                <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
                  <label className="flex items-center gap-3 cursor-pointer">
                    <input type="checkbox" checked={data.isFeatured} onChange={e => updateData({ isFeatured: e.target.checked })} className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 outline-none" />
@@ -9872,11 +10229,14 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       </div>
 
       <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
-            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+            {!isAdmin && !extraction.isTrusted && data.regLink && !extraction.isExtracting && (
               <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>
             )}
+            {/* Note: extraction hook gives trustWarning based on admin status automatically now, so we don't need additional logic if the hook is updated. But to be extra safe, if you want it completely hidden for admin, replace the above condition with:
+              {!extraction.isTrusted && data.regLink && !extraction.isExtracting && extraction.trustWarning !== "" && ( 
+            */}
             
            {isAdmin && data.isFeatured ? (
               <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">
@@ -9889,287 +10249,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             )}
           </div>
         </motion.div>
-  );
-}
-</file>
-
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  // 1. Fetch user session to determine if they are a student
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  // 2. Build the strict visibility filter
-  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
-  if (user) {
-    visibilityFilter += `,creator_id.eq.${user.id}`;
-  }
-  if (profile?.user_type === 'student' && profile?.college_id) {
-       visibilityFilter += `,college_id.eq.${profile.college_id}`;
-  }
-
-  // 3. Fetch events securely
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
-    .eq("status", "approved")
-    .ilike("city", decodedCity)
-    .gte("date_string", todayStr)
-    .or(visibilityFilter)
-    .order("date_string", { ascending: true });
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero */}
-      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-          <img 
-            src={cityConfig.backgroundImage} 
-            alt={decodedCity} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
-            Events happening in {decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/features/create-event/CreateEventForm.tsx">
-"use client";
-
-import { useState, useEffect, SetStateAction } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-function toLocalDateString(d: Date) { 
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-// Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
-import { useImageCrop } from "./hooks/useImageCrop";
-import { useEventSubmit } from "./hooks/useEventSubmit";
-
-// New 2-Step Components
-import { StepMandatory } from "./components/StepMandatory";
-import { StepFeatured } from "./components/StepFeatured";
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
-}
-
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false }: ExtendedFormProps) {
-  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
-  const supabase = createClient();
-
-  // Unified State Object
-  const [eventData, setEventData] = useState({
-    regLink: initialData?.registration_link || "",
-    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
-    title: initialData?.title || "",
-    category: initialData?.category || "",
-    isCreatingNewCategory: false,
-    selectedAudience: initialData?.target_audience || [],
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
-    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
-    collegeBranch: initialData?.college_branch || "",
-    collegeYear: initialData?.college_year || "",
-    collegeOnly: initialData?.college_only || false,
-    collegeId: initialData?.college_id || null,
-    collegeName: initialData?.colleges?.name || "",
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
-    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
-    hasEndTime: !!initialData?.end_time,
-    hasEndDate: !!initialData?.end_date_string,
-    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
-    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
-    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
-    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    isOnline: initialData?.is_virtual || false,
-    isFree: initialData?.is_free ?? true,
-    price: initialData?.price?.toString() || "",
-    // Step 2 Adv/Featured
-    isFeatured: initialData?.is_featured || false,
-    organizer: initialData?.organizer_name || "",
-    prizes: initialData?.prizes || "",
-    teamSize: initialData?.team_size || "",
-    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
-    website: initialData?.website || ""
-  });
-
-  const updateData = (updates: Partial<typeof eventData>) => {
-    setEventData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined,
-    currentEventId: initialData?.id,
-    initialIsTrusted: eventData.isTrustedDomain,
-    isAdmin: isAdminFeatureEnabled
-  });
-  
-  const crop = useImageCrop(initialData?.poster_url ?? undefined);
-  const { isSubmitting, submitEvent } = useEventSubmit();
-
-   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
-  const handleSubmit = () => {
-    submitEvent({
-      title: eventData.title,
-      category: eventData.category,
-      organizer_name: eventData.organizer,
-      description: eventData.description,
-      target_audience: eventData.selectedAudience,
-      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
-      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
-      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
-      location: eventData.isOnline ? "Virtual Event" : eventData.location,
-      city: eventData.isOnline ? "online" : eventData.city,
-      is_virtual: eventData.isOnline,
-      is_free: eventData.isFree,
-      price: eventData.isFree ? 0 : Number(eventData.price),
-      registration_link: eventData.regLink,
-      prizes: eventData.prizes,
-      team_size: eventData.teamSize,
-      website: eventData.website,
-      is_featured: eventData.isFeatured,
-      status: eventData.isTrustedDomain ? "approved" : "pending",
-      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
-      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
-      college_year: isCollegeCategory ? eventData.collegeYear : null,
-      college_only: isCollegeCategory ? eventData.collegeOnly : null,
-      college_id: isCollegeCategory ? eventData.collegeId : null,
-      imageFile: crop.imageFile, 
-      previewUrl: crop.previewUrl
-    }, isEditing, initialData?.id);
-  };
-
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
-
-  return (
-    <div className="max-w-3xl mx-auto w-full">
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
-        </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
-        </p>
-      </div>
-
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepMandatory 
-              data={eventData} 
-              updateData={updateData} 
-              isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); // Skip straight to submit if feature is off
-              }}
-              isValid={Boolean(step0Valid)}
-              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
-              onSubmit={handleSubmit}
-              isAdminFeatureEnabled={isAdminFeatureEnabled}
-              isEditing={isEditing}
-            />
-          )}
-            {step === 1 && (
-              <StepFeatured 
-                data={eventData} 
-                updateData={updateData} 
-                crop={crop}
-                onBack={() => setStep(0)} 
-                onSubmit={handleSubmit} 
-                isSubmitting={isSubmitting}
-                isEditing={isEditing}
-                isAdminFeatureEnabled={isAdminFeatureEnabled}
-              />
-            )}
-        </AnimatePresence>
-      </div>
-    </div>
   );
 }
 </file>
@@ -10251,251 +10330,6 @@ export function EventGrid({
       })}
       </AnimatePresence>
     </div>
-  );
-}
-</file>
-
-<file path="src/app/events/[slug]/page.tsx">
-import { Metadata } from "next";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import EventClientUI from "./EventClientUI";
-
-// Helper function to check if the slug is a valid UUID
-const isValidUUID = (id: string) => {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-};
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-  
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select("title, category, date_string, description, status");
-    
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: event } = await query.maybeSingle();
-
-  if (!event || event.status !== "approved") return { title: "Event Not Found" };
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const ogUrl = new URL(`${baseUrl}/api/og`);
-
-  ogUrl.searchParams.set("title", event.title);
-  ogUrl.searchParams.set("category", event.category);
-  ogUrl.searchParams.set("date", event.date_string || "TBA");
-
-  return {
-    title: `${event.title} | EvenTime`,
-    description: event.description || `Join this ${event.category} event on EvenTime!`,
-    alternates: {
-      canonical: `${baseUrl}/events/${slug}`,
-    },
-    openGraph: {
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      url: `${baseUrl}/events/${slug}`,
-      type: "website",
-      images: [
-        {
-          url: ogUrl.toString(),
-          width: 1200,
-          height: 630,
-          alt: event.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      images: [ogUrl.toString()],
-    },
-  };
-}
-
-export default async function EventPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
-
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select(EVENT_DETAIL_FIELDS);
-
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: finalEvent } = await query.maybeSingle();
-
-  // NEW: Fetch curator's username (shorter than full_name) for display on the event page
-  let curatorUsername: string | null = null;
-  if (finalEvent?.creator_id) {
-    const { data: curatorProfile } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", finalEvent.creator_id)
-      .maybeSingle();
-    curatorUsername = curatorProfile?.username || null;
-  }
-
-  if (!finalEvent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
-        Event not found.
-      </div>
-    );
-  }
-
-  // Ensure pending/rejected events are only visible to the creator or an admin
-  if (finalEvent.status !== "approved") {
-    const { data: { user } } = await supabase.auth.getUser();
-    const isCreator = user?.id === finalEvent.creator_id;
-    
-    let isAdmin = false;
-    if (user && !isCreator) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      isAdmin = profile?.role === "admin";
-    }
-
-    if (!isCreator && !isAdmin) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-[#F5F5F7]">
-          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
-          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
-        </div>
-      );
-    }
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: finalEvent.title,
-    description: finalEvent.description,
-    startDate: finalEvent.date_string ? `${finalEvent.date_string}${finalEvent.start_time ? `T${finalEvent.start_time}` : ""}` : undefined,
-    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}${finalEvent.end_time ? `T${finalEvent.end_time}` : ""}` : undefined,
-    eventAttendanceMode: finalEvent.is_virtual 
-      ? "https://schema.org/OnlineEventAttendanceMode" 
-      : "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus: "https://schema.org/EventScheduled",
-    location: finalEvent.is_virtual
-      ? {
-          "@type": "VirtualLocation",
-          url: finalEvent.registration_link || finalEvent.website || eventUrl,
-        }
-      : {
-          "@type": "Place",
-          name: finalEvent.location || "TBA",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: finalEvent.city || "TBA",
-          },
-        },
-    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
-    offers: {
-      "@type": "Offer",
-      url: finalEvent.registration_link || eventUrl,
-      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
-      priceCurrency: "INR", 
-      availability: "https://schema.org/InStock"
-    },
-    organizer: {
-      "@type": "Organization",
-      name: finalEvent.organizer_name || "EvenTime",
-    }
-  };
-
-  // NEW: Fetch Similar Events based on the same category
-  let similarEvents: any[] = [];
-  if (finalEvent.category) {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_DETAIL_FIELDS)
-      .eq("category", finalEvent.category)
-      .eq("status", "approved")
-      .gte("date_string", todayStr) // NEW: Removes past events!
-      .neq("id", finalEvent.id)
-      .order("created_at", { ascending: false })
-      .limit(6); // Increased limit to 6 so slider looks good
-    
-    if (data) {
-      similarEvents = data;
-      // FIX: Fetch curator usernames for similar events
-      const creatorIds = similarEvents.map(e => e.creator_id).filter(Boolean);
-      if (creatorIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", creatorIds);
-        
-        if (profiles) {
-          similarEvents = similarEvents.map(e => {
-            const profile = profiles.find(p => p.id === e.creator_id);
-            if (profile) return { ...e, profiles: { username: profile.username } };
-            return e;
-          });
-        }
-      }
-    }
-  }
-
- // Fetch up to 3 interested user avatars for social proof
-  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
-  {
-    const { data: interestedRows } = await supabase
-      .from("interested_events" as any)
-      .select("user_id")
-      .eq("event_id", finalEvent.id)
-      .limit(3);
-
-    if (interestedRows && interestedRows.length > 0) {
-      const userIds = interestedRows.map((r: any) => r.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("avatar_url, username")
-        .in("id", userIds);
-      if (profiles) interestedAvatars = profiles;
-    }
-  }
-
-  // Pass the data cleanly to the client UI
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
-    </>
   );
 }
 </file>
@@ -10936,6 +10770,605 @@ export default function GlobalError({
     </div>
   );
 }
+</file>
+
+<file path="src/features/create-event/CreateEventForm.tsx">
+"use client";
+
+import { useState, useEffect, SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { FieldStatus, CreateEventFormProps } from "./types";
+import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+function toLocalDateString(d: Date) { 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Hooks
+import { useEventExtraction } from "./hooks/useEventExtraction";
+import { useImageCrop } from "./hooks/useImageCrop";
+import { useEventSubmit } from "./hooks/useEventSubmit";
+
+// New 2-Step Components
+import { StepMandatory } from "./components/StepMandatory";
+import { StepFeatured } from "./components/StepFeatured";
+
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+  isCurrentUserAdmin?: boolean; // FIX: Controls the admin warnings
+}
+
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false, isCurrentUserAdmin = false }: ExtendedFormProps) {
+  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const supabase = createClient();
+
+  // Unified State Object
+  const [eventData, setEventData] = useState({
+    regLink: initialData?.registration_link || "",
+    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
+    title: initialData?.title || "",
+    category: initialData?.category || "",
+    isCreatingNewCategory: false,
+    selectedAudience: initialData?.target_audience || [],
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    city: initialData?.city || "",
+    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
+    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
+    collegeBranch: initialData?.college_branch || "",
+    collegeYear: initialData?.college_year || "",
+    collegeOnly: initialData?.college_only || false,
+    collegeId: initialData?.college_id || null,
+    collegeName: initialData?.colleges?.name || "",
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
+    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
+    hasEndTime: !!initialData?.end_time,
+    hasEndDate: !!initialData?.end_date_string,
+    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
+    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
+    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
+    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
+    isOnline: initialData?.is_virtual || false,
+    isFree: initialData?.is_free ?? true,
+    price: initialData?.price?.toString() || "",
+    // Step 2 Adv/Featured
+    isFeatured: initialData?.is_featured || false,
+    organizer: initialData?.organizer_name || "",
+    prizes: initialData?.prizes || "",
+    teamSize: initialData?.team_size || "",
+    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
+    website: initialData?.website || ""
+  });
+
+  const updateData = (updates: Partial<typeof eventData>) => {
+    setEventData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  const extraction = useEventExtraction({ 
+    setTitle: (v) => updateData({ title: v }), 
+    setDescription: (v) => updateData({ description: v }), 
+    setLocation: (v) => updateData({ location: v }), 
+    setSelectedDate: (v) => updateData({ selectedDate: v }), 
+    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
+    initialLink: initialData?.registration_link ?? undefined,
+    currentEventId: initialData?.id,
+    initialIsTrusted: eventData.isTrustedDomain,
+    isAdmin: isCurrentUserAdmin // FIX: Idhi actual admin parameter
+  });
+  
+  const crop = useImageCrop(initialData?.poster_url ?? undefined);
+  const { isSubmitting, submitEvent } = useEventSubmit();
+
+   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
+   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
+  const handleSubmit = () => {
+    submitEvent({
+      title: eventData.title,
+      category: eventData.category,
+      organizer_name: eventData.organizer,
+      description: eventData.description,
+      target_audience: eventData.selectedAudience,
+      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
+      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
+      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
+      location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
+      is_virtual: eventData.isOnline,
+      is_free: eventData.isFree,
+      price: eventData.isFree ? 0 : Number(eventData.price),
+      registration_link: eventData.regLink,
+      prizes: eventData.prizes,
+      team_size: eventData.teamSize,
+      website: eventData.website,
+      is_featured: eventData.isFeatured,
+      status: eventData.isTrustedDomain ? "approved" : "pending",
+      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
+      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
+      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
+      college_year: isCollegeCategory ? eventData.collegeYear : null,
+      college_only: isCollegeCategory ? eventData.collegeOnly : null,
+      college_id: isCollegeCategory ? eventData.collegeId : null,
+      imageFile: crop.imageFile, 
+      previewUrl: crop.previewUrl
+    }, isEditing, initialData?.id);
+  };
+
+  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="mb-10 text-center">
+        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
+          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+        </h1>
+        <p className="text-slate-500 text-sm">
+          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        </p>
+      </div>
+
+      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepMandatory 
+              data={eventData} 
+              updateData={updateData} 
+              isCollegeCategory={isCollegeCategory}
+              extraction={extraction}
+              onNext={() => {
+                if (isAdminFeatureEnabled) setStep(1);
+                else handleSubmit(); // Skip straight to submit if feature is off
+              }}
+              isValid={Boolean(step0Valid)}
+              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
+              onSubmit={handleSubmit}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+              isEditing={isEditing}
+            />
+          )}
+            {step === 1 && (
+              <StepFeatured 
+                data={eventData} 
+                updateData={updateData} 
+                crop={crop}
+                onBack={() => setStep(0)} 
+                onSubmit={handleSubmit} 
+                isSubmitting={isSubmitting}
+                isEditing={isEditing}
+                isAdminFeatureEnabled={isAdminFeatureEnabled}
+              />
+            )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
+    priority?: boolean; // NEW: For LCP image optimization
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+    collegeName,
+    priority = false,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
+      }
+      
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > exactEventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      }  
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          
+          // Fix: We no longer check `pastTime` to hide the card.
+          // This ensures same-day past events stay visible (with a "Past Event" badge),
+          // keeping the UI counts perfectly synchronized with the server counts.
+          if (pastDate) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.webp', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `Check out ${title} on EvenTime!`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    unoptimized={true}
+                    priority={priority}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.webp') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                   {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  by {organizerName}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+          {/* NEW: Auth Modal Overlay */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+              <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <Bookmark className="w-6 h-6 text-slate-700" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
+                <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+                    Cancel
+                  </button>
+                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+      </>
+    );
+  }
 </file>
 
 <file path="src/app/profile/settings/SettingsClient.tsx">
@@ -11484,430 +11917,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   }
 </file>
 
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { createClient } from "@/lib/supabase/client";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-    collegeName?: string; // NEW: college that hosts the event
-    priority?: boolean; // NEW: For LCP image optimization
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-    collegeName,
-    priority = false,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-        setIsSaving(true);
-      const newState = !savedState;
-      setSavedState(newState); // optimistic update
-      
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to save event:", err);
-      }
-      if (onSaveToggle) {        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      }  
-    }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          
-          // Fix: We no longer check `pastTime` to hide the card.
-          // This ensures same-day past events stay visible (with a "Past Event" badge),
-          // keeping the UI counts perfectly synchronized with the server counts.
-          if (pastDate) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.webp', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `Check out ${title} on EvenTime!`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    unoptimized={true}
-                    priority={priority}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.webp') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                   {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  by {organizerName}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-          {/* NEW: Auth Modal Overlay */}
-          {showAuthModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-              <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                  <Bookmark className="w-6 h-6 text-slate-700" />
-                </div>
-                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
-                <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
-                    Cancel
-                  </button>
-                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
-                    Sign In
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-      </>
-    );
-  }
-</file>
-
 <file path="src/lib/home/LandingIntro.tsx">
 import Image from "next/image";
 import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
@@ -12180,6 +12189,434 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
 
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/HomePageClient.tsx">
+"use client"
+import { useRef, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventCard } from "@/app/events/EventCard";
+import { OnboardingModal } from "@/components/profile/OnboardingModal";
+import Link from "next/link";
+import { CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
+import type { ProfileRow, EventRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+import { HeroSection } from "./HeroSection";
+import { LandingIntro } from "./LandingIntro";
+import { EventGrid } from "./EventGrid";
+import { EmptyState } from "./EmptyState";
+import { CityGrid } from "./CityGrid";
+
+// Interface for all the props passed down from the server orchestrator
+export interface HomePageClientProps {
+  user: User | null; // Supabase user object
+  profile: (Partial<ProfileRow> & { city?: string }) | null;
+  activeTab: string;
+  displayToday: string;
+  personalizedEvents: (Partial<EventRow> & { matchReason?: string })[];
+  aroundYouEvents: Partial<EventRow>[];
+  collegeEvents: Partial<EventRow>[];
+  otherCollegeEvents: Partial<EventRow>[];
+  fallbackEvents: Partial<EventRow>[];
+  allEvents: Partial<EventRow>[] | null;
+  hasCityEvents: boolean;
+  dynamicChips: { name: string; value: string; count?: number }[];
+  dynamicLocationChips?: { name: string; value: string; count?: number }[];
+  date?: string;
+  eventDates: string[];
+  allEventDates: string[];
+  featuredEvents: Partial<EventRow>[];
+  isFallback: boolean;
+  userProfiles: Partial<ProfileRow>[];
+  branch?: string;
+  q?: string;
+  category?: string;
+  location?: string;
+  view?: string;
+  platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
+}
+export function HomePageClient(props: HomePageClientProps) {
+  const {
+    user,
+    profile,
+    activeTab,
+    displayToday,
+    date,
+    eventDates,
+    allEventDates,
+    personalizedEvents,
+    aroundYouEvents,
+    collegeEvents,
+    otherCollegeEvents,
+    fallbackEvents,
+    allEvents,
+    hasCityEvents,
+    dynamicChips,
+    dynamicLocationChips,
+    featuredEvents,
+    isFallback,
+    userProfiles,
+    branch,
+    q,
+    category,
+    location,
+    view,
+    platformStats
+  } = props;
+
+  // Local copies of the server-fetched event lists, so we can remove an event
+  // instantly (without a full page refresh) when it gets deleted/rejected elsewhere.
+  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState(personalizedEvents);
+  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState(aroundYouEvents);
+  const [liveCollegeEvents, setLiveCollegeEvents] = useState(collegeEvents);
+  const [liveOtherCollegeEvents, setLiveOtherCollegeEvents] = useState(otherCollegeEvents);
+  const [liveFallbackEvents, setLiveFallbackEvents] = useState(fallbackEvents);
+  const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
+  const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
+
+  // Pill toggles: which sub-feed is active inside each section
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('for_you');
+  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
+  // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
+  useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
+  useEffect(() => { setLiveAroundYouEvents(aroundYouEvents); }, [aroundYouEvents]);
+  useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
+  useEffect(() => { setLiveOtherCollegeEvents(otherCollegeEvents); }, [otherCollegeEvents]);
+  useEffect(() => { setLiveFallbackEvents(fallbackEvents); }, [fallbackEvents]);
+  useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
+  useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
+
+  // Realtime: listen for any event becoming non-approved (rejected/deleted) and
+  // instantly remove it from whatever list it's currently shown in.
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("home-events-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "events" },
+        (payload) => {
+          const newRow = payload.new as { id?: string; status?: string } | null;
+          const oldRow = payload.old as { id?: string } | null;
+          const removedId = payload.eventType === "DELETE"
+            ? oldRow?.id
+            : (newRow?.status && newRow.status !== "approved" ? newRow.id : null);
+
+          if (!removedId) return;
+
+          setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveAroundYouEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveOtherCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveFallbackEvents((prev) => prev.filter((e) => e.id !== removedId));
+          setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
+          setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+    // No filters active = passive browsing mode → show pill-based feed. Any filter active → filter liveAllEvents directly.
+  const noFiltersActive = !q && !category && !location && !date && !branch;
+  const hasGoals = (profile?.goals?.length ?? 0) > 0;
+  const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
+
+  let filteredAllEvents = liveAllEvents || [];
+  
+  if (!noFiltersActive) {
+    filteredAllEvents = filteredAllEvents.filter(e => {
+      let match = true;
+      
+      if (date) {
+        // If a specific date is selected, ignore category, branch, and location filters
+        if (e.date_string !== date) match = false;
+      } else {
+        if (branch && !e.branch_tags?.includes(branch)) match = false;
+        if (category && e.category !== category) match = false;
+        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+      }
+
+      if (q) {
+        const query = q.toLowerCase();
+        if (!e.title?.toLowerCase().includes(query) && 
+            !e.category?.toLowerCase().includes(query) &&
+            !e.city?.toLowerCase().includes(query) &&
+            !e.location?.toLowerCase().includes(query)) {
+          match = false;
+        }
+      }
+      return match;
+    });
+  }
+
+  const gridSource = !noFiltersActive
+    ? filteredAllEvents
+    : showFeedPills
+      ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
+      : liveAroundYouEvents;
+
+  let clientIsFallback = false;
+  let clientFallbackEvents = liveFallbackEvents;
+  if (!noFiltersActive && filteredAllEvents.length === 0) {
+    clientIsFallback = true;
+    clientFallbackEvents = (liveAllEvents || []).filter(e => e.is_virtual).slice(0, 4);
+  }
+
+  return (
+    <main className="min-h-screen bg-[#F5F5F7]">
+      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
+      
+      {/* Onboarding check: user & profile null unna sare modal render avvali */}
+      {!profile?.is_onboarded && (
+        <OnboardingModal user={user} profile={profile} />
+      )}
+
+      <div className="flex flex-col">
+        {/* Hide Hero and Stats when in Explore by City (Map) view */}
+        {view !== "map" && (
+          <>
+            {/* Header Section Background & Combined Navigation Pill */}
+            {!user && (
+              <div className="relative">
+                <HeroSection stats={platformStats} />
+              </div>
+            )}
+
+            {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
+            <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
+              <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
+                </div>
+                <div className="flex flex-col items-center px-3">
+                  <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
+                </div>
+              </div>
+            </div>
+
+          {/* GUEST-ONLY INTRO - explains what EvenTime is. Hidden once user is signed in, since they already know. */}
+          {/* ALSO HIDDEN: if the guest is actively searching, filtering by date, or category */}
+          {!user && !q && !date && !category && (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+              {/* Update the leaderboard page settings via admin panel (e.g. settings.leaderboard_active) */}
+              <LandingIntro 
+                isLeaderboardEnabled={false} 
+                isSmartAlertsEnabled={false} 
+              />
+            </div>
+          )}
+          </>
+        )}
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
+          
+         {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
+          {view === "map" ? (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
+                <MapIcon className="w-6 h-6 text-[#6C47FF]" /> Explore by City
+              </h2>
+              <CityGrid events={liveAllEvents || []} />
+            </div>
+          ) : (
+            <>
+
+            {/* CITY SECTION — always shown */}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
+                    <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
+                    {category ? `${category}s` : "What's happening"}
+                  </h2>
+                  {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
+                  {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
+
+                  {showFeedPills && (
+                    <div className="mt-3 inline-flex items-center gap-1 bg-slate-100 rounded-full p-1">
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeedPill('for_you')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                          activeFeedPill === 'for_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                        }`}
+                      >
+                        For You
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveFeedPill('around_you')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                          activeFeedPill === 'around_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                        }`}
+                      >
+                        Around You
+                      </button>
+                      {isCollegeStudent && (
+                        <button
+                          type="button"
+                          onClick={() => setActiveFeedPill('campus')}
+                          className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
+                            activeFeedPill === 'campus' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                          }`}
+                        >
+                          Your Campus
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
+              {liveFeaturedEvents && liveFeaturedEvents.length > 0 && !q && !category && !location && (
+                <div className="col-span-full mb-10 mt-6">
+                  <div className="flex items-center justify-between mb-6 px-2">
+                    <h2 className="text-2xl font-black text-slate-900 font-heading">
+                      Featured Events
+                    </h2>
+                    <Link 
+                      href="/events?view=grid" 
+                      className="text-sm font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors flex items-center gap-1"
+                    >
+                      View All <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                  
+                  {/* Horizontal Scroll Container - FIX: Hid scrollbars here too */}
+                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
+                    {/* FIX: Added (event: Partial<EventRow>) type */}
+                    {liveFeaturedEvents.map((event: Partial<EventRow>) => (
+                      <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
+                        <EventCard 
+                          id={event.id as string}
+                          slug={event.slug || (event.id as string)}
+                          title={event.title!}
+                          category={event.category!}
+                          date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
+                          city={event.location || event.city!}
+                          imageUrl={event.poster_url || ""}
+                          organizerName={event.organizer_name!}
+                          isFree={event.is_free!}
+                          isFeatured={true}
+                          matchLabel={getMatchLabel(event, profile)}
+                          audience={event.target_audience!}
+                          collegeName={
+                            event.college_id && profile?.college_id === event.college_id 
+                              ? null 
+                              : (event as any).colleges?.name
+                          }
+                          isGuest={!user}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(
+                <div className="w-full">
+                  {gridSource && gridSource.length > 0 ? (
+                    (() => {
+                      const sortedEvents = [...gridSource].sort((a, b) => {
+                        const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
+                        if (dateDiff !== 0) return dateDiff;
+                        // Same date — sort by actual time, not the raw "h:mm AM/PM" string (which sorts wrong)
+                        const toMinutes = (t?: string | null) => {
+                          if (!t) return 0;
+                          const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                          if (!match) return 0;
+                          let h = parseInt(match[1], 10);
+                          const m = parseInt(match[2], 10);
+                          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
+                          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
+                          return h * 60 + m;
+                        };
+                        return toMinutes(a.start_time) - toMinutes(b.start_time);
+                      });
+                      return (
+                        <EventGrid
+                          events={sortedEvents}
+                          profile={profile}
+                          user={user}
+                          useMatchLogic={false}
+                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                        />
+                      );
+                    })()
+                  ) : (
+                    // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
+                    <div className="col-span-full">
+                      {(() => {
+                        const todayObj = new Date();
+                        const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+                        const isPastDate = date ? date < todayStr : false;
+                        
+                        const title = isPastDate ? "No past events" : "No exact matches";
+                        const message = isPastDate 
+                            ? "There were no events hosted on this date." 
+                            : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                            : location ? `No events happening in ${location} right now. But the stage is never empty.`
+                            : category ? `No ${category}s happening right now. But the stage is never empty.` 
+                            : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
+                        return (
+                          <EmptyState 
+                            title={title}
+                            message={message}
+                            variant="default"
+                            showButton={!isPastDate}
+                            buttonText="Be the first to host one"
+                          />
+                        );
+                      })()}
+                    
+                      {/* Fallback Events (Virtual/Online) */}
+                      {clientIsFallback && clientFallbackEvents.length > 0 && (
+                        <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
+                          <div className="flex items-center gap-4 mb-8">
+                            <div className="h-px bg-slate-200 flex-1" />
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+                              Showing Virtual Events Instead
+                            </span>
+                            <div className="h-px bg-slate-200 flex-1" />
+                          </div>
+
+                          <EventGrid 
+                            events={clientFallbackEvents}
+                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                            defaultMatchLabel="Recommended Virtual"
+                            user={user}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            </>
+          )}
+        </div>
+        
+        </div>
+    </main>
   );
 }
 </file>
@@ -12624,434 +13061,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
         </AnimatePresence>
       </motion.div>
     </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/HomePageClient.tsx">
-"use client"
-import { useRef, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventCard } from "@/app/events/EventCard";
-import { OnboardingModal } from "@/components/profile/OnboardingModal";
-import Link from "next/link";
-import { CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
-import type { ProfileRow, EventRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-import { HeroSection } from "./HeroSection";
-import { LandingIntro } from "./LandingIntro";
-import { EventGrid } from "./EventGrid";
-import { EmptyState } from "./EmptyState";
-import { CityGrid } from "./CityGrid";
-
-// Interface for all the props passed down from the server orchestrator
-export interface HomePageClientProps {
-  user: User | null; // Supabase user object
-  profile: (Partial<ProfileRow> & { city?: string }) | null;
-  activeTab: string;
-  displayToday: string;
-  personalizedEvents: (Partial<EventRow> & { matchReason?: string })[];
-  aroundYouEvents: Partial<EventRow>[];
-  collegeEvents: Partial<EventRow>[];
-  otherCollegeEvents: Partial<EventRow>[];
-  fallbackEvents: Partial<EventRow>[];
-  allEvents: Partial<EventRow>[] | null;
-  hasCityEvents: boolean;
-  dynamicChips: { name: string; value: string; count?: number }[];
-  dynamicLocationChips?: { name: string; value: string; count?: number }[];
-  date?: string;
-  eventDates: string[];
-  allEventDates: string[];
-  featuredEvents: Partial<EventRow>[];
-  isFallback: boolean;
-  userProfiles: Partial<ProfileRow>[];
-  branch?: string;
-  q?: string;
-  category?: string;
-  location?: string;
-  view?: string;
-  platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
-}
-export function HomePageClient(props: HomePageClientProps) {
-  const {
-    user,
-    profile,
-    activeTab,
-    displayToday,
-    date,
-    eventDates,
-    allEventDates,
-    personalizedEvents,
-    aroundYouEvents,
-    collegeEvents,
-    otherCollegeEvents,
-    fallbackEvents,
-    allEvents,
-    hasCityEvents,
-    dynamicChips,
-    dynamicLocationChips,
-    featuredEvents,
-    isFallback,
-    userProfiles,
-    branch,
-    q,
-    category,
-    location,
-    view,
-    platformStats
-  } = props;
-
-  // Local copies of the server-fetched event lists, so we can remove an event
-  // instantly (without a full page refresh) when it gets deleted/rejected elsewhere.
-  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState(personalizedEvents);
-  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState(aroundYouEvents);
-  const [liveCollegeEvents, setLiveCollegeEvents] = useState(collegeEvents);
-  const [liveOtherCollegeEvents, setLiveOtherCollegeEvents] = useState(otherCollegeEvents);
-  const [liveFallbackEvents, setLiveFallbackEvents] = useState(fallbackEvents);
-  const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
-  const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
-
-  // Pill toggles: which sub-feed is active inside each section
-  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('for_you');
-  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
-  // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
-  useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
-  useEffect(() => { setLiveAroundYouEvents(aroundYouEvents); }, [aroundYouEvents]);
-  useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
-  useEffect(() => { setLiveOtherCollegeEvents(otherCollegeEvents); }, [otherCollegeEvents]);
-  useEffect(() => { setLiveFallbackEvents(fallbackEvents); }, [fallbackEvents]);
-  useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
-  useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
-
-  // Realtime: listen for any event becoming non-approved (rejected/deleted) and
-  // instantly remove it from whatever list it's currently shown in.
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("home-events-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "events" },
-        (payload) => {
-          const newRow = payload.new as { id?: string; status?: string } | null;
-          const oldRow = payload.old as { id?: string } | null;
-          const removedId = payload.eventType === "DELETE"
-            ? oldRow?.id
-            : (newRow?.status && newRow.status !== "approved" ? newRow.id : null);
-
-          if (!removedId) return;
-
-          setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveAroundYouEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveOtherCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveFallbackEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
-          setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-    // No filters active = passive browsing mode → show pill-based feed. Any filter active → filter liveAllEvents directly.
-  const noFiltersActive = !q && !category && !location && !date && !branch;
-  const hasGoals = (profile?.goals?.length ?? 0) > 0;
-  const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
-
-  let filteredAllEvents = liveAllEvents || [];
-  
-  if (!noFiltersActive) {
-    filteredAllEvents = filteredAllEvents.filter(e => {
-      let match = true;
-      
-      if (date) {
-        // If a specific date is selected, ignore category, branch, and location filters
-        if (e.date_string !== date) match = false;
-      } else {
-        if (branch && !e.branch_tags?.includes(branch)) match = false;
-        if (category && e.category !== category) match = false;
-        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
-      }
-
-      if (q) {
-        const query = q.toLowerCase();
-        if (!e.title?.toLowerCase().includes(query) && 
-            !e.category?.toLowerCase().includes(query) &&
-            !e.city?.toLowerCase().includes(query) &&
-            !e.location?.toLowerCase().includes(query)) {
-          match = false;
-        }
-      }
-      return match;
-    });
-  }
-
-  const gridSource = !noFiltersActive
-    ? filteredAllEvents
-    : showFeedPills
-      ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
-      : liveAroundYouEvents;
-
-  let clientIsFallback = false;
-  let clientFallbackEvents = liveFallbackEvents;
-  if (!noFiltersActive && filteredAllEvents.length === 0) {
-    clientIsFallback = true;
-    clientFallbackEvents = (liveAllEvents || []).filter(e => e.is_virtual).slice(0, 4);
-  }
-
-  return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
-      
-      {/* Onboarding check: user & profile null unna sare modal render avvali */}
-      {!profile?.is_onboarded && (
-        <OnboardingModal user={user} profile={profile} />
-      )}
-
-      <div className="flex flex-col">
-        {/* Hide Hero and Stats when in Explore by City (Map) view */}
-        {view !== "map" && (
-          <>
-            {/* Header Section Background & Combined Navigation Pill */}
-            {!user && (
-              <div className="relative">
-                <HeroSection stats={platformStats} />
-              </div>
-            )}
-
-            {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
-            <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
-              <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
-                </div>
-              </div>
-            </div>
-
-          {/* GUEST-ONLY INTRO - explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-          {/* ALSO HIDDEN: if the guest is actively searching, filtering by date, or category */}
-          {!user && !q && !date && !category && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              {/* Update the leaderboard page settings via admin panel (e.g. settings.leaderboard_active) */}
-              <LandingIntro 
-                isLeaderboardEnabled={false} 
-                isSmartAlertsEnabled={false} 
-              />
-            </div>
-          )}
-          </>
-        )}
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
-          
-         {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
-          {view === "map" ? (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                <MapIcon className="w-6 h-6 text-[#6C47FF]" /> Explore by City
-              </h2>
-              <CityGrid events={liveAllEvents || []} />
-            </div>
-          ) : (
-            <>
-
-            {/* CITY SECTION — always shown */}
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                    <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
-                    {category ? `${category}s` : "What's happening"}
-                  </h2>
-                  {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
-                  {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
-
-                  {showFeedPills && (
-                    <div className="mt-3 inline-flex items-center gap-1 bg-slate-100 rounded-full p-1">
-                      <button
-                        type="button"
-                        onClick={() => setActiveFeedPill('for_you')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'for_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
-                        }`}
-                      >
-                        For You
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveFeedPill('around_you')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'around_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
-                        }`}
-                      >
-                        Around You
-                      </button>
-                      {isCollegeStudent && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveFeedPill('campus')}
-                          className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                            activeFeedPill === 'campus' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
-                          }`}
-                        >
-                          Your Campus
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
-              {liveFeaturedEvents && liveFeaturedEvents.length > 0 && !q && !category && !location && (
-                <div className="col-span-full mb-10 mt-6">
-                  <div className="flex items-center justify-between mb-6 px-2">
-                    <h2 className="text-2xl font-black text-slate-900 font-heading">
-                      Featured Events
-                    </h2>
-                    <Link 
-                      href="/events?view=grid" 
-                      className="text-sm font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors flex items-center gap-1"
-                    >
-                      View All <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                  
-                  {/* Horizontal Scroll Container - FIX: Hid scrollbars here too */}
-                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
-                    {/* FIX: Added (event: Partial<EventRow>) type */}
-                    {liveFeaturedEvents.map((event: Partial<EventRow>) => (
-                      <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
-                        <EventCard 
-                          id={event.id as string}
-                          slug={event.slug || (event.id as string)}
-                          title={event.title!}
-                          category={event.category!}
-                          date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-                          city={event.location || event.city!}
-                          imageUrl={event.poster_url || ""}
-                          organizerName={event.organizer_name!}
-                          isFree={event.is_free!}
-                          isFeatured={true}
-                          matchLabel={getMatchLabel(event, profile)}
-                          audience={event.target_audience!}
-                          collegeName={
-                            event.college_id && profile?.college_id === event.college_id 
-                              ? null 
-                              : (event as any).colleges?.name
-                          }
-                          isGuest={!user}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {(
-                <div className="w-full">
-                  {gridSource && gridSource.length > 0 ? (
-                    (() => {
-                      const sortedEvents = [...gridSource].sort((a, b) => {
-                        const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
-                        if (dateDiff !== 0) return dateDiff;
-                        // Same date — sort by actual time, not the raw "h:mm AM/PM" string (which sorts wrong)
-                        const toMinutes = (t?: string | null) => {
-                          if (!t) return 0;
-                          const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                          if (!match) return 0;
-                          let h = parseInt(match[1], 10);
-                          const m = parseInt(match[2], 10);
-                          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
-                          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
-                          return h * 60 + m;
-                        };
-                        return toMinutes(a.start_time) - toMinutes(b.start_time);
-                      });
-                      return (
-                        <EventGrid
-                          events={sortedEvents}
-                          profile={profile}
-                          user={user}
-                          useMatchLogic={false}
-                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                          isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
-                        />
-                      );
-                    })()
-                  ) : (
-                    // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
-                    <div className="col-span-full">
-                      {(() => {
-                        const todayObj = new Date();
-                        const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
-                        const isPastDate = date ? date < todayStr : false;
-                        
-                        const title = isPastDate ? "No past events" : "No exact matches";
-                        const message = isPastDate 
-                            ? "There were no events hosted on this date." 
-                            : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                            : location ? `No events happening in ${location} right now. But the stage is never empty.`
-                            : category ? `No ${category}s happening right now. But the stage is never empty.` 
-                            : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
-                        return (
-                          <EmptyState 
-                            title={title}
-                            message={message}
-                            variant="default"
-                            showButton={!isPastDate}
-                            buttonText="Be the first to host one"
-                          />
-                        );
-                      })()}
-                    
-                      {/* Fallback Events (Virtual/Online) */}
-                      {clientIsFallback && clientFallbackEvents.length > 0 && (
-                        <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
-                          <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px bg-slate-200 flex-1" />
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
-                              Showing Virtual Events Instead
-                            </span>
-                            <div className="h-px bg-slate-200 flex-1" />
-                          </div>
-
-                          <EventGrid 
-                            events={clientFallbackEvents}
-                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            defaultMatchLabel="Recommended Virtual"
-                            user={user}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            </>
-          )}
-        </div>
-        
-        </div>
-    </main>
   );
 }
 </file>

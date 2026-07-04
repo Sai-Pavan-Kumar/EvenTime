@@ -12,7 +12,7 @@ import type { CollegeRow } from "@/types";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled }: any) {
   
   // SECURE ADMIN CHECK
   const [isAdmin, setIsAdmin] = useState(false);
@@ -361,7 +361,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                </div>
              )}
 
-             {isAdmin && (
+             {isAdmin && isAdminFeatureEnabled && (
                <div className="mt-6 p-4 bg-amber-50 border border-amber-100 rounded-xl">
                  <label className="flex items-center gap-3 cursor-pointer">
                    <input type="checkbox" checked={data.isFeatured} onChange={e => updateData({ isFeatured: e.target.checked })} className="w-5 h-5 rounded border-amber-300 text-amber-500 focus:ring-amber-500 outline-none" />
@@ -377,7 +377,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       </div>
 
       <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
-            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+            {!isAdmin && !extraction.isTrusted && data.regLink && !extraction.isExtracting && (
               <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>

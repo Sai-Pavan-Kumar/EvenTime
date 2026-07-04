@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
+import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Ticket, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
@@ -20,316 +20,226 @@ type ReportWithEvent = {
 export default async function AdminDashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
   const isAdmin = await requireAdmin(supabase, user.id);
-
   if (!isAdmin) {
-    console.log("Unauthorized access attempt by user ID:", user?.id);
     redirect("/");
   }
 
-  // Wrapper functions to fix the TypeScript return type error
-  async function handleApprove(formData: FormData) {
-    "use server";
-    await approveEventAction(formData);
-  }
+  // Server Actions
+  async function handleApprove(formData: FormData) { "use server"; await approveEventAction(formData); }
+  async function handleReject(formData: FormData) { "use server"; await rejectEventAction(formData); }
+  async function handleResolve(formData: FormData) { "use server"; await resolveReportAction(formData); }
+  async function handlePunish(formData: FormData) { "use server"; await punishCuratorAction(formData); }
+  async function handleToggleLeaderboard(formData: FormData) { "use server"; await toggleLeaderboardAction(formData); }
+  async function handleToggleFeatured(formData: FormData) { "use server"; await toggleFeaturedAction(formData); }
 
-  async function handleReject(formData: FormData) {
-    "use server";
-    await rejectEventAction(formData);
-  }
-
-  async function handleResolve(formData: FormData) {
-    "use server";
-    await resolveReportAction(formData);
-  }
-
-  async function handlePunish(formData: FormData) {
-    "use server";
-    await punishCuratorAction(formData);
-  }
-
-  async function handleToggleLeaderboard(formData: FormData) {
-    "use server";
-    await toggleLeaderboardAction(formData);
-  }
-
-  async function handleToggleFeatured(formData: FormData) {
-    "use server";
-    await toggleFeaturedAction(formData);
-  }
-
-  // 1. Fetch Global Dashboard Analytics
+  // Fetch Data
   const [
     { count: totalUsers },
     { count: totalEvents },
-    { data: collegesData },
-    { data: platformFeedback },
-    { data: appSettings }
+    { data: appSettings },
+    { data: pendingEvents },
+    { data: activeReports }
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("events").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("college").not("college", "is", null),
-    supabase.from("platform_feedback").select("id, type, message, created_at, user_id").order("created_at", { ascending: false }).limit(20),
-    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, poster_url, created_at, profiles:creator_id ( full_name )").eq("status", "pending").order("created_at", { ascending: false }).limit(10),
+    supabase.from("event_reports").select("id, reason, status, created_at, curator_id, events ( title )").eq("status", "pending").order("created_at", { ascending: false }).limit(5)
   ]);
 
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const featuredEnabled = appSettings?.featured_enabled ?? true;
-
-  // Calculate top performing colleges
-  const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
-    if (profile.college) {
-      acc[profile.college] = (acc[profile.college] || 0) + 1;
-    }
-    return acc;
-  }, {}) || {};
-  
-  const topColleges = Object.entries(collegeCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
-
-  // 2. Fetch Pending Events
-  const { data: pendingEvents } = await supabase
-    .from("events")
-    .select("id, slug, title, category, poster_url, creator_id, profiles:creator_id ( full_name )")
-    .eq("status", "pending") 
-    .order("created_at", { ascending: false });
-
-  // 3. Fetch Active Reports with proper TypeScript typing
-  const { data: activeReports, error: reportsError } = await supabase
-    .from("event_reports")
-    .select(`
-      id,
-      reason,
-      status,
-      created_at,
-      curator_id,
-      events ( title )
-    `)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false }) as { data: ReportWithEvent[] | null, error: unknown };
-
-  if (reportsError) {
-    console.error("Fetch Reports Error:", reportsError);
-  }
+  const reports = activeReports as unknown as ReportWithEvent[];
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Admin Control</h1>
-            <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <form action={handleToggleLeaderboard}>
-              <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
-              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${leaderboardEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
-                Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
-              </button>
-            </form>
-            
-            <form action={handleToggleFeatured}>
-              <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
-              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${featuredEnabled ? "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
-                Featured System: {featuredEnabled ? "ON" : "OFF"}
-              </button>
-            </form>
-          </div>
+    <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+      {/* HEADER SECTION */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-['Outfit'] font-black text-slate-900 tracking-tight">Overview</h1>
+          <p className="text-sm text-slate-500 font-medium mt-1">Monitor your platform metrics and moderation queues.</p>
         </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Global Users */}
-          <Link href="/admin/users" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500/20 transition-all cursor-pointer">
-            <Users className="w-6 h-6 text-blue-500 mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Users</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{totalUsers || 0}</h2>
-          </Link>
-
-          {/* Global Events */}
-          <Link href="/admin/events" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-emerald-500/20 transition-all cursor-pointer">
-            <CalendarDays className="w-6 h-6 text-emerald-500 mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Events</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{totalEvents || 0}</h2>
-          </Link>
-
-          <Link href="/admin/events?filter=pending" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-[#6C47FF]/20 transition-all cursor-pointer">
-            <BarChart3 className="w-6 h-6 text-[#6C47FF] mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pending Reviews</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{pendingEvents?.length || 0}</h2>
-          </Link>
+        
+        <div className="flex items-center gap-3">
+          <form action={handleToggleLeaderboard}>
+            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
+            <button type="submit" className={`relative flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg border transition-all ${leaderboardEnabled ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm" : "bg-slate-100 border-slate-200 text-slate-400"}`}>
+              <div className={`w-2 h-2 rounded-full ${leaderboardEnabled ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-300"}`} />
+              Leaderboard
+            </button>
+          </form>
           
-          {/* Active Reports Stat Card */}
-          <Link href="/admin/reports" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-red-500/20 transition-all cursor-pointer">
-            <ShieldAlert className="w-6 h-6 text-red-500 mb-4" />
-            <p className="text-sm font-bold text-red-400 uppercase tracking-widest">Active Reports</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-red-600 mt-2">{activeReports?.length || 0}</h2>
-          </Link>
+          <form action={handleToggleFeatured}>
+            <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
+            <button type="submit" className={`relative flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg border transition-all ${featuredEnabled ? "bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm" : "bg-slate-100 border-slate-200 text-slate-400"}`}>
+              <div className={`w-2 h-2 rounded-full ${featuredEnabled ? "bg-[#6C47FF] shadow-[0_0_8px_rgba(108,71,255,0.5)]" : "bg-slate-300"}`} />
+              Featured System
+            </button>
+          </form>
         </div>
+      </div>
 
-        {/* Top Colleges Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
-          <Link href="/admin/colleges" className="flex items-center justify-between mb-4 group hover:opacity-80 transition-opacity">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-slate-900" />
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900">Top Performing Colleges</h3>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-900 transition-colors" />
-          </Link>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {topColleges.map(([college, count], index) => (
-              <div key={college} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-black text-slate-300">#{index + 1}</span>
-                  <span className="font-bold text-slate-700 truncate">{college}</span>
-                </div>
-                <span className="text-xs font-bold bg-white px-2 py-1 rounded-md text-[#6C47FF] border border-slate-200">{count} Users</span>
+      {/* METRICS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Users", value: totalUsers || 0, icon: Users, color: "text-blue-600", bg: "bg-blue-50", trend: "+12%" },
+          { label: "Total Events", value: totalEvents || 0, icon: Ticket, color: "text-indigo-600", bg: "bg-indigo-50", trend: "+8%" },
+          { label: "Pending Approvals", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-amber-600", bg: "bg-amber-50", trend: "-2%" },
+          { label: "Active Reports", value: reports?.length || 0, icon: ShieldAlert, color: "text-red-600", bg: "bg-red-50", trend: "0%" }
+        ].map((stat, i) => (
+          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.bg}`}>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
-            ))}
+              <span className={`text-xs font-bold flex items-center gap-1 ${stat.trend.startsWith('+') ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {stat.trend.startsWith('+') && <TrendingUp className="w-3 h-3" />}
+                {stat.trend}
+              </span>
+            </div>
+            <h3 className="text-3xl font-black font-['Outfit'] text-slate-900 tracking-tight">{stat.value}</h3>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">{stat.label}</p>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Approval Queue Section */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-            <Link href="/admin/events?filter=pending" className="p-6 border-b border-slate-100 flex items-center justify-between group hover:bg-slate-50 transition-colors cursor-pointer">
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900">Event Approval Queue</h3>
-              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-900 transition-colors" />
-            </Link>
-
+      {/* MAIN CONTENT AREA */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: EVENTS QUEUE (Takes 2/3 width) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h2 className="font-['Outfit'] font-bold text-slate-900 flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-slate-400" />
+                Event Approval Queue
+              </h2>
+              <Link href="/admin/events" className="text-xs font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors">View All</Link>
+            </div>
+            
             <div className="divide-y divide-slate-100">
               {pendingEvents && pendingEvents.length > 0 ? (
-                pendingEvents.map((event) => (
-                  <div key={event.id} className="p-6 flex flex-col gap-4 hover:bg-slate-50 transition-colors">
-                    <div className="flex gap-4">
-                      <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                        <Image src={event.poster_url || "/window.svg"} alt={event.title || "Event Image"} fill sizes="80px" className="object-cover" />
-                      </div>
-                      <div>
-                        <Link href={`/events/${event.slug || event.id}`} target="_blank" className="hover:text-[#6C47FF] transition-colors group/title">
-                          <h4 className="font-bold text-slate-900 group-hover/title:text-[#6C47FF] leading-tight line-clamp-1">{event.title}</h4>
-                        </Link>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <p className="text-[10px] font-bold text-[#6C47FF] bg-[#6C47FF]/10 px-2 py-0.5 rounded uppercase tracking-wider">{event.category}</p>
-                          <span className="text-[11px] font-medium text-slate-500 truncate">by {(event.profiles as any)?.full_name || "Unknown"}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      <form action={handleApprove} className="flex-1">
-                        <input type="hidden" name="eventId" value={event.id ?? ""} />
-                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-xs font-bold hover:bg-emerald-100 transition-all">
-                          <CheckCircle className="w-4 h-4" /> Approve
-                        </button>
-                      </form>
-
-                      <form action={handleReject} className="flex-1">
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-500 px-4 py-2 rounded-full text-xs font-bold hover:bg-red-50 hover:text-red-500 transition-all">
-                          <XCircle className="w-4 h-4" /> Reject
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                ))
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <th className="px-5 py-3 font-semibold">Event</th>
+                      <th className="px-5 py-3 font-semibold">Organizer</th>
+                      <th className="px-5 py-3 font-semibold">Date Submitted</th>
+                      <th className="px-5 py-3 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pendingEvents.map((event) => (
+                      <tr key={event.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden relative shrink-0">
+                              <Image src={event.poster_url || "/window.svg"} alt="Poster" fill sizes="40px" className="object-cover" />
+                            </div>
+                            <div>
+                              <Link href={`/events/${event.slug || event.id}`} target="_blank" className="font-bold text-sm text-slate-900 hover:text-[#6C47FF] transition-colors line-clamp-1">
+                                {event.title}
+                              </Link>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{event.category}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-sm font-medium text-slate-600">
+                          {(event.profiles as any)?.full_name || "Unknown"}
+                        </td>
+                        <td className="px-5 py-4 text-xs font-semibold text-slate-500">
+                          {event.created_at ? new Date(event.created_at as string).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <form action={handleApprove}>
+                              <input type="hidden" name="eventId" value={event.id ?? ""} />
+                              <button type="submit" className="p-1.5 rounded-md text-emerald-600 hover:bg-emerald-50 transition-colors tooltip-trigger" title="Approve">
+                                <CheckCircle className="w-5 h-5" />
+                              </button>
+                            </form>
+                            <form action={handleReject}>
+                              <input type="hidden" name="eventId" value={event.id} />
+                              <button type="submit" className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors tooltip-trigger" title="Reject">
+                                <XCircle className="w-5 h-5" />
+                              </button>
+                            </form>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               ) : (
-                <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                  Inbox Zero
+                <div className="p-12 text-center flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                    <CheckCircle className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-900">All caught up</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">No events waiting for approval.</p>
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          {/* User Reports Section */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-            <Link href="/admin/reports" className="p-6 border-b border-slate-100 bg-red-50/30 flex items-center justify-between group hover:bg-red-100/50 transition-colors cursor-pointer">
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" /> User Reports
-              </h3>
-              <ChevronRight className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
-            </Link>
-
+        {/* RIGHT COLUMN: MODERATION (Takes 1/3 width) */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h2 className="font-['Outfit'] font-bold text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-slate-400" />
+                Moderation Queue
+              </h2>
+            </div>
+            
             <div className="divide-y divide-slate-100">
-              {activeReports && activeReports.length > 0 ? (
-                activeReports.map((report) => (
-                  <div key={report.id} className="p-6 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4 mb-3">
+              {reports && reports.length > 0 ? (
+                reports.map((report) => (
+                  <div key={report.id} className="p-5 hover:bg-slate-50/50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-50 text-red-600 mb-2 border border-red-100">
                           {report.reason}
                         </span>
-                        {/* TypeScript error is resolved here */}
-                        <h4 className="font-bold text-slate-900 mt-2">{report.events?.title || "Unknown Event"}</h4>
+                        <h4 className="text-sm font-bold text-slate-900 line-clamp-1">{report.events?.title || "Unknown Event"}</h4>
+                        <p className="text-xs text-slate-500 mt-1 font-medium">{new Date(report.created_at).toLocaleDateString()}</p>
                       </div>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md uppercase">Pending</span>
                     </div>
                     
-                    {/* THE NEW BUTTONS: Dismiss & Punish */}
-                    <div className="flex gap-2 mt-4">
-                      <form action={handleResolve} className="flex-1">
+                    <div className="grid grid-cols-2 gap-2 mt-4">
+                      <form action={handleResolve}>
                         <input type="hidden" name="reportId" value={report.id} />
-                        <button type="submit" className="w-full bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 transition-colors">
-                          Dismiss (Safe)
+                        <button type="submit" className="w-full py-1.5 bg-white border border-slate-200 rounded-md text-[11px] font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                          Dismiss
                         </button>
                       </form>
-                      
-                      <form action={handlePunish} className="flex-1">
+                      <form action={handlePunish}>
                         <input type="hidden" name="reportId" value={report.id} />
-                        <button type="submit" className="w-full bg-red-500 text-white text-xs font-bold py-2 rounded-lg hover:bg-red-600 transition-colors">
-                          Punish (-150 ET)
+                        <button type="submit" className="w-full py-1.5 bg-red-50 text-red-600 border border-red-100 rounded-md text-[11px] font-bold hover:bg-red-100 transition-colors">
+                          Punish
                         </button>
                       </form>
                     </div>
-
                   </div>
                 ))
               ) : (
-                <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                  No active reports
+                <div className="p-12 text-center flex flex-col items-center justify-center">
+                  <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                    <ShieldAlert className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-900">No active reports</p>
+                  <p className="text-xs font-medium text-slate-500 mt-1">Community is safe and clean.</p>
                 </div>
               )}
             </div>
           </div>
-
         </div>
 
-        {/* Platform Feedback Section */}
-        <div className="mt-8 bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-          <Link href="/admin/feedback" className="p-6 border-b border-slate-100 bg-blue-50/30 flex items-center justify-between group hover:bg-blue-100/50 transition-colors cursor-pointer">
-            <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900 flex items-center gap-2">
-              Platform Feedback & Bugs
-            </h3>
-            <ChevronRight className="w-5 h-5 text-blue-400 group-hover:text-blue-600 transition-colors" />
-          </Link>
-          <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
-            {platformFeedback && platformFeedback.length > 0 ? (
-              platformFeedback.map((feedback: any) => (
-                <div key={feedback.id} className="p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${feedback.type === 'bug' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {feedback.type}
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      {new Date(feedback.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-700 mt-2">{feedback.message}</p>
-                  <p className="text-xs text-slate-400 mt-3 font-medium">From: {feedback.profiles?.full_name || "Anonymous"}</p>
-                </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                No feedback yet
-              </div>
-            )}
-          </div>
-        </div>
-
+      </div>
     </div>
   );
 }
