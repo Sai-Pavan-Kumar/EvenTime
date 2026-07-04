@@ -1114,6 +1114,66 @@ export async function submitReportAction(formData: FormData) {
 }
 </file>
 
+<file path="src/app/globals.css">
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* Colors - Light Mode Primary */
+  --color-brand-primary: #6C47FF;
+  --color-brand-accent: #F59E0B;
+  --color-brand-anchor: #005AE0;
+  --color-surface-base: #F5F5F7;
+  --color-surface-card: #FFFFFF;
+  --color-surface-elevated: #F0F0F8;
+  --color-text-primary: #1D1D1F;
+  --color-text-secondary: #86868B;
+
+  /* Typography */
+  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+
+  /* Spacing (4px Base Unit) */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
+@layer base {
+  body {
+    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
+    @apply bg-surface-base text-text-primary font-sans antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
+    @apply font-heading tracking-[-0.02em];
+  }
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</file>
+
 <file path="src/app/leaderboard/loading.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -2653,71 +2713,6 @@ Sentry.init({
 });
 </file>
 
-<file path="src/app/admin/AdminHeader.tsx">
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-
-export function AdminHeader() {
-  return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-50">
-      <div className="flex items-center gap-4">
-        <h2 className="font-['Outfit'] font-black text-[#6C47FF] text-xl tracking-tight">EvenTime Admin</h2>
-      </div>
-      <div className="flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors bg-slate-50 hover:bg-slate-100 px-4 py-2 rounded-xl">
-          <ArrowLeft className="w-4 h-4" /> Back to Website
-        </Link>
-      </div>
-    </header>
-  );
-}
-</file>
-
-<file path="src/app/admin/AdminSidebar.tsx">
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2 } from "lucide-react";
-
-export function AdminSidebar() {
-  const pathname = usePathname();
-
-  const links = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard, color: "text-[#6C47FF]", bg: "bg-[#6C47FF]/10" },
-    { name: "Events", href: "/admin/events", icon: CalendarDays, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { name: "Users", href: "/admin/users", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-    { name: "Reports", href: "/admin/reports", icon: ShieldAlert, color: "text-red-600", bg: "bg-red-50" },
-    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning, color: "text-amber-600", bg: "bg-amber-50" },
-    { name: "Colleges", href: "/admin/colleges", icon: Building2, color: "text-purple-600", bg: "bg-purple-50" },
-  ];
-
-  return (
-    <aside className="hidden lg:flex flex-col w-[260px] border-r border-slate-200 bg-white pt-8 px-4 h-[calc(100vh-64px)] sticky top-16 shrink-0">
-      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-3">Admin Menu</p>
-      <nav className="space-y-1.5">
-        {links.map((link) => {
-          const isActive = pathname === link.href;
-          const Icon = link.icon;
-          return (
-            <Link 
-              key={link.name} 
-              href={link.href} 
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-all ${
-                isActive 
-                  ? `${link.color} ${link.bg}` 
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Icon className="w-5 h-5" /> {link.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
-  );
-}
-</file>
-
 <file path="src/app/admin/loading.tsx">
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -3399,66 +3394,6 @@ export default function GlobalError({
       </body>
     </html>
   );
-}
-</file>
-
-<file path="src/app/globals.css">
-@import "tailwindcss";
-@import "tw-animate-css";
-
-@theme {
-  /* Colors - Light Mode Primary */
-  --color-brand-primary: #6C47FF;
-  --color-brand-accent: #F59E0B;
-  --color-brand-anchor: #005AE0;
-  --color-surface-base: #F5F5F7;
-  --color-surface-card: #FFFFFF;
-  --color-surface-elevated: #F0F0F8;
-  --color-text-primary: #1D1D1F;
-  --color-text-secondary: #86868B;
-
-  /* Typography */
-  --font-sans: 'Switzer', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-
-  /* Spacing (4px Base Unit) */
-  --spacing-1: 4px;
-  --spacing-2: 8px;
-  --spacing-3: 12px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-8: 32px;
-  --spacing-10: 40px;
-  --spacing-12: 48px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-
-  /* Border Radius */
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 20px;
-  --radius-xl: 32px;
-  --radius-full: 9999px;
-}
-
-@layer base {
-  body {
-    /* CHANGED: Using semantic design tokens instead of hardcoded hex values */
-    @apply bg-surface-base text-text-primary font-sans antialiased;
-  }
-  h1, h2, h3, h4, h5, h6 {
-    /* CHANGED: Added subtle negative letter spacing for premium editorial look */
-    @apply font-heading tracking-[-0.02em];
-  }
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
 </file>
 
@@ -5655,6 +5590,113 @@ export async function toggleFeaturedAction(formData: FormData) {
 }
 </file>
 
+<file path="src/app/admin/AdminHeader.tsx">
+"use client";
+import { Bell } from "lucide-react";
+import { usePathname } from "next/navigation";
+
+export function AdminHeader() {
+  const pathname = usePathname();
+  
+  const pathParts = pathname.split('/').filter(p => p !== '');
+  const currentPage = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : 'Overview';
+
+  return (
+    <header className="h-[112px] flex items-center justify-between px-10 shrink-0 pt-6">
+      <div className="flex items-center gap-2 text-[15px] font-bold font-['Switzer'] text-[#555570]">
+        <span>Admin</span>
+        <span className="text-[#9999B0]">/</span>
+        <span className="text-[#0D0D1A]">{currentPage}</span>
+      </div>
+
+      <div className="flex items-center gap-5">
+        <button className="relative text-[#9999B0] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
+        </button>
+        
+        <div className="w-10 h-10 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
+          ET
+        </div>
+      </div>
+    </header>
+  );
+}
+</file>
+
+<file path="src/app/admin/AdminSidebar.tsx">
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+
+  const links = [
+    { name: "Overview", href: "/admin", icon: LayoutDashboard },
+    { name: "Events Queue", href: "/admin/events", icon: CalendarDays },
+    { name: "User Directory", href: "/admin/users", icon: Users },
+    { name: "Colleges", href: "/admin/colleges", icon: Building2 },
+    { name: "Moderation", href: "/admin/reports", icon: ShieldAlert },
+    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning },
+  ];
+
+  return (
+    <aside className="w-[300px] bg-[#F5F5F7] hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
+      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        
+        {/* LOGO AREA */}
+        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-[12px] bg-[#6C47FF] flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
+              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
+            </div>
+            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-[#6C47FF]">OS</span></h2>
+          </Link>
+        </div>
+        
+        {/* MENU */}
+        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
+          <div>
+            <p className="px-4 text-[11px] font-bold text-[#9999B0] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
+            <nav className="space-y-2">
+              {links.map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link 
+                    key={link.name} 
+                    href={link.href} 
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
+                      isActive 
+                        ? "bg-[#EDE8FF] text-[#6C47FF]" 
+                        : "text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A]"
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "text-[#6C47FF]" : "text-[#9999B0]"}`} /> 
+                    <span className="text-[15px]">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="p-6 border-t border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A] transition-colors">
+            <Settings className="w-4 h-4 text-[#9999B0]" />
+            <span className="text-[15px]">Exit Admin Mode</span>
+          </Link>
+        </div>
+
+      </div>
+    </aside>
+  );
+}
+</file>
+
 <file path="src/app/admin/colleges/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -5692,44 +5734,43 @@ export default async function AdminCollegesPage() {
   const allColleges = Object.entries(collegeCounts).sort(([, a], [, b]) => b - a);
 
   return (
-    <div className="w-full">
-
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-slate-900" />
-            College Analytics
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Global platform adoption ranked by institution.</p>
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(108,71,255,0.08)]">
+          <Building2 className="w-7 h-7 text-[#6C47FF]" />
         </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">College Analytics</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Global platform adoption ranked by institution.</p>
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Institution Name</span>
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Users</span>
-          </div>
-          
-          <div className="divide-y divide-slate-100">
-            {allColleges.length > 0 ? (
-              allColleges.map(([college, count], index) => (
-                <div key={college} className="flex items-center justify-between p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className="w-8 text-lg font-black text-slate-300 text-right">#{index + 1}</span>
-                    <span className="font-bold text-slate-700 text-lg">{college}</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-[#6C47FF]/10 px-4 py-2 rounded-lg">
-                    <Users className="w-4 h-4 text-[#6C47FF]" />
-                    <span className="font-bold text-[#6C47FF]">{count}</span>
-                  </div>
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="p-8 border-b border-black/[0.04] bg-[#FFFFFF] flex items-center justify-between">
+          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
+          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
+        </div>
+        
+        <div className="divide-y divide-black/[0.04]">
+          {allColleges.length > 0 ? (
+            allColleges.map(([college, count], index) => (
+              <div key={college} className="flex items-center justify-between p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+                <div className="flex items-center gap-5">
+                  <span className="w-8 text-[18px] font-black text-[#9999B0] text-right font-['Outfit']">#{index + 1}</span>
+                  <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
                 </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                No college data available
+                <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
+                  <Users className="w-4 h-4 text-[#6C47FF]" />
+                  <span className="font-bold text-[#6C47FF] font-['Outfit'] text-[15px]">{count}</span>
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="p-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-sm font-['Outfit']">
+              No college data available
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -5750,7 +5791,6 @@ import { StatusSelect } from "./StatusSelect";
 
 export const dynamic = "force-dynamic";
 
-// Next.js 15+ standard for page props
 type PageProps = {
   searchParams: Promise<{ filter?: string }>;
 };
@@ -5767,8 +5807,6 @@ export default async function AdminEventsPage(props: PageProps) {
   const isAdmin = await requireAdmin(supabase, user.id);
   if (!isAdmin) redirect("/");
 
-  // Fetch events based on the filter. 
-  // We specify exact columns to prevent the empty object {} crash.
   let query = supabase.from("events").select(`
     id, slug, title, category, poster_url, status,
     profiles ( full_name )
@@ -5778,7 +5816,7 @@ export default async function AdminEventsPage(props: PageProps) {
   else if (filter === "approved") query = query.eq("status", "approved");
   else if (filter === "rejected") query = query.eq("status", "rejected");
   else if (filter === "deleted") query = query.eq("status", "deleted");
-  else query = query.neq("status", "deleted"); // Explicitly hides trash from the "All" tab
+  else query = query.neq("status", "deleted");
 
   const { data: events, error } = await query;
 
@@ -5786,7 +5824,6 @@ export default async function AdminEventsPage(props: PageProps) {
     console.error("Error fetching events:", error.message || JSON.stringify(error));
   }
 
-  // Wrapper functions for server actions
   async function handleUpdate(formData: FormData) {
     "use server";
     await updateEventDetailsAction(formData);
@@ -5797,134 +5834,125 @@ export default async function AdminEventsPage(props: PageProps) {
     await deleteEventAction(formData);
   }
 
-    return (
-    <div className="w-full">
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
       
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Section */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin" className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-slate-900">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Event Management</h1>
-            <p className="text-slate-500 font-medium mt-1">Review, approve, and manage all platform events.</p>
-          </div>
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Event Management</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review, approve, and manage all platform events.</p>
         </div>
+      </div>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-          <Link href="/admin/events" className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === "all" ? "bg-slate-900 text-white shadow-sm" : "bg-white text-slate-500 hover:bg-slate-100"}`}>
-            All Events
-          </Link>
-          <Link href="/admin/events?filter=pending" className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#6C47FF] text-white shadow-[0_4px_16px_rgba(108,71,255,0.2)]" : "bg-white text-slate-500 hover:bg-slate-100"}`}>
-            Pending
-          </Link>
-          <Link href="/admin/events?filter=approved" className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === "approved" ? "bg-emerald-500 text-white shadow-[0_4px_16px_rgba(16,185,129,0.2)]" : "bg-white text-slate-500 hover:bg-slate-100"}`}>
-            Approved
-          </Link>
-          <Link href="/admin/events?filter=rejected" className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === "rejected" ? "bg-red-500 text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-white text-slate-500 hover:bg-slate-100"}`}>
-            Rejected
-          </Link>
-          <Link href="/admin/events?filter=deleted" className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${filter === "deleted" ? "bg-slate-800 text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-white text-slate-500 hover:bg-slate-100"}`}>
-            Trash
-          </Link>
-        </div>
+      {/* Filter Tabs */}
+      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+        <Link href="/admin/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          All Events
+        </Link>
+        <Link href="/admin/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Pending
+        </Link>
+        <Link href="/admin/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Approved
+        </Link>
+        <Link href="/admin/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Rejected
+        </Link>
+        <Link href="/admin/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Trash
+        </Link>
+      </div>
 
-        {/* Data Table Container */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Event Details</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Creator</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Category</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {events && events.length > 0 ? (
-                  events.map((event) => (
-                    <tr key={event.id} className="hover:bg-slate-50/50 transition-colors">
-                      
-                      {/* Event Image & Title */}
-                      <td className="px-6 py-4">
-                        <form id={`update-${event.id}`} action={handleUpdate}>
+      {/* Data Table Container */}
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Event Details</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Creator</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Category</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Status</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04]">
+              {events && events.length > 0 ? (
+                events.map((event) => (
+                  <tr key={event.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
+                    
+                    {/* Event Image & Title */}
+                    <td className="px-8 py-6">
+                      <form id={`update-${event.id}`} action={handleUpdate}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                      </form>
+                      <div className="flex items-center gap-5">
+                        <div className="w-[88px] h-[56px] rounded-[16px] bg-[#F5F5F7] overflow-hidden shrink-0 relative">
+                          {event.poster_url ? (
+                            <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
+                          ) : (
+                            <Image src="/window.svg" alt="Default Poster" fill sizes="88px" className="object-cover" />
+                          )}
+                        </div>
+                        <div>
+                          <Link href={`/events/${event.slug || event.id}`} target="_blank" className="hover:text-[#6C47FF] transition-colors group/title">
+                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-[#6C47FF] leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
+                          </Link>
+                          <p className="text-[12px] font-bold text-[#9999B0] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Creator Info */}
+                    <td className="px-8 py-6">
+                      <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
+                        {(event.profiles as any)?.full_name || "Unknown User"}
+                      </span>
+                    </td>
+
+                    {/* Category (Editable) */}
+                    <td className="px-8 py-6">
+                      <input 
+                        type="text" 
+                        name="category" 
+                        defaultValue={event.category || ""} 
+                        form={`update-${event.id}`} 
+                        placeholder="Category"
+                        className="text-[12px] font-bold text-[#6C47FF] bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
+                      />
+                    </td>
+
+                    {/* Status (Editable) */}
+                    <td className="px-8 py-6">
+                      <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-end gap-3">
+                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] text-[#9999B0] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
+                          <CheckCircle className="w-5 h-5" />
+                        </button>
+
+                        <form action={handleDelete}>
                           <input type="hidden" name="eventId" value={event.id} />
+                          <DeleteConfirmButton />
                         </form>
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-12 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0 relative">
-                            {event.poster_url ? (
-                              <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="64px" className="object-cover" />
-                            ) : (
-                              <Image src="/window.svg" alt="Default Poster" fill sizes="64px" className="object-cover" />
-                            )}
-                          </div>
-                          <div>
-                            <Link href={`/events/${event.slug || event.id}`} target="_blank" className="hover:text-[#6C47FF] transition-colors group/title">
-                              <p className="font-bold text-slate-900 group-hover/title:text-[#6C47FF] leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
-                            </Link>
-                            <p className="text-xs font-medium text-slate-400 mt-1 uppercase tracking-wider">ID: {event.id?.split('-')[0]}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Creator Info */}
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-700">
-                          {(event.profiles as any)?.full_name || "Unknown User"}
-                        </span>
-                      </td>
-
-                      {/* Category (Editable) */}
-                      <td className="px-6 py-4">
-                        <input 
-                          type="text" 
-                          name="category" 
-                          defaultValue={event.category || ""} 
-                          form={`update-${event.id}`} 
-                          placeholder="Category"
-                          className="text-xs font-bold text-[#6C47FF] bg-transparent border-b border-dashed border-transparent hover:border-slate-300 focus:border-[#6C47FF] px-1 py-1 uppercase tracking-wider w-32 outline-none transition-colors"
-                        />
-                      </td>
-
-                      {/* Status (Editable) */}
-                      <td className="px-6 py-4">
-                        <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          
-                          <button type="submit" form={`update-${event.id}`} className="p-2 bg-white text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 border border-transparent hover:border-emerald-100 rounded-lg transition-colors" title="Save Changes">
-                            <CheckCircle className="w-5 h-5" />
-                          </button>
-
-                          {/* Delete Button */}
-                          <form action={handleDelete}>
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <DeleteConfirmButton />
-                          </form>
-
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                      No events found in this category
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                    No events found in this category
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
       </div>
     </div>
   );
@@ -5934,7 +5962,7 @@ export default async function AdminEventsPage(props: PageProps) {
 <file path="src/app/admin/reports/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
 import { resolveReportAction, punishCuratorAction } from "../actions";
 import { requireAdmin } from "@/lib/auth/permissions";
 
@@ -5960,7 +5988,6 @@ export default async function AdminReportsPage() {
     redirect("/");
   }
 
-  // Wrapper functions for server actions
   async function handleResolve(formData: FormData) {
     "use server";
     await resolveReportAction(formData);
@@ -5971,7 +5998,6 @@ export default async function AdminReportsPage() {
     await punishCuratorAction(formData);
   }
 
-  // Fetch Active Reports
   const { data: activeReports, error: reportsError } = await supabase
     .from("event_reports")
     .select(`
@@ -5990,59 +6016,62 @@ export default async function AdminReportsPage() {
   }
 
   return (
-    <div className="w-full">
-
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-red-500" />
-            User Reports
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Review and manage community-flagged events.</p>
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(239,68,68,0.08)]">
+          <AlertTriangle className="w-7 h-7 text-[#EF4444]" />
         </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Reports</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review and manage community-flagged events.</p>
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="divide-y divide-slate-100">
-            {activeReports && activeReports.length > 0 ? (
-              activeReports.map((report) => (
-                <div key={report.id} className="p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider">
-                        {report.reason}
-                      </span>
-                      <h4 className="font-bold text-slate-900 mt-2">{report.events?.title || "Unknown Event"}</h4>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Reported on: {new Date(report.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md uppercase">Pending</span>
+      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="divide-y divide-black/[0.04]">
+          {activeReports && activeReports.length > 0 ? (
+            activeReports.map((report) => (
+              <div key={report.id} className="p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+                <div className="flex items-start justify-between gap-5 mb-5">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                      {report.reason}
+                    </span>
+                    <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
+                    <p className="text-[14px] font-['Switzer'] text-[#9999B0] mt-1.5">
+                      Reported on: {new Date(report.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  
-                  <div className="flex gap-4 mt-6">
-                    <form action={handleResolve} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full bg-slate-100 text-slate-600 text-sm font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">
-                        Dismiss (Safe)
-                      </button>
-                    </form>
-                    
-                    <form action={handlePunish} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full bg-red-500 text-white text-sm font-bold py-3 rounded-xl hover:bg-red-600 transition-colors">
-                        Punish (-150 ET)
-                      </button>
-                    </form>
-                  </div>
+                  <span className="text-[11px] font-bold text-[#9999B0] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
                 </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                No active reports
+                
+                <div className="flex gap-4 mt-8">
+                  <form action={handleResolve} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-[#F5F5F7] text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
+                      Dismiss (Safe)
+                    </button>
+                  </form>
+                  
+                  <form action={handlePunish} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
+                      Punish (-150 ET)
+                    </button>
+                  </form>
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="p-24 text-center flex flex-col items-center justify-center">
+              <div className="w-[72px] h-[72px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
+                <ShieldAlert className="w-8 h-8 text-[#9999B0]" />
+              </div>
+              <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
+              <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -6070,7 +6099,6 @@ export default async function AdminUsersPage() {
   const isAdmin = await requireAdmin(supabase, user.id);
   if (!isAdmin) redirect("/");
 
-  // Fetch all profiles (exclude soft-deleted users, they're in the 30-day trash)
   const { data: users, error } = await supabase
     .from("profiles")
     .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
@@ -6080,7 +6108,6 @@ export default async function AdminUsersPage() {
     console.error("Error fetching users:", error.message || JSON.stringify(error));
   }
 
-  // Wrapper functions for server actions
   async function handleRoleUpdate(formData: FormData) {
     "use server";
     await updateUserRoleAction(formData);
@@ -6092,155 +6119,146 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <div className="w-full">
-
-      
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header Section */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/admin" className="p-2 bg-white rounded-full shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-slate-900">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">User Management</h1>
-            <p className="text-slate-500 font-medium mt-1">View, edit, and manage all registered users.</p>
-          </div>
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Management</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">View, edit, and manage all registered users.</p>
         </div>
+      </div>
 
-        {/* Data Table Container */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">User Type</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Interested Cities</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Categories</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">Role</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400">ET Score</th>
-                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-widest text-slate-400 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {users && users.length > 0 ? (
-                  users.map((profile) => (
-                    <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors">
-                      
-                      {/* Avatar & Info */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center overflow-hidden shrink-0">
-                            {profile.avatar_url ? (
-                              <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={40} height={40} className="object-cover w-full h-full" />
-                            ) : (
-                              <UserIcon className="w-5 h-5 text-slate-400" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 leading-tight">{profile.full_name || "Anonymous User"}</p>
-                            <p className="text-xs font-medium text-slate-500 mt-0.5">{profile.email}</p>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* User Type */}
-                      <td className="px-6 py-4">
-                        {profile.user_type ? (
-                          <span className="text-sm font-bold text-slate-700 whitespace-normal break-words">{profile.user_type}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Interested Cities */}
-                      <td className="px-6 py-4">
-                        {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
-                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.preferred_cities.join(", ")}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Categories */}
-                      <td className="px-6 py-4">
-                        {profile.goals && profile.goals.length > 0 ? (
-                          <span className="text-sm font-medium text-slate-700 whitespace-normal break-words">{profile.goals.join(", ")}</span>
-                        ) : (
-                          <span className="text-sm font-medium text-slate-400 italic">Not specified</span>
-                        )}
-                      </td>
-
-                      {/* Role Badge */}
-                      <td className="px-6 py-4">
-                        {profile.role === "admin" ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-wider">
-                            <Shield className="w-3 h-3" /> Admin
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
-                            <UserIcon className="w-3 h-3" /> User
-                          </span>
-                        )}
-                      </td>
-
-                      {/* ET Score */}
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-black text-slate-900">{profile.et_score || 0}</span>
-                      </td>
-
-                      {/* Actions */}
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          
-                          {/* Role Toggle Form */}
-                          {profile.id !== user.id && (
-                            <form action={handleRoleUpdate}>
-                              <input type="hidden" name="userId" value={profile.id} />
-                              <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
-                              <button 
-                                type="submit" 
-                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                                  profile.role === "admin" 
-                                    ? "bg-slate-100 text-slate-600 hover:bg-slate-200" 
-                                    : "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20"
-                                }`}
-                              >
-                                {profile.role === "admin" ? "Demote" : "Make Admin"}
-                              </button>
-                            </form>
+      {/* Data Table Container */}
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">User</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">User Type</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Cities</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Categories</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Role</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">ET Score</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04]">
+              {users && users.length > 0 ? (
+                users.map((profile) => (
+                  <tr key={profile.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
+                    
+                    {/* Avatar & Info */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] border border-black/[0.04] flex items-center justify-center overflow-hidden shrink-0">
+                          {profile.avatar_url ? (
+                            <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={44} height={44} className="object-cover w-full h-full" />
+                          ) : (
+                            <UserIcon className="w-5 h-5 text-[#9999B0]" />
                           )}
-
-                          {/* Delete User Form */}
-                          {profile.id !== user.id && (
-                            <form action={handleDeleteUser}>
-                              <input type="hidden" name="userId" value={profile.id} />
-                              <button 
-                                type="submit" 
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                                title="Delete User"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </form>
-                          )}
-
                         </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                      No users found
+                        <div>
+                          <p className="font-bold font-['Outfit'] text-[#0D0D1A] text-[16px] leading-tight">{profile.full_name || "Anonymous User"}</p>
+                          <p className="text-[13px] font-medium font-['Switzer'] text-[#555570] mt-1">{profile.email}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* User Type */}
+                    <td className="px-8 py-6">
+                      {profile.user_type ? (
+                        <span className="text-[14px] font-bold font-['Outfit'] text-[#0D0D1A] whitespace-nowrap">{profile.user_type}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Interested Cities */}
+                    <td className="px-8 py-6">
+                      {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570]">{profile.preferred_cities.join(", ")}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Categories */}
+                    <td className="px-8 py-6">
+                      {profile.goals && profile.goals.length > 0 ? (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570] line-clamp-2 max-w-[200px]">{profile.goals.join(", ")}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Role Badge */}
+                    <td className="px-8 py-6">
+                      {profile.role === "admin" ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(108,71,255,0.08)] text-[#6C47FF] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                          <Shield className="w-3.5 h-3.5" /> Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[#F5F5F7] text-[#555570] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                          <UserIcon className="w-3.5 h-3.5" /> User
+                        </span>
+                      )}
+                    </td>
+
+                    {/* ET Score */}
+                    <td className="px-8 py-6">
+                      <span className="text-[18px] font-black text-[#0D0D1A] font-['Outfit']">{profile.et_score || 0}</span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-end gap-3">
+                        
+                        {/* Role Toggle */}
+                        {profile.id !== user.id && (
+                          <form action={handleRoleUpdate}>
+                            <input type="hidden" name="userId" value={profile.id} />
+                            <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
+                            <button 
+                              type="submit" 
+                              className={`px-4 py-2 rounded-full text-[13px] font-bold font-['Outfit'] transition-colors ${
+                                profile.role === "admin" 
+                                  ? "bg-[#F5F5F7] text-[#555570] hover:bg-[#EAEAEA]" 
+                                  : "bg-[#EDE8FF] text-[#6C47FF] hover:bg-[#DED5FF]"
+                              }`}
+                            >
+                              {profile.role === "admin" ? "Demote" : "Make Admin"}
+                            </button>
+                          </form>
+                        )}
+
+                        {/* Delete */}
+                        {profile.id !== user.id && (
+                          <form action={handleDeleteUser}>
+                            <input type="hidden" name="userId" value={profile.id} />
+                            <button 
+                              type="submit" 
+                              className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[#9999B0] hover:bg-[#EF4444] hover:text-white transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </form>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-8 py-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                    No users found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
       </div>
     </div>
   );
@@ -6667,14 +6685,11 @@ export default async function AdminFeedbackPage() {
     redirect("/");
   }
 
-  // Fetch all platform feedback without a limit
-  // Note: Removed the 'profiles' join temporarily until a Foreign Key constraint is added in the Supabase DB.
   const { data: platformFeedback, error } = await supabase
     .from("platform_feedback")
     .select("id, type, message, created_at, user_id")
     .order("created_at", { ascending: false });
 
-  // Manually fetch user profiles since FK is missing
   const userIds = platformFeedback?.map((f: any) => f.user_id).filter(Boolean) || [];
   const { data: profilesData } = await supabase
     .from("profiles")
@@ -6687,415 +6702,58 @@ export default async function AdminFeedbackPage() {
     console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
   }
 
-    return (
-    <div className="w-full">
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 flex items-center gap-3">
-            <MessageSquareWarning className="w-8 h-8 text-blue-500" />
-            Platform Feedback & Bugs
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Review all user-submitted bug reports and feature requests.</p>
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(51,128,240,0.08)]">
+          <MessageSquareWarning className="w-7 h-7 text-[#3380F0]" />
         </div>
-
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="divide-y divide-slate-100">
-            {platformFeedback && platformFeedback.length > 0 ? (
-              platformFeedback.map((feedback: any) => (
-                <div key={feedback.id} className="p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider ${feedback.type === 'bug' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                        {feedback.type}
-                      </span>
-                      <span className="text-sm font-bold text-slate-400">
-                        {new Date(feedback.created_at).toLocaleDateString()} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 mt-3">
-                    <p className="text-base text-slate-800 whitespace-pre-wrap">{feedback.message}</p>
-                  </div>
-                  
-                  <div className="mt-4 flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-slate-500">
-                        {feedback.profiles?.full_name?.charAt(0) || "?"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-500 font-medium">
-                      Submitted by <span className="text-slate-700 font-bold">{feedback.profiles?.full_name || "Anonymous User"}</span>
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                No feedback submitted yet
-              </div>
-            )}
-          </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Feedback & Bugs</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review all user-submitted bug reports and feature requests.</p>
         </div>
       </div>
-    </div>
-  );
-}
-</file>
 
-<file path="src/app/admin/layout.tsx">
-import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
-      <AdminHeader />
-      <div className="flex flex-1 w-full mx-auto relative">
-        <AdminSidebar />
-        <div className="flex-1 w-full min-w-0 bg-[#F5F5F7]">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { CheckCircle, XCircle, Users, AlertTriangle, ShieldAlert, BarChart3, Building2, CalendarDays, ChevronRight } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-export const dynamic = "force-dynamic";
-
-type ReportWithEvent = {
-  id: string;
-  reason: string;
-  status: string | null;
-  created_at: string;
-  curator_id: string | null;
-  events: { title: string } | null;
-};
-
-export default async function AdminDashboard() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-
-  if (!isAdmin) {
-    console.log("Unauthorized access attempt by user ID:", user?.id);
-    redirect("/");
-  }
-
-  // Wrapper functions to fix the TypeScript return type error
-  async function handleApprove(formData: FormData) {
-    "use server";
-    await approveEventAction(formData);
-  }
-
-  async function handleReject(formData: FormData) {
-    "use server";
-    await rejectEventAction(formData);
-  }
-
-  async function handleResolve(formData: FormData) {
-    "use server";
-    await resolveReportAction(formData);
-  }
-
-  async function handlePunish(formData: FormData) {
-    "use server";
-    await punishCuratorAction(formData);
-  }
-
-  async function handleToggleLeaderboard(formData: FormData) {
-    "use server";
-    await toggleLeaderboardAction(formData);
-  }
-
-  async function handleToggleFeatured(formData: FormData) {
-    "use server";
-    await toggleFeaturedAction(formData);
-  }
-
-  // 1. Fetch Global Dashboard Analytics
-  const [
-    { count: totalUsers },
-    { count: totalEvents },
-    { data: collegesData },
-    { data: platformFeedback },
-    { data: appSettings }
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("events").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("college").not("college", "is", null),
-    supabase.from("platform_feedback").select("id, type, message, created_at, user_id").order("created_at", { ascending: false }).limit(20),
-    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle()
-  ]);
-
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const featuredEnabled = appSettings?.featured_enabled ?? true;
-
-  // Calculate top performing colleges
-  const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
-    if (profile.college) {
-      acc[profile.college] = (acc[profile.college] || 0) + 1;
-    }
-    return acc;
-  }, {}) || {};
-  
-  const topColleges = Object.entries(collegeCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
-
-  // 2. Fetch Pending Events
-  const { data: pendingEvents } = await supabase
-    .from("events")
-    .select("id, slug, title, category, poster_url, creator_id, profiles:creator_id ( full_name )")
-    .eq("status", "pending") 
-    .order("created_at", { ascending: false });
-
-  // 3. Fetch Active Reports with proper TypeScript typing
-  const { data: activeReports, error: reportsError } = await supabase
-    .from("event_reports")
-    .select(`
-      id,
-      reason,
-      status,
-      created_at,
-      curator_id,
-      events ( title )
-    `)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false }) as { data: ReportWithEvent[] | null, error: unknown };
-
-  if (reportsError) {
-    console.error("Fetch Reports Error:", reportsError);
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900">Admin Control</h1>
-            <p className="text-slate-500 font-medium">Manage event quality and community trust.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <form action={handleToggleLeaderboard}>
-              <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
-              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${leaderboardEnabled ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
-                Leaderboard: {leaderboardEnabled ? "ON" : "OFF"}
-              </button>
-            </form>
-            
-            <form action={handleToggleFeatured}>
-              <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
-              <button type="submit" className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-full transition-colors ${featuredEnabled ? "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20" : "bg-slate-200 text-slate-500 hover:bg-slate-300"}`}>
-                Featured System: {featuredEnabled ? "ON" : "OFF"}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Global Users */}
-          <Link href="/admin/users" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-blue-500/20 transition-all cursor-pointer">
-            <Users className="w-6 h-6 text-blue-500 mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Users</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{totalUsers || 0}</h2>
-          </Link>
-
-          {/* Global Events */}
-          <Link href="/admin/events" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-emerald-500/20 transition-all cursor-pointer">
-            <CalendarDays className="w-6 h-6 text-emerald-500 mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Events</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{totalEvents || 0}</h2>
-          </Link>
-
-          <Link href="/admin/events?filter=pending" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-[#6C47FF]/20 transition-all cursor-pointer">
-            <BarChart3 className="w-6 h-6 text-[#6C47FF] mb-4" />
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Pending Reviews</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 mt-2">{pendingEvents?.length || 0}</h2>
-          </Link>
-          
-          {/* Active Reports Stat Card */}
-          <Link href="/admin/reports" className="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md hover:ring-2 hover:ring-red-500/20 transition-all cursor-pointer">
-            <ShieldAlert className="w-6 h-6 text-red-500 mb-4" />
-            <p className="text-sm font-bold text-red-400 uppercase tracking-widest">Active Reports</p>
-            <h2 className="text-4xl font-['Outfit'] tracking-[-0.02em] font-black text-red-600 mt-2">{activeReports?.length || 0}</h2>
-          </Link>
-        </div>
-
-        {/* Top Colleges Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
-          <Link href="/admin/colleges" className="flex items-center justify-between mb-4 group hover:opacity-80 transition-opacity">
-            <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-slate-900" />
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900">Top Performing Colleges</h3>
-            </div>
-            <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-900 transition-colors" />
-          </Link>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {topColleges.map(([college, count], index) => (
-              <div key={college} className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-black text-slate-300">#{index + 1}</span>
-                  <span className="font-bold text-slate-700 truncate">{college}</span>
-                </div>
-                <span className="text-xs font-bold bg-white px-2 py-1 rounded-md text-[#6C47FF] border border-slate-200">{count} Users</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Approval Queue Section */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-            <Link href="/admin/events?filter=pending" className="p-6 border-b border-slate-100 flex items-center justify-between group hover:bg-slate-50 transition-colors cursor-pointer">
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900">Event Approval Queue</h3>
-              <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-900 transition-colors" />
-            </Link>
-
-            <div className="divide-y divide-slate-100">
-              {pendingEvents && pendingEvents.length > 0 ? (
-                pendingEvents.map((event) => (
-                  <div key={event.id} className="p-6 flex flex-col gap-4 hover:bg-slate-50 transition-colors">
-                    <div className="flex gap-4">
-                      <div className="relative w-20 h-14 rounded-xl overflow-hidden bg-slate-100 shrink-0">
-                        <Image src={event.poster_url || "/window.svg"} alt={event.title || "Event Image"} fill sizes="80px" className="object-cover" />
-                      </div>
-                      <div>
-                        <Link href={`/events/${event.slug || event.id}`} target="_blank" className="hover:text-[#6C47FF] transition-colors group/title">
-                          <h4 className="font-bold text-slate-900 group-hover/title:text-[#6C47FF] leading-tight line-clamp-1">{event.title}</h4>
-                        </Link>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <p className="text-[10px] font-bold text-[#6C47FF] bg-[#6C47FF]/10 px-2 py-0.5 rounded uppercase tracking-wider">{event.category}</p>
-                          <span className="text-[11px] font-medium text-slate-500 truncate">by {(event.profiles as any)?.full_name || "Unknown"}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      <form action={handleApprove} className="flex-1">
-                        <input type="hidden" name="eventId" value={event.id ?? ""} />
-                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-xs font-bold hover:bg-emerald-100 transition-all">
-                          <CheckCircle className="w-4 h-4" /> Approve
-                        </button>
-                      </form>
-
-                      <form action={handleReject} className="flex-1">
-                        <input type="hidden" name="eventId" value={event.id} />
-                        <button type="submit" className="w-full flex items-center justify-center gap-2 bg-slate-50 text-slate-500 px-4 py-2 rounded-full text-xs font-bold hover:bg-red-50 hover:text-red-500 transition-all">
-                          <XCircle className="w-4 h-4" /> Reject
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                  Inbox Zero
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* User Reports Section */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-            <Link href="/admin/reports" className="p-6 border-b border-slate-100 bg-red-50/30 flex items-center justify-between group hover:bg-red-100/50 transition-colors cursor-pointer">
-              <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" /> User Reports
-              </h3>
-              <ChevronRight className="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors" />
-            </Link>
-
-            <div className="divide-y divide-slate-100">
-              {activeReports && activeReports.length > 0 ? (
-                activeReports.map((report) => (
-                  <div key={report.id} className="p-6 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider">
-                          {report.reason}
-                        </span>
-                        {/* TypeScript error is resolved here */}
-                        <h4 className="font-bold text-slate-900 mt-2">{report.events?.title || "Unknown Event"}</h4>
-                      </div>
-                      <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md uppercase">Pending</span>
-                    </div>
-                    
-                    {/* THE NEW BUTTONS: Dismiss & Punish */}
-                    <div className="flex gap-2 mt-4">
-                      <form action={handleResolve} className="flex-1">
-                        <input type="hidden" name="reportId" value={report.id} />
-                        <button type="submit" className="w-full bg-slate-100 text-slate-600 text-xs font-bold py-2 rounded-lg hover:bg-slate-200 transition-colors">
-                          Dismiss (Safe)
-                        </button>
-                      </form>
-                      
-                      <form action={handlePunish} className="flex-1">
-                        <input type="hidden" name="reportId" value={report.id} />
-                        <button type="submit" className="w-full bg-red-500 text-white text-xs font-bold py-2 rounded-lg hover:bg-red-600 transition-colors">
-                          Punish (-150 ET)
-                        </button>
-                      </form>
-                    </div>
-
-                  </div>
-                ))
-              ) : (
-                <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                  No active reports
-                </div>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-        {/* Platform Feedback Section */}
-        <div className="mt-8 bg-white rounded-2xl overflow-hidden shadow-sm h-fit">
-          <Link href="/admin/feedback" className="p-6 border-b border-slate-100 bg-blue-50/30 flex items-center justify-between group hover:bg-blue-100/50 transition-colors cursor-pointer">
-            <h3 className="font-['Outfit'] tracking-[-0.02em] font-bold text-lg text-slate-900 flex items-center gap-2">
-              Platform Feedback & Bugs
-            </h3>
-            <ChevronRight className="w-5 h-5 text-blue-400 group-hover:text-blue-600 transition-colors" />
-          </Link>
-          <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
-            {platformFeedback && platformFeedback.length > 0 ? (
-              platformFeedback.map((feedback: any) => (
-                <div key={feedback.id} className="p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${feedback.type === 'bug' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="divide-y divide-black/[0.04]">
+          {platformFeedback && platformFeedback.length > 0 ? (
+            platformFeedback.map((feedback: any) => (
+              <div key={feedback.id} className="p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+                <div className="flex items-start justify-between gap-5 mb-4">
+                  <div className="flex items-center gap-4">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-[#F59E0B]'}`}>
                       {feedback.type}
                     </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      {new Date(feedback.created_at).toLocaleDateString()}
+                    <span className="text-[13px] font-bold font-['Switzer'] text-[#9999B0]">
+                      {new Date(feedback.created_at).toLocaleDateString()} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-700 mt-2">{feedback.message}</p>
-                  <p className="text-xs text-slate-400 mt-3 font-medium">From: {feedback.profiles?.full_name || "Anonymous"}</p>
                 </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
-                No feedback yet
+                
+                <div className="bg-[#F5F5F7] p-6 rounded-[20px] mt-4">
+                  <p className="text-[16px] font-['Switzer'] text-[#0D0D1A] whitespace-pre-wrap leading-relaxed">{feedback.message}</p>
+                </div>
+                
+                <div className="mt-5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#EDE8FF] flex items-center justify-center shrink-0">
+                    <span className="text-[12px] font-bold font-['Outfit'] text-[#6C47FF]">
+                      {feedback.profiles?.full_name?.charAt(0) || "?"}
+                    </span>
+                  </div>
+                  <p className="text-[14px] text-[#555570] font-medium font-['Switzer']">
+                    Submitted by <span className="text-[#0D0D1A] font-bold">{feedback.profiles?.full_name || "Anonymous User"}</span>
+                  </p>
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="p-24 text-center text-[#9999B0] font-bold uppercase tracking-[0.2em] text-[13px] font-['Outfit']">
+              No feedback submitted yet
+            </div>
+          )}
         </div>
-
+      </div>
     </div>
   );
 }
@@ -8462,6 +8120,258 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 
       </div>
     </main>
+  );
+}
+</file>
+
+<file path="src/app/admin/layout.tsx">
+import { AdminSidebar } from "./AdminSidebar";
+import { AdminHeader } from "./AdminHeader";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="h-screen flex overflow-hidden bg-[#F5F5F7]">
+      <AdminSidebar />
+      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
+        <AdminHeader />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/admin/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { CheckCircle, XCircle, Users, ShieldAlert, BarChart3, Ticket, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+export const dynamic = "force-dynamic";
+
+type ReportWithEvent = {
+  id: string;
+  reason: string;
+  status: string | null;
+  created_at: string;
+  curator_id: string | null;
+  events: { title: string } | null;
+};
+
+export default async function AdminDashboard() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) {
+    redirect("/");
+  }
+
+  // Server Actions
+  async function handleApprove(formData: FormData) { "use server"; await approveEventAction(formData); }
+  async function handleReject(formData: FormData) { "use server"; await rejectEventAction(formData); }
+  async function handleResolve(formData: FormData) { "use server"; await resolveReportAction(formData); }
+  async function handlePunish(formData: FormData) { "use server"; await punishCuratorAction(formData); }
+  async function handleToggleLeaderboard(formData: FormData) { "use server"; await toggleLeaderboardAction(formData); }
+  async function handleToggleFeatured(formData: FormData) { "use server"; await toggleFeaturedAction(formData); }
+
+  // Fetch Data
+  const [
+    { count: totalUsers },
+    { count: totalEvents },
+    { data: appSettings },
+    { data: pendingEvents },
+    { data: activeReports }
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("events").select("*", { count: "exact", head: true }),
+    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, poster_url, created_at, profiles:creator_id ( full_name )").eq("status", "pending").order("created_at", { ascending: false }).limit(10),
+    supabase.from("event_reports").select("id, reason, status, created_at, curator_id, events ( title )").eq("status", "pending").order("created_at", { ascending: false }).limit(5)
+  ]);
+
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const featuredEnabled = appSettings?.featured_enabled ?? true;
+  const reports = activeReports as unknown as ReportWithEvent[];
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-12">
+      
+      {/* HEADER CONTROLS */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Overview</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Monitor your platform metrics and moderation queues.</p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <form action={handleToggleLeaderboard}>
+            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
+            <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${leaderboardEnabled ? "bg-[#FFFFFF] text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-[#F0F0F8] text-[#9999B0]"}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${leaderboardEnabled ? "bg-[#22C55E]" : "bg-[#9999B0]"}`} />
+              <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">LEADERBOARD</span>
+            </button>
+          </form>
+          
+          <form action={handleToggleFeatured}>
+            <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
+            <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${featuredEnabled ? "bg-[#FFFFFF] text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-[#F0F0F8] text-[#9999B0]"}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${featuredEnabled ? "bg-[#6C47FF]" : "bg-[#9999B0]"}`} />
+              <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">FEATURED SYSTEM</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* METRICS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: "TOTAL USERS", value: totalUsers || 0, icon: Users, color: "text-[#3380F0]", bg: "bg-[rgba(51,128,240,0.08)]", trend: "+12%" },
+          { label: "TOTAL EVENTS", value: totalEvents || 0, icon: Ticket, color: "text-[#6C47FF]", bg: "bg-[rgba(108,71,255,0.08)]", trend: "+8%" },
+          { label: "PENDING APPROVALS", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-[#F59E0B]", bg: "bg-[rgba(245,158,11,0.08)]", trend: "-2%" },
+          { label: "ACTIVE REPORTS", value: reports?.length || 0, icon: ShieldAlert, color: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.08)]", trend: "0%" }
+        ].map((stat, i) => (
+          <div key={i} className="bg-[#FFFFFF] p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-8">
+              <div className={`w-14 h-14 rounded-[20px] flex items-center justify-center ${stat.bg}`}>
+                <stat.icon className={`w-7 h-7 ${stat.color}`} />
+              </div>
+              <span className={`text-[14px] font-bold font-['Switzer'] flex items-center gap-1 ${stat.trend.startsWith('+') ? 'text-[#22C55E]' : 'text-[#9999B0]'}`}>
+                {stat.trend.startsWith('+') && <TrendingUp className="w-4 h-4" />}
+                {stat.trend}
+              </span>
+            </div>
+            <h3 className="text-[56px] font-black font-['Outfit'] text-[#0D0D1A] tracking-[-2px] leading-none">{stat.value}</h3>
+            <p className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit'] mt-4">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: EVENTS QUEUE (Takes 2/3 width) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
+              Event Approval Queue
+            </h2>
+            <Link href="/admin/events" className="text-[14px] font-semibold text-[#6C47FF] hover:text-[#5535E0] font-['Switzer']">View All</Link>
+          </div>
+          
+          <div className="space-y-4">
+            {pendingEvents && pendingEvents.length > 0 ? (
+              pendingEvents.map((event) => (
+                <div key={event.id} className="bg-[#FFFFFF] p-5 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 flex items-center justify-between group">
+                  <div className="flex items-center gap-6">
+                    <div className="w-[120px] h-[76px] rounded-[20px] bg-[#F5F5F7] overflow-hidden relative shrink-0">
+                      <Image src={event.poster_url || "/window.svg"} alt="Poster" fill sizes="120px" className="object-cover" />
+                    </div>
+                    <div>
+                      <div className="mb-2">
+                        <span className="inline-block px-3 py-1.5 rounded-[12px] bg-[#EDE8FF] text-[#6C47FF] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
+                          {event.category}
+                        </span>
+                      </div>
+                      <Link href={`/events/${event.slug || event.id}`} target="_blank" className="font-bold font-['Outfit'] text-[20px] text-[#0D0D1A] hover:text-[#6C47FF] transition-colors line-clamp-1">
+                        {event.title}
+                      </Link>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[14px] font-['Switzer'] text-[#555570]">
+                          {(event.profiles as any)?.full_name || "Unknown Organizer"}
+                        </span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D1D1D6]"></span>
+                        <span className="text-[14px] font-['Switzer'] text-[#9999B0]">
+                          {event.created_at ? new Date(event.created_at as string).toLocaleDateString() : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <form action={handleReject}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <button type="submit" className="w-[48px] h-[48px] rounded-full flex items-center justify-center text-[#555570] bg-[#F5F5F7] hover:bg-[#EF4444] hover:text-white transition-all duration-200">
+                        <XCircle className="w-6 h-6" />
+                      </button>
+                    </form>
+                    <form action={handleApprove}>
+                      <input type="hidden" name="eventId" value={event.id ?? ""} />
+                      <button type="submit" className="px-8 h-[48px] rounded-full flex items-center justify-center gap-2 bg-[#6C47FF] text-white font-['Outfit'] font-bold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(108,71,255,0.2)]">
+                        <CheckCircle className="w-5 h-5" /> Approve
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-[#FFFFFF] rounded-[32px] p-20 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="w-[80px] h-[80px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-6">
+                  <CheckCircle className="w-10 h-10 text-[#9999B0]" />
+                </div>
+                <p className="text-[24px] font-bold font-['Outfit'] text-[#0D0D1A]">The stage is empty</p>
+                <p className="text-[16px] text-[#555570] font-['Switzer'] mt-2">No events waiting for your approval.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: MODERATION (Takes 1/3 width) */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
+              Moderation Queue
+            </h2>
+          </div>
+          
+          <div className="space-y-4">
+            {reports && reports.length > 0 ? (
+              reports.map((report) => (
+                <div key={report.id} className="bg-[#FFFFFF] p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300">
+                  <div className="mb-4">
+                    <span className="inline-block px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
+                      {report.reason}
+                    </span>
+                  </div>
+                  <h4 className="text-[18px] font-bold font-['Outfit'] text-[#0D0D1A] line-clamp-2 leading-snug">{report.events?.title || "Unknown Event"}</h4>
+                  <p className="text-[14px] text-[#9999B0] font-['Switzer'] mt-2">Reported on {new Date(report.created_at).toLocaleDateString()}</p>
+                  
+                  <div className="flex gap-4 mt-8">
+                    <form action={handleResolve} className="flex-1">
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <button type="submit" className="w-full h-[48px] rounded-full bg-[#F5F5F7] text-[#0D0D1A] font-['Outfit'] font-bold text-[14px] hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
+                        Dismiss
+                      </button>
+                    </form>
+                    <form action={handlePunish} className="flex-1">
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <button type="submit" className="w-full h-[48px] rounded-full bg-[#EF4444] text-white font-['Outfit'] font-bold text-[14px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
+                        Punish
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            ) : (
+               <div className="bg-[#FFFFFF] rounded-[32px] p-16 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="w-[72px] h-[72px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
+                  <ShieldAlert className="w-8 h-8 text-[#9999B0]" />
+                </div>
+                <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
+                <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
   );
 }
 </file>
@@ -9849,6 +9759,87 @@ export default async function EventPage({
 }
 </file>
 
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event, index) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
 <file path="src/features/create-event/components/StepMandatory.tsx">
 "use client";
 
@@ -10249,87 +10240,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             )}
           </div>
         </motion.div>
-  );
-}
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event, index) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
   );
 }
 </file>
@@ -13065,204 +12975,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 }
 </file>
 
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
- 
- // 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-              <head>
-         {/* Async Font Loading (Prevents Render Blocking) */}
-         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-         <link 
-           id="switzer-font"
-           rel="stylesheet" 
-           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
-           media="print" 
-         />
-         <script
-           dangerouslySetInnerHTML={{
-             __html: `document.getElementById('switzer-font').media='all';`
-           }}
-         />
-         <noscript>
-           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-         </noscript>
-
-         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
-         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-         <link rel="preload" href="/hero-section-v2.webp" as="image" />
-         
-        
-        {/* Microsoft Clarity */}
-        <Script id="microsoft-clarity" strategy="afterInteractive">
-          {`
-            (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-            })(window, document, "clarity", "script", "xfz36sbk56");
-          `}
-        </Script>
-
-        {/* Google Analytics GA4 */}
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', 'G-SHL5VFD860');
-          `}
-        </Script>
-       </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
-  );
-}
-</file>
-
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/events/[slug]/EventClientUI.tsx">
 "use client";
 
@@ -13785,6 +13497,204 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
         )}
       </AnimatePresence>
     </main>
+  );
+}
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+ 
+ // 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+              <head>
+         {/* Async Font Loading (Prevents Render Blocking) */}
+         <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+         <link 
+           id="switzer-font"
+           rel="stylesheet" 
+           href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" 
+           media="print" 
+         />
+         <script
+           dangerouslySetInnerHTML={{
+             __html: `document.getElementById('switzer-font').media='all';`
+           }}
+         />
+         <noscript>
+           <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+         </noscript>
+
+         {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN & preload hero image */}
+         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+         <link rel="preload" href="/hero-section-v2.webp" as="image" />
+         
+        
+        {/* Microsoft Clarity */}
+        <Script id="microsoft-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "xfz36sbk56");
+          `}
+        </Script>
+
+        {/* Google Analytics GA4 */}
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-SHL5VFD860" strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SHL5VFD860');
+          `}
+        </Script>
+       </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }
 </file>

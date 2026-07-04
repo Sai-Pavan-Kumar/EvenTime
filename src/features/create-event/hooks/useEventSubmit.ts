@@ -96,8 +96,8 @@ export function useEventSubmit() {
           .eq("status", "pending");
           
       } else {
-        // Removed hardcoded admin email, strictly relies on database role
-        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+        // Check database role or fallback to environment admin email
+        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
         console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
         const { error } = await supabase.from("events").insert([{ 

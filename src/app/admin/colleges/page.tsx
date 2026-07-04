@@ -34,44 +34,43 @@ export default async function AdminCollegesPage() {
   const allColleges = Object.entries(collegeCounts).sort(([, a], [, b]) => b - a);
 
   return (
-    <div className="w-full">
-
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-slate-900" />
-            College Analytics
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Global platform adoption ranked by institution.</p>
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(108,71,255,0.08)]">
+          <Building2 className="w-7 h-7 text-[#6C47FF]" />
         </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">College Analytics</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Global platform adoption ranked by institution.</p>
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Institution Name</span>
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Total Users</span>
-          </div>
-          
-          <div className="divide-y divide-slate-100">
-            {allColleges.length > 0 ? (
-              allColleges.map(([college, count], index) => (
-                <div key={college} className="flex items-center justify-between p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-center gap-4">
-                    <span className="w-8 text-lg font-black text-slate-300 text-right">#{index + 1}</span>
-                    <span className="font-bold text-slate-700 text-lg">{college}</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-[#6C47FF]/10 px-4 py-2 rounded-lg">
-                    <Users className="w-4 h-4 text-[#6C47FF]" />
-                    <span className="font-bold text-[#6C47FF]">{count}</span>
-                  </div>
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="p-8 border-b border-black/[0.04] bg-[#FFFFFF] flex items-center justify-between">
+          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
+          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
+        </div>
+        
+        <div className="divide-y divide-black/[0.04]">
+          {allColleges.length > 0 ? (
+            allColleges.map(([college, count], index) => (
+              <div key={college} className="flex items-center justify-between p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+                <div className="flex items-center gap-5">
+                  <span className="w-8 text-[18px] font-black text-[#9999B0] text-right font-['Outfit']">#{index + 1}</span>
+                  <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
                 </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                No college data available
+                <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
+                  <Users className="w-4 h-4 text-[#6C47FF]" />
+                  <span className="font-bold text-[#6C47FF] font-['Outfit'] text-[15px]">{count}</span>
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="p-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-sm font-['Outfit']">
+              No college data available
+            </div>
+          )}
         </div>
       </div>
     </div>

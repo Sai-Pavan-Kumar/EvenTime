@@ -12,20 +12,10 @@ import type { CollegeRow } from "@/types";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin  }: any) {
   
   // SECURE ADMIN CHECK
-  const [isAdmin, setIsAdmin] = useState(false);
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
-        setIsAdmin(true);
-      }
-    };
-    checkAdmin();
-  }, []);
+  const isAdmin = isCurrentUserAdmin;
 
   // NEW: College picker for restricted college events (live server search)
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
@@ -386,7 +376,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
               {!extraction.isTrusted && data.regLink && !extraction.isExtracting && extraction.trustWarning !== "" && ( 
             */}
             
-           {isAdmin && data.isFeatured ? (
+           {/* isAdminFeatureEnabled OFF will block the next step */}
+           {isAdmin && isAdminFeatureEnabled && data.isFeatured ? (
               <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">
                  Continue to Next Step
               </button>

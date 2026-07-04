@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
 import { resolveReportAction, punishCuratorAction } from "../actions";
 import { requireAdmin } from "@/lib/auth/permissions";
 
@@ -26,7 +26,6 @@ export default async function AdminReportsPage() {
     redirect("/");
   }
 
-  // Wrapper functions for server actions
   async function handleResolve(formData: FormData) {
     "use server";
     await resolveReportAction(formData);
@@ -37,7 +36,6 @@ export default async function AdminReportsPage() {
     await punishCuratorAction(formData);
   }
 
-  // Fetch Active Reports
   const { data: activeReports, error: reportsError } = await supabase
     .from("event_reports")
     .select(`
@@ -56,59 +54,62 @@ export default async function AdminReportsPage() {
   }
 
   return (
-    <div className="w-full">
-
-      
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-3xl font-['Outfit'] tracking-[-0.02em] font-black text-slate-900 flex items-center gap-3">
-            <AlertTriangle className="w-8 h-8 text-red-500" />
-            User Reports
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">Review and manage community-flagged events.</p>
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(239,68,68,0.08)]">
+          <AlertTriangle className="w-7 h-7 text-[#EF4444]" />
         </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Reports</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review and manage community-flagged events.</p>
+        </div>
+      </div>
 
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-          <div className="divide-y divide-slate-100">
-            {activeReports && activeReports.length > 0 ? (
-              activeReports.map((report) => (
-                <div key={report.id} className="p-6 hover:bg-slate-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider">
-                        {report.reason}
-                      </span>
-                      <h4 className="font-bold text-slate-900 mt-2">{report.events?.title || "Unknown Event"}</h4>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Reported on: {new Date(report.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md uppercase">Pending</span>
+      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="divide-y divide-black/[0.04]">
+          {activeReports && activeReports.length > 0 ? (
+            activeReports.map((report) => (
+              <div key={report.id} className="p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+                <div className="flex items-start justify-between gap-5 mb-5">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                      {report.reason}
+                    </span>
+                    <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
+                    <p className="text-[14px] font-['Switzer'] text-[#9999B0] mt-1.5">
+                      Reported on: {new Date(report.created_at).toLocaleDateString()}
+                    </p>
                   </div>
-                  
-                  <div className="flex gap-4 mt-6">
-                    <form action={handleResolve} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full bg-slate-100 text-slate-600 text-sm font-bold py-3 rounded-xl hover:bg-slate-200 transition-colors">
-                        Dismiss (Safe)
-                      </button>
-                    </form>
-                    
-                    <form action={handlePunish} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full bg-red-500 text-white text-sm font-bold py-3 rounded-xl hover:bg-red-600 transition-colors">
-                        Punish (-150 ET)
-                      </button>
-                    </form>
-                  </div>
+                  <span className="text-[11px] font-bold text-[#9999B0] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
                 </div>
-              ))
-            ) : (
-              <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-sm">
-                No active reports
+                
+                <div className="flex gap-4 mt-8">
+                  <form action={handleResolve} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-[#F5F5F7] text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
+                      Dismiss (Safe)
+                    </button>
+                  </form>
+                  
+                  <form action={handlePunish} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
+                      Punish (-150 ET)
+                    </button>
+                  </form>
+                </div>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="p-24 text-center flex flex-col items-center justify-center">
+              <div className="w-[72px] h-[72px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
+                <ShieldAlert className="w-8 h-8 text-[#9999B0]" />
+              </div>
+              <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
+              <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

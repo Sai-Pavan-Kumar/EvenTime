@@ -1,5 +1,5 @@
 "use client";
-import { Search, Bell, Command } from "lucide-react";
+import { Bell } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 export function AdminHeader() {
@@ -9,32 +9,22 @@ export function AdminHeader() {
   const currentPage = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : 'Overview';
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-      <div className="flex items-center gap-2 text-sm font-bold text-slate-500">
+    <header className="h-[112px] flex items-center justify-between px-10 shrink-0 pt-6">
+      <div className="flex items-center gap-2 text-[15px] font-bold font-['Switzer'] text-[#555570]">
         <span>Admin</span>
-        <span className="text-slate-300">/</span>
-        <span className="text-slate-900">{currentPage}</span>
+        <span className="text-[#9999B0]">/</span>
+        <span className="text-[#0D0D1A]">{currentPage}</span>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Search events, users..." 
-            className="w-64 bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-10 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#6C47FF]/20 focus:border-[#6C47FF] transition-all"
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm">
-            <Command className="w-3 h-3" /> K
-          </div>
-        </div>
-
-        <button className="relative text-slate-500 hover:text-slate-900 transition-colors">
+      <div className="flex items-center gap-5">
+        <button className="relative text-[#9999B0] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
           <Bell className="w-5 h-5" />
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
         </button>
         
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 border border-slate-200 shadow-sm cursor-pointer"></div>
+        <div className="w-10 h-10 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
+          ET
+        </div>
       </div>
     </header>
   );

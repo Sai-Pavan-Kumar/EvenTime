@@ -16,47 +16,54 @@ export function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-[280px] bg-[#0A0A0B] border-r border-[#1F1F22] hidden lg:flex flex-col h-full shrink-0">
-      <div className="h-16 flex items-center px-6 border-b border-[#1F1F22] shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#6C47FF] to-[#9D84FF] flex items-center justify-center shadow-[0_0_15px_rgba(108,71,255,0.4)]">
-            <span className="text-white font-black text-sm">ET</span>
+    <aside className="w-[300px] bg-[#F5F5F7] hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
+      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        
+        {/* LOGO AREA */}
+        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-[12px] bg-[#6C47FF] flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
+              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
+            </div>
+            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-[#6C47FF]">OS</span></h2>
+          </Link>
+        </div>
+        
+        {/* MENU */}
+        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
+          <div>
+            <p className="px-4 text-[11px] font-bold text-[#9999B0] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
+            <nav className="space-y-2">
+              {links.map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link 
+                    key={link.name} 
+                    href={link.href} 
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
+                      isActive 
+                        ? "bg-[#EDE8FF] text-[#6C47FF]" 
+                        : "text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A]"
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "text-[#6C47FF]" : "text-[#9999B0]"}`} /> 
+                    <span className="text-[15px]">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
-          <h2 className="font-['Outfit'] font-bold text-white text-lg tracking-wide">EvenTime <span className="text-[#6C47FF]">OS</span></h2>
         </div>
-      </div>
-      
-      <div className="flex-1 py-6 px-4 overflow-y-auto space-y-8">
-        <div>
-          <p className="px-3 text-xs font-bold text-[#808086] uppercase tracking-[0.15em] mb-3">Main Menu</p>
-          <nav className="space-y-1">
-            {links.map((link) => {
-              const isActive = pathname === link.href;
-              const Icon = link.icon;
-              return (
-                <Link 
-                  key={link.name} 
-                  href={link.href} 
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 ${
-                    isActive 
-                      ? "bg-[#1F1F22] text-white shadow-sm border border-[#27272A]" 
-                      : "text-[#A0A0AB] hover:bg-[#18181B] hover:text-white border border-transparent"
-                  }`}
-                >
-                  <Icon className={`w-4 h-4 ${isActive ? "text-[#6C47FF]" : "text-[#808086]"}`} /> 
-                  <span className="text-sm">{link.name}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
 
-      <div className="p-4 border-t border-[#1F1F22] shrink-0">
-        <Link href="/" className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-semibold text-[#A0A0AB] hover:bg-[#18181B] hover:text-white transition-all border border-transparent hover:border-[#27272A]">
-          <Settings className="w-4 h-4 text-[#808086]" />
-          <span className="text-sm">Exit Admin Mode</span>
-        </Link>
+        {/* FOOTER */}
+        <div className="p-6 border-t border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A] transition-colors">
+            <Settings className="w-4 h-4 text-[#9999B0]" />
+            <span className="text-[15px]">Exit Admin Mode</span>
+          </Link>
+        </div>
+
       </div>
     </aside>
   );
