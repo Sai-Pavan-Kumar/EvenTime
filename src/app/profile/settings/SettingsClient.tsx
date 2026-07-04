@@ -519,22 +519,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               </button>
             </div>
           </div>
-
-          {/* Support & Feedback */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <Bug className="w-4 h-4 text-blue-500" />
-                </div>
-                <h2 className="font-bold text-lg text-slate-900">Support & Feedback</h2>
-              </div>
-            </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
-              Found a bug or have a feature suggestion? Let us know so we can improve EvenTime!
-            </p>
-          </div>
-
           {/* Fixed Save Button */}
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
             <button 
@@ -554,7 +538,6 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
 
         </form>
       </div>
-
-            </main>
+    </main>
     );
   }

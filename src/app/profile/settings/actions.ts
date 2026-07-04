@@ -11,6 +11,10 @@ export async function updateProfileSettings(formData: FormData) {
     return { error: "Please login to update settings." };
   }
 
+  // Fetch profile to check if user is admin
+  const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).single();
+  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();
   const college = formData.get("college") as string;
@@ -18,10 +22,6 @@ export async function updateProfileSettings(formData: FormData) {
   const graduationYear = formData.get("graduationYear") as string;
   const branch = formData.get("branch") as string;
   const user_type = formData.get("user_type") as string;
-
-  // Verify true admin status for bypasses
-  const { data: currentProfile } = await supabase.from("profiles").select("user_type, role").eq("id", user.id).single();
-  const isAdmin = currentProfile?.user_type === 'admin' || currentProfile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
 
   const ALLOWED_USER_TYPES = ["student", "founder", "investor", "recent graduate", "professional", "prefer not to say"];
   if (isAdmin) ALLOWED_USER_TYPES.push("admin"); // Allow admin to bypass user_type validation
@@ -43,9 +43,11 @@ export async function updateProfileSettings(formData: FormData) {
     try {
       const parsed = JSON.parse(citiesString);
       if (!Array.isArray(parsed)) throw new Error();
-      preferred_cities = parsed
-        .filter((c): c is string => typeof c === "string" && c.length > 0)
-        .slice(0, isAdmin ? 100 : 3);
+      preferred_cities = parsed.filter((c): c is string => typeof c === "string" && c.length > 0);
+      
+      if (!isAdmin) {
+        preferred_cities = preferred_cities.slice(0, 3);
+      }
     } catch {
       return { error: "Invalid cities format." };
     }
@@ -58,10 +60,11 @@ export async function updateProfileSettings(formData: FormData) {
     try {
       const parsed = JSON.parse(goalsString);
       if (!Array.isArray(parsed)) throw new Error();
-        goals = parsed
-        .filter((g): g is string => typeof g === "string")
-        .slice(0, isAdmin ? 100 : 6)
-        .map(g => g.slice(0, 50));
+      goals = parsed.filter((g): g is string => typeof g === "string").map(g => g.slice(0, 50));
+      
+      if (!isAdmin) {
+        goals = goals.slice(0, 6);
+      }
     } catch {
       return { error: "Invalid goals format." };
     }

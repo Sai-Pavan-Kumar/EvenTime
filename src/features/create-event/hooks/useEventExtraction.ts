@@ -12,9 +12,10 @@ interface ExtractionProps {
   initialLink?: string;
   initialIsTrusted?: boolean;
   currentEventId?: string;
+  isAdmin?: boolean;
 }
 
-export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, initialIsTrusted = false, currentEventId }: ExtractionProps) {  
+export function useEventExtraction({ setTitle, setDescription, setLocation, setSelectedDate, setFieldStatus, initialLink, initialIsTrusted = false, currentEventId, isAdmin = false }: ExtractionProps) {  
   const [regLink, setRegLink] = useState(initialLink || "");
   const [isExtracting, setIsExtracting] = useState(false);
   const [linkDuplicateError, setLinkDuplicateError] = useState("");
@@ -81,7 +82,11 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
 
       setIsTrusted(data.isTrusted === true);
       if (data.isTrusted === false) {
-        setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
+        if (!isAdmin) {
+          setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
+        } else {
+          setTrustWarning("");
+        }
       } else {
         setTrustWarning("");
       }

@@ -78,7 +78,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
     initialLink: initialData?.registration_link ?? undefined,
     currentEventId: initialData?.id,
-    initialIsTrusted: eventData.isTrustedDomain
+    initialIsTrusted: eventData.isTrustedDomain,
+    isAdmin: isAdminFeatureEnabled
   });
   
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
