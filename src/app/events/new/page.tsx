@@ -10,7 +10,7 @@ export default async function NewEventPage() {
   let isAdmin = false;
   if (user) {
     const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).maybeSingle();
-    isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+    isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user?.email === 'eventime.admin@gmail.com' || user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
   }
 
   return (
