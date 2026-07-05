@@ -44,8 +44,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     collegeOnly: initialData?.college_only || false,
     collegeId: initialData?.college_id || null,
     collegeName: initialData?.colleges?.name || "",
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "06",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "00",
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "",
     selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
     hasEndTime: !!initialData?.end_time,
     hasEndDate: !!initialData?.end_date_string,
@@ -95,7 +95,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       organizer_name: eventData.organizer,
       description: eventData.description,
       target_audience: eventData.selectedAudience,
-      start_time: `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}`,
+      start_time: (eventData.selectedHour && eventData.selectedMin) ? `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}` : null,
       end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
       end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
       date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
@@ -109,7 +109,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       team_size: eventData.teamSize,
       website: eventData.website,
       is_featured: eventData.isFeatured,
-      status: eventData.isTrustedDomain ? "approved" : "pending",
+    status: (eventData.isTrustedDomain && eventData.regLink) ? "approved" : "pending",
       registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
       branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
       college_branch: isCollegeCategory ? eventData.collegeBranch : null,
@@ -121,7 +121,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }, isEditing, initialData?.id);
   };
 
-  const step0Valid = eventData.regLink && eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
 
   return (
     <div className="max-w-3xl mx-auto w-full">

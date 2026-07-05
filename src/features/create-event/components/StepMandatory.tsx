@@ -84,7 +84,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       
       {/* LINK INPUT */}
       <div className="space-y-2">
-        <label className="block text-sm font-semibold text-slate-700">Registration Link <span className="text-red-500">*</span></label>
+        <label className="block text-sm font-semibold text-slate-700">Registration Link <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span></label>
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
@@ -294,9 +294,9 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                </label>
              </div>
              <div className="flex gap-2">
-               <select value={data.selectedHour} onChange={e => updateData({ selectedHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>HH</option>{hours.map(h => <option key={`sh-${h}`} value={h}>{h}</option>)}</select>
-               <select value={data.selectedMin} onChange={e => updateData({ selectedMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="" disabled>MM</option>{mins.map(m => <option key={`sm-${m}`} value={m}>{m}</option>)}</select>
-               <select value={data.selectedAmPm} onChange={e => updateData({ selectedAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`sa-${a}`} value={a}>{a}</option>)}</select>
+               <select value={data.selectedHour} onChange={e => updateData({ selectedHour: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="">HH</option>{hours.map(h => <option key={`sh-${h}`} value={h}>{h}</option>)}</select>
+              <select value={data.selectedMin} onChange={e => updateData({ selectedMin: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]"><option value="">MM</option>{mins.map(m => <option key={`sm-${m}`} value={m}>{m}</option>)}</select>
+              <select value={data.selectedAmPm} onChange={e => updateData({ selectedAmPm: e.target.value })} className="w-full bg-white border border-slate-200 rounded-lg p-2 outline-none focus:border-[#6C47FF]">{ampms.map(a => <option key={`sa-${a}`} value={a}>{a}</option>)}</select>
              </div>
 
              {data.hasEndTime && (

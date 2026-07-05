@@ -104,7 +104,7 @@ export function useEventSubmit() {
           ...finalPayload, 
           slug: uniqueSlug, 
           creator_id: user.id,
-          status: isAdmin ? "approved" : "pending" 
+        status: isAdmin ? "approved" : (finalPayload.status || "pending") 
         }]);
         if (error) throw error;
       }
