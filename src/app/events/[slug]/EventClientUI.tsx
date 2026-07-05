@@ -161,7 +161,15 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   return (
     <main className="min-h-screen bg-white pb-8">
       <Navbar />
-
+    {event.status === "pending" && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          <p className="text-amber-800 font-medium text-sm">
+            This event is pending admin approval. It is currently only visible to you.
+          </p>
+        </div>
+      )}
+    
       <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
 
         {/* Back + Actions */}
