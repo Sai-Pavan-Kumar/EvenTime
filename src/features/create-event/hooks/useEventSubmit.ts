@@ -97,7 +97,7 @@ export function useEventSubmit() {
           
       } else {
         // Check database role or fallback to environment admin email
-        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com' || user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
         console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
         const { error } = await supabase.from("events").insert([{ 
