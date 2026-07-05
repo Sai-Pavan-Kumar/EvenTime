@@ -26,7 +26,7 @@ export function useDuplicateCheck() {
       // invalid URL, eventId stays null
     }
 
-    const pattern = eventId ? `%/${eventId}%` : `${normalized}%`;
+    const pattern = eventId ? `%/${eventId}%` : `%${normalized}%`;
     let query = supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1);
     if (currentEventId) {
       query = query.neq("id", currentEventId);
