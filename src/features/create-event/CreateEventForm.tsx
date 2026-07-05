@@ -144,12 +144,13 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               extraction={extraction}
               onNext={() => {
                 if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); // Skip straight to submit if feature is off
+                else handleSubmit(); 
               }}
               isValid={Boolean(step0Valid)}
               isSubmitting={isSubmitting && !isAdminFeatureEnabled}
               onSubmit={handleSubmit}
               isAdminFeatureEnabled={isAdminFeatureEnabled}
+              isCurrentUserAdmin={isCurrentUserAdmin}
               isEditing={isEditing}
             />
           )}
