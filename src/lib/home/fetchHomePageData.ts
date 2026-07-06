@@ -294,8 +294,9 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
     fallbackEvents = (virtualEvents || []) as Partial<EventRow>[];
   }
 
-  // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
-  const { data: platformStats } = await supabase.rpc("get_platform_stats").single();
+    // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
+  const { data: statsData } = await supabase.rpc("get_platform_stats").single();
+  const platformStats = (statsData as { event_count: number; city_count: number; category_count: number; user_count: number }) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
 
   return {
     user,
