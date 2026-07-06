@@ -12,6 +12,8 @@ import type { ProfileRow, CollegeRow } from "@/types";
 import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { createCollegeAction } from "@/app/profile/action";
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+
 
 export default function SettingsClient({ 
   profile, 
@@ -46,37 +48,16 @@ export default function SettingsClient({
   const [branch, setBranch] = useState(profile?.branch || "");
 
   // College search dropdown states
-  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
+ 
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
   const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
-const [isCreatingCollege, setIsCreatingCollege] = useState(false);
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
+ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
   
   // Align admin check with OnboardingModal exactly (checks role, type)
    const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
- // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
-  useEffect(() => {
-    const query = collegeSearchQuery.trim();
-    if (!query) {
-      setCollegesList([]);
-      return;
-    }
-    setIsSearchingColleges(true);
-    const timer = setTimeout(async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("colleges")
-        .select("id, name, state")
-        .ilike("name", `%${query}%`)
-        .order("name", { ascending: true })
-        .limit(10);
-      if (error) console.error("Colleges fetch error:", error);
-      setCollegesList((data as CollegeRow[]) || []);
-      setIsSearchingColleges(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [collegeSearchQuery]);
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
 
   // Close dropdowns when clicking outside
   useEffect(() => {

@@ -12,6 +12,7 @@ import { toast } from "sonner"; // NEW: Added toast import
 import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { DelayedPrompt } from "./DelayedActionModal"; // NEW: Clean extracted component
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
 
 export interface OnboardingProps {
   user: AuthUser | null;
@@ -33,7 +34,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   };
   const [college, setCollege] = useState("");
   const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
-  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]); // NEW: Master dataset store array array
+ 
   const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
   const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
   
@@ -50,7 +51,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [username, setUsername] = useState("");
 const [isSaving, setIsSaving] = useState(false);
 const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false); // NEW: live search loader  
+    
   // NEW: State to control manual appearance from banner
   // Signed-in but not-onboarded users get the modal right away (forced).
   // Guests still go through DelayedPrompt's soft, dismissible teaser.
@@ -58,6 +59,8 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
   
   const router = useRouter();
   const supabase = createClient();
+  // Use the new shared hook for college search
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(searchQuery, !user || profile?.is_onboarded === true);
 
   // NEW: Click outside handler to close all dropdowns
   useEffect(() => {
@@ -69,26 +72,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
-  useEffect(() => {
-    const query = searchQuery.trim();
-    if (!user || profile?.is_onboarded || !query) {
-      setCollegesList([]);
-      return;
-    }
-    setIsSearchingColleges(true);
-    const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("colleges")
-        .select("id, name, slug, state")
-        .ilike("name", `%${query}%`)
-        .order("name", { ascending: true })
-        .limit(10);
-      setCollegesList((data as CollegeRow[]) || []);
-      setIsSearchingColleges(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, user, profile]);
+ 
 
   // Hide everything if already onboarded
   if (profile?.is_onboarded) return null;

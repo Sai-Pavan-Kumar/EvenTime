@@ -9,6 +9,7 @@ import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
 
 
 
@@ -19,31 +20,10 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 
   // NEW: College picker for restricted college events (live server search)
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
-  const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
-  const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   const [isCreatingCollege, setIsCreatingCollege] = useState(false);
-
-  useEffect(() => {
-    const query = collegeSearchQuery.trim();
-    if (!query) {
-      setCollegesList([]);
-      return;
-    }
-    setIsSearchingColleges(true);
-    const timer = setTimeout(async () => {
-      const supabase = createClient();
-      const { data: results } = await supabase
-        .from("colleges")
-        .select("id, name, slug, state")
-        .ilike("name", `%${query}%`)
-        .order("name", { ascending: true })
-        .limit(10);
-      setCollegesList((results as CollegeRow[]) || []);
-      setIsSearchingColleges(false);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [collegeSearchQuery]);
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
+ 
 
   const handleCreateCollege = async (name: string) => {
     setIsCreatingCollege(true);
