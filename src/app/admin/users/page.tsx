@@ -52,13 +52,13 @@ export default async function AdminUsersPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">User</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">User Type</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Cities</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Categories</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Role</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">ET Score</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0] text-right">Actions</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User Type</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Cities</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Categories</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Role</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">ET Score</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
@@ -73,7 +73,7 @@ export default async function AdminUsersPage() {
                           {profile.avatar_url ? (
                             <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={44} height={44} className="object-cover w-full h-full" />
                           ) : (
-                            <UserIcon className="w-5 h-5 text-[#9999B0]" />
+                            <UserIcon className="w-5 h-5 text-[#6B7280]" />
                           )}
                         </div>
                         <div>
@@ -88,7 +88,7 @@ export default async function AdminUsersPage() {
                       {profile.user_type ? (
                         <span className="text-[14px] font-bold font-['Outfit'] text-[#0D0D1A] whitespace-nowrap">{profile.user_type}</span>
                       ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
                       )}
                     </td>
 
@@ -97,7 +97,7 @@ export default async function AdminUsersPage() {
                       {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
                         <span className="text-[14px] font-medium font-['Switzer'] text-[#555570]">{profile.preferred_cities.join(", ")}</span>
                       ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
                       )}
                     </td>
 
@@ -106,7 +106,7 @@ export default async function AdminUsersPage() {
                       {profile.goals && profile.goals.length > 0 ? (
                         <span className="text-[14px] font-medium font-['Switzer'] text-[#555570] line-clamp-2 max-w-[200px]">{profile.goals.join(", ")}</span>
                       ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#9999B0] italic">Not specified</span>
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
                       )}
                     </td>
 
@@ -156,7 +156,7 @@ export default async function AdminUsersPage() {
                             <input type="hidden" name="userId" value={profile.id} />
                             <button 
                               type="submit" 
-                              className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[#9999B0] hover:bg-[#EF4444] hover:text-white transition-colors"
+                              className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#EF4444] hover:text-white transition-colors"
                               title="Delete User"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default async function AdminUsersPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-8 py-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                  <td colSpan={7} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
                     No users found
                   </td>
                 </tr>

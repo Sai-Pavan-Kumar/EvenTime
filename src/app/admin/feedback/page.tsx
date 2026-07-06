@@ -56,7 +56,7 @@ export default async function AdminFeedbackPage() {
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-[#F59E0B]'}`}>
                       {feedback.type}
                     </span>
-                    <span className="text-[13px] font-bold font-['Switzer'] text-[#9999B0]">
+                    <span className="text-[13px] font-bold font-['Switzer'] text-[#6B7280]">
                       {new Date(feedback.created_at).toLocaleDateString()} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -79,7 +79,7 @@ export default async function AdminFeedbackPage() {
               </div>
             ))
           ) : (
-            <div className="p-24 text-center text-[#9999B0] font-bold uppercase tracking-[0.2em] text-[13px] font-['Outfit']">
+            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-[0.2em] text-[13px] font-['Outfit']">
               No feedback submitted yet
             </div>
           )}

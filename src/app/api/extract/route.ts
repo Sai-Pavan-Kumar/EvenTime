@@ -253,19 +253,7 @@ async function isSafeUrl(rawUrl: string): Promise<boolean> {
 // RATE LIMITING
 // ─────────────────────────────────────────────
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(key: string, maxPerMinute = 5): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-  if (!entry || entry.resetAt < now) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= maxPerMinute) return false;
-  entry.count++;
-  return true;
-}
+// Rate limiting is now handled via Supabase DB
 
 // ─────────────────────────────────────────────
 // ROUTE HANDLER
@@ -288,9 +276,49 @@ export async function POST(request: Request) {
 
     // Extract client IP for rate limiting
     const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
-    if (!checkRateLimit(clientIp, 5)) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
-    }
+    
+    // Check DB rate limit
+    const { data: rlData } = await supabase
+      .from("rate_limits")
+      .select("request_count, reset_at")
+      .eq("ip_address", clientIp)
+      .eq("endpoint", "/api/extract")
+      .single();
+
+    const now = new Date();
+    
+    if (rlData && new Date(rlData.reset_at) > now) {
+      if (rlData.request_count >= 5) {
+        return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
+      }
+      
+      // Increment count
+      await supabase
+        .from("rate_limits")
+        .update({ request_count: rlData.request_count + 1 })
+        .eq("ip_address", clientIp)
+        .eq("endpoint", "/api/extract");
+    } else {
+      // Create new limit window
+      const resetAt = new Date(now.getTime() + 60000); // 1 min from now
+      
+      if (rlData) {
+        await supabase
+          .from("rate_limits")
+          .update({ request_count: 1, reset_at: resetAt.toISOString() })
+          .eq("ip_address", clientIp)
+          .eq("endpoint", "/api/extract");
+      } else {
+        await supabase
+          .from("rate_limits")
+          .insert({
+            ip_address: clientIp,
+            endpoint: "/api/extract",
+            request_count: 1,
+            reset_at: resetAt.toISOString()
+          });
+      }
+    }
 
     // URL validation
     const { url } = await request.json();

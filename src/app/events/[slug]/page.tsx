@@ -93,16 +93,10 @@ export default async function EventPage({
 
   const { data: finalEvent } = await query.maybeSingle();
 
-  // NEW: Fetch curator's username (shorter than full_name) for display on the event page
-  let curatorUsername: string | null = null;
-  if (finalEvent?.creator_id) {
-    const { data: curatorProfile } = await supabase
-      .from("profiles")
-      .select("username")
-      .eq("id", finalEvent.creator_id)
-      .maybeSingle();
-    curatorUsername = curatorProfile?.username || null;
-  }
+  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
+  const curatorUsername = Array.isArray(finalEvent?.profiles) 
+    ? (finalEvent?.profiles[0] as any)?.username 
+    : (finalEvent?.profiles as any)?.username || null;
 
   if (!finalEvent) {
     return (
@@ -214,18 +208,15 @@ export default async function EventPage({
   let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
   {
     const { data: interestedRows } = await supabase
-      .from("interested_events" as any)
-      .select("user_id")
+      .from("interested_events")
+      .select("profiles(avatar_url, username)")
       .eq("event_id", finalEvent.id)
       .limit(3);
 
     if (interestedRows && interestedRows.length > 0) {
-      const userIds = interestedRows.map((r: any) => r.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("avatar_url, username")
-        .in("id", userIds);
-      if (profiles) interestedAvatars = profiles;
+      interestedAvatars = interestedRows
+        .map((r: any) => r.profiles as any)
+        .filter(Boolean);
     }
   }
 

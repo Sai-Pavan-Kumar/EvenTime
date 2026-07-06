@@ -32,7 +32,7 @@ export function AdminSidebar() {
         {/* MENU */}
         <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
           <div>
-            <p className="px-4 text-[11px] font-bold text-[#9999B0] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
+            <p className="px-4 text-[11px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
             <nav className="space-y-2">
               {links.map((link) => {
                 const isActive = pathname === link.href;
@@ -47,7 +47,7 @@ export function AdminSidebar() {
                         : "text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A]"
                     }`}
                   >
-                    <Icon className={`w-5 h-5 ${isActive ? "text-[#6C47FF]" : "text-[#9999B0]"}`} /> 
+                    <Icon className={`w-5 h-5 ${isActive ? "text-[#6C47FF]" : "text-[#6B7280]"}`} /> 
                     <span className="text-[15px]">{link.name}</span>
                   </Link>
                 );
@@ -59,7 +59,7 @@ export function AdminSidebar() {
         {/* FOOTER */}
         <div className="p-6 border-t border-black/[0.04] shrink-0">
           <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A] transition-colors">
-            <Settings className="w-4 h-4 text-[#9999B0]" />
+            <Settings className="w-4 h-4 text-[#6B7280]" />
             <span className="text-[15px]">Exit Admin Mode</span>
           </Link>
         </div>

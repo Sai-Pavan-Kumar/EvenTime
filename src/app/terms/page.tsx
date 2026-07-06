@@ -20,7 +20,7 @@ export default function TermsOfServicePage() {
         
         <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
           <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Terms of Service</h1>
-          <p className="text-slate-500 font-medium mb-10">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-slate-500 font-medium mb-10">Last updated: June 30, 2026</p>
           
           <div className="space-y-8 text-slate-700 leading-relaxed">
             <section>

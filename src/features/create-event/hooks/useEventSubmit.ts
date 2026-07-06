@@ -16,13 +16,11 @@ export function useEventSubmit() {
 
   const generateSlug = (eventTitle: string, eventLocation: string, eventDate: Date | undefined): string => {
     const slugTitle = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const city = eventLocation
-      ? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-      : "online";
+    const city = eventLocation? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""): "online";
     const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
     const month = eventDate ? monthNames[eventDate.getMonth()] : "";
     const year = eventDate ? eventDate.getFullYear().toString() : "";
-    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    const randomSuffix = crypto.randomUUID().split("-")[0].substring(0, 4);
     return [slugTitle, city, month, year, randomSuffix].filter(Boolean).join("-");
   };
 
@@ -56,8 +54,8 @@ export function useEventSubmit() {
         payloadData.date_string ? new Date(payloadData.date_string) : undefined
       );
 
-      // CORRECT — replace lines 5596–5610 with this:
-      const { imageFile, previewUrl, is_featured, ...dbPayload } = payloadData;
+      // Destructure only UI fields, let is_featured go into the database payload
+      const { imageFile, previewUrl, ...dbPayload } = payloadData;
       const finalPayload = { ...dbPayload };
 
       if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
@@ -84,7 +82,6 @@ export function useEventSubmit() {
       }
 
       if (isEditing && eventId) {
-        console.log("[useEventSubmit] Updating event with creator_id:", user.id);
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
         
         if (error) throw error; // ← check error FIRST
@@ -96,11 +93,9 @@ export function useEventSubmit() {
           .eq("status", "pending");
           
       } else {
-        // Check database role or fallback to environment admin email
-         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com' || user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-
-        console.log("[useEventSubmit] Inserting new event with creator_id:", user.id);
-        const { error } = await supabase.from("events").insert([{ 
+                // Check database role ONLY
+        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+        const { error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 
           creator_id: user.id,

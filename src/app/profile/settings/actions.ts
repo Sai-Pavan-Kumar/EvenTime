@@ -13,7 +13,7 @@ export async function updateProfileSettings(formData: FormData) {
 
   // Fetch profile to check if user is admin
   const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).single();
-  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin' || user.email === 'eventime.admin@gmail.com';
+  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
 
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();

@@ -48,8 +48,8 @@ export default async function AdminCollegesPage() {
 
       <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="p-8 border-b border-black/[0.04] bg-[#FFFFFF] flex items-center justify-between">
-          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
-          <span className="text-[12px] font-bold text-[#9999B0] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
+          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
+          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
         </div>
         
         <div className="divide-y divide-black/[0.04]">
@@ -57,7 +57,7 @@ export default async function AdminCollegesPage() {
             allColleges.map(([college, count], index) => (
               <div key={college} className="flex items-center justify-between p-8 hover:bg-[#F5F5F7]/50 transition-colors">
                 <div className="flex items-center gap-5">
-                  <span className="w-8 text-[18px] font-black text-[#9999B0] text-right font-['Outfit']">#{index + 1}</span>
+                  <span className="w-8 text-[18px] font-black text-[#6B7280] text-right font-['Outfit']">#{index + 1}</span>
                   <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
@@ -67,7 +67,7 @@ export default async function AdminCollegesPage() {
               </div>
             ))
           ) : (
-            <div className="p-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-sm font-['Outfit']">
+            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-sm font-['Outfit']">
               No college data available
             </div>
           )}

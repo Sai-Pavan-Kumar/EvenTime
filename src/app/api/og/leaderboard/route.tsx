@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import { generateHMAC } from '@/lib/hmac';
 
 export const runtime = 'edge';
 
@@ -9,7 +10,19 @@ export async function GET(req: NextRequest) {
     const name = searchParams.get('name') || 'Curator';
     const score = searchParams.get('score') || '0';
     const rank = searchParams.get('rank') || '1';
-    const image = searchParams.get('image');
+    const image = searchParams.get('image') || '';
+    const sig = searchParams.get('sig');
+
+    if (!sig) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;
+    const expectedSig = await generateHMAC(query);
+    
+    if (sig !== expectedSig) {
+      return new Response('Forbidden', { status: 403 });
+    }
 
     // Only render image if it's a valid external URL to prevent NextOG fetch errors
     const hasValidImage = image && image.startsWith('http');

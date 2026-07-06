@@ -22,7 +22,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
 
-  const isAdmin = profile?.user_type === 'admin' || user?.email === 'eventime.admin@gmail.com';
+  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin';
 
   const toggleCity = (cityName: string) => {
     if (cities.includes(cityName)) {

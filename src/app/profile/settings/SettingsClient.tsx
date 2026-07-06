@@ -34,8 +34,8 @@ export default function SettingsClient({
   const [username, setUsername] = useState(profile?.username || "");
   const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
   const [userType, setUserType] = useState(() => {
-    if (!(profile as any)?.user_type) return "";
-    const ut = (profile as any).user_type as string;
+    if (!profile?.user_type) return "";
+    const ut = profile.user_type;
     if (ut === "student") return "Student";
     return ut.charAt(0).toUpperCase() + ut.slice(1);
   });
@@ -43,19 +43,18 @@ export default function SettingsClient({
   // States for Education Logic
   const [college, setCollege] = useState(profile?.college || "");
   const [year, setYear] = useState(profile?.graduation_year || "");
-  const [branch, setBranch] = useState((profile as any)?.branch || "");
+  const [branch, setBranch] = useState(profile?.branch || "");
 
   // College search dropdown states
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
-  const [collegeId, setCollegeId] = useState<string | null>((profile as any)?.college_id || null);
+  const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
 const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
   
-  // Align admin check with OnboardingModal exactly (checks role, type, and specific email)
-  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin' || userEmail === 'eventime.admin@gmail.com';
-
+  // Align admin check with OnboardingModal exactly (checks role, type)
+   const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
  // UPDATED: Live server-side search (debounced) instead of loading all 54k colleges
   useEffect(() => {
     const query = collegeSearchQuery.trim();
@@ -232,7 +231,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Public Username</label>
                 <div className="relative flex items-center">
-                  <span className="absolute left-4 text-slate-400 font-bold z-10">eventime.in/</span>
+                <span className="absolute left-4 text-slate-400 font-bold z-10">@</span>
                   <input 
                     type="text" 
                     name="username" 
@@ -245,7 +244,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
                     pattern="[A-Za-z0-9]+"
                     title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
                     placeholder="your_handle"
-                    className="w-full bg-[#F8F9FB] border-none text-slate-900 pl-28 pr-10 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="w-full bg-[#F8F9FB] border-none text-slate-900 pl-10 pr-10 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
                   />
                   {isLocked && <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />}
                 </div>

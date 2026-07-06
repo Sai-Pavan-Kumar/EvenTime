@@ -9,11 +9,11 @@ export default function LaunchScreen() {
 
   useEffect(() => {
     // 1. Check if the user has already seen the splash screen in this session
-   let hasSeenSplash = false;
+    let hasSeenSplash = false;
     try {
-      hasSeenSplash = !!sessionStorage.getItem("hasSeenSplash");
+      hasSeenSplash = !!localStorage.getItem("hasSeenSplash");
     } catch (e) {
-      console.warn("sessionStorage is blocked by browser settings");
+      console.warn("localStorage is blocked by browser settings");
     }
     
     if (hasSeenSplash) {
@@ -21,13 +21,13 @@ export default function LaunchScreen() {
       return;
     }
 
-    // 2. If not seen, show it for 2.5 seconds and then mark it as seen
+    // 2. If not seen, show it and set the flag
     const timer = setTimeout(() => {
       setShow(false);
-     try {
-        sessionStorage.setItem("hasSeenSplash", "true");
+      try {
+        localStorage.setItem("hasSeenSplash", "true");
       } catch (e) {}
-    }, 2500);
+    }, 1500);
     
     return () => clearTimeout(timer);
   }, []);

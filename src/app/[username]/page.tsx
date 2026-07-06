@@ -190,43 +190,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
             )}
           </div>
         </div>
-
-        {/* NEW: Audience Request Form */}
-        <div className="mt-12 bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm max-w-2xl mx-auto text-center relative overflow-hidden">
-          <div className="w-12 h-12 bg-[#6C47FF]/10 text-[#6C47FF] rounded-full flex items-center justify-center mx-auto mb-4 relative z-10">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg>
-          </div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-2 relative z-10">Don't see what you're looking for?</h2>
-          <p className="text-slate-500 font-medium mb-6 text-sm relative z-10">Let {curator.full_name} know what kind of events you'd like to see next!</p>
-          
-          <form action={async (formData) => {
-            "use server";
-            const supabase = await createClient();
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return; // Must be logged in to request
-            
-            const category = formData.get("category") as string;
-            const message = formData.get("message") as string;
-            
-            await supabase.from("event_category_requests" as any).insert({
-              curator_id: curator.id,
-              user_id: user.id,
-              category,
-              message
-            });
-          }} className="flex flex-col gap-4 text-left relative z-10">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Event Category</label>
-              <input type="text" name="category" required placeholder="e.g., Hackathons, Music Concerts" className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-[#6C47FF] focus:ring-2 focus:ring-[#6C47FF]/20 transition-all" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 ml-1">Message</label>
-              <textarea name="message" required placeholder="Tell them exactly what you are interested in..." rows={3} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:border-[#6C47FF] focus:ring-2 focus:ring-[#6C47FF]/20 transition-all resize-none"></textarea>
-            </div>
-            <button type="submit" className="w-full bg-[#1D1D1F] hover:bg-black text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.98] mt-2 shadow-sm">Submit Request</button>
-          </form>
-        </div>
-
       </div>
     </main>
   );

@@ -77,11 +77,11 @@ export default async function AdminReportsPage() {
                       {report.reason}
                     </span>
                     <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
-                    <p className="text-[14px] font-['Switzer'] text-[#9999B0] mt-1.5">
+                    <p className="text-[14px] font-['Switzer'] text-[#6B7280] mt-1.5">
                       Reported on: {new Date(report.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-[#9999B0] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
+                  <span className="text-[11px] font-bold text-[#6B7280] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
                 </div>
                 
                 <div className="flex gap-4 mt-8">
@@ -104,7 +104,7 @@ export default async function AdminReportsPage() {
           ) : (
             <div className="p-24 text-center flex flex-col items-center justify-center">
               <div className="w-[72px] h-[72px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
-                <ShieldAlert className="w-8 h-8 text-[#9999B0]" />
+                <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
               </div>
               <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
               <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>

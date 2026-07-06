@@ -119,11 +119,11 @@ export const CITY_CONFIG: Record<string, {
     accentColor: '#6366F1',
   },
   'vijayawada': {
-    backgroundImage: '/cities/bhopal.webp', 
+    backgroundImage: '/cities/vijayawada.webp', 
     accentColor: '#6366F1',
   },
   'warangal': {
-    backgroundImage: '/cities/vijayawada.webp', 
+    backgroundImage: '/cities/warangal.webp', 
     accentColor: '#6366F1',
   },
 };

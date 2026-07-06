@@ -247,21 +247,23 @@ export async function toggleLeaderboardAction(formData: FormData) {
   revalidatePath("/leaderboard");
   return { success: true };
 }
+
 export async function toggleFeaturedAction(formData: FormData) {
   const supabase = await createClient();
   const isAdmin = await verifyAdmin(supabase);
   if (!isAdmin) throw new Error("Unauthorized.");
 
-  const enabled = formData.get("enabled") === "true";
+  const eventId = formData.get("event_id") as string;
+  const isFeatured = formData.get("is_featured") === "true";
 
-  const { error } = await supabase.from("app_settings").update({ featured_enabled: enabled }).eq("id", 1);
+  const { error } = await supabase.from("events").update({ is_featured: isFeatured }).eq("id", eventId);
+  
   if (error) {
     console.error("Toggle featured failed:", error);
-    return { error: "Failed to update setting." };
+    return { error: "Failed to update featured status." };
   }
 
-  revalidatePath("/");
   revalidatePath("/admin");
-  revalidatePath("/events/new"); // IDI MAIN FIX (Cache theesesthundi)
+  revalidatePath("/");
   return { success: true };
 }

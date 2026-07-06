@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
+import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { format, parseISO } from "date-fns";
 import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
@@ -38,12 +39,12 @@ const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
   let score = 0;
   if (prof.avatar_url) score += 20;
   if (prof.username) score += 20;
-  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 20;
   if (prof.goals && prof.goals.length > 0) score += 20;
-  const isStudent = (prof as any).user_type === "student";
+  const isStudent = prof.user_type === "student";
   if (!isStudent) {
     score += 20;
-  } else if (prof.college && (prof as any).graduation_year) {
+  } else if (prof.college && prof.graduation_year) {
     score += 20;
   }
   return score;
@@ -78,20 +79,14 @@ Promise<{ tab?: string }>; }) {
     redirect("/profile/settings");
   }
 
-  // FIX: Safely fetch Audience Requests without crashing if the table doesn't exist yet
-  const { data: audienceReqsRaw, error: reqError } = await supabase.from("event_category_requests" as any).select("*").eq("curator_id", user.id).order("created_at", { ascending: false }) as any;
-  const audienceRequests = reqError ? [] : (audienceReqsRaw || []);
+  // Removed event_category_requests ghost table logic
+  const audienceRequests: any[] = [];
 
   if (reportsError) {
     console.error("Error fetching reports:", reportsError);
   }
 
-  // Debugging logs to verify if queries return data or empty arrays due to RLS
-  console.log("--- Profile Page Data Fetch Debug ---");
-  console.log("myEventsRaw:", myEventsRaw);
-  console.log("savedEventsData:", savedEventsData);
-  console.log("myReportsRaw:", myReportsRaw);
-  console.log("-------------------------------------");
+  // Removed production debugging logs to prevent PII data leaks
 
   const myReports = myReportsRaw as ReportWithEventSlug[] | null;
   const myEvents = myEventsRaw as ProfileEvent[] | null;
@@ -105,10 +100,10 @@ Promise<{ tab?: string }>; }) {
   // NEW: What's missing checklist, mirrors the calculateCompletion formula
   const missingItems: string[] = [];
   if (!profile?.avatar_url) missingItems.push("Profile photo");
-  if (!(profile as any)?.username) missingItems.push("Username");
-  if (!(profile as any)?.preferred_cities || (profile as any).preferred_cities.length === 0) missingItems.push("Preferred cities");
+  if (!profile?.username) missingItems.push("Username");
+  if (!profile?.preferred_cities || profile.preferred_cities.length === 0) missingItems.push("Preferred cities");
   if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
-  if ((profile as any)?.user_type === "student" && (!profile?.college || !(profile as any)?.graduation_year)) missingItems.push("College & graduation year");
+  if (profile?.user_type === "student" && (!profile?.college || !profile?.graduation_year)) missingItems.push("College & graduation year");
 
   async function handleDelete(formData: FormData) {
     "use server";
@@ -128,10 +123,7 @@ Promise<{ tab?: string }>; }) {
       totalSaves += eventSaves;
       totalInterested += eventInterested;
     });
-  }
-  // This exactly saves the bookmarks done by the user
-  totalSaves = savedEvents.length;
-
+  }  
   let strokeColor = "#005AE0"; 
   if (eventCount >= 69) {
     strokeColor = "#F59E0B";
@@ -354,12 +346,7 @@ Promise<{ tab?: string }>; }) {
                           <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
                             <Edit3 className="w-4 h-4" />
                           </Link>
-                          <form action={handleDelete} className="flex-1">
-                            <input type="hidden" name="eventId" value={event.id} />
-                            <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </form>
+                          <DeleteEventForm eventId={event.id} deleteAction={handleDelete} />
                         </div>
                       </div>
                     </div>

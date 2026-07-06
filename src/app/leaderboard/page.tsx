@@ -4,8 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
 import { redirect } from "next/navigation";
+import { generateHMAC } from "@/lib/hmac";
 
 export const revalidate = 0;
+
+async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
+  const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;
+  const sig = await generateHMAC(query);
+  return `/api/og/leaderboard?${query}&sig=${sig}`;
+}
 
 const getTierInfo = (score: number) => {
   if (score >= 901) return { name: "Elite Legend", bg: "bg-amber-100", text: "text-amber-600", border: "border-amber-400" };
@@ -35,6 +42,12 @@ export default async function LeaderboardPage() {
 
   const topThree = leaders?.slice(0, 3) || [];
   const restOfLeaders = leaders?.slice(3) || [];
+
+  const topThreeUrls = [
+    topThree[0] ? await getSignedOgUrl(topThree[0].full_name || 'Curator', topThree[0].et_score || 0, 1, topThree[0].avatar_url || '') : '',
+    topThree[1] ? await getSignedOgUrl(topThree[1].full_name || 'Curator', topThree[1].et_score || 0, 2, topThree[1].avatar_url || '') : '',
+    topThree[2] ? await getSignedOgUrl(topThree[2].full_name || 'Curator', topThree[2].et_score || 0, 3, topThree[2].avatar_url || '') : ''
+  ];
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
@@ -86,7 +99,7 @@ export default async function LeaderboardPage() {
                   <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
                     <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
                   </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[1].full_name || 'Curator')}&score=${topThree[1].et_score || 0}&rank=2&image=${encodeURIComponent(topThree[1].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                  <a href={topThreeUrls[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
                     <Share2 className="w-3 h-3" /> Share
                   </a>
                   {/* Podium Block */}
@@ -122,7 +135,7 @@ export default async function LeaderboardPage() {
                   <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
                     <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
                   </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[0].full_name || 'Curator')}&score=${topThree[0].et_score || 0}&rank=1&image=${encodeURIComponent(topThree[0].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
+                  <a href={topThreeUrls[0]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
                     <Share2 className="w-3.5 h-3.5" /> Share Victory
                   </a>
                   {/* Podium Block */}
@@ -155,7 +168,7 @@ export default async function LeaderboardPage() {
                   <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
                     <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
                   </div>
-                  <a href={`/api/og/leaderboard?name=${encodeURIComponent(topThree[2].full_name || 'Curator')}&score=${topThree[2].et_score || 0}&rank=3&image=${encodeURIComponent(topThree[2].avatar_url || '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                  <a href={topThreeUrls[2]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
                     <Share2 className="w-3 h-3" /> Share
                   </a>
                   {/* Podium Block */}

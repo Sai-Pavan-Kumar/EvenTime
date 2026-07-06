@@ -85,7 +85,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
         if (safeId) {
           const { data, error } = await supabase
-            .from("interested_events" as any)
+            .from("interested_events")
             .select("id")
             .eq("event_id", safeId)
             .eq("user_id", user.id)
@@ -137,10 +137,10 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
     try {
       if (!previousState) {
-        const { error } = await supabase.from("interested_events" as any).insert({ event_id: safeId, user_id: currentUser.id }).select();
+        const { error } = await supabase.from("interested_events").insert({ event_id: safeId, user_id: currentUser.id }).select();
         if (error) throw new Error(error.message || JSON.stringify(error));
       } else {
-        const { error } = await supabase.from("interested_events" as any).delete().eq("event_id", safeId).eq("user_id", currentUser.id);
+        const { error } = await supabase.from("interested_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
         if (error) throw new Error(error.message || JSON.stringify(error));
       }
     } catch (error: any) {

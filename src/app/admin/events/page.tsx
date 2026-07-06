@@ -27,9 +27,7 @@ export default async function AdminEventsPage(props: PageProps) {
   if (!isAdmin) redirect("/");
 
   let query = supabase.from("events").select(`
-    id, slug, title, category, poster_url, status,
-    profiles ( full_name )
-  `);
+    id, slug, title, category, poster_url, status,profiles ( full_name )`).order('created_at', { ascending: false }).limit(50);
 
   if (filter === "pending") query = query.eq("status", "pending");
   else if (filter === "approved") query = query.eq("status", "approved");
@@ -89,11 +87,11 @@ export default async function AdminEventsPage(props: PageProps) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Event Details</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Creator</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Category</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0]">Status</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#9999B0] text-right">Actions</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Event Details</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Creator</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Category</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Status</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/[0.04]">
@@ -115,10 +113,10 @@ export default async function AdminEventsPage(props: PageProps) {
                           )}
                         </div>
                         <div>
-                          <Link href={`/events/${event.slug || event.id}`} target="_blank" className="hover:text-[#6C47FF] transition-colors group/title">
+                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-[#6C47FF] transition-colors group/title">
                             <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-[#6C47FF] leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
                           </Link>
-                          <p className="text-[12px] font-bold text-[#9999B0] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
+                          <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
                         </div>
                       </div>
                     </td>
@@ -150,7 +148,7 @@ export default async function AdminEventsPage(props: PageProps) {
                     {/* Actions */}
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-3">
-                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] text-[#9999B0] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
+                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
                           <CheckCircle className="w-5 h-5" />
                         </button>
 
@@ -164,7 +162,7 @@ export default async function AdminEventsPage(props: PageProps) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-8 py-24 text-center text-[#9999B0] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                  <td colSpan={5} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
                     No events found in this category
                   </td>
                 </tr>

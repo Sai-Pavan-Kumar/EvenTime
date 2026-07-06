@@ -12,12 +12,12 @@ export function AdminHeader() {
     <header className="h-[112px] flex items-center justify-between px-10 shrink-0 pt-6">
       <div className="flex items-center gap-2 text-[15px] font-bold font-['Switzer'] text-[#555570]">
         <span>Admin</span>
-        <span className="text-[#9999B0]">/</span>
+        <span className="text-[#6B7280]">/</span>
         <span className="text-[#0D0D1A]">{currentPage}</span>
       </div>
 
       <div className="flex items-center gap-5">
-        <button className="relative text-[#9999B0] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
+        <button className="relative text-[#6B7280] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
         </button>
