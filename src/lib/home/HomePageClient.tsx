@@ -323,7 +323,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           audience={event.target_audience!}
                           collegeName={
                             event.college_id && profile?.college_id === event.college_id 
-                              ? null 
+                            ? null
                               : (event as any).colleges?.name
                           }
                           isGuest={!user}

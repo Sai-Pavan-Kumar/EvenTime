@@ -479,7 +479,7 @@ export default function SettingsClient({
                     const supabase = createClient();
                     
                     // Call the secure RPC function to delete the user
-                    const { error } = await supabase.rpc('delete_user' as any);
+                    const { error } = await supabase.rpc('delete_user');
                     
                     if (error) {
                       toast.error("Failed to delete account. Please try again.");

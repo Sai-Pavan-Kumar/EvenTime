@@ -134,7 +134,7 @@ export default async function AdminDashboard() {
                       </Link>
                       <div className="flex items-center gap-2 mt-1.5">
                         <span className="text-[14px] font-['Switzer'] text-[#555570]">
-                          {(event.profiles as any)?.full_name || "Unknown Organizer"}
+                          {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown Organizer"}
                         </span>
                         <span className="w-1.5 h-1.5 rounded-full bg-[#D1D1D6]"></span>
                         <span className="text-[14px] font-['Switzer'] text-[#6B7280]">

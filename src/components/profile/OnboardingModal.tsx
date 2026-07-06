@@ -34,23 +34,18 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   };
   const [college, setCollege] = useState("");
   const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
- 
   const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
   const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
-  
   const [role, setRole] = useState("");
-
   const [year, setYear] = useState("");
   const [yearSearchQuery, setYearSearchQuery] = useState("");
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
-
   const [branch, setBranch] = useState("");
-
   const [categories, setCategories] = useState<string[]>([]);
   const [username, setUsername] = useState("");
-const [isSaving, setIsSaving] = useState(false);
-const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
     
   // NEW: State to control manual appearance from banner
   // Signed-in but not-onboarded users get the modal right away (forced).

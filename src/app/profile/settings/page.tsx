@@ -23,8 +23,8 @@ export default async function SettingsPage() {
   const { data: activeEvents } = await supabase
     .from("events")
     .select("category")
-    .eq("is_published" as any, true) // FIXED: Bypasses outdated local TS definitions
-    .gte("start_time" as any, today); // FIXED: Bypasses outdated local TS definitions
+    .eq("is_published" as any, true)
+    .gte("start_time" as any, today);
 
   // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
   const categoryCounts: Record<string, number> = {};
@@ -50,5 +50,5 @@ export default async function SettingsPage() {
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
-  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
+ return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
 }

@@ -9,7 +9,6 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
 });
 
-// TODO: Replace 'unsafe-inline' with nonce-based CSP after launch
 // See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet', 'react-leaflet'],

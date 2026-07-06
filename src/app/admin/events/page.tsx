@@ -124,7 +124,7 @@ export default async function AdminEventsPage(props: PageProps) {
                     {/* Creator Info */}
                     <td className="px-8 py-6">
                       <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
-                        {(event.profiles as any)?.full_name || "Unknown User"}
+                        {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown User"}
                       </span>
                     </td>
 
