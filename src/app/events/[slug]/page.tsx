@@ -32,7 +32,7 @@ export async function generateMetadata({
 
   if (!event || event.status !== "approved") return { title: "Event Not Found" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
   const ogUrl = new URL(`${baseUrl}/api/og`);
 
   ogUrl.searchParams.set("title", event.title);
@@ -128,7 +128,7 @@ export default async function EventPage({
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
   const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
 
   const jsonLd = {
@@ -184,23 +184,7 @@ export default async function EventPage({
       .limit(6); // Increased limit to 6 so slider looks good
     
     if (data) {
-      similarEvents = data;
-      // FIX: Fetch curator usernames for similar events
-      const creatorIds = similarEvents.map(e => e.creator_id).filter(Boolean);
-      if (creatorIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", creatorIds);
-        
-        if (profiles) {
-          similarEvents = similarEvents.map(e => {
-            const profile = profiles.find(p => p.id === e.creator_id);
-            if (profile) return { ...e, profiles: { username: profile.username } };
-            return e;
-          });
-        }
-      }
+    similarEvents = data;
     }
   }
 

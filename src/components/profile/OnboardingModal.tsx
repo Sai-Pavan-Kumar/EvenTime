@@ -22,7 +22,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
   const [step, setStep] = useState(1);
   const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
 
-  const isAdmin = profile?.user_type === 'admin' || (profile as any)?.role === 'admin';
+  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
 
   const toggleCity = (cityName: string) => {
     if (cities.includes(cityName)) {
@@ -163,7 +163,7 @@ const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notio
 
 
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
-    const { error } = await supabase.from("profiles").update(updatePayload as any).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
     
     if (error) {
       toast.error("Failed to save. Please try again.");

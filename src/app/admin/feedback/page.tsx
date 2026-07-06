@@ -57,7 +57,7 @@ export default async function AdminFeedbackPage() {
                       {feedback.type}
                     </span>
                     <span className="text-[13px] font-bold font-['Switzer'] text-[#6B7280]">
-                      {new Date(feedback.created_at).toLocaleDateString()} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(feedback.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>

@@ -5,8 +5,8 @@ export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: http: 'unsafe-inline' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-    style-src 'self' 'unsafe-inline' https://api.fontshare.com;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
+    style-src 'self' https://api.fontshare.com;
     img-src 'self' blob: data: https: http:;
     font-src 'self' https://api.fontshare.com;
     object-src 'none';

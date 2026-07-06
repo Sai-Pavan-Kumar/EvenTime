@@ -30,8 +30,8 @@ type ProfileEvent = {
   status: string;
   poster_url: string | null;
   is_featured: boolean;
-  interested_events: any;
-  saved_events: any;
+  interested_events: { count: number }[];
+  saved_events: { count: number }[];
 };
 
 const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
@@ -449,7 +449,7 @@ Promise<{ tab?: string }>; }) {
                           Requested Category: {req.category || "General"}
                         </span>
                         <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
-                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
                       </div>
                     </div>
                   ))

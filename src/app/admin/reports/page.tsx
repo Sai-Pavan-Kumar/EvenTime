@@ -78,7 +78,7 @@ export default async function AdminReportsPage() {
                     </span>
                     <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
                     <p className="text-[14px] font-['Switzer'] text-[#6B7280] mt-1.5">
-                      Reported on: {new Date(report.created_at).toLocaleDateString()}
+                    Reported on: {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   </div>
                   <span className="text-[11px] font-bold text-[#6B7280] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>

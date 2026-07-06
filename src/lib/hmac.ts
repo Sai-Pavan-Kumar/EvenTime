@@ -1,6 +1,7 @@
 // Edge-compatible HMAC using Web Crypto API
 export async function generateHMAC(data: string): Promise<string> {
-  const secret = process.env.OG_SECRET || "default_dev_secret_key_12345";
+  const secret = process.env.OG_SECRET;
+  if (!secret) throw new Error("Missing OG_SECRET environment variable for secure HMAC generation");
   
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
