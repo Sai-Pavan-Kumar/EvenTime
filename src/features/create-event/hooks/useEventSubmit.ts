@@ -57,6 +57,9 @@ export function useEventSubmit() {
       // Destructure only UI fields, let is_featured go into the database payload
       const { imageFile, previewUrl, ...dbPayload } = payloadData;
       const finalPayload = { ...dbPayload };
+       // FIX: Convert empty strings to null for link fields to prevent Postgres CHECK constraint failures
+      if (finalPayload.registration_link === "") finalPayload.registration_link = null;
+      if (finalPayload.website === "") finalPayload.website = null;
 
       if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
 
@@ -105,8 +108,9 @@ export function useEventSubmit() {
       }
       
       router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
-    } catch (err) {
-      toast.error("Submission failed. Please try again.");
+    } catch (err: any) {
+      console.error("[useEventSubmit] Error:", err);
+      toast.error(err?.message || "Submission failed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
