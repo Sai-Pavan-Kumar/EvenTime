@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in";
   const supabase = await createClient();
 
   // Fetch all approved events along with their category and city
