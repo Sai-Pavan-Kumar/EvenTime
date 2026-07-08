@@ -88,7 +88,7 @@ export default async function AdminDashboard() {
         {[
           { label: "TOTAL USERS", value: totalUsers || 0, icon: Users, color: "text-[#3380F0]", bg: "bg-[rgba(51,128,240,0.08)]" },
           { label: "TOTAL EVENTS", value: totalEvents || 0, icon: Ticket, color: "text-brand-primary", bg: "bg-[rgba(108,71,255,0.08)]" },
-          { label: "PENDING APPROVALS", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-[#F59E0B]", bg: "bg-[rgba(245,158,11,0.08)]" },
+          { label: "PENDING APPROVALS", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-brand-accent", bg: "bg-[rgba(245,158,11,0.08)]" },
           { label: "ACTIVE REPORTS", value: reports?.length || 0, icon: ShieldAlert, color: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.08)]" }
         ].map((stat, i) => (
           <div key={i} className="bg-surface-card p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 transform hover:-translate-y-1">

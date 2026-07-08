@@ -55,7 +55,7 @@ export default async function AdminCollegesPage() {
         <div className="divide-y divide-black/[0.04]">
           {allColleges.length > 0 ? (
             allColleges.map(([college, count], index) => (
-              <div key={college} className="flex items-center justify-between p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+              <div key={college} className="flex items-center justify-between p-8 hover:bg-surface-base/50 transition-colors">
                 <div className="flex items-center gap-5">
                   <span className="w-8 text-[18px] font-black text-[#6B7280] text-right font-['Outfit']">#{index + 1}</span>
                   <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>

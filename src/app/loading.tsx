@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Loading() {
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
       
       <div className="flex flex-col">

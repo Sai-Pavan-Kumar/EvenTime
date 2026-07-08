@@ -16,7 +16,7 @@ export function AdminSidebar() {
   ];
 
   return (
-    <aside className="w-[300px] bg-[#F5F5F7] hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
+    <aside className="w-[300px] bg-surface-base hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
       <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
         
         {/* LOGO AREA */}
@@ -44,7 +44,7 @@ export function AdminSidebar() {
                     className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
                       isActive 
                         ? "bg-[#EDE8FF] text-[#6C47FF]" 
-                        : "text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A]"
+                        : "text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A]"
                     }`}
                   >
                     <Icon className={`w-5 h-5 ${isActive ? "text-[#6C47FF]" : "text-[#6B7280]"}`} /> 
@@ -58,7 +58,7 @@ export function AdminSidebar() {
 
         {/* FOOTER */}
         <div className="p-6 border-t border-black/[0.04] shrink-0">
-          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-[#F5F5F7] hover:text-[#0D0D1A] transition-colors">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A] transition-colors">
             <Settings className="w-4 h-4 text-[#6B7280]" />
             <span className="text-[15px]">Exit Admin Mode</span>
           </Link>

@@ -50,10 +50,10 @@ export default async function AdminFeedbackPage() {
         <div className="divide-y divide-black/[0.04]">
           {platformFeedback && platformFeedback.length > 0 ? (
             platformFeedback.map((feedback: any) => (
-              <div key={feedback.id} className="p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+              <div key={feedback.id} className="p-8 hover:bg-surface-base/50 transition-colors">
                 <div className="flex items-start justify-between gap-5 mb-4">
                   <div className="flex items-center gap-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-[#F59E0B]'}`}>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-brand-accent'}`}>
                       {feedback.type}
                     </span>
                     <span className="text-[13px] font-bold font-['Switzer'] text-[#6B7280]">
@@ -62,7 +62,7 @@ export default async function AdminFeedbackPage() {
                   </div>
                 </div>
                 
-                <div className="bg-[#F5F5F7] p-6 rounded-[20px] mt-4">
+                <div className="bg-surface-base p-6 rounded-[20px] mt-4">
                   <p className="text-[16px] font-['Switzer'] text-[#0D0D1A] whitespace-pre-wrap leading-relaxed">{feedback.message}</p>
                 </div>
                 

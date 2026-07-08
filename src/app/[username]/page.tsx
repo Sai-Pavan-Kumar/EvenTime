@@ -46,7 +46,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 
   if (!curator) {
     return (
-      <div className="min-h-screen bg-[#F5F5F7]">
+      <div className="min-h-screen bg-surface-base">
         <Navbar />
         <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
       </div>
@@ -108,7 +108,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
         <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
@@ -136,18 +136,18 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
             <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
             
             <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
-              <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
+              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</span>
                 <span className="text-xl font-black text-slate-900">{eventCount}</span>
               </div>
               
               {/* NEW: Followers Count */}
-              <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
+              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
                 <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
               </div>
               {appSettings?.leaderboard_enabled && (
-                <div className="bg-[#F5F5F7] px-5 py-3 rounded-2xl flex flex-col">
+                <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
                   <span className="text-xl font-black text-slate-900">{impactSaves}</span>
                 </div>

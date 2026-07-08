@@ -61,7 +61,7 @@ export default async function CityPage({
   const cityConfig = getCityConfig(decodedCity);
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+    <main className="min-h-screen bg-surface-base pb-24">
       <Navbar />
       
       {/* City Cover Hero */}

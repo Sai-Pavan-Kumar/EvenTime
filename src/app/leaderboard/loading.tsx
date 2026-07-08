@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LeaderboardLoading() {
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-12">

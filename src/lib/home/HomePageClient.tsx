@@ -1,5 +1,6 @@
 "use client"
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
@@ -15,87 +16,119 @@ import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
 
-// Interface for all the props passed down from the server orchestrator
+// The props now ONLY receive the public static buffet from the server
 export interface HomePageClientProps {
-  user: User | null; // Supabase user object
-  profile: (Partial<ProfileRow> & { city?: string }) | null;
-  activeTab: string;
-  displayToday: string;
-  personalizedEvents: (Partial<EventRow> & { matchReason?: string })[];
-  aroundYouEvents: Partial<EventRow>[];
-  collegeEvents: Partial<EventRow>[];
-  otherCollegeEvents: Partial<EventRow>[];
-  fallbackEvents: Partial<EventRow>[];
-  allEvents: Partial<EventRow>[] | null;
-  hasCityEvents: boolean;
+  allEvents: Partial<EventRow>[];
   dynamicChips: { name: string; value: string; count?: number }[];
   dynamicLocationChips?: { name: string; value: string; count?: number }[];
-  date?: string;
-  eventDates: string[];
   allEventDates: string[];
   featuredEvents: Partial<EventRow>[];
-  isFallback: boolean;
-  userProfiles: Partial<ProfileRow>[];
-  branch?: string;
-  q?: string;
-  category?: string;
-  location?: string;
-  view?: string;
   platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
+  displayToday: string;
 }
+
 export function HomePageClient(props: HomePageClientProps) {
   const {
-    user,
-    profile,
-    activeTab,
-    displayToday,
-    date,
-    eventDates,
-    allEventDates,
-    personalizedEvents,
-    aroundYouEvents,
-    collegeEvents,
-    otherCollegeEvents,
-    fallbackEvents,
     allEvents,
-    hasCityEvents,
     dynamicChips,
     dynamicLocationChips,
+    allEventDates,
     featuredEvents,
-    isFallback,
-    userProfiles,
-    branch,
-    q,
-    category,
-    location,
-    view,
-    platformStats
+    platformStats,
+    displayToday
   } = props;
 
-  // Local copies of the server-fetched event lists, so we can remove an event
-  // instantly (without a full page refresh) when it gets deleted/rejected elsewhere.
-  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState(personalizedEvents);
-  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState(aroundYouEvents);
-  const [liveCollegeEvents, setLiveCollegeEvents] = useState(collegeEvents);
-  const [liveOtherCollegeEvents, setLiveOtherCollegeEvents] = useState(otherCollegeEvents);
-  const [liveFallbackEvents, setLiveFallbackEvents] = useState(fallbackEvents);
+  // NEW: Read all filters instantly from the URL in the browser (Jet Speed)
+  const searchParams = useSearchParams();
+  const branch = searchParams.get('branch') || undefined;
+  const q = searchParams.get('q') || undefined;
+  const category = searchParams.get('category') || undefined;
+  const location = searchParams.get('location') || undefined;
+  const date = searchParams.get('date') || undefined;
+  const view = searchParams.get('view') || undefined;
+
+  // NEW: Client-side User & Profile State
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  // Local copies of events
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
+  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState<Partial<EventRow>[]>([]);
+  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState<Partial<EventRow>[]>([]);
+  const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>([]);
 
-  // Pill toggles: which sub-feed is active inside each section
-  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('for_you');
+  // Pill toggles: Default to 'around_you' initially
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('around_you');
+  
   const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
-  // Keep local state in sync if the server sends fresh props (e.g. after navigation/filter change)
-  useEffect(() => { setLivePersonalizedEvents(personalizedEvents); }, [personalizedEvents]);
-  useEffect(() => { setLiveAroundYouEvents(aroundYouEvents); }, [aroundYouEvents]);
-  useEffect(() => { setLiveCollegeEvents(collegeEvents); }, [collegeEvents]);
-  useEffect(() => { setLiveOtherCollegeEvents(otherCollegeEvents); }, [otherCollegeEvents]);
-  useEffect(() => { setLiveFallbackEvents(fallbackEvents); }, [fallbackEvents]);
+
+  // Sync with server if the static buffet updates via ISR
   useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
 
-  // Realtime: listen for any event becoming non-approved (rejected/deleted) and
-  // instantly remove it from whatever list it's currently shown in.
+  // NEW: Fetch User & Profile directly from the browser on mount
+  useEffect(() => {
+    const fetchUserAndProfile = async () => {
+      const supabase = createClient();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser) {
+        setUser(currentUser);
+        const { data } = await supabase
+          .from("profiles")
+          .select("is_onboarded, goals, user_type, college_id, preferred_cities")
+          .eq("id", currentUser.id)
+          .single();
+        if (data) {
+          setProfile(data as any);
+          if (data.goals && data.goals.length > 0) {
+            setActiveFeedPill('for_you'); // Switch default if they have goals
+          }
+        }
+      }
+      setIsAuthLoading(false);
+    };
+    fetchUserAndProfile();
+  }, []);
+
+  // NEW: Organize the Buffet into Personalized Plates
+  useEffect(() => {
+    let nonCampusEvents = liveAllEvents || [];
+    
+    // If student, fetch their private campus events quickly in the background
+    if (user && profile?.user_type === 'student' && profile?.college_id) {
+      nonCampusEvents = (liveAllEvents || []).filter(e => e.college_id !== profile.college_id);
+      
+      const fetchCollegeEvents = async () => {
+        const supabase = createClient();
+        const todayStr = new Date().toISOString().substring(0, 10);
+        const { data: cEvents } = await supabase
+          .from("events")
+          .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)")
+          .eq("status", "approved")
+          .eq("college_id", profile.college_id!)
+          .gte("date_string", todayStr)
+          .order("created_at", { ascending: false })
+          .limit(8);
+        
+        if (cEvents) setLiveCollegeEvents(cEvents as any);
+      };
+      fetchCollegeEvents();
+    }
+
+    // Split into For You and Around You based on profile goals
+    if ((profile?.goals?.length ?? 0) > 0) {
+      const goalSet = new Set(profile!.goals);
+      setLivePersonalizedEvents(nonCampusEvents.filter(e => e.category && goalSet.has(e.category)));
+      setLiveAroundYouEvents(nonCampusEvents.filter(e => !(e.category && goalSet.has(e.category))));
+    } else {
+      setLiveAroundYouEvents(nonCampusEvents);
+      setLivePersonalizedEvents([]);
+    }
+  }, [profile, user, liveAllEvents]);
+
+  // Realtime: listen for any event becoming non-approved (rejected/deleted)
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -115,8 +148,6 @@ export function HomePageClient(props: HomePageClientProps) {
           setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveAroundYouEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveOtherCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveFallbackEvents((prev) => prev.filter((e) => e.id !== removedId));
           setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
           setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
         }
@@ -126,7 +157,7 @@ export function HomePageClient(props: HomePageClientProps) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-    // No filters active = passive browsing mode → show pill-based feed. Any filter active → filter liveAllEvents directly.
+  // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
   const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
@@ -138,7 +169,6 @@ export function HomePageClient(props: HomePageClientProps) {
       let match = true;
       
       if (date) {
-        // If a specific date is selected, ignore category, branch, and location filters
         if (e.date_string !== date) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
@@ -166,18 +196,18 @@ export function HomePageClient(props: HomePageClientProps) {
       : liveAroundYouEvents;
 
   let clientIsFallback = false;
-  let clientFallbackEvents = liveFallbackEvents;
+  let clientFallbackEvents: Partial<EventRow>[] = [];
   if (!noFiltersActive && filteredAllEvents.length === 0) {
     clientIsFallback = true;
     clientFallbackEvents = (liveAllEvents || []).filter(e => e.is_virtual).slice(0, 4);
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
       
-      {/* Onboarding check: user & profile null unna sare modal render avvali */}
-      {!profile?.is_onboarded && (
+      {/* Onboarding check: don't show until auth finishes checking */}
+      {!isAuthLoading && user && !profile?.is_onboarded && (
         <OnboardingModal user={user} profile={profile} />
       )}
 
@@ -185,14 +215,13 @@ export function HomePageClient(props: HomePageClientProps) {
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
         {view !== "map" && (
           <>
-            {/* Header Section Background & Combined Navigation Pill */}
             {!user && (
               <div className="relative">
                 <HeroSection stats={platformStats} />
               </div>
             )}
 
-            {/* PLATFORM STATS STRIP - moved here from HeroSection per design feedback */}
+            {/* PLATFORM STATS STRIP */}
             <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
               <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
                 <div className="flex flex-col items-center px-3">
@@ -214,15 +243,9 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             </div>
 
-          {/* GUEST-ONLY INTRO - explains what EvenTime is. Hidden once user is signed in, since they already know. */}
-          {/* ALSO HIDDEN: if the guest is actively searching, filtering by date, or category */}
           {!user && !q && !date && !category && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              {/* Update the leaderboard page settings via admin panel (e.g. settings.leaderboard_active) */}
-              <LandingIntro 
-                isLeaderboardEnabled={false} 
-                isSmartAlertsEnabled={false} 
-              />
+              <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
             </div>
           )}
           </>
@@ -230,7 +253,6 @@ export function HomePageClient(props: HomePageClientProps) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
-         {/* DYNAMIC SECTION RENDERING LAYER ACCORDING TO USER FLOW SELECTION */}
           {view === "map" ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
@@ -240,8 +262,6 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
           ) : (
             <>
-
-            {/* CITY SECTION — always shown */}
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -288,7 +308,6 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               </div>
 
-              {/* FEATURED EVENTS HORIZONTAL SCROLL (Moved outside fallback) */}
               {liveFeaturedEvents && liveFeaturedEvents.length > 0 && !q && !category && !location && (
                 <div className="col-span-full mb-10 mt-6">
                   <div className="flex items-center justify-between mb-6 px-2">
@@ -303,9 +322,7 @@ export function HomePageClient(props: HomePageClientProps) {
                     </Link>
                   </div>
                   
-                  {/* Horizontal Scroll Container - FIX: Hid scrollbars here too */}
-                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
-                    {/* FIX: Added (event: Partial<EventRow>) type */}
+                  <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
                     {liveFeaturedEvents.map((event: Partial<EventRow>) => (
                       <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
                         <EventCard 
@@ -334,92 +351,86 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               )}
 
-              {(
-                <div className="w-full">
-                  {gridSource && gridSource.length > 0 ? (
-                    (() => {
-                      const sortedEvents = [...gridSource].sort((a, b) => {
-                        const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
-                        if (dateDiff !== 0) return dateDiff;
-                        // Same date — sort by actual time, not the raw "h:mm AM/PM" string (which sorts wrong)
-                        const toMinutes = (t?: string | null) => {
-                          if (!t) return 0;
-                          const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
-                          if (!match) return 0;
-                          let h = parseInt(match[1], 10);
-                          const m = parseInt(match[2], 10);
-                          if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
-                          if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
-                          return h * 60 + m;
-                        };
-                        return toMinutes(a.start_time) - toMinutes(b.start_time);
-                      });
+              <div className="w-full">
+                {gridSource && gridSource.length > 0 ? (
+                  (() => {
+                    const sortedEvents = [...gridSource].sort((a, b) => {
+                      const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
+                      if (dateDiff !== 0) return dateDiff;
+                      const toMinutes = (t?: string | null) => {
+                        if (!t) return 0;
+                        const match = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                        if (!match) return 0;
+                        let h = parseInt(match[1], 10);
+                        const m = parseInt(match[2], 10);
+                        if (match[3].toUpperCase() === "PM" && h !== 12) h += 12;
+                        if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
+                        return h * 60 + m;
+                      };
+                      return toMinutes(a.start_time) - toMinutes(b.start_time);
+                    });
+                    return (
+                      <EventGrid
+                        events={sortedEvents}
+                        profile={profile}
+                        user={user}
+                        useMatchLogic={false}
+                        gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                        isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                      />
+                    );
+                  })()
+                ) : (
+                  <div className="col-span-full">
+                    {(() => {
+                      const todayObj = new Date();
+                      const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+                      const isPastDate = date ? date < todayStr : false;
+                      
+                      const title = isPastDate ? "No past events" : "No exact matches";
+                      const message = isPastDate 
+                          ? "There were no events hosted on this date." 
+                          : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                          : location ? `No events happening in ${location} right now. But the stage is never empty.`
+                          : category ? `No ${category}s happening right now. But the stage is never empty.` 
+                          : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
                       return (
-                        <EventGrid
-                          events={sortedEvents}
-                          profile={profile}
-                          user={user}
-                          useMatchLogic={false}
-                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                          isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                        <EmptyState 
+                          title={title}
+                          message={message}
+                          variant="default"
+                          showButton={!isPastDate}
+                          buttonText="Be the first to host one"
                         />
                       );
-                    })()
-                  ) : (
-                    // --- PREMIUM GSAP-STYLE EMPTY STATE & FALLBACK ---
-                    <div className="col-span-full">
-                      {(() => {
-                        const todayObj = new Date();
-                        const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
-                        const isPastDate = date ? date < todayStr : false;
-                        
-                        const title = isPastDate ? "No past events" : "No exact matches";
-                        const message = isPastDate 
-                            ? "There were no events hosted on this date." 
-                            : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                            : location ? `No events happening in ${location} right now. But the stage is never empty.`
-                            : category ? `No ${category}s happening right now. But the stage is never empty.` 
-                            : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
-                        return (
-                          <EmptyState 
-                            title={title}
-                            message={message}
-                            variant="default"
-                            showButton={!isPastDate}
-                            buttonText="Be the first to host one"
-                          />
-                        );
-                      })()}
-                    
-                      {/* Fallback Events (Virtual/Online) */}
-                      {clientIsFallback && clientFallbackEvents.length > 0 && (
-                        <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
-                          <div className="flex items-center gap-4 mb-8">
-                            <div className="h-px bg-slate-200 flex-1" />
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
-                              Showing Virtual Events Instead
-                            </span>
-                            <div className="h-px bg-slate-200 flex-1" />
-                          </div>
-
-                          <EventGrid 
-                            events={clientFallbackEvents}
-                            gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                            defaultMatchLabel="Recommended Virtual"
-                            user={user}
-                          />
+                    })()}
+                  
+                    {clientIsFallback && clientFallbackEvents.length > 0 && (
+                      <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
+                        <div className="flex items-center gap-4 mb-8">
+                          <div className="h-px bg-slate-200 flex-1" />
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+                            Showing Virtual Events Instead
+                          </span>
+                          <div className="h-px bg-slate-200 flex-1" />
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+
+                        <EventGrid 
+                          events={clientFallbackEvents}
+                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          defaultMatchLabel="Recommended Virtual"
+                          user={user}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             </>
           )}
         </div>
-        
-        </div>
+      </div>
     </main>
   );
 }

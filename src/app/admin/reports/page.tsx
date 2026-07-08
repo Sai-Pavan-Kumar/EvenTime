@@ -70,7 +70,7 @@ export default async function AdminReportsPage() {
         <div className="divide-y divide-black/[0.04]">
           {activeReports && activeReports.length > 0 ? (
             activeReports.map((report) => (
-              <div key={report.id} className="p-8 hover:bg-[#F5F5F7]/50 transition-colors">
+              <div key={report.id} className="p-8 hover:bg-surface-base/50 transition-colors">
                 <div className="flex items-start justify-between gap-5 mb-5">
                   <div>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
@@ -81,13 +81,13 @@ export default async function AdminReportsPage() {
                     Reported on: {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </p>
                   </div>
-                  <span className="text-[11px] font-bold text-[#6B7280] bg-[#F5F5F7] px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
+                  <span className="text-[11px] font-bold text-[#6B7280] bg-surface-base px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
                 </div>
                 
                 <div className="flex gap-4 mt-8">
                   <form action={handleResolve} className="w-[200px]">
                     <input type="hidden" name="reportId" value={report.id} />
-                    <button type="submit" className="w-full bg-[#F5F5F7] text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
+                    <button type="submit" className="w-full bg-surface-base text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
                       Dismiss (Safe)
                     </button>
                   </form>
@@ -103,7 +103,7 @@ export default async function AdminReportsPage() {
             ))
           ) : (
             <div className="p-24 text-center flex flex-col items-center justify-center">
-              <div className="w-[72px] h-[72px] rounded-full bg-[#F5F5F7] flex items-center justify-center mb-5">
+              <div className="w-[72px] h-[72px] rounded-full bg-surface-base flex items-center justify-center mb-5">
                 <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
               </div>
               <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>

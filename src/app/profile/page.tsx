@@ -1,5 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client"
+
+import { useEffect, useState, Suspense } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,8 +14,6 @@ import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
 import type { ProfileRow } from "@/types";
 import { MobileSignOutButton } from "@/components/profile/MobileSignOutButton";
-
-export const dynamic = "force-dynamic";
 
 type ReportWithEventSlug = {
   id: string;
@@ -51,54 +52,109 @@ const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
   return score;
 };
 
-export default async function ProfilePage({ searchParams, }: { searchParams:
-Promise<{ tab?: string }>; }) { 
-  const { tab } = await searchParams; 
+// NEW: Global Memory Cache for Instant Navigation (0 loading screens on return!)
+let memCache: {
+  user: any;
+  profile: Partial<ProfileRow> | null;
+  myEvents: ProfileEvent[] | null;
+  savedEvents: any[];
+  myReports: ReportWithEventSlug[] | null;
+  appSettings: any;
+} | null = null;
+
+function ProfileContent() { 
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab");
   const activeTab = (tab && tab !== "menu") ? tab : "posted";
   const isMobileMenu = !tab || tab === "menu";
   
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // React State initialized from cache if available (instant load!)
+  const [isLoading, setIsLoading] = useState(!memCache);
+  const [user, setUser] = useState<any>(memCache?.user || null);
+  const [profile, setProfile] = useState<Partial<ProfileRow> | null>(memCache?.profile || null);
+  const [myEvents, setMyEvents] = useState<ProfileEvent[] | null>(memCache?.myEvents || null);
+  const [savedEvents, setSavedEvents] = useState<any[]>(memCache?.savedEvents || []);
+  const [myReports, setMyReports] = useState<ReportWithEventSlug[] | null>(memCache?.myReports || null);
+  const [appSettings, setAppSettings] = useState<any>(memCache?.appSettings || null);
 
-  if (!user) redirect("/login");
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-  const [
-    { data: profile },
-    { data: myEventsRaw },
-    { data: savedEventsData },
-    { data: myReportsRaw, error: reportsError },
-    { data: appSettings }
-  ] = await Promise.all([
-    supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", user.id).maybeSingle(),
-    supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", user.id).order("created_at", { ascending: false }),
-    supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", user.id).eq("status", "pending").order("created_at", { ascending: false }),
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
-  ]);
+      if (!currentUser) {
+        router.push("/login");
+        return;
+      }
 
-  if (!profile) {
-    redirect("/profile/settings");
-  }
+      const [
+        { data: profileData },
+        { data: myEventsRaw },
+        { data: savedEventsData },
+        { data: myReportsRaw },
+        { data: appSettingsData }
+      ] = await Promise.all([
+        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", currentUser.id).maybeSingle(),
+        supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).order("created_at", { ascending: false }),
+        supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
+        supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
+        supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+      ]);
 
-  // Removed event_category_requests ghost table logic
+      if (!profileData) {
+        router.push("/profile/settings");
+        return;
+      }
+
+      const formattedSavedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
+      
+      setUser(currentUser);
+      setProfile(profileData);
+      setMyEvents(myEventsRaw as ProfileEvent[]);
+      setSavedEvents(formattedSavedEvents);
+      setMyReports(myReportsRaw as ReportWithEventSlug[]);
+      setAppSettings(appSettingsData);
+
+      // Save to memory cache for instant loads next time
+      memCache = {
+        user: currentUser,
+        profile: profileData,
+        myEvents: myEventsRaw as ProfileEvent[],
+        savedEvents: formattedSavedEvents,
+        myReports: myReportsRaw as ReportWithEventSlug[],
+        appSettings: appSettingsData
+      };
+
+      setIsLoading(false);
+    }
+    fetchData();
+  }, [router]);
+
+  const handleDelete = async (formData: FormData) => {
+    const eventId = formData.get("eventId") as string;
+    
+     // 1. Optimistic Update: Instantly remove the event from the UI and memory cache
+    setMyEvents(prev => prev ? prev.filter(e => e.id !== eventId) : null);
+    if (memCache && memCache.myEvents) {
+      memCache.myEvents = memCache.myEvents.filter(e => e.id !== eventId);
+    }
+    // 2. Proceed with the actual deletion in the backend
+    await deleteEventAction(formData);
+  };
+
   const audienceRequests: any[] = [];
-
-  if (reportsError) {
-    console.error("Error fetching reports:", reportsError);
+  
+  if (isLoading) {
+    // Exact same background as home page so no flickering occurs
+    return <main className="min-h-screen bg-surface-base animate-pulse" />;
   }
-
-  // Removed production debugging logs to prevent PII data leaks
-
-  const myReports = myReportsRaw as ReportWithEventSlug[] | null;
-  const myEvents = myEventsRaw as ProfileEvent[] | null;
 
   const etScore = profile?.et_score || 100;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const profilePic = profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture || "/window.svg";
+  const profilePic = profile?.avatar_url || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "/window.svg";
   const completionPercentage = calculateCompletion(profile);
-  const savedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
 
-  // NEW: What's missing checklist, mirrors the calculateCompletion formula
   const missingItems: string[] = [];
   if (!profile?.avatar_url) missingItems.push("Profile photo");
   if (!profile?.username) missingItems.push("Username");
@@ -106,21 +162,14 @@ Promise<{ tab?: string }>; }) {
   if (!profile?.goals || profile.goals.length === 0) missingItems.push("Interest categories");
   if (profile?.user_type === "student" && (!profile?.college || !profile?.graduation_year)) missingItems.push("College & graduation year");
 
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
-  }
-
   const eventCount = myEvents?.length || 0;
   let totalSaves = 0;
   let totalInterested = 0;
 
   if (myEvents && myEvents.length > 0) {
       myEvents.forEach(ev => {
-      // Extract the aggregated counts returned natively by the Supabase join
       const eventSaves = ev.saved_events?.[0]?.count || 0;
       const eventInterested = ev.interested_events?.[0]?.count || 0;
-      
       totalSaves += eventSaves;
       totalInterested += eventInterested;
     });
@@ -135,7 +184,7 @@ Promise<{ tab?: string }>; }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar variant="centered" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -203,8 +252,8 @@ Promise<{ tab?: string }>; }) {
                   </div>
                   {leaderboardEnabled && (
                     <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-[#F59E0B] leading-none">{etScore}</span>
-                      <span className="text-[9px] font-semibold text-[#F59E0B] uppercase tracking-wider mt-1.5">Score</span>
+                      <span className="text-base font-bold text-brand-accent leading-none">{etScore}</span>
+                      <span className="text-[9px] font-semibold text-brand-accent uppercase tracking-wider mt-1.5">Score</span>
                     </div>
                   )}
                 </div>
@@ -470,5 +519,13 @@ Promise<{ tab?: string }>; }) {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-surface-base animate-pulse" />}>
+      <ProfileContent />
+    </Suspense>
   );
 }

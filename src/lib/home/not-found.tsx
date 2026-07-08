@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center px-4 py-12 text-center">
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
       <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
         {/* PREMIUM ILLUSTRATION PLACEHOLDER */}

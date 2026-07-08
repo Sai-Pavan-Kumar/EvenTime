@@ -74,7 +74,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] flex items-center justify-center p-4 sm:p-8">
+    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
       {/* THE PERFECT 2:1 SPLIT LAYOUT
         - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
         - Mobile: auto height, vertical stack
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
                 <input 
                   type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
                 />
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function LoginPage() {
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#6C47FF] transition-colors" />
                 <input 
                   type="password" name="password" required placeholder="••••••••" 
-                  className="w-full bg-[#F5F5F7] border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
                 />
               </div>
             </div>

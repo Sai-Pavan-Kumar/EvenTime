@@ -50,7 +50,7 @@ export default async function LeaderboardPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
 
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -218,7 +218,7 @@ export default async function LeaderboardPage() {
                 const tier = getTierInfo(user.et_score || 0);
 
                 return (
-                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-[#F5F5F7] transition-colors">
+                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-surface-base transition-colors">
                     <div className="w-12 text-center font-heading font-bold text-lg text-slate-400">
                       #{rank}
                     </div>

@@ -122,16 +122,16 @@ export function StepMedia(props: StepMediaProps) {
               {!props.isFeatured && <div className="mb-6 pb-6 border-b border-slate-100">{UploaderUI}</div>}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-500 uppercase">Organizer Name</label>
-                <input type="text" value={props.organizer} onChange={e => props.setOrganizer(e.target.value)} placeholder="Your Name or Community" className="w-full bg-[#F5F5F7] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
+                <input type="text" value={props.organizer} onChange={e => props.setOrganizer(e.target.value)} placeholder="Your Name or Community" className="w-full bg-surface-base rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase">Prizes / Perks</label>
-                  <input type="text" value={props.prizes} onChange={e => props.setPrizes(e.target.value)} placeholder="e.g. ₹50k Prize Pool, Certificates" className="w-full bg-[#F5F5F7] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
+                  <input type="text" value={props.prizes} onChange={e => props.setPrizes(e.target.value)} placeholder="e.g. ₹50k Prize Pool, Certificates" className="w-full bg-surface-base rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
                 </div>
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase">Team Size</label>
-                  <select value={props.teamSize} onChange={e => props.setTeamSize(e.target.value)} className="w-full bg-[#F5F5F7] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium appearance-none">
+                  <select value={props.teamSize} onChange={e => props.setTeamSize(e.target.value)} className="w-full bg-surface-base rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium appearance-none">
                     <option value="">Select size</option>
                     {props.teamOptions.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
@@ -140,11 +140,11 @@ export function StepMedia(props: StepMediaProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase">Registration Deadline</label>
-                  <div className="bg-[#F5F5F7] rounded-xl p-2"><MiniCalendar selectedDate={props.registrationDeadline} onSelect={props.setRegistrationDeadline} /></div>
+                  <div className="bg-surface-base rounded-xl p-2"><MiniCalendar selectedDate={props.registrationDeadline} onSelect={props.setRegistrationDeadline} /></div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-slate-500 uppercase">Official Website</label>
-                  <input type="url" value={props.website} onChange={e => props.setWebsite(e.target.value)} placeholder="https://your-event.com" className="w-full bg-[#F5F5F7] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
+                  <input type="url" value={props.website} onChange={e => props.setWebsite(e.target.value)} placeholder="https://your-event.com" className="w-full bg-surface-base rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#6C47FF]/20 text-sm font-medium" />
                 </div>
               </div>
             </motion.div>

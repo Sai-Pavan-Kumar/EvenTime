@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24">
+    <main className="min-h-screen bg-surface-base pb-24">
       <Navbar />
       
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

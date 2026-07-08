@@ -97,7 +97,7 @@ export default async function AdminEventsPage(props: PageProps) {
             <tbody className="divide-y divide-black/[0.04]">
               {events && events.length > 0 ? (
                 events.map((event) => (
-                  <tr key={event.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
+                  <tr key={event.id} className="hover:bg-surface-base/50 transition-colors">
                     
                     {/* Event Image & Title */}
                     <td className="px-8 py-6">
@@ -105,7 +105,7 @@ export default async function AdminEventsPage(props: PageProps) {
                         <input type="hidden" name="eventId" value={event.id} />
                       </form>
                       <div className="flex items-center gap-5">
-                        <div className="w-[88px] h-[56px] rounded-[16px] bg-[#F5F5F7] overflow-hidden shrink-0 relative">
+                        <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
                           {event.poster_url ? (
                             <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
                           ) : (
@@ -148,7 +148,7 @@ export default async function AdminEventsPage(props: PageProps) {
                     {/* Actions */}
                     <td className="px-8 py-6">
                       <div className="flex items-center justify-end gap-3">
-                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
+                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
                           <CheckCircle className="w-5 h-5" />
                         </button>
 

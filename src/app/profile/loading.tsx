@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfileLoading() {
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-surface-base">
       <Navbar variant="centered" />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -157,7 +157,7 @@ export default function SettingsClient({
   if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-32">
+    <main className="min-h-screen bg-surface-base pb-32">
       {/* Mobile-Optimized Sticky Navbar */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center gap-4">
         <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">

@@ -64,12 +64,12 @@ export default async function AdminUsersPage() {
             <tbody className="divide-y divide-black/[0.04]">
               {users && users.length > 0 ? (
                 users.map((profile) => (
-                  <tr key={profile.id} className="hover:bg-[#F5F5F7]/50 transition-colors">
+                  <tr key={profile.id} className="hover:bg-surface-base/50 transition-colors">
                     
                     {/* Avatar & Info */}
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-[44px] h-[44px] rounded-full bg-[#F5F5F7] border border-black/[0.04] flex items-center justify-center overflow-hidden shrink-0">
+                        <div className="w-[44px] h-[44px] rounded-full bg-surface-base border border-black/[0.04] flex items-center justify-center overflow-hidden shrink-0">
                           {profile.avatar_url ? (
                             <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={44} height={44} className="object-cover w-full h-full" />
                           ) : (
@@ -117,7 +117,7 @@ export default async function AdminUsersPage() {
                           <Shield className="w-3.5 h-3.5" /> Admin
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[#F5F5F7] text-[#555570] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-surface-base text-[#555570] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
                           <UserIcon className="w-3.5 h-3.5" /> User
                         </span>
                       )}
@@ -141,7 +141,7 @@ export default async function AdminUsersPage() {
                               type="submit" 
                               className={`px-4 py-2 rounded-full text-[13px] font-bold font-['Outfit'] transition-colors ${
                                 profile.role === "admin" 
-                                  ? "bg-[#F5F5F7] text-[#555570] hover:bg-[#EAEAEA]" 
+                                  ? "bg-surface-base text-[#555570] hover:bg-[#EAEAEA]" 
                                   : "bg-[#EDE8FF] text-[#6C47FF] hover:bg-[#DED5FF]"
                               }`}
                             >

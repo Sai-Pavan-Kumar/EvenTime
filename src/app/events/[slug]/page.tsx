@@ -118,7 +118,7 @@ export default async function EventPage({
 
     if (!isCreator && !isAdmin) {
       return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-[#F5F5F7]">
+        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
           <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
           <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
           <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
