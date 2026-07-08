@@ -21,7 +21,7 @@ export async function fetchHomePageData() {
 
   // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
   const getCachedGlobalData = unstable_cache(
-    async (today: string) => {
+    async () => {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
       let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
       
@@ -29,7 +29,6 @@ export async function fetchHomePageData() {
         .from("events")
         .select(PUBLIC_EVENT_FIELDS)
         .eq("status", "approved")
-        .gte("date_string", today)
         .or(visibilityFilter)
         .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false });
@@ -48,7 +47,7 @@ export async function fetchHomePageData() {
   );
 
   // Grab the data instantly from Cache (No DB load)
-  const { rawAllEvents, platformStats } = await getCachedGlobalData(todayStr);
+  const { rawAllEvents, platformStats } = await getCachedGlobalData();
   const allEvents = rawAllEvents as Partial<EventRow>[];
 
   // Derive dynamic lists from the cached events for filters
