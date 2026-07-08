@@ -386,8 +386,8 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     </nav>
 
     {showMobileSearch && (
-      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col">
-        <form
+      <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col pb-24"> 
+       <form
           onSubmit={(e) => { handleSearch(e); closeMobileSearch(); }}
           className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-100"
         >
@@ -439,7 +439,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     )}
 
-    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
+    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
   <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
     
     <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>

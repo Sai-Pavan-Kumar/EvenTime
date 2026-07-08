@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
 import type { ProfileRow } from "@/types";
+import { MobileSignOutButton } from "@/components/profile/MobileSignOutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -269,6 +270,7 @@ Promise<{ tab?: string }>; }) {
                 
                 {/* Mobile Only Feedback Button */}
                 <MobileFeedbackWrapper />
+                <MobileSignOutButton />
               </div>
 
               <div className="p-4 pt-1 mb-2 mt-auto">

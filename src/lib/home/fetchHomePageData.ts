@@ -295,8 +295,7 @@ export async function fetchHomePageData(searchParams: HomePageParams) {
   }
 
     // NEW: Live platform stats for the hero section (single RPC call, no extra round trips)
-  const { data: statsData } = await supabase.rpc("get_platform_stats").single();
-  const platformStats = (statsData as { event_count: number; city_count: number; category_count: number; user_count: number }) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
+    const { platformStats } = await getCachedGlobalData(todayStr);
 
   return {
     user,

@@ -94,9 +94,8 @@ export default async function EventPage({
   const { data: finalEvent } = await query.maybeSingle();
 
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
-  const curatorUsername = Array.isArray(finalEvent?.profiles) 
-    ? (finalEvent?.profiles[0] as any)?.username 
-    : (finalEvent?.profiles as any)?.username || null;
+  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
+  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
 
   if (!finalEvent) {
     return (

@@ -7,7 +7,12 @@ import type { ProfileRow } from "@/types";
 
 export const dynamic = "force-dynamic";
 
-const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
+type ExtendedProfileRow = Partial<ProfileRow> & {
+  preferred_cities?: string[] | null;
+  user_type?: string | null;
+  graduation_year?: string | null;
+};
+const calculateCompletion = (prof: ExtendedProfileRow | null) => {
   if (!prof) return 0;
   let score = 0;
   if (prof.avatar_url) score += 20;
