@@ -420,10 +420,10 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-5 bg-white">
-          {!searchQuery.trim() && !categoryParam && !locationParam ? (
-              <div className="flex flex-col items-center justify-center mt-12">
-                <div className="relative w-64 h-64 mb-4">
+        <div className="flex-1 overflow-y-auto px-4 py-5 pb-28 bg-white">
+        {!searchQuery.trim() && !categoryParam && !locationParam ? (
+          <div className="flex flex-col items-center justify-center mt-4">
+            <div className="relative w-64 h-64 mb-4">
                   <Image src="/illustrations/search_state.webp" alt="Search events" fill className="object-contain" />
                 </div>
                 <p className="text-sm text-slate-400 font-medium text-center">Start typing or pick a filter to see events...</p>
@@ -440,66 +440,64 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     )}
 
     <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
-  <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
-    
-    <Link href="/" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <Home className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
-    </Link>
+      <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
+        <Link href="/" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+          <Home className="w-5 h-5" />
+          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
+        </Link>
 
-    <button type="button" onClick={() => setShowMobileSearch(true)} className="flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform text-text-secondary hover:text-[#6C47FF]">
-      <Search className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
-    </button>
+        <button type="button" onClick={() => setShowMobileSearch(true)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+          <Search className="w-5 h-5" />
+          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
+        </button>
 
-    <Link href="/events/new" onClick={handleProtectedAction} className="flex flex-col items-center justify-center w-full h-full">
-      <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
-        <SquarePlus className="w-6 h-6 text-white" />
-      </div>
-    </Link>
-
-    <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-      <MapPin className="w-5 h-5" />
-      <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
-    </button>
-
-    {isLoading ? (
-     <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
-       <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
-       <div className="w-6 h-2 bg-slate-200 rounded-full" />
-     </div>
-     ) : user ? (
-      <Link href="/profile?tab=menu" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <div className="relative w-7 h-7 flex items-center justify-center">
-          <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
-            <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
-          </svg>
-          <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') ? 'border-[#6C47FF]' : 'border-white'}`}>
-            {avatarUrl && !imgError ? (
-              <img 
-                src={avatarUrl} 
-                alt="Profile" 
-                className="object-cover w-full h-full"
-                referrerPolicy="no-referrer"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <User className="w-3.5 h-3.5" />
-            )}
+        <Link href="/events/new" onClick={(e) => { setShowMobileSearch(false); handleProtectedAction(e); }} className="flex flex-col items-center justify-center w-full h-full">
+          <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
+            <SquarePlus className="w-6 h-6 text-white" />
           </div>
-        </div>
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
-      </Link>
-    ) : (
-      <Link href="/login" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-        <User className="w-5 h-5" />
-        <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
-      </Link>
-    )}
+        </Link>
 
-  </div>
-</div>
+        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+          <MapPin className="w-5 h-5" />
+          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
+        </button>
+
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
+            <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
+            <div className="w-6 h-2 bg-slate-200 rounded-full" />
+          </div>
+        ) : user ? (
+          <Link href="/profile?tab=menu" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+            <div className="relative w-7 h-7 flex items-center justify-center">
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
+                <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
+                <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+              </svg>
+              <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') && !showMobileSearch ? 'border-[#6C47FF]' : 'border-white'}`}>
+                {avatarUrl && !imgError ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Profile"
+                    className="object-cover w-full h-full"
+                    referrerPolicy="no-referrer"
+                    onError={() => setImgError(true)}
+                  />
+                ) : (
+                  <User className="w-3.5 h-3.5" />
+                )}
+              </div>
+            </div>
+            <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
+          </Link>
+        ) : (
+          <Link href="/login" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+            <User className="w-5 h-5" />
+            <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
+          </Link>
+        )}
+      </div>
+    </div>
 
     {/* NEW: Auth Modal Overlay for Guest Users */}
     {showAuthModal && (
