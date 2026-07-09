@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 import type { EventRow } from "@/types";
 import { getCityConfig } from "@/lib/city-config";
+import { parseEventDateString } from "@/lib/utils/date";
+import { differenceInCalendarDays } from "date-fns";
 
 export interface CityGridProps {
   events: Partial<EventRow>[];
@@ -11,12 +13,22 @@ export interface CityGridProps {
 
 
 export function CityGrid({ events }: CityGridProps) {
-  // Group events by city and count them
+  // Group upcoming events by city and count them
   const cityMap = new Map<string, number>();
 
   events.forEach((event) => {
     const city = event.city?.trim();
     if (!city) return;
+    
+    // Skip counting past events
+    const checkDate = parseEventDateString(event.date_string || "");
+    if (checkDate) {
+      const today = new Date();
+      if (differenceInCalendarDays(checkDate, today) < 0) {
+        return; 
+      }
+    }
+
     cityMap.set(city, (cityMap.get(city) || 0) + 1);
   });
 
