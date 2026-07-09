@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { requireAdmin } from "@/lib/auth/permissions";
@@ -55,9 +55,10 @@ export async function approveEventAction(formData: FormData) {
     return { error: "Score update failed" };
   }
 
-  revalidatePath("/", "layout"); 
+ revalidatePath("/", "layout"); 
   revalidatePath("/admin");
   revalidatePath("/admin/events");
+  revalidateTag("events", "events");
   return { success: true };
 }
 
@@ -86,9 +87,10 @@ export async function rejectEventAction(formData: FormData) {
     .update({ status: "rejected" })
     .eq("id", eventId);
 
-  revalidatePath("/", "layout"); 
+ revalidatePath("/", "layout"); 
   revalidatePath("/");
   revalidatePath("/admin");
+  revalidateTag("events", "events");
   return { success: true, creatorId: event.creator_id, title: event.title };
 }
 export async function resolveReportAction(formData: FormData) {
@@ -165,10 +167,11 @@ export async function deleteEventAction(formData: FormData) {
   if (error) throw new Error("Delete failed: " + error.message);
   if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
   
-  revalidatePath("/", "layout"); 
+   revalidatePath("/", "layout"); 
   revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/events");
+  revalidateTag("events", "events");
   return { success: true };
 }
 
@@ -246,11 +249,12 @@ if (!event) {
   } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
     await adminClient.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
   }
-  revalidatePath("/");
+   revalidatePath("/");
   revalidatePath("/", "layout"); 
   revalidatePath("/cities/[city]", "page");
   revalidatePath("/admin");
   revalidatePath("/admin/events");
+  revalidateTag("events", "events");
   return { success: true };
 }
 
@@ -288,8 +292,9 @@ export async function toggleFeaturedAction(formData: FormData) {
     console.error("Toggle featured failed:", error);
     return { error: "Failed to update featured status." };
   }
-  revalidatePath("/", "layout"); 
+   revalidatePath("/", "layout"); 
   revalidatePath("/admin");
   revalidatePath("/");
+  revalidateTag("events", "events");
   return { success: true };
 }

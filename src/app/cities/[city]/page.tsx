@@ -56,7 +56,8 @@ export default async function CityPage({
     .ilike("city", decodedCity)
     .gte("date_string", todayStr)
     .or(visibilityFilter)
-    .order("date_string", { ascending: true });
+    .order("date_string", { ascending: true })
+    .limit(50);
 
   const cityConfig = getCityConfig(decodedCity);
 

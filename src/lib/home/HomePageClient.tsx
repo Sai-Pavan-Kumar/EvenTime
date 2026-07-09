@@ -141,35 +141,6 @@ export function HomePageClient(props: HomePageClientProps) {
     }
   }, [profile, user, liveAllEvents]);
 
-  // Realtime: listen for any event becoming non-approved (rejected/deleted)
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel("home-events-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "events" },
-        (payload) => {
-          const newRow = payload.new as { id?: string; status?: string } | null;
-          const oldRow = payload.old as { id?: string } | null;
-          const removedId = payload.eventType === "DELETE"
-            ? oldRow?.id
-            : (newRow?.status && newRow.status !== "approved" ? newRow.id : null);
-
-          if (!removedId) return;
-
-          setLivePersonalizedEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveAroundYouEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveCollegeEvents((prev) => prev.filter((e) => e.id !== removedId));
-          setLiveAllEvents((prev) => prev ? prev.filter((e) => e.id !== removedId) : prev);
-          setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== removedId));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;

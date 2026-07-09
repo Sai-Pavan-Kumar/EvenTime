@@ -25,13 +25,14 @@ export async function fetchHomePageData() {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
       let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
       
-      const { data: rawAllEvents } = await supabaseAnon
+       const { data: rawAllEvents } = await supabaseAnon
         .from("events")
         .select(PUBLIC_EVENT_FIELDS)
         .eq("status", "approved")
         .or(visibilityFilter)
         .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(50);
 
       // Fetch platform stats for hero section
       const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();

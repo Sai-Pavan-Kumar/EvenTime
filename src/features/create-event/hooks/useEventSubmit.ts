@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { TablesInsert } from "@/types/database";
 import { toast } from "sonner";
-
+import { revalidateEventsCacheAction } from "@/app/admin/revalidateEventsAction";
 type SubmitPayload = TablesInsert<"events"> & {
   imageFile?: File | null;
   previewUrl?: string | null;
@@ -98,13 +98,14 @@ export function useEventSubmit() {
       } else {
                 // Check database role ONLY
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-        const { error } = await supabase.from("events").insert([{
+      const { error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 
           creator_id: user.id,
         status: isAdmin ? "approved" : (finalPayload.status || "pending") 
         }]);
         if (error) throw error;
+        if (isAdmin) await revalidateEventsCacheAction();
       }
       
       router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
