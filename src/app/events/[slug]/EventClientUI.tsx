@@ -216,22 +216,31 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   Register <ExternalLink className="w-4 h-4" />
                 </a>
               )}
-              <button
-                onClick={handleInterestedClick}
-                disabled={isLoadingInterest || isCuratorOrAdmin}
-                className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                  isCuratorOrAdmin
-                    ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                    : isInterested
-                      ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                      : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-                }`}
-              >
-                {isLoadingInterest
-                  ? <Loader2 className="w-5 h-5 animate-spin" />
-                  : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? "✓ Saved" : "Interested"))
-                }
-              </button>
+              {currentUser?.id === safeCreatorId ? (
+                <Link
+                  href={`/events/${event.slug || safeId}/edit`}
+                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                >
+                  Edit Event
+                </Link>
+              ) : (
+                <button
+                  onClick={handleInterestedClick}
+                  disabled={isLoadingInterest || isCuratorOrAdmin}
+                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isCuratorOrAdmin
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : isInterested
+                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                        : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                  }`}
+                >
+                  {isLoadingInterest
+                    ? <Loader2 className="w-5 h-5 animate-spin" />
+                    : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? "✓ Saved" : "Interested"))
+                  }
+                </button>
+              )}
             </div>
 
           </div>
@@ -340,15 +349,24 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
               {/* Mobile Action Buttons (Inline) */}
               <div className="md:hidden flex gap-3 pt-2 border-t border-slate-200 mt-2">
-                <button
-                  onClick={handleInterestedClick}
-                  disabled={isLoadingInterest || isCuratorOrAdmin}
-                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                    isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
-                  }`}
-                >
-                  {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "Curated by you" : (isInterested ? " Saved" : "Interested"))}
-                </button>
+                {currentUser?.id === safeCreatorId ? (
+                  <Link
+                    href={`/events/${event.slug || safeId}/edit`}
+                    className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                  >
+                    Edit Event
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleInterestedClick}
+                    disabled={isLoadingInterest || isCuratorOrAdmin}
+                    className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                      isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
+                    }`}
+                  >
+                    {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? " Saved" : "Interested"))}
+                  </button>
+                )}
                 {!isPastEvent && (
                   <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
                     Register <ExternalLink className="w-4 h-4" />
