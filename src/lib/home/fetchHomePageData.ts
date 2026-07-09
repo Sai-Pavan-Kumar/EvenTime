@@ -23,7 +23,7 @@ export async function fetchHomePageData() {
   const getCachedGlobalData = unstable_cache(
     async () => {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
-      let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+      let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
       
       const { data: rawAllEvents } = await supabaseAnon
         .from("events")

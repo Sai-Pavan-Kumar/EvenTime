@@ -40,7 +40,7 @@ export default async function CityPage({
   }
 
   // 2. Build the strict visibility filter
-  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{Anyone}`;
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
   if (user) {
     visibilityFilter += `,creator_id.eq.${user.id}`;
   }

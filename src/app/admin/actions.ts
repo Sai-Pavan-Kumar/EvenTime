@@ -45,8 +45,9 @@ export async function approveEventAction(formData: FormData) {
 
   if (profileError) return { error: "Score update failed" };
 
+  revalidatePath("/", "layout"); 
   revalidatePath("/admin");
-  revalidatePath("/");
+  revalidatePath("/admin/events");
   return { success: true };
 }
 
@@ -66,13 +67,16 @@ export async function rejectEventAction(formData: FormData) {
 
   if (!event?.creator_id) return { error: "Event not found." };
 
-  await supabase
-    .from("events")
-    .update({ status: "rejected" })
-    .eq("id", eventId);
+  const adminClient = createAdminClient();
+  await adminClient
+    .from("events")
+    .update({ status: "rejected" })
+    .eq("id", eventId);
 
-  revalidatePath("/admin");
-  return { success: true, creatorId: event.creator_id, title: event.title };
+  revalidatePath("/", "layout"); 
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { success: true, creatorId: event.creator_id, title: event.title };
 }
 export async function resolveReportAction(formData: FormData) {
   const supabase = await createClient();
@@ -142,11 +146,14 @@ export async function deleteEventAction(formData: FormData) {
   const eventId = formData.get("eventId") as string;
   if (!eventId) return { error: "Missing eventId." };
 
+  const adminClient = createAdminClient();
   // Soft Delete: Just update the status to 'deleted'
-  const { data: deleted, error } = await supabase.from("events").update({ status: "deleted" }).eq("id", eventId).select();
+  const { data: deleted, error } = await adminClient.from("events").update({ status: "deleted" }).eq("id", eventId).select();
   if (error) throw new Error("Delete failed: " + error.message);
   if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
   
+  revalidatePath("/", "layout"); 
+  revalidatePath("/");
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   return { success: true };
@@ -186,7 +193,8 @@ export async function updateUserRoleAction(formData: FormData) {
   
   if (!userId || !newRole) return { error: "Missing required fields." };
 
-  await supabase.from("profiles").update({ role: newRole }).eq("id", userId);
+  const adminClient = createAdminClient();
+  await adminClient.from("profiles").update({ role: newRole }).eq("id", userId);
   
   revalidatePath("/admin");
   revalidatePath("/admin/users");
@@ -212,7 +220,8 @@ export async function updateEventDetailsAction(formData: FormData) {
 
   if (!event) return { error: "Event not found." };
 
-  const { data: updated, error: updateError } = await supabase.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
+  const adminClient = createAdminClient();
+  const { data: updated, error: updateError } = await adminClient.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
   if (updateError) throw new Error("Update failed: " + updateError.message);
   if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
   
@@ -222,7 +231,9 @@ export async function updateEventDetailsAction(formData: FormData) {
   } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
     await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
   }
-
+  revalidatePath("/");
+  revalidatePath("/", "layout"); 
+  revalidatePath("/cities/[city]", "page");
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   return { success: true };
@@ -256,13 +267,13 @@ export async function toggleFeaturedAction(formData: FormData) {
   const eventId = formData.get("event_id") as string;
   const isFeatured = formData.get("is_featured") === "true";
 
-  const { error } = await supabase.from("events").update({ is_featured: isFeatured }).eq("id", eventId);
-  
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("events").update({ is_featured: isFeatured }).eq("id", eventId);
   if (error) {
     console.error("Toggle featured failed:", error);
     return { error: "Failed to update featured status." };
   }
-
+  revalidatePath("/", "layout"); 
   revalidatePath("/admin");
   revalidatePath("/");
   return { success: true };
