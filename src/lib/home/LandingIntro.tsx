@@ -18,7 +18,7 @@ export function LandingIntro({
             <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
-            India's cleanest directory for college, tech, startup & all other event categories.
+            The only event directory you'll ever need.
           </h2>
           
           {/* MOBILE ONLY IMAGE - Appears exactly between heading and paragraph */}
@@ -32,8 +32,7 @@ export function LandingIntro({
           </div>
 
           <p className="text-lg text-slate-500 leading-relaxed font-medium">
-            Stop hunting across ten different WhatsApp groups, LinkedIn posts, and Instagram stories. 
-            We aggregate the best hackathons, fests, workshops, and startup mixers into one beautiful place.
+            Usually, finding great events means hunting across multiple websites, only to discover them after they've already ended. We've fixed that. EvenTime curates events across all categories into one single place so you never miss out again. You can even post events you know about and help build the library!
           </p>
         </div>
         
@@ -52,14 +51,14 @@ export function LandingIntro({
       <div className="mb-24">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-heading font-black text-slate-900">How to use it</h2>
-          <p className="text-slate-500 mt-4 font-medium text-lg">Three simple steps to never miss out again.</p>
+          <p className="text-slate-500 mt-4 font-medium text-lg">Simple steps to get the most out of EvenTime.</p>
         </div>
         
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { step: "01", title: "Discover", desc: "Filter by city, branch, or date. Find exactly what fits your vibe.", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "02", title: "Save & Track", desc: "Hit 'Save' or 'Interested' to build your personal event pipeline.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "03", title: "Attend", desc: "Get alerts before it starts. Show up, network, and grow.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
+            { step: "01", title: "Set Your Vibe", desc: "Create an account and securely share your location and interests (we never share your data).", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "02", title: "Let The Magic Happen", desc: "Our system works its magic to curate and show only the events you'll love, so you don't miss out on your favorites.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
+            { step: "03", title: "Post & Share", desc: "Know an amazing event? Post it here! Verified domains go live instantly, while others are quickly approved by our admins.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
           ].map((item, i) => (
             <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
               <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
@@ -79,7 +78,7 @@ export function LandingIntro({
       <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
         <div className="flex-1 space-y-6 flex flex-col">
             <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
-              Built for event enthusiasts.
+              The story behind EvenTime.
             </h2>
 
             {/* MOBILE ONLY IMAGE */}
@@ -93,11 +92,10 @@ export function LandingIntro({
             </div>
 
             <p className="text-lg text-slate-600 leading-relaxed font-medium">
-              We were tired of finding out about an amazing event two days after registrations closed. 
-              Information is scattered, and people lose out on opportunities simply because they didn't know. 
+              How many times have you scrolled through reels or read a newspaper, only to realize an amazing event happened yesterday? We've all had that "I wish I went to that" feeling.
             </p>
           <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            That's why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime — to democratize access to opportunities.
+            That FOMO is exactly why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime. To ensure you never miss out on the experiences that matter.
           </p>
         </div>
         

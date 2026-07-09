@@ -64,6 +64,17 @@ export function HomePageClient(props: HomePageClientProps) {
   
   const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
 
+  const isLandingPage = !user && !q && !date && !category;
+  const [showAllLandingEvents, setShowAllLandingEvents] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    handleResize(); // Initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Sync with server if the static buffet updates via ISR
   useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
@@ -367,18 +378,38 @@ export function HomePageClient(props: HomePageClientProps) {
                         if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
                         return h * 60 + m;
                       };
-                      return toMinutes(a.start_time) - toMinutes(b.start_time);
-                    });
-                    return (
+                                         return toMinutes(a.start_time) - toMinutes(b.start_time);
+                  });
+                  
+                  const maxEvents = isMobile ? 4 : 8;
+                  const eventsToShow = (isLandingPage && !showAllLandingEvents) 
+                    ? sortedEvents.slice(0, maxEvents) 
+                    : sortedEvents;
+
+                  return (
+                    <div className="space-y-12">
                       <EventGrid
-                        events={sortedEvents}
+                        events={eventsToShow}
                         profile={profile}
                         user={user}
                         useMatchLogic={false}
                         gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                         isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
                       />
-                    );
+                      
+                      {isLandingPage && !showAllLandingEvents && sortedEvents.length > maxEvents && (
+                        <div className="flex justify-center pt-8">
+                          <button
+                            onClick={() => setShowAllLandingEvents(true)}
+                            className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-[#6C47FF] transition-all flex items-center gap-2 group"
+                          >
+                            View All Events
+                            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-[#6C47FF] group-hover:translate-x-1 transition-all" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
                   })()
                 ) : (
                   <div className="col-span-full">
