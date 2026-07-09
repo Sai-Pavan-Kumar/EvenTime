@@ -9,6 +9,8 @@ import Link from "next/link";
 import { CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
+import { parseEventDateString } from "@/lib/utils/date";
+import { differenceInCalendarDays } from "date-fns";
 import type { User } from "@supabase/supabase-js";
 import { HeroSection } from "./HeroSection";
 import { LandingIntro } from "./LandingIntro";
@@ -319,53 +321,72 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               </div>
 
-              {liveFeaturedEvents && liveFeaturedEvents.length > 0 && !q && !category && !location && (
-                <div className="col-span-full mb-10 mt-6">
-                  <div className="flex items-center justify-between mb-6 px-2">
-                    <h2 className="text-2xl font-black text-slate-900 font-heading">
-                      Featured Events
-                    </h2>
-                    <Link 
-                      href="/events?view=grid" 
-                      className="text-sm font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors flex items-center gap-1"
-                    >
-                      View All <ArrowRight className="w-4 h-4" />
-                    </Link>
+              {(() => {
+                const upcomingFeatured = (liveFeaturedEvents || []).filter(e => {
+                  const checkDate = parseEventDateString(e.date_string || "");
+                  if (!checkDate) return true;
+                  const today = new Date();
+                  return differenceInCalendarDays(checkDate, today) >= 0;
+                });
+
+                if (upcomingFeatured.length === 0 || q || category || location) return null;
+
+                return (
+                  <div className="col-span-full mb-10 mt-6">
+                    <div className="flex items-center justify-between mb-6 px-2">
+                      <h2 className="text-2xl font-black text-slate-900 font-heading">
+                        Featured Events
+                      </h2>
+                      <Link 
+                        href="/events?view=grid" 
+                        className="text-sm font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors flex items-center gap-1"
+                      >
+                        View All <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                    
+                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
+                      {upcomingFeatured.map((event: Partial<EventRow>) => (
+                        <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
+                          <EventCard 
+                            id={event.id as string}
+                            slug={event.slug || (event.id as string)}
+                            title={event.title!}
+                            category={event.category!}
+                            date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
+                            city={event.location || event.city!}
+                            imageUrl={event.poster_url || ""}
+                            organizerName={event.organizer_name!}
+                            isFree={event.is_free!}
+                            isFeatured={true}
+                            matchLabel={getMatchLabel(event, profile)}
+                            audience={event.target_audience!}
+                            collegeName={
+                              event.college_id && profile?.college_id === event.college_id 
+                              ? null
+                                : (event as any).colleges?.name
+                            }
+                            isGuest={!user}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  
-                  <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
-                    {liveFeaturedEvents.map((event: Partial<EventRow>) => (
-                      <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
-                        <EventCard 
-                          id={event.id as string}
-                          slug={event.slug || (event.id as string)}
-                          title={event.title!}
-                          category={event.category!}
-                          date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-                          city={event.location || event.city!}
-                          imageUrl={event.poster_url || ""}
-                          organizerName={event.organizer_name!}
-                          isFree={event.is_free!}
-                          isFeatured={true}
-                          matchLabel={getMatchLabel(event, profile)}
-                          audience={event.target_audience!}
-                          collegeName={
-                            event.college_id && profile?.college_id === event.college_id 
-                            ? null
-                              : (event as any).colleges?.name
-                          }
-                          isGuest={!user}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="w-full">
-                {gridSource && gridSource.length > 0 ? (
-                  (() => {
-                    const sortedEvents = [...gridSource].sort((a, b) => {
+                {(() => {
+                  const upcomingEvents = (gridSource || []).filter(e => {
+                    if (date) return true; // Don't filter if viewing a specific date
+                    const checkDate = parseEventDateString(e.date_string || "");
+                    if (!checkDate) return true;
+                    const today = new Date();
+                    return differenceInCalendarDays(checkDate, today) >= 0;
+                  });
+
+                  if (upcomingEvents.length > 0) {
+                    const sortedEvents = [...upcomingEvents].sort((a, b) => {
                       const dateDiff = (a.date_string || "").localeCompare(b.date_string || "");
                       if (dateDiff !== 0) return dateDiff;
                       const toMinutes = (t?: string | null) => {
@@ -378,54 +399,53 @@ export function HomePageClient(props: HomePageClientProps) {
                         if (match[3].toUpperCase() === "AM" && h === 12) h = 0;
                         return h * 60 + m;
                       };
-                                         return toMinutes(a.start_time) - toMinutes(b.start_time);
-                  });
+                      return toMinutes(a.start_time) - toMinutes(b.start_time);
+                    });
                   
-                  const maxEvents = isMobile ? 4 : 8;
-                  const eventsToShow = (isLandingPage && !showAllLandingEvents) 
-                    ? sortedEvents.slice(0, maxEvents) 
-                    : sortedEvents;
+                    const maxEvents = isMobile ? 4 : 8;
+                    const eventsToShow = (isLandingPage && !showAllLandingEvents) 
+                      ? sortedEvents.slice(0, maxEvents) 
+                      : sortedEvents;
 
-                  return (
-                    <div className="space-y-12">
-                      <EventGrid
-                        events={eventsToShow}
-                        profile={profile}
-                        user={user}
-                        useMatchLogic={false}
-                        gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                        isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
-                      />
-                      
-                      {isLandingPage && !showAllLandingEvents && sortedEvents.length > maxEvents && (
-                        <div className="flex justify-center pt-8">
-                          <button
-                            onClick={() => setShowAllLandingEvents(true)}
-                            className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-[#6C47FF] transition-all flex items-center gap-2 group"
-                          >
-                            View All Events
-                            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-[#6C47FF] group-hover:translate-x-1 transition-all" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                  })()
-                ) : (
-                  <div className="col-span-full">
-                    {(() => {
-                      const todayObj = new Date();
-                      const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
-                      const isPastDate = date ? date < todayStr : false;
-                      
-                      const title = isPastDate ? "No past events" : "No exact matches";
-                      const message = isPastDate 
-                          ? "There were no events hosted on this date." 
-                          : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                          : location ? `No events happening in ${location} right now. But the stage is never empty.`
-                          : category ? `No ${category}s happening right now. But the stage is never empty.` 
-                          : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
-                      return (
+                    return (
+                      <div className="space-y-12">
+                        <EventGrid
+                          events={eventsToShow}
+                          profile={profile}
+                          user={user}
+                          useMatchLogic={false}
+                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                          isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
+                        />
+                        
+                        {isLandingPage && !showAllLandingEvents && sortedEvents.length > maxEvents && (
+                          <div className="flex justify-center pt-8">
+                            <button
+                              onClick={() => setShowAllLandingEvents(true)}
+                              className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-[#6C47FF] transition-all flex items-center gap-2 group"
+                            >
+                              View All Events
+                              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-[#6C47FF] group-hover:translate-x-1 transition-all" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  } else {
+                    const todayObj = new Date();
+                    const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+                    const isPastDate = date ? date < todayStr : false;
+                    
+                    const title = isPastDate ? "No past events" : "No exact matches";
+                    const message = isPastDate 
+                        ? "There were no events hosted on this date." 
+                        : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                        : location ? `No events happening in ${location} right now. But the stage is never empty.`
+                        : category ? `No ${category}s happening right now. But the stage is never empty.` 
+                        : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
+                    
+                    return (
+                      <div className="col-span-full">
                         <EmptyState 
                           title={title}
                           message={message}
@@ -433,29 +453,29 @@ export function HomePageClient(props: HomePageClientProps) {
                           showButton={!isPastDate}
                           buttonText="Be the first to host one"
                         />
-                      );
-                    })()}
-                  
-                    {clientIsFallback && clientFallbackEvents.length > 0 && (
-                      <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
-                        <div className="flex items-center gap-4 mb-8">
-                          <div className="h-px bg-slate-200 flex-1" />
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
-                            Showing Virtual Events Instead
-                          </span>
-                          <div className="h-px bg-slate-200 flex-1" />
-                        </div>
+                      
+                        {clientIsFallback && clientFallbackEvents.length > 0 && (
+                          <div className="mt-16 animate-in slide-in-from-bottom-12 fade-in duration-1000 delay-300">
+                            <div className="flex items-center gap-4 mb-8">
+                              <div className="h-px bg-slate-200 flex-1" />
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+                                Showing Virtual Events Instead
+                              </span>
+                              <div className="h-px bg-slate-200 flex-1" />
+                            </div>
 
-                        <EventGrid 
-                          events={clientFallbackEvents}
-                          gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                          defaultMatchLabel="Recommended Virtual"
-                          user={user}
-                        />
+                            <EventGrid 
+                              events={clientFallbackEvents}
+                              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                              defaultMatchLabel="Recommended Virtual"
+                              user={user}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                )}
+                    );
+                  }
+                })()}
               </div>
             </div>
             </>
