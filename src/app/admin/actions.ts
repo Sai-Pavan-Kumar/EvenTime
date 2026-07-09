@@ -31,14 +31,15 @@ export async function approveEventAction(formData: FormData) {
 
   if (!event?.creator_id) return { error: "Event not found." };
 
-  const { error: eventError } = await supabase
+  const adminClient = createAdminClient();
+  const { error: eventError } = await adminClient
     .from("events")
     .update({ status: "approved" })
     .eq("id", eventId);
 
   if (eventError) return { error: "Event update failed" };
 
-  const { error: profileError } = await supabase.rpc('award_event_approval_score', {
+  const { error: profileError } = await adminClient.rpc('award_event_approval_score', {
     p_user_id: event.creator_id,
     p_event_id: eventId
   });
