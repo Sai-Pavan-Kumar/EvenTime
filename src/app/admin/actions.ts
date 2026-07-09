@@ -225,15 +225,17 @@ export async function updateEventDetailsAction(formData: FormData) {
   
   if (!eventId) return { error: "Missing eventId." };
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("status, creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event) return { error: "Event not found." };
-
   const adminClient = createAdminClient();
+  const { data: event, error: fetchError } = await adminClient
+  .from("events")
+  .select("status, creator_id")
+  .eq("id", eventId)
+  .single();
+
+if (!event) {
+  console.error("Event fetch failed:", fetchError);
+  return { error: "Event not found." };
+}
   const { data: updated, error: updateError } = await adminClient.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
   if (updateError) throw new Error("Update failed: " + updateError.message);
   if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
