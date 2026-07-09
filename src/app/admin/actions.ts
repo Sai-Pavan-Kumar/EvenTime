@@ -22,29 +22,38 @@ export async function approveEventAction(formData: FormData) {
   const eventId = formData.get("eventId") as string;
   if (!eventId) return { error: "Missing eventId." };
 
+  const adminClient = createAdminClient();
   // Derive creator server-side — never trust client
-  const { data: event } = await supabase
+  const { data: event, error: selectError } = await adminClient
     .from("events")
     .select("creator_id")
     .eq("id", eventId)
     .single();
 
-  if (!event?.creator_id) return { error: "Event not found." };
+  if (!event?.creator_id) {
+    console.error("Select failed:", selectError);
+    return { error: "Event not found." };
+  }
 
-  const adminClient = createAdminClient();
   const { error: eventError } = await adminClient
     .from("events")
     .update({ status: "approved" })
     .eq("id", eventId);
 
-  if (eventError) return { error: "Event update failed" };
+  if (eventError) {
+    console.error("Event update failed:", eventError);
+    return { error: "Event update failed" };
+  }
 
   const { error: profileError } = await adminClient.rpc('award_event_approval_score', {
     p_user_id: event.creator_id,
     p_event_id: eventId
   });
 
-  if (profileError) return { error: "Score update failed" };
+  if (profileError) {
+    console.error("Score update failed:", profileError);
+    return { error: "Score update failed" };
+  }
 
   revalidatePath("/", "layout"); 
   revalidatePath("/admin");
@@ -60,16 +69,19 @@ export async function rejectEventAction(formData: FormData) {
   const eventId = formData.get("eventId") as string;
   const reason = formData.get("reason") as string | null;
 
-  const { data: event } = await supabase
+  const adminClient = createAdminClient();
+  const { data: event, error: selectError } = await adminClient
     .from("events")
     .select("creator_id, title")
     .eq("id", eventId)
     .single();
 
-  if (!event?.creator_id) return { error: "Event not found." };
+  if (!event?.creator_id) {
+    console.error("Select failed in reject:", selectError);
+    return { error: "Event not found." };
+  }
 
-  const adminClient = createAdminClient();
-  const { error: eventError } = await adminClient
+  await adminClient
     .from("events")
     .update({ status: "rejected" })
     .eq("id", eventId);
