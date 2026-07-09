@@ -242,9 +242,9 @@ if (!event) {
   
   // Award points if manually changed to approved, deduct if reverted
   if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-    await supabase.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
+     await adminClient.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
   } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
-    await supabase.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
+    await adminClient.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
   }
   revalidatePath("/");
   revalidatePath("/", "layout"); 
