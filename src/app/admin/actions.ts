@@ -69,7 +69,7 @@ export async function rejectEventAction(formData: FormData) {
   if (!event?.creator_id) return { error: "Event not found." };
 
   const adminClient = createAdminClient();
-  await adminClient
+  const { error: eventError } = await adminClient
     .from("events")
     .update({ status: "rejected" })
     .eq("id", eventId);
