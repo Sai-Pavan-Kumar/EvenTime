@@ -37,10 +37,13 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
   // AFTER - one query (Checks username or ID in a single round trip)
   const decodedUsername = decodeURIComponent(username);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_REGEX.test(decodedUsername);
+
   const { data: curator } = await supabase
     .from("profiles")
     .select(PROFILE_FIELDS)
-    .or(`username.eq.${decodedUsername},id.eq.${decodedUsername}`)
+    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
     .maybeSingle();
 
   if (!curator) {
