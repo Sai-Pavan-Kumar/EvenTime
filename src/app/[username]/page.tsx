@@ -15,15 +15,14 @@ type ExtendedProfileRow = Partial<ProfileRow> & {
 const calculateCompletion = (prof: ExtendedProfileRow | null) => {
   if (!prof) return 0;
   let score = 0;
-  if (prof.avatar_url) score += 20;
-  if (prof.username) score += 20;
-  if ((prof as any).preferred_cities && (prof as any).preferred_cities.length > 0) score += 20;
-  if (prof.goals && prof.goals.length > 0) score += 20;
-  const isStudent = (prof as any).user_type === "student";
+  if (prof.username) score += 25;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
+  if (prof.goals && prof.goals.length > 0) score += 25;
+  const isStudent = prof.user_type === "student";
   if (!isStudent) {
-    score += 20;
-  } else if (prof.college && (prof as any).graduation_year) {
-    score += 20;
+    score += 25;
+  } else if (prof.graduation_year) {
+    score += 25;
   }
   return score;
 };
@@ -131,8 +130,8 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
             </div>
           </div>
           <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-heading font-black text-[#1D1D1F]">{curator.full_name}</h1>
-            <p className="text-[#6C47FF] font-bold mt-1">@{curator.username}</p>
+            <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
+            <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
             <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
             
             <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
@@ -184,6 +183,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
              city={event.location || event.city || "Online"}
              imageUrl={event.poster_url || "/window.svg"}
              organizerName={event.organizer_name || "Organizer"}
+             organizerUsername={(event as any).profiles?.username}
              isFree={event.is_free ?? false} // boolean null check
              audience={event.target_audience ?? []} // array null check
               />

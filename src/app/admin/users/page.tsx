@@ -113,7 +113,7 @@ export default async function AdminUsersPage() {
                     {/* Role Badge */}
                     <td className="px-8 py-6">
                       {profile.role === "admin" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(108,71,255,0.08)] text-[#6C47FF] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(108,71,255,0.08)] text-brand-primary text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
                           <Shield className="w-3.5 h-3.5" /> Admin
                         </span>
                       ) : (
@@ -142,7 +142,7 @@ export default async function AdminUsersPage() {
                               className={`px-4 py-2 rounded-full text-[13px] font-bold font-['Outfit'] transition-colors ${
                                 profile.role === "admin" 
                                   ? "bg-surface-base text-[#555570] hover:bg-[#EAEAEA]" 
-                                  : "bg-[#EDE8FF] text-[#6C47FF] hover:bg-[#DED5FF]"
+                                  : "bg-[#EDE8FF] text-brand-primary hover:bg-[#DED5FF]"
                               }`}
                             >
                               {profile.role === "admin" ? "Demote" : "Make Admin"}

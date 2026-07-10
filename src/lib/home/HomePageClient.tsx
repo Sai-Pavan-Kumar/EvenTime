@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { CalendarDays, Search, Map as MapIcon, SearchX, ArrowRight } from "lucide-react";
+import { CalendarDays, Search, Building2, SearchX, ArrowRight } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
@@ -67,7 +67,7 @@ export function HomePageClient(props: HomePageClientProps) {
   const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
 
   const isLandingPage = !user && !q && !date && !category;
-  const [showAllLandingEvents, setShowAllLandingEvents] = useState(false);
+  const [feedLoadStage, setFeedLoadStage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -173,12 +173,13 @@ export function HomePageClient(props: HomePageClientProps) {
     });
   }
 
-  const gridSource = !noFiltersActive
+   const gridSource = !noFiltersActive
     ? filteredAllEvents
     : showFeedPills
       ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
 
+  useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;
   let clientFallbackEvents: Partial<EventRow>[] = [];
   if (!noFiltersActive && filteredAllEvents.length === 0) {
@@ -240,7 +241,7 @@ export function HomePageClient(props: HomePageClientProps) {
           {view === "map" ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                <MapIcon className="w-6 h-6 text-[#6C47FF]" /> Explore by City
+                <Building2 className="w-6 h-6 text-brand-primary" /> Explore by City
               </h2>
               <CityGrid events={liveAllEvents || []} />
             </div>
@@ -250,7 +251,7 @@ export function HomePageClient(props: HomePageClientProps) {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                    <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> 
+                    <CalendarDays className="w-6 h-6 text-brand-primary" /> 
                     {category ? `${category}s` : "What's happening"}
                   </h2>
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
@@ -262,7 +263,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         type="button"
                         onClick={() => setActiveFeedPill('for_you')}
                         className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'for_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                          activeFeedPill === 'for_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
                         For You
@@ -271,7 +272,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         type="button"
                         onClick={() => setActiveFeedPill('around_you')}
                         className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'around_you' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                          activeFeedPill === 'around_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
                         Around You
@@ -281,7 +282,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           type="button"
                           onClick={() => setActiveFeedPill('campus')}
                           className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                            activeFeedPill === 'campus' ? 'bg-white text-[#6C47FF] shadow-sm' : 'text-slate-500'
+                            activeFeedPill === 'campus' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                           }`}
                         >
                           Your Campus
@@ -310,7 +311,7 @@ export function HomePageClient(props: HomePageClientProps) {
                       </h2>
                       <Link 
                         href="/events?view=grid" 
-                        className="text-sm font-bold text-[#6C47FF] hover:text-[#5835e5] transition-colors flex items-center gap-1"
+                        className="text-sm font-bold text-brand-primary hover:text-[#5835e5] transition-colors flex items-center gap-1"
                       >
                         View All <ArrowRight className="w-4 h-4" />
                       </Link>
@@ -318,7 +319,7 @@ export function HomePageClient(props: HomePageClientProps) {
                     
                     <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
                       {upcomingFeatured.map((event: Partial<EventRow>) => (
-                        <div key={`featured-${event.id}`} className="min-w-[280px] sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
+                        <div key={`featured-${event.id}`} className="min-w-70 sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
                           <EventCard 
                             id={event.id as string}
                             slug={event.slug || (event.id as string)}
@@ -328,6 +329,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             city={event.location || event.city!}
                             imageUrl={event.poster_url || ""}
                             organizerName={event.organizer_name!}
+                            organizerUsername={(event as any).profiles?.username}
                             isFree={event.is_free!}
                             isFeatured={true}
                             matchLabel={getMatchLabel(event, profile)}
@@ -373,10 +375,13 @@ export function HomePageClient(props: HomePageClientProps) {
                       return toMinutes(a.start_time) - toMinutes(b.start_time);
                     });
                   
-                    const maxEvents = isMobile ? 4 : 8;
-                    const eventsToShow = (isLandingPage && !showAllLandingEvents) 
-                      ? sortedEvents.slice(0, maxEvents) 
-                      : sortedEvents;
+                    // Row-based staged reveal: 2 rows first, then 4 rows total, then +3 rows each click
+                    const rowSize = isMobile ? 2 : 4;
+                    const maxEvents =
+                      feedLoadStage === 0 ? rowSize * 2 :
+                      feedLoadStage === 1 ? rowSize * 4 :
+                      rowSize * 4 + rowSize * 3 * (feedLoadStage - 1);
+                    const eventsToShow = sortedEvents.slice(0, maxEvents);
 
                     return (
                       <div className="space-y-12">
@@ -389,14 +394,14 @@ export function HomePageClient(props: HomePageClientProps) {
                           isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
                         />
                         
-                        {isLandingPage && !showAllLandingEvents && sortedEvents.length > maxEvents && (
+                        {sortedEvents.length > maxEvents && (
                           <div className="flex justify-center pt-8">
                             <button
-                              onClick={() => setShowAllLandingEvents(true)}
-                              className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-[#6C47FF] transition-all flex items-center gap-2 group"
+                              onClick={() => setFeedLoadStage((s) => s + 1)}
+                              className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
                             >
-                              View All Events
-                              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-[#6C47FF] group-hover:translate-x-1 transition-all" />
+                              Load More
+                              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
                             </button>
                           </div>
                         )}

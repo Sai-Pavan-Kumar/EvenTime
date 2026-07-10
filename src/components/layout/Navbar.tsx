@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, MapPin, Home, X, Bug, CalendarDays } from "lucide-react";
+import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, Building2, Home, X, Bug, CalendarDays } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarStrip } from "./CalendarStrip";
 import { FilterChips } from "@/lib/home/FilterChips";
@@ -14,18 +14,17 @@ import type { AuthUser } from "@/types";
 import NProgress from "nprogress";
 
 
-const calculateCompletion = (profile: any) => {
-  if (!profile) return 0;
+const calculateCompletion = (prof: any) => {
+  if (!prof) return 0;
   let score = 0;
-  if (profile.avatar_url) score += 20;
-  if (profile.username) score += 20;
-  if (profile.preferred_cities && profile.preferred_cities.length > 0) score += 20;
-  if (profile.goals && profile.goals.length > 0) score += 20;
-  const isStudent = profile.user_type === "student";
+  if (prof.username) score += 25;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
+  if (prof.goals && prof.goals.length > 0) score += 25;
+  const isStudent = prof.user_type === "student";
   if (!isStudent) {
-    score += 20;
-  } else if (profile.college && profile.graduation_year) {
-    score += 20;
+    score += 25;
+  } else if (prof.graduation_year) {
+    score += 25;
   }
   return score;
 };
@@ -245,7 +244,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
   return (
     <>
-    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/[0.05] shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/5 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 gap-4 relative">
           
@@ -255,8 +254,8 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                 <Image src="/logo.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
               </div>
               <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
-                <span className="text-[#6C47FF]">Even</span>
-                <span className="text-[#1D1D1F]">Time</span>
+                <span className="text-brand-primary">Even</span>
+                <span className="text-text-primary">Time</span>
               </span>
             </Link>
           </div>
@@ -293,15 +292,15 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   onClick={() => setShowMobileCalendar((v) => !v)}
                   className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
                 >
-                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  <CalendarDays className="w-4 h-4 text-brand-primary" />
                   {mobileDateDisplay}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowMobileCalendar((v) => !v)}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-[#6C47FF] hover:bg-slate-50 transition-all"
+                  className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-brand-primary hover:bg-slate-50 transition-all"
                 >
-                  <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                  <CalendarDays className="w-4 h-4 text-brand-primary" />
                   {mobileDateDisplay}
                 </button>
 
@@ -314,10 +313,19 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                 )}
               </div>
 
+              {leaderboardEnabled && (
+                <Link
+                  href="/leaderboard"
+                  className="sm:hidden shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-slate-50 text-[#6C47FF] active:scale-95 transition-all"
+                >
+                  <Trophy className="w-4 h-4" />
+                </Link>
+              )}
+
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
             <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
-              <MapPin className="w-4 h-4 shrink-0" /> Map
+              <Building2 className="w-4 h-4 shrink-0" /> Cities
             </button>
 
             {leaderboardEnabled && (
@@ -441,12 +449,12 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
     <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
       <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
-        <Link href="/" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <Link href="/" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
           <Home className="w-5 h-5" />
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
         </Link>
 
-        <button type="button" onClick={() => setShowMobileSearch(true)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+        <button type="button" onClick={() => setShowMobileSearch(true)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
           <Search className="w-5 h-5" />
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
         </button>
@@ -457,9 +465,9 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         </Link>
 
-        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
-          <MapPin className="w-5 h-5" />
-          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Map</span>
+        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
+          <Building2 className="w-5 h-5" />
+          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Cities</span>
         </button>
 
         {isLoading ? (
@@ -468,7 +476,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
             <div className="w-6 h-2 bg-slate-200 rounded-full" />
           </div>
         ) : user ? (
-          <Link href="/profile?tab=menu" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+          <Link href="/profile?tab=menu" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
             <div className="relative w-7 h-7 flex items-center justify-center">
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
                 <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
@@ -491,7 +499,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
             <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
           </Link>
         ) : (
-          <Link href="/login" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-[#6C47FF]' : 'text-text-secondary hover:text-[#6C47FF]'}`}>
+          <Link href="/login" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
             <User className="w-5 h-5" />
             <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
           </Link>

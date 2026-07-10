@@ -207,14 +207,12 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
               {!isPastEvent && (
-                <a
-                  href={safeRegistrationLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
                   className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
                 >
                   Register <ExternalLink className="w-4 h-4" />
-                </a>
+                </Link>
               )}
               {currentUser?.id === safeCreatorId ? (
                 <Link
@@ -368,9 +366,9 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   </button>
                 )}
                 {!isPastEvent && (
-                  <a href={safeRegistrationLink} target="_blank" rel="noopener noreferrer" className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                  <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
                     Register <ExternalLink className="w-4 h-4" />
-                  </a>
+                  </Link>
                 )}
               </div>
 
@@ -418,6 +416,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   city={simEvent.location || simEvent.city || "Online"}
                   imageUrl={simEvent.poster_url || "/window.svg"}
                   organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
+                  organizerUsername={simEvent.profiles?.username}
                   isFree={simEvent.is_free ?? false}
                   audience={simEvent.target_audience ?? []}
                 />

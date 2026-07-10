@@ -113,8 +113,8 @@ export default async function AdminEventsPage(props: PageProps) {
                           )}
                         </div>
                         <div>
-                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-[#6C47FF] transition-colors group/title">
-                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-[#6C47FF] leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
+                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors group/title">
+                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-brand-primary leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
                           </Link>
                           <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
                         </div>
@@ -136,7 +136,7 @@ export default async function AdminEventsPage(props: PageProps) {
                         defaultValue={event.category || ""} 
                         form={`update-${event.id}`} 
                         placeholder="Category"
-                        className="text-[12px] font-bold text-[#6C47FF] bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
+                        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
                       />
                     </td>
 

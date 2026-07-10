@@ -38,7 +38,7 @@ export default async function AdminCollegesPage() {
       {/* Header Section */}
       <div className="flex items-center gap-4">
         <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(108,71,255,0.08)]">
-          <Building2 className="w-7 h-7 text-[#6C47FF]" />
+          <Building2 className="w-7 h-7 text-brand-primary" />
         </div>
         <div>
           <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">College Analytics</h1>
@@ -61,8 +61,8 @@ export default async function AdminCollegesPage() {
                   <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
                 </div>
                 <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
-                  <Users className="w-4 h-4 text-[#6C47FF]" />
-                  <span className="font-bold text-[#6C47FF] font-['Outfit'] text-[15px]">{count}</span>
+                  <Users className="w-4 h-4 text-brand-primary" />
+                  <span className="font-bold text-brand-primary font-['Outfit'] text-[15px]">{count}</span>
                 </div>
               </div>
             ))

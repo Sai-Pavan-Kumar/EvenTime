@@ -14,7 +14,7 @@ export function LandingIntro({
       {/* SECTION 1: What is it? */}
       <div className="flex flex-col md:flex-row items-center gap-12 mb-24">
         <div className="flex-1 space-y-6 flex flex-col">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-sm font-bold w-fit">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-50 border border-purple-100 text-brand-primary text-sm font-bold w-fit">
             <Star className="w-4 h-4 fill-current" /> What is EvenTime?
           </div>
           <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 leading-tight">
@@ -56,12 +56,12 @@ export function LandingIntro({
         
         <div className="grid md:grid-cols-3 gap-8">
           {[
-            { step: "01", title: "Set Your Vibe", desc: "Create an account and securely share your location and interests (we never share your data).", icon: <SearchIcon className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "02", title: "Let The Magic Happen", desc: "Our system works its magic to curate and show only the events you'll love, so you don't miss out on your favorites.", icon: <CheckCircle2 className="w-6 h-6 text-[#6C47FF]" /> },
-            { step: "03", title: "Post & Share", desc: "Know an amazing event? Post it here! Verified domains go live instantly, while others are quickly approved by our admins.", icon: <CalendarDays className="w-6 h-6 text-[#6C47FF]" /> }
+            { step: "01", title: "Set Your Vibe", desc: "Create an account and securely share your location and interests (we never share your data).", icon: <SearchIcon className="w-6 h-6 text-brand-primary" /> },
+            { step: "02", title: "Let The Magic Happen", desc: "Our system works its magic to curate and show only the events you'll love, so you don't miss out on your favorites.", icon: <CheckCircle2 className="w-6 h-6 text-brand-primary" /> },
+            { step: "03", title: "Post & Share", desc: "Know an amazing event? Post it here! Verified domains go live instantly, while others are quickly approved by our admins.", icon: <CalendarDays className="w-6 h-6 text-brand-primary" /> }
           ].map((item, i) => (
             <div key={i} className="bg-slate-50 rounded-2xl p-8 border border-slate-100 relative overflow-hidden group hover:shadow-md transition-shadow">
-              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-[#6C47FF] group-hover:scale-110 transition-transform">
+              <div className="absolute top-0 right-0 p-6 opacity-10 font-heading text-8xl font-black text-brand-primary group-hover:scale-110 transition-transform">
                 {item.step}
               </div>
               <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-200 flex items-center justify-center mb-6 relative z-10">
@@ -95,7 +95,7 @@ export function LandingIntro({
               How many times have you scrolled through reels or read a newspaper, only to realize an amazing event happened yesterday? We've all had that "I wish I went to that" feeling.
             </p>
           <p className="text-lg text-slate-600 leading-relaxed font-medium">
-            That FOMO is exactly why <span className="font-bold text-[#6C47FF]">The SurfBoard</span> team built EvenTime. To ensure you never miss out on the experiences that matter.
+            That FOMO is exactly why <span className="font-bold text-brand-primary">The SurfBoard</span> team built EvenTime. To ensure you never miss out on the experiences that matter.
           </p>
         </div>
         
@@ -135,7 +135,7 @@ export function LandingIntro({
           <div className="space-y-6">
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <Star className="w-5 h-5 text-[#6C47FF]" />
+                <Star className="w-5 h-5 text-brand-primary" />
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900">Personalized Feed</h4>
@@ -145,7 +145,7 @@ export function LandingIntro({
             
             <div className="flex gap-4">
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                <TrendingUp className="w-5 h-5 text-[#6C47FF]" />
+                <TrendingUp className="w-5 h-5 text-brand-primary" />
               </div>
               <div>
                   <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
@@ -158,20 +158,7 @@ export function LandingIntro({
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center">
-                  <Bell className="w-5 h-5 text-[#6C47FF]" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
-                    Smart Alerts
-                    {!isSmartAlertsEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
-                    )}
-                  </h4>
-                <p className="text-slate-500 font-medium">Get notified before registrations close for your saved events.</p>
-              </div>
-            </div>
+              
           </div>
         </div>
 

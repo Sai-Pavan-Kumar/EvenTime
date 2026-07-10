@@ -143,9 +143,9 @@ export async function punishCuratorAction(formData: FormData) {
     return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
   }
 
-  await supabase.rpc('increment_et_score', {
-    user_id: report.curator_id,
-    delta: -150
+  await supabase.rpc('apply_leaderboard_penalty', {
+    p_user_id: report.curator_id,
+    p_amount: 25
   });
 
   revalidatePath("/admin");
@@ -243,11 +243,11 @@ if (!event) {
   if (updateError) throw new Error("Update failed: " + updateError.message);
   if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
   
-  // Award points if manually changed to approved, deduct if reverted
+  // NOTE: Scoring is now fully automatic — leaderboard_view counts approved
+  // events live, so approving/un-approving an event updates the score by
+  // itself. No manual score RPC call needed here anymore.
   if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-     await adminClient.rpc('award_event_approval_score', { p_user_id: event.creator_id, p_event_id: eventId });
-  } else if (event.status === "approved" && newStatus !== "approved" && event.creator_id) {
-    await adminClient.rpc('increment_et_score', { user_id: event.creator_id, delta: -50 });
+     await adminClient.from("events").update({ approved_at: new Date().toISOString() }).eq("id", eventId);
   }
    revalidatePath("/");
   revalidatePath("/", "layout"); 

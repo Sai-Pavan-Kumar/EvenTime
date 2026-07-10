@@ -33,10 +33,15 @@ export function CityGrid({ events }: CityGridProps) {
   });
 
   // Sort cities: most events first, then alphabetically
-  const cities = Array.from(cityMap.entries()).sort((a, b) => {
-    if (b[1] !== a[1]) return b[1] - a[1];
-    return a[0].localeCompare(b[0]);
-  });
+  // "online" is pulled out and always pinned first, regardless of count
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online");
+  const cities = Array.from(cityMap.entries())
+    .filter(([city]) => city.toLowerCase() !== "online")
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    });
+  if (onlineEntry) cities.unshift(onlineEntry);
 
   if (cities.length === 0) {
     return (
@@ -71,7 +76,7 @@ export function CityGrid({ events }: CityGridProps) {
               {city}
             </h3>
             <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-[#6C47FF]" />
+              <CalendarDays className="w-3 h-3 text-brand-primary" />
               {count} {count === 1 ? "Event" : "Events"}
             </span>
           </div>

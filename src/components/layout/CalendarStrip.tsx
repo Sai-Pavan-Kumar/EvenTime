@@ -141,7 +141,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
                 ${isSelected 
                   ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
                   : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-[#6C47FF]" : "border border-transparent"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-brand-primary" : "border border-transparent"}
               `}
             >
               {format(date, "d")}

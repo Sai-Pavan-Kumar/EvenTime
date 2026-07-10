@@ -32,10 +32,10 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
             Mobile: -mb-10 pulls the image up so text overlaps it (saves height).
             Desktop: mb-20 pushes the text upwards from center for better visibility. */}
         <div className="relative z-20 w-full px-4 sm:px-8 pt-12 -mb-10 sm:-mb-14 md:mt-0 md:mb-24 lg:mb-32 md:w-3/5 text-left">
-          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-[#1D1D1F] tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-text-primary tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
             The Dictionary
             <br />
-            for <span className="text-[#6C47FF]">Events.</span>
+            for <span className="text-brand-primary">Events.</span>
           </h1>    
         </div>
 

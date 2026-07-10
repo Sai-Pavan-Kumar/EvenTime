@@ -155,7 +155,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           {isCollegeCategory && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
-                <p className="text-sm font-bold text-[#6C47FF]">College Event Details</p>
+                <p className="text-sm font-bold text-brand-primary">College Event Details</p>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-slate-800">Open to all colleges?</p>
@@ -194,7 +194,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                               setCollegeSearchQuery(item.name); 
                               setShowCollegeDropdown(false); 
                             }} 
-                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-[#6C47FF] transition-colors border-b border-slate-50 last:border-none"
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none"
                           >
                             🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                           </button>
@@ -207,7 +207,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                               handleCreateCollege(collegeSearchQuery);
                             }} 
                             disabled={isCreatingCollege} 
-                            className="w-full text-left px-4 py-3 text-sm font-bold text-[#6C47FF] bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
+                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
                           >
                             {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
                             {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
@@ -252,8 +252,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         <div className="space-y-4">
            <div className="flex items-center justify-between mb-2">
              <label className="text-sm font-semibold text-slate-700">Event Date <span className="text-red-500">*</span></label>
-             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
-               <input type="checkbox" checked={data.hasEndDate} onChange={() => updateData({ hasEndDate: !data.hasEndDate })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
+             <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-brand-primary transition-colors">
+               <input type="checkbox" checked={data.hasEndDate} onChange={() => updateData({ hasEndDate: !data.hasEndDate })} className="w-3.5 h-3.5 rounded text-brand-primary outline-none" />
                + End Date
              </label>
            </div>
@@ -268,8 +268,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
            <div className="pt-4">
              <div className="flex items-center justify-between mb-2">
                <label className="block text-xs font-semibold text-slate-500">Start Time</label>
-               <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-[#6C47FF] transition-colors">
-                 <input type="checkbox" checked={data.hasEndTime} onChange={() => updateData({ hasEndTime: !data.hasEndTime })} className="w-3.5 h-3.5 rounded text-[#6C47FF] outline-none" />
+               <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-brand-primary transition-colors">
+                 <input type="checkbox" checked={data.hasEndTime} onChange={() => updateData({ hasEndTime: !data.hasEndTime })} className="w-3.5 h-3.5 rounded text-brand-primary outline-none" />
                  + End Time
                </label>
              </div>
@@ -311,7 +311,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                ))}
              </select>
            ) : (
-             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-[#6C47FF]" /> Virtual Event</div>
+             <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-brand-primary" /> Virtual Event</div>
            )}
            {/* FREE / PAID */}
            <div className="pt-6">

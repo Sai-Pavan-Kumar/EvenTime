@@ -68,7 +68,7 @@ export default async function AdminFeedbackPage() {
                 
                 <div className="mt-5 flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-[#EDE8FF] flex items-center justify-center shrink-0">
-                    <span className="text-[12px] font-bold font-['Outfit'] text-[#6C47FF]">
+                    <span className="text-[12px] font-bold font-['Outfit'] text-brand-primary">
                       {feedback.profiles?.full_name?.charAt(0) || "?"}
                     </span>
                   </div>

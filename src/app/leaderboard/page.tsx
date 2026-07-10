@@ -34,11 +34,24 @@ export default async function LeaderboardPage() {
     redirect("/");
   }
 
-  const { data: leaders } = await supabase
+  const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  const { data: excludedProfiles } = EXCLUDED_EMAILS.length
+    ? await supabase.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
+    : { data: [] };
+
+  const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
+
+  const { data: leadersRaw } = await supabase
     .from("leaderboard_view")
     .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
     .order("et_score", { ascending: false })
-    .limit(50);
+    .limit(55);
+
+  const leaders = (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
 
   const topThree = leaders?.slice(0, 3) || [];
   const restOfLeaders = leaders?.slice(3) || [];
@@ -61,12 +74,12 @@ export default async function LeaderboardPage() {
               <Crown className="w-8 h-8 text-amber-500 drop-shadow-md" />
             </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-[#1D1D1F] tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
             Top Curators
           </h1>
           <p className="text-[#86868B] font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2">
             Ranked by trust, impact, and consistency. 
-            <span className="inline-flex items-center gap-1 text-xs bg-slate-200 px-2 py-1 rounded-full text-slate-600 cursor-help" title="Base Score (100) + Profile Completion (25) + Events (50) + Saves (5)">
+            <span className="inline-flex items-center gap-1 text-xs bg-slate-200 px-2 py-1 rounded-full text-slate-600 cursor-help" title="Base Score (100) + Complete your profile (+50) + 20 per approved event + 10 per unique save/interest on your events">
               <Info className="w-3 h-3" /> How ET Score works
             </span>
           </p>
@@ -92,8 +105,8 @@ export default async function LeaderboardPage() {
                       <Medal className="w-3 h-3" /> #2
                     </div>
                   </Link>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-[#6C47FF] transition-colors">
-                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-brand-primary transition-colors">
+                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
                   </Link>
                   <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
                   <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
@@ -129,7 +142,7 @@ export default async function LeaderboardPage() {
                     </div>
                   </Link>
                   <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
-                    <h3 className="font-heading font-extrabold text-[#1D1D1F] text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
+                    <h3 className="font-heading font-extrabold text-text-primary text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
                   </Link>
                   <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
                   <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
@@ -161,8 +174,8 @@ export default async function LeaderboardPage() {
                       <Award className="w-3 h-3" /> #3
                     </div>
                   </Link>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-[#6C47FF] transition-colors">
-                    <h3 className="font-bold text-[#1D1D1F] text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-brand-primary transition-colors">
+                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
                   </Link>
                   <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
                   <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
@@ -229,7 +242,7 @@ export default async function LeaderboardPage() {
                       </Link>
                       <div>
                         <Link href={`/${user.username || user.user_id}`} className="hover:underline decoration-[#6C47FF]">
-                          <h4 className="font-bold text-[#1D1D1F] text-sm md:text-base hover:text-[#6C47FF] transition-colors">{user.full_name}</h4>
+                          <h4 className="font-bold text-text-primary text-sm md:text-base hover:text-brand-primary transition-colors">{user.full_name}</h4>
                         </Link>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${tier.bg} ${tier.text} ${tier.border} border`}>
@@ -241,7 +254,7 @@ export default async function LeaderboardPage() {
                     </div>
 
                     <div className="w-32 text-right pr-4">
-                      <span className="font-heading font-black text-[#1D1D1F] text-xl">{user.et_score}</span>
+                      <span className="font-heading font-black text-text-primary text-xl">{user.et_score}</span>
                     </div>
                   </div>
                 );

@@ -101,15 +101,15 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
                               <div className="bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center relative z-10">
                   <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors"
+                    className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
   
                   <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2 shrink-0">
                     {isGuest
-                      ? <UserPlus className="w-6 h-6 text-[#6C47FF]" />
-                      : <Settings className="w-6 h-6 text-[#6C47FF]" />
+                      ? <UserPlus className="w-6 h-6 text-brand-primary" />
+                      : <Settings className="w-6 h-6 text-brand-primary" />
                     }
                   </div>
                   

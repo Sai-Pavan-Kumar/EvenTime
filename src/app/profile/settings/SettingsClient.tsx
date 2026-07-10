@@ -504,7 +504,7 @@ export default function SettingsClient({
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full bg-[#6C47FF] text-white hover:bg-white hover:text-[#6C47FF] border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
+              className="w-full bg-[#6C47FF] text-white hover:bg-white hover:text-brand-primary border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />

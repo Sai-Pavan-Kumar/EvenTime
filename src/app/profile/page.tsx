@@ -39,15 +39,14 @@ type ProfileEvent = {
 const calculateCompletion = (prof: Partial<ProfileRow> | null) => {
   if (!prof) return 0;
   let score = 0;
-  if (prof.avatar_url) score += 20;
-  if (prof.username) score += 20;
-  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 20;
-  if (prof.goals && prof.goals.length > 0) score += 20;
+  if (prof.username) score += 25;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
+  if (prof.goals && prof.goals.length > 0) score += 25;
   const isStudent = prof.user_type === "student";
   if (!isStudent) {
-    score += 20;
-  } else if (prof.college && prof.graduation_year) {
-    score += 20;
+    score += 25;
+  } else if (prof.graduation_year) {
+    score += 25;
   }
   return score;
 };
@@ -263,16 +262,16 @@ function ProfileContent() {
 
               {/* Vertical Menu Navigation */}
               <div className="flex flex-col p-3 gap-1">
-                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                <Link href="?tab=posted" className={`flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "posted" ? "bg-[#EDE8FF] text-brand-primary" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
                   <LayoutGrid className="w-4 h-4" /> My Events
                 </Link>
                 
-                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
+                <Link href="?tab=saved" className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "saved" ? "bg-[#EDE8FF] text-brand-primary" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`}>
                   <div className="flex items-center gap-3">
                     <Bookmark className="w-4 h-4" /> Saved Events
                   </div>
                   {savedEvents.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-[#6C47FF]" : "bg-slate-100 text-slate-500"}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-brand-primary" : "bg-slate-100 text-slate-500"}`}>
                       {savedEvents.length}
                     </span>
                   )}
@@ -293,7 +292,7 @@ function ProfileContent() {
                 
                 <Link 
                   href={eventCount >= 15 ? "?tab=requests" : "#"} 
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-[#6C47FF]" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-brand-primary" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
                   title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
                 >
                   <div className="flex items-center gap-3">
@@ -334,7 +333,7 @@ function ProfileContent() {
       <div className={`flex-1 p-6 sm:p-8 lg:p-10 flex-col ${isMobileMenu ? "hidden lg:flex" : "flex"}`}>
         
         {/* Mobile Back Button */}
-        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-[#6C47FF] font-bold text-sm mb-6 transition-colors w-fit">
+        <Link href="?tab=menu" className="lg:hidden flex items-center gap-2 text-slate-500 hover:text-brand-primary font-bold text-sm mb-6 transition-colors w-fit">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -496,7 +495,7 @@ function ProfileContent() {
                   audienceRequests.map((req: any) => (
                     <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div>
-                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-[#6C47FF] text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
+                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-brand-primary text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
                           Requested Category: {req.category || "General"}
                         </span>
                         <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>

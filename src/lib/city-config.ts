@@ -55,7 +55,7 @@ export const CITY_CONFIG: Record<string, {
     accentColor: '#6C47FF',
   },
   'online': {
-    backgroundImage: '/cities/online.webp',
+    backgroundImage: '/cities/online1.webp',
     accentColor: '#6366F1',
   },
   'bhopal': {

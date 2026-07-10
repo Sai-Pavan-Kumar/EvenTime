@@ -54,6 +54,7 @@ export function EventGrid({
             city={event.location || event.city!}
             imageUrl={event.poster_url || defaultImage}
            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+           organizerUsername={(event as any).profiles?.username}
             isFree={event.is_free!}
             isFeatured={event.is_featured || isFeatured}
             matchLabel={matchReason}

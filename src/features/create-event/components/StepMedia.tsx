@@ -78,11 +78,11 @@ export function StepMedia(props: StepMediaProps) {
         <div className="grid grid-cols-2 gap-4">
           <button type="button" onClick={() => { props.setIsFree(true); props.setPrice(""); }} className={`py-4 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${props.isFree ? "border-[#6C47FF] bg-white shadow-sm" : "border-transparent bg-slate-100"}`}>
             <div className={`w-4 h-4 rounded-full flex items-center justify-center ${props.isFree ? "bg-[#6C47FF]" : "border-2 border-slate-300"}`}>{props.isFree && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
-            <div className="text-left"><div className={`text-sm font-bold ${props.isFree ? "text-[#6C47FF]" : "text-slate-600"}`}>Free Event</div></div>
+            <div className="text-left"><div className={`text-sm font-bold ${props.isFree ? "text-brand-primary" : "text-slate-600"}`}>Free Event</div></div>
           </button>
           <button type="button" onClick={() => props.setIsFree(false)} className={`py-4 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${!props.isFree ? "border-[#1D1D1F] bg-white shadow-sm" : "border-transparent bg-slate-100"}`}>
             <div className={`w-4 h-4 rounded-full flex items-center justify-center ${!props.isFree ? "bg-[#1D1D1F]" : "border-2 border-slate-300"}`}>{!props.isFree && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
-            <div className="text-left"><div className={`text-sm font-bold ${!props.isFree ? "text-[#1D1D1F]" : "text-slate-600"}`}>Paid Event</div></div>
+            <div className="text-left"><div className={`text-sm font-bold ${!props.isFree ? "text-text-primary" : "text-slate-600"}`}>Paid Event</div></div>
           </button>
         </div>
         {!props.isFree && (

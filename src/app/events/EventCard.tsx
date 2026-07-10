@@ -19,6 +19,7 @@
     city: string;
     imageUrl: string;
     organizerName: string;
+    organizerUsername?: string; // NEW: links to curator's public page
     isFree: boolean;
     isFeatured?: boolean;
     matchLabel?: string;
@@ -43,6 +44,7 @@
     city,
     imageUrl,
     organizerName,
+    organizerUsername,
     isFree,
     isFeatured = false,
     matchLabel,
@@ -203,7 +205,7 @@
       e.stopPropagation();
       const shareData = {
         title: title,
-        text: `Check out ${title} on EvenTime!`,
+        text: `${title} on ${date} in ${city}\nPosted on EvenTime 🎉`,
         url: `${window.location.origin}/events/${slug}`, // Updated to use slug
       };
 
@@ -328,7 +330,17 @@
                   className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
                   style={{ fontFamily: "'Switzer', sans-serif" }}
                 >
-                  by {organizerName}
+                  Curated by {organizerUsername ? (
+                    <Link
+                      href={`/${organizerUsername}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:text-brand-primary hover:underline transition-colors"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    organizerName
+                  )}
                   {!isFree && (
                     <>
                       <span className="text-slate-300">|</span>
@@ -397,7 +409,7 @@
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
               <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-[#6C47FF] rounded-full transition-colors">
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
                   <X className="w-5 h-5" />
                 </button>
                 <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">

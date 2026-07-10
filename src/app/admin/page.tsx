@@ -65,14 +65,11 @@ export default async function AdminDashboard() {
         </div>
         
         <div className="flex items-center gap-4">
-          <form action={handleToggleLeaderboard}>
-            <input type="hidden" name="enabled" value={(!leaderboardEnabled).toString()} />
-            <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${leaderboardEnabled ? "bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-surface-elevated text-[#6B7280]"}`}>
-              <div className={`w-2.5 h-2.5 rounded-full ${leaderboardEnabled ? "bg-[#22C55E]" : "bg-[#6B7280]"}`} />
-              <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">LEADERBOARD</span>
-            </button>
-          </form>
-          
+          <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+            <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">LEADERBOARD · LIVE</span>
+          </div>
+
           <form action={handleToggleFeatured}>
             <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
             <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${featuredEnabled ? "bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-surface-elevated text-[#6B7280]"}`}>

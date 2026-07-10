@@ -29,7 +29,7 @@ export function FilterChips({ dynamicChips, category, location, q, branch, param
         <span>
           {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
         </span>
-        <svg className="w-4 h-4 text-[#6C47FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
         </svg>
       </div>
