@@ -3,7 +3,7 @@ export const CITY_CONFIG: Record<string, {
   accentColor: string;
 }> = {
   'hyderabad': {
-    backgroundImage: '/cities/hyderabad.webp',
+    backgroundImage: '/cities/hyderabad2.webp',
     accentColor: '#6C47FF',
   },
    'bengaluru': {
@@ -55,7 +55,7 @@ export const CITY_CONFIG: Record<string, {
     accentColor: '#6C47FF',
   },
   'online': {
-    backgroundImage: '/cities/online1.webp',
+    backgroundImage: '/cities/online2.webp',
     accentColor: '#6366F1',
   },
   'bhopal': {
