@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, Trash2, AlertTriangle, LayoutGrid, Bookmark, Eye, MessageSquare, Lock, Trophy } from "lucide-react";
+import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { format, parseISO } from "date-fns";
@@ -76,6 +76,8 @@ function ProfileContent() {
   const [savedEvents, setSavedEvents] = useState<any[]>(memCache?.savedEvents || []);
   const [myReports, setMyReports] = useState<ReportWithEventSlug[] | null>(memCache?.myReports || null);
   const [appSettings, setAppSettings] = useState<any>(memCache?.appSettings || null);
+  const [postedVisibleCount, setPostedVisibleCount] = useState(8);
+  const [savedVisibleCount, setSavedVisibleCount] = useState(8);
 
   useEffect(() => {
     async function fetchData() {
@@ -95,7 +97,7 @@ function ProfileContent() {
         { data: appSettingsData }
       ] = await Promise.all([
         supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", currentUser.id).maybeSingle(),
-        supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).order("created_at", { ascending: false }),
+        supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).neq("status", "deleted").order("created_at", { ascending: false }),
         supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
         supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
         supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
@@ -140,10 +142,7 @@ function ProfileContent() {
     }
     // 2. Proceed with the actual deletion in the backend
     await deleteEventAction(formData);
-  };
-
-  const audienceRequests: any[] = [];
-  
+  }; 
   if (isLoading) {
     // Exact same background as home page so no flickering occurs
     return <main className="min-h-screen bg-surface-base animate-pulse" />;
@@ -191,7 +190,7 @@ function ProfileContent() {
     <div className="bg-white rounded-[24px] border border-slate-200/60 shadow-sm flex flex-col lg:flex-row overflow-hidden min-h-[700px]">
       
       {/* LEFT SIDEBAR */}
-      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 ${isMobileMenu ? "block" : "hidden lg:block"}`}>
+      <div className={`w-full lg:w-[320px] shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto ${isMobileMenu ? "block" : "hidden lg:block"}`}>
         <div className="flex flex-col h-full">
               
               {/* Profile Info Section */}
@@ -247,7 +246,7 @@ function ProfileContent() {
                     </div>
                   )}                  <div className="flex flex-col items-center">
                     <span className="text-base font-bold text-slate-900 leading-none">{totalInterested}</span>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Clicks</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">Interested</span>
                   </div>
                   {leaderboardEnabled && (
                     <div className="flex flex-col items-center">
@@ -288,23 +287,7 @@ function ProfileContent() {
                   )}
                 </Link>
                 
-                <div className="h-px bg-slate-100 my-2 mx-2"></div>
                 
-                <Link 
-                  href={eventCount >= 15 ? "?tab=requests" : "#"} 
-                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${activeTab === "requests" ? "bg-[#EDE8FF] text-brand-primary" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"} ${eventCount < 15 ? "pointer-events-none opacity-50 bg-slate-50/50" : ""}`}
-                  title={eventCount < 15 ? "Unlock at 15 events" : "Audience Requests"}
-                >
-                  <div className="flex items-center gap-3">
-                    <MessageSquare className="w-4 h-4" /> Audience Requests
-                  </div>
-                  {eventCount < 15 && (
-                    <div className="flex items-center gap-1 bg-slate-200/60 px-1.5 py-0.5 rounded text-slate-500 scale-90">
-                      <Lock className="w-3 h-3" />
-                      <span className="text-[9px] font-bold uppercase tracking-wider">15 Events</span>
-                    </div>
-                  )}
-                </Link>
 
                 {leaderboardEnabled && (
                   <Link href="/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
@@ -346,109 +329,124 @@ function ProfileContent() {
                 {activeTab === 'posted' && "My Posted Events"}
                 {activeTab === 'saved' && "Saved Events"}
                 {activeTab === 'alerts' && "Action Required"}
-                {activeTab === 'requests' && "Audience Requests"}
-              </h2>
+                </h2>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
                 {activeTab === 'posted' && "Manage and track the events you've created."}
                 {activeTab === 'saved' && "Events you've bookmarked for later."}
                 {activeTab === 'alerts' && "Events reported by users that need your attention."}
-                {activeTab === 'requests' && "See what kind of events your audience wants next."}
-              </p>
+                </p>
             </div>
 
             {/* Structured Grid Layout */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-              
               {/* POSTED EVENTS GRID */}
-              {activeTab === "posted" && (
-                myEvents && myEvents.length > 0 ? (
-                  myEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                        <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
-                          {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
-                          {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
-                        </div>
+              {activeTab === "posted" && myEvents && myEvents.length > 0 && myEvents.slice(0, postedVisibleCount).map((event) => (
+                <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                  <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                    <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill unoptimized={true} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover group-hover:scale-102 transition-transform duration-500" />
+                    <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5">
+                      {event.status === 'pending' && <span className="bg-amber-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Pending Review</span>}
+                      {event.status === 'rejected' && <span className="bg-red-500 text-white text-[9px] font-bold px-2.5 py-1 rounded-md shadow-sm">Rejected</span>}
+                    </div>
+                  </div>
+                  
+                  <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                    
+                    <div className="flex items-center justify-between mt-auto mb-3.5">
+                      <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
                       </div>
                       
-                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                        
-                        <div className="flex items-center justify-between mt-auto mb-3.5">
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          {leaderboardEnabled && (
-                            <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
-                              <Bookmark className="w-2.5 h-2.5" />
-                              <span>{event.saved_events?.[0]?.count || 0} Saves</span>
-                            </div>
-                          )}                        </div>
-
-                        {/* Management Icon Controls */}
-                        <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
-                          <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </Link>
-                          <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
-                            <Edit3 className="w-4 h-4" />
-                          </Link>
-                          <DeleteEventForm eventId={event.id} deleteAction={handleDelete} />
+                      {leaderboardEnabled && (
+                        <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
+                          <Bookmark className="w-2.5 h-2.5" />
+                          <span>{event.saved_events?.[0]?.count || 0} Saves</span>
                         </div>
-                      </div>
+                      )}
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-profile.webp" alt="Empty Profile" fill className="object-contain" priority />
+
+                    <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
+                      <Link href={`/events/${event.slug}`} title="View Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                      <Link href={`/events/${event.slug}/edit`} title="Edit Event" className="flex-1 flex items-center justify-center text-slate-400 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 py-2 rounded-lg transition-colors">
+                        <Edit3 className="w-4 h-4" />
+                      </Link>
+                      <DeleteEventForm eventId={event.id} deleteAction={handleDelete} />
                     </div>
-                    <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
-                    <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
-                      <Plus className="w-4 h-4" /> Create Your First Event
-                    </Link>
                   </div>
-                )
+                </div>
+              ))}
+
+              {activeTab === "posted" && myEvents && myEvents.length > postedVisibleCount && (
+                <div className="col-span-full flex justify-center pt-4">
+                  <button
+                    onClick={() => setPostedVisibleCount((c) => c + 8)}
+                    className="px-6 py-3 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-all text-sm"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "posted" && (!myEvents || myEvents.length === 0) && (
+                <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                    <Image src="/empty-profile.webp" alt="Empty Profile" fill className="object-contain" priority />
+                  </div>
+                  <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
+                  <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
+                  <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
+                    <Plus className="w-4 h-4" /> Create Your First Event
+                  </Link>
+                </div>
               )}
 
               {/* SAVED EVENTS GRID */}
-              {activeTab === "saved" && (
-                savedEvents.length > 0 ? (
-                  savedEvents.map((event) => (
-                    <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
-                      <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
-                        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
-                          <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
-                        </div>
-                        <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
-                          <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
-                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
-                          </div>
-                          
-                          <div className="mt-auto border-t border-slate-100 pt-3">
-                            <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
-                              <Eye className="w-3.5 h-3.5" /> View Details
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
+              {activeTab === "saved" && savedEvents.length > 0 && savedEvents.slice(0, savedVisibleCount).map((event) => (
+                <div key={event.id} className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300">
+                  <Link href={`/events/${event.slug}`} className="flex flex-col h-full">
+                    <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                      <Image src={event.poster_url || getCategoryConfig(event.category).backgroundImage} alt={event.title} fill className="object-cover group-hover:scale-102 transition-transform duration-500" />
                     </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
+                    <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                      <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">{event.title}</h3>
+                      <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium mt-auto mb-3">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        <span>{event.date_string ? format(parseISO(event.date_string), "MMM d, yyyy") : "TBA"}</span>
+                      </div>
+                      
+                      <div className="mt-auto border-t border-slate-100 pt-3">
+                        <div className="w-full flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
+                          <Eye className="w-3.5 h-3.5" /> View Details
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
+                  </Link>
+                </div>
+              ))}
+
+              {activeTab === "saved" && savedEvents.length > savedVisibleCount && (
+                <div className="col-span-full flex justify-center pt-4">
+                  <button
+                    onClick={() => setSavedVisibleCount((c) => c + 8)}
+                    className="px-6 py-3 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-all text-sm"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "saved" && savedEvents.length === 0 && (
+                <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                    <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
                   </div>
-                )
+                  <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
+                  <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
+                </div>
               )}
 
               {/* ALERTS SECTION */}
@@ -485,31 +483,6 @@ function ProfileContent() {
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>
-                  </div>
-                )
-              )}
-
-              {/* AUDIENCE REQUESTS */}
-              {activeTab === "requests" && eventCount >= 15 && (
-                audienceRequests && audienceRequests.length > 0 ? (
-                  audienceRequests.map((req: any) => (
-                    <div key={req.id} className="col-span-full bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div>
-                        <span className="inline-block px-2 py-0.5 bg-[#6C47FF]/10 text-brand-primary text-[9px] font-bold uppercase tracking-wider rounded border border-[#6C47FF]/20 mb-1.5">
-                          Requested Category: {req.category || "General"}
-                        </span>
-                        <p className="font-bold text-slate-900 text-base">{req.message || "A user requested more events in this category."}</p>
-                        <p className="text-xs text-slate-400 mt-1 font-medium">Received on {new Date(req.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                    <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-category.webp" alt="No Requests" fill className="object-contain" priority />
-                    </div>
-                    <h3 className="text-slate-900 font-bold text-xl">No Requests Yet</h3>
-                    <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">When your audience requests specific configurations, they will line up here.</p>
                   </div>
                 )
               )}

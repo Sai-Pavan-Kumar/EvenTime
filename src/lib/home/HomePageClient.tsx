@@ -260,6 +260,13 @@ export function HomePageClient(props: HomePageClientProps) {
                     <CalendarDays className="w-6 h-6 text-brand-primary" /> 
                     {category ? `${category}s` : "What's happening"}
                   </h2>
+                  {!category && !branch && !location && (
+                    <p className="text-slate-500 text-sm font-medium mt-1">
+                      🔥 <span className="font-bold text-slate-700">{platformStats?.event_count ?? 0} events</span> live right now across{" "}
+                      <span className="font-bold text-slate-700">{platformStats?.city_count ?? 0} cities</span> ·{" "}
+                      <span className="font-bold text-slate-700">{platformStats?.user_count ?? 0} curators</span> building with EvenTime
+                    </p>
+                  )}
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
 
@@ -272,7 +279,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'for_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        For You
+                        For You ({livePersonalizedEvents.length})
                       </button>
                       <button
                         type="button"
@@ -281,7 +288,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'around_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        Around You
+                        Around You ({liveAroundYouEvents.length})
                       </button>
                       {isCollegeStudent && (
                         <button
@@ -291,7 +298,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             activeFeedPill === 'campus' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                           }`}
                         >
-                          Your Campus
+                          Your Campus ({liveCollegeEvents.length})
                         </button>
                       )}
                     </div>
