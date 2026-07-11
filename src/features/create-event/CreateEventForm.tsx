@@ -80,15 +80,18 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     initialLink: initialData?.registration_link ?? undefined,
     currentEventId: initialData?.id,
     initialIsTrusted: eventData.isTrustedDomain,
-    isAdmin: isCurrentUserAdmin // FIX: Idhi actual admin parameter
+    isAdmin: isCurrentUserAdmin 
   });
   
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
   const { isSubmitting, submitEvent } = useEventSubmit();
 
    // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
   const handleSubmit = () => {
+    if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
+      alert("Please select your college before restricting this event to it — or turn off 'College Only' if you want it open to everyone.");
+      return;
+    }
     submitEvent({
       title: eventData.title,
       category: eventData.category,
@@ -114,7 +117,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
       college_branch: isCollegeCategory ? eventData.collegeBranch : null,
       college_year: isCollegeCategory ? eventData.collegeYear : null,
-      college_only: isCollegeCategory ? eventData.collegeOnly : null,
+      college_only: isCollegeCategory && eventData.collegeId ? eventData.collegeOnly : false,
       college_id: isCollegeCategory ? eventData.collegeId : null,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl

@@ -50,19 +50,29 @@ export async function createCollegeAction(collegeName: string) {
     
   if (existing) return { data: existing }; // return existing, don't duplicate
   
-  const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+ const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
   const { data, error } = await supabase
     .from("colleges")
     .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
     .select("id, name, slug")
     .single();
-    
-  if (error) return { error: "Failed to add college." };
+
+  if (error) {
+    // 23505 = unique constraint violation — someone else created the exact same college a split second before us. Instead of showing an error, just fetch and return that one, since it's the same college anyway.
+    if (error.code === "23505") {
+      const { data: raceWinner } = await supabase
+        .from("colleges")
+        .select("id, name, slug")
+        .ilike("name", trimmed)
+        .maybeSingle();
+      if (raceWinner) return { data: raceWinner };
+    }
+    return { error: "Failed to add college." };
+  }
   
   revalidatePath("/");
-  return { data };
+  return { data };
 }
-
 // NEW: Server action for platform feedback
 export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
   const supabase = await createClient();
