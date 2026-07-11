@@ -179,6 +179,14 @@ export function HomePageClient(props: HomePageClientProps) {
       ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
 
+  const isUpcoming = (e: Partial<EventRow>) => {
+  const checkDate = parseEventDateString(e.date_string || "");
+  if (!checkDate) return true;
+    return differenceInCalendarDays(checkDate, new Date()) >= 0;
+  };
+  const upcomingForYouCount = livePersonalizedEvents.filter(isUpcoming).length;
+  const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcoming).length;
+  const upcomingCollegeCount = liveCollegeEvents.filter(isUpcoming).length;
   useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;
   let clientFallbackEvents: Partial<EventRow>[] = [];
@@ -279,7 +287,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'for_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        For You ({livePersonalizedEvents.length})
+                        For You ({upcomingForYouCount})
                       </button>
                       <button
                         type="button"
@@ -288,7 +296,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'around_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        Around You ({liveAroundYouEvents.length})
+                        Around You ({upcomingAroundYouCount})
                       </button>
                       {isCollegeStudent && (
                         <button
@@ -298,7 +306,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             activeFeedPill === 'campus' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                           }`}
                         >
-                          Your Campus ({liveCollegeEvents.length})
+                          Your Campus ({upcomingCollegeCount})
                         </button>
                       )}
                     </div>
