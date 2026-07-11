@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Star, CalendarDays, Bell, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Star, CalendarDays, Building2, TrendingUp, CheckCircle2 } from "lucide-react";
 
 export function LandingIntro({ 
   isLeaderboardEnabled = false, 
