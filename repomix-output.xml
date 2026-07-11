@@ -3300,6 +3300,190 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 </file>
 
+<file path="src/components/layout/CalendarStrip.tsx">
+"use client";
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect, useTransition } from "react";
+import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import NProgress from "nprogress";
+
+
+export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const selectedDateParam = searchParams.get("date");
+  
+  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
+  const [today, setToday] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+    setToday(new Date());
+  }, []);
+  
+  // Initialize view to the selected date's month, or current month
+  const [currentMonth, setCurrentMonth] = useState(
+    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
+  );
+
+  const handleDateClick = (date: Date) => {
+    NProgress.start();
+    const standardDateStr = format(date, "yyyy-MM-dd");
+    const queryDateStr = standardDateStr;
+
+    const currentQ = searchParams.get("q");
+    const currentBranch = searchParams.get("branch");
+
+    const params = new URLSearchParams();
+    if (currentQ) params.set("q", currentQ);
+    if (currentBranch) params.set("branch", currentBranch);
+    
+    startTransition(() => {
+      if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
+        // Deselect if clicked again (Goes back to default future events)
+        router.push(`/?${params.toString()}`, { scroll: false });
+      } else {
+        params.set("date", queryDateStr);
+        router.push(`/?${params.toString()}`, { scroll: false });
+      }
+    });
+
+    // Close calendar on selection automatically
+    if (onDateSelect) {
+      onDateSelect();
+    }
+  };
+
+  const days = useMemo(() => {
+    const start = startOfWeek(startOfMonth(currentMonth));
+    const end = endOfWeek(endOfMonth(currentMonth));
+    return eachDayOfInterval({ start, end });
+  }, [currentMonth]);
+
+  return (
+    <div className="w-full bg-white px-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4 px-2 pt-2">
+        <h2 className="text-lg font-heading font-black text-slate-900">
+          {format(currentMonth, "MMMM yyyy")}
+        </h2>
+        <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            {day}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {days.map((date) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          
+          // Match selected date carefully accommodating DB format strings
+          const isSelected = selectedDateParam === dateStr;
+             
+          const isToday = isSameDay(date, today);
+          const isCurrentMonth = isSameMonth(date, currentMonth);
+          
+          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
+          const hasEvent = eventDates.some(ds => {
+            if (!ds) return false;
+            
+            // Extract YYYY-MM-DD from the timestamp
+            const dbDateOnly = ds.substring(0, 10);
+            if (dbDateOnly === dateStr) return true;
+            
+            try {
+              // Clean the string to handle rogue formats (e.g. "7th Jun")
+              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
+              
+              // Standard Date parse
+              const d = new Date(cleanDs);
+              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
+
+              // Force-append current year for floating dates like "7 JUN"
+              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
+              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
+
+              return false;
+            } catch {
+              return false;
+            }
+          });
+
+          return (
+            <button
+              key={dateStr}
+              suppressHydrationWarning
+              onClick={() => handleDateClick(date)}
+              className={`
+                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
+                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
+                ${isSelected 
+                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  : "hover:bg-slate-100 font-medium"}
+                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-brand-primary" : "border border-transparent"}
+              `}
+            >
+              {format(date, "d")}
+              
+              {/* Event Indicator Dot */}
+              {hasEvent && (() => {
+                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
+                // This perfectly matches your Next.js server cache so React doesn't crash.
+                if (!isMounted) {
+                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
+                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
+                }
+
+                const diff = differenceInCalendarDays(date, today);
+                let dotColor = "bg-green-500";
+
+                if (isSelected) {
+                  dotColor = "bg-white";
+                } else if (diff < 0) {
+                  dotColor = "bg-black";
+                } else if (diff >= 0 && diff <= 3) {
+                  dotColor = "bg-orange-500";
+                } else {
+                  dotColor = "bg-green-500";
+                }
+
+                return (
+                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
+                );
+              })()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/components/leaderboard/ScoreInfoButton.tsx">
 "use client";
 
@@ -4095,6 +4279,78 @@ export const getCategoryConfig = (category: string) => {
   const key = category.toLowerCase().trim().replace(/\s+/g, '-');
   return CATEGORY_CONFIG[key] ?? CATEGORY_CONFIG['default-event'];
 };
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import NProgress from "nprogress";
+
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          NProgress.start();
+          const val = e.target.value;
+          const params = new URLSearchParams();
+
+          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+          } else {
+            if (val) params.set("location", val);
+          }
+
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          
+          startTransition(() => {
+            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+          });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 </file>
 
 <file path="src/lib/supabase/client.ts">
@@ -5037,190 +5293,6 @@ export default function TermsOfServicePage() {
 }
 </file>
 
-<file path="src/components/layout/CalendarStrip.tsx">
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect, useTransition } from "react";
-import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import NProgress from "nprogress";
-
-
-export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: string[], onDateSelect?: () => void }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams.get("date");
-  
-  // Hydration Fix: Stabilize 'today' so the client safely overrides the server timezone
-  const [today, setToday] = useState(new Date());
-  const [isMounted, setIsMounted] = useState(false);
-  
-  useEffect(() => {
-    setIsMounted(true);
-    setToday(new Date());
-  }, []);
-  
-  // Initialize view to the selected date's month, or current month
-  const [currentMonth, setCurrentMonth] = useState(
-    selectedDateParam && !isNaN(Date.parse(selectedDateParam)) ? parseISO(selectedDateParam) : today
-  );
-
-  const handleDateClick = (date: Date) => {
-    NProgress.start();
-    const standardDateStr = format(date, "yyyy-MM-dd");
-    const queryDateStr = standardDateStr;
-
-    const currentQ = searchParams.get("q");
-    const currentBranch = searchParams.get("branch");
-
-    const params = new URLSearchParams();
-    if (currentQ) params.set("q", currentQ);
-    if (currentBranch) params.set("branch", currentBranch);
-    
-    startTransition(() => {
-      if (selectedDateParam === queryDateStr || selectedDateParam === standardDateStr) {
-        // Deselect if clicked again (Goes back to default future events)
-        router.push(`/?${params.toString()}`, { scroll: false });
-      } else {
-        params.set("date", queryDateStr);
-        router.push(`/?${params.toString()}`, { scroll: false });
-      }
-    });
-
-    // Close calendar on selection automatically
-    if (onDateSelect) {
-      onDateSelect();
-    }
-  };
-
-  const days = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
-  }, [currentMonth]);
-
-  return (
-    <div className="w-full bg-white px-1">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-2 pt-2">
-        <h2 className="text-lg font-heading font-black text-slate-900">
-          {format(currentMonth, "MMMM yyyy")}
-        </h2>
-        <div className="flex items-center gap-1">
-          <button 
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Weekday Labels */}
-      <div className="grid grid-cols-7 gap-1 mb-2 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            {day}
-          </div>
-        ))}
-      </div>
-
-      {/* Grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((date) => {
-          const dateStr = format(date, "yyyy-MM-dd");
-          
-          // Match selected date carefully accommodating DB format strings
-          const isSelected = selectedDateParam === dateStr;
-             
-          const isToday = isSameDay(date, today);
-          const isCurrentMonth = isSameMonth(date, currentMonth);
-          
-          // Robust check that parses the DB date to local time to prevent UTC offset duplicate dots
-          const hasEvent = eventDates.some(ds => {
-            if (!ds) return false;
-            
-            // Extract YYYY-MM-DD from the timestamp
-            const dbDateOnly = ds.substring(0, 10);
-            if (dbDateOnly === dateStr) return true;
-            
-            try {
-              // Clean the string to handle rogue formats (e.g. "7th Jun")
-              const cleanDs = ds.replace(/st|nd|rd|th/gi, ''); 
-              
-              // Standard Date parse
-              const d = new Date(cleanDs);
-              if (!isNaN(d.getTime()) && isSameDay(d, date)) return true;
-
-              // Force-append current year for floating dates like "7 JUN"
-              const currentYearDate = new Date(`${cleanDs} ${today.getFullYear()}`);
-              if (!isNaN(currentYearDate.getTime()) && isSameDay(currentYearDate, date)) return true;
-
-              return false;
-            } catch {
-              return false;
-            }
-          });
-
-          return (
-            <button
-              key={dateStr}
-              suppressHydrationWarning
-              onClick={() => handleDateClick(date)}
-              className={`
-                relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
-                ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
-                ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
-                  : "hover:bg-slate-100 font-medium"}
-                ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-brand-primary" : "border border-transparent"}
-              `}
-            >
-              {format(date, "d")}
-              
-              {/* Event Indicator Dot */}
-              {hasEvent && (() => {
-                // Hydration Matcher: Render the default amber dot during Server-Side Rendering
-                // This perfectly matches your Next.js server cache so React doesn't crash.
-                if (!isMounted) {
-                  const ssrColor = isSelected ? "bg-white" : "bg-amber-500";
-                  return <div className={`absolute bottom-1 w-1 h-1 rounded-full ${ssrColor}`} />;
-                }
-
-                const diff = differenceInCalendarDays(date, today);
-                let dotColor = "bg-green-500";
-
-                if (isSelected) {
-                  dotColor = "bg-white";
-                } else if (diff < 0) {
-                  dotColor = "bg-black";
-                } else if (diff >= 0 && diff <= 3) {
-                  dotColor = "bg-orange-500";
-                } else {
-                  dotColor = "bg-green-500";
-                }
-
-                return (
-                  <div className={`absolute bottom-1 w-1 h-1 rounded-full ${dotColor}`} />
-                );
-              })()}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/components/layout/LaunchScreen.tsx">
 "use client";
 
@@ -5482,168 +5554,6 @@ export function StepMedia(props: StepMediaProps) {
         </button>
       </div>
     </motion.div>
-  );
-}
-</file>
-
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-import { parseEventDateString } from "@/lib/utils/date";
-import { differenceInCalendarDays } from "date-fns";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group upcoming events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    
-    // Skip counting past events
-    const checkDate = parseEventDateString(event.date_string || "");
-    if (checkDate) {
-      const today = new Date();
-      if (differenceInCalendarDays(checkDate, today) < 0) {
-        return; 
-      }
-    }
-
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  // "online" is pulled out and always pinned first, regardless of count
-  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
-  const cities = Array.from(cityMap.entries())
-    .filter(([city]) => city.toLowerCase() !== "online")
-    .sort((a, b) => {
-      if (b[1] !== a[1]) return b[1] - a[1];
-      return a[0].localeCompare(b[0]);
-    });
-  if (onlineEntry) cities.unshift(onlineEntry);
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-     {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-brand-primary" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import NProgress from "nprogress";
-
-
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
-
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
-
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          NProgress.start();
-          const val = e.target.value;
-          const params = new URLSearchParams();
-
-          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-          } else {
-            if (val) params.set("location", val);
-          }
-
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          
-          startTransition(() => {
-            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-          });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }
 </file>
@@ -6343,6 +6253,96 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+import { parseEventDateString } from "@/lib/utils/date";
+import { differenceInCalendarDays } from "date-fns";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group upcoming events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    
+    // Skip counting past events
+    const checkDate = parseEventDateString(event.date_string || "");
+    if (checkDate) {
+      const today = new Date();
+      if (differenceInCalendarDays(checkDate, today) < 0) {
+        return; 
+      }
+    }
+
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  // "online" is pulled out and always pinned first, regardless of count
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
+  const cities = Array.from(cityMap.entries())
+    .filter(([city]) => city.toLowerCase() !== "online")
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    });
+  if (onlineEntry) cities.unshift(onlineEntry);
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+     {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city.toLowerCase() === "online" ? "Online" : city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-brand-primary" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
 <file path="next.config.ts">
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
@@ -6400,149 +6400,6 @@ const nextConfig: NextConfig = {
 
 // NEW: Export the configuration wrapped with PWA
 export default withPWA(nextConfig);
-</file>
-
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-import { unstable_cache } from "next/cache";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  // 1. Fetch user session to determine if they are a student
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
-
-  // 2. CACHED: public events for this city (same for every anonymous/non-student visitor)
-  const getCachedPublicCityEvents = unstable_cache(
-    async () => {
-      const supabaseAnon = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      );
-      const { data } = await supabaseAnon
-        .from("events")
-        .select(EVENT_FIELDS)
-        .eq("status", "approved")
-        .ilike("city", decodedCity)
-        .gte("date_string", todayStr)
-        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
-        .order("date_string", { ascending: true })
-        .limit(50);
-      return data || [];
-    },
-    [`city_events_${decodedCity.toLowerCase()}`],
-    { tags: ["events"], revalidate: 600 } // 10 minutes
-  );
-
-  const publicEvents = await getCachedPublicCityEvents();
-
-  // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
-  let personalEvents: any[] = [];
-  if (user) {
-    let extraFilter = `creator_id.eq.${user.id}`;
-    if (profile?.user_type === "student" && profile?.college_id) {
-      extraFilter += `,college_id.eq.${profile.college_id}`;
-    }
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_FIELDS)
-      .eq("status", "approved")
-      .ilike("city", decodedCity)
-      .gte("date_string", todayStr)
-      .or(extraFilter)
-      .order("date_string", { ascending: true })
-      .limit(50);
-    personalEvents = data || [];
-  }
-
-  // 4. Merge, de-duplicate by id
-  const eventMap = new Map();
-  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
-  const events = Array.from(eventMap.values());
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-surface-base pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero — only shown if a real cover image exists for this city */}
-      {cityConfig.coverImage && (
-        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-            <img 
-              src={cityConfig.coverImage} 
-              alt={decodedCity} 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
-            Events happening in {decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
 </file>
 
 <file path="src/components/profile/DelayedActionModal.tsx">
@@ -7161,6 +7018,152 @@ export default async function AdminUsersPage() {
         </div>
       </div>
     </div>
+  );
+}
+</file>
+
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
+
+  // CACHED: public events for this city (same for every anonymous/non-student visitor)
+  const getCachedPublicCityEvents = unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const { data } = await supabaseAnon
+        .from("events")
+        .select(EVENT_FIELDS)
+        .eq("status", "approved")
+        .ilike("city", decodedCity)
+        .gte("date_string", todayStr)
+        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
+        .order("date_string", { ascending: true })
+        .limit(50);
+      return data || [];
+    },
+    [`city_events_${decodedCity.toLowerCase()}`],
+    { tags: ["events"], revalidate: 600 } // 10 minutes
+  );
+
+  // 1. Run the auth check AND the cached public events fetch at the same time —
+  // they don't depend on each other, so no reason to wait for one before starting the other.
+  const [{ data: { user } }, publicEvents] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublicCityEvents(),
+  ]);
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
+  let personalEvents: any[] = [];
+  if (user) {
+    let extraFilter = `creator_id.eq.${user.id}`;
+    if (profile?.user_type === "student" && profile?.college_id) {
+      extraFilter += `,college_id.eq.${profile.college_id}`;
+    }
+    const { data } = await supabase
+      .from("events")
+      .select(EVENT_FIELDS)
+      .eq("status", "approved")
+      .ilike("city", decodedCity)
+      .gte("date_string", todayStr)
+      .or(extraFilter)
+      .order("date_string", { ascending: true })
+      .limit(50);
+    personalEvents = data || [];
+  }
+
+  // 4. Merge, de-duplicate by id
+  const eventMap = new Map();
+  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
+  const events = Array.from(eventMap.values());
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-surface-base pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero — only shown if a real cover image exists for this city */}
+      {cityConfig.coverImage && (
+        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+            <img 
+              src={cityConfig.coverImage} 
+              alt={decodedCity} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
 </file>
@@ -10410,7 +10413,7 @@ const calculateCompletion = (prof: any) => {
 
 type ChipType = { name: string; value: string; count?: number };
 
-function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [] }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [], platformStats }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[]; platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number } }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profileDetails, setProfileDetails] = useState<any>(null);
@@ -10707,7 +10710,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
-            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <Building2 className="w-4 h-4 shrink-0" /> Cities
             </button>
 
@@ -10775,6 +10778,29 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </div>
       </div>
     </nav>
+
+    {platformStats && (
+      <div className="sticky top-[64px] z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-6 sm:gap-10 overflow-x-auto">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.event_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Events</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.city_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Cities</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.category_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Categories</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.user_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Users</span>
+          </div>
+        </div>
+      </div>
+    )}
 
     {showMobileSearch && (
       <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col pb-24"> 
@@ -10848,7 +10874,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         </Link>
 
-        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
+        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'cities' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
           <div className="w-5 h-5 flex items-center justify-center">
             <Building2 className="w-[18px] h-[18px]" />
           </div>
@@ -10922,10 +10948,10 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   );
 }
 
-export function Navbar({ variant = 'default', categoryChips, locationChips }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+export function Navbar({ variant = 'default', categoryChips, locationChips, platformStats }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[]; platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number } }) {
   return (
     <Suspense fallback={null}>
-      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
+      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} platformStats={platformStats} />
     </Suspense>
   );
 }
@@ -13607,6 +13633,14 @@ export function HomePageClient(props: HomePageClientProps) {
       ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
 
+  const isUpcoming = (e: Partial<EventRow>) => {
+  const checkDate = parseEventDateString(e.date_string || "");
+  if (!checkDate) return true;
+    return differenceInCalendarDays(checkDate, new Date()) >= 0;
+  };
+  const upcomingForYouCount = livePersonalizedEvents.filter(isUpcoming).length;
+  const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcoming).length;
+  const upcomingCollegeCount = liveCollegeEvents.filter(isUpcoming).length;
   useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;
   let clientFallbackEvents: Partial<EventRow>[] = [];
@@ -13617,7 +13651,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
   return (
     <main className="min-h-screen bg-surface-base">
-      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
+      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} platformStats={platformStats} />
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && user && !profile?.is_onboarded && (
@@ -13626,7 +13660,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
       <div className="flex flex-col">
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
-        {view !== "map" && (
+        {view !== "cities" && (
           <>
             {isAuthLoading && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8">
@@ -13640,28 +13674,6 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             )}
 
-            {/* PLATFORM STATS STRIP */}
-            <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
-              <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
-                </div>
-              </div>
-            </div>
-
           {!isAuthLoading && !user && !q && !date && !category && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
@@ -13672,7 +13684,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
-          {view === "map" ? (
+          {view === "cities" ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                 <Building2 className="w-6 h-6 text-brand-primary" /> Explore by City
@@ -13688,13 +13700,6 @@ export function HomePageClient(props: HomePageClientProps) {
                     <CalendarDays className="w-6 h-6 text-brand-primary" /> 
                     {category ? `${category}s` : "What's happening"}
                   </h2>
-                  {!category && !branch && !location && (
-                    <p className="text-slate-500 text-sm font-medium mt-1">
-                      🔥 <span className="font-bold text-slate-700">{platformStats?.event_count ?? 0} events</span> live right now across{" "}
-                      <span className="font-bold text-slate-700">{platformStats?.city_count ?? 0} cities</span> ·{" "}
-                      <span className="font-bold text-slate-700">{platformStats?.user_count ?? 0} curators</span> building with EvenTime
-                    </p>
-                  )}
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
 
@@ -13707,7 +13712,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'for_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        For You ({livePersonalizedEvents.length})
+                        For You ({upcomingForYouCount})
                       </button>
                       <button
                         type="button"
@@ -13716,7 +13721,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           activeFeedPill === 'around_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                         }`}
                       >
-                        Around You ({liveAroundYouEvents.length})
+                        Around You ({upcomingAroundYouCount})
                       </button>
                       {isCollegeStudent && (
                         <button
@@ -13726,7 +13731,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             activeFeedPill === 'campus' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
                           }`}
                         >
-                          Your Campus ({liveCollegeEvents.length})
+                          Your Campus ({upcomingCollegeCount})
                         </button>
                       )}
                     </div>

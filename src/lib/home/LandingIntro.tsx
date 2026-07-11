@@ -150,13 +150,22 @@ export function LandingIntro({
               <div>
                   <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
                     ET Score Leaderboard
-                    {!isLeaderboardEnabled && (
-                      <span className="text-[10px] bg-[#6C47FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider font-bold whitespace-nowrap shrink-0">Coming Soon</span>
-                    )}
                   </h4>
                   <p className="text-slate-500 font-medium">Earn points for attending events and climbing the ranks.</p>
                 </div>
               </div>
+
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                <CalendarDays className="w-5 h-5 text-brand-primary" />
+              </div>
+              <div>
+                  <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    Post & Share Events
+                  </h4>
+                  <p className="text-slate-500 font-medium">Add events you know about and help build the community.</p>
+              </div>
+            </div>
 
               
           </div>
