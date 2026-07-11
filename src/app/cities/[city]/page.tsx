@@ -33,17 +33,9 @@ export default async function CityPage({
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
-  // 1. Fetch user session to determine if they are a student
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
   const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
 
-  // 2. CACHED: public events for this city (same for every anonymous/non-student visitor)
+  // CACHED: public events for this city (same for every anonymous/non-student visitor)
   const getCachedPublicCityEvents = unstable_cache(
     async () => {
       const supabaseAnon = createSupabaseClient(
@@ -66,7 +58,18 @@ export default async function CityPage({
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
-  const publicEvents = await getCachedPublicCityEvents();
+  // 1. Run the auth check AND the cached public events fetch at the same time —
+  // they don't depend on each other, so no reason to wait for one before starting the other.
+  const [{ data: { user } }, publicEvents] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublicCityEvents(),
+  ]);
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
 
   // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
   let personalEvents: any[] = [];
@@ -112,11 +115,11 @@ export default async function CityPage({
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
             Events happening in {decodedCity}
           </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
             {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
           </span>
         </div>

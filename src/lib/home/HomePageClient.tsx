@@ -206,7 +206,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
       <div className="flex flex-col">
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
-        {view !== "map" && (
+        {view !== "cities" && (
           <>
             {isAuthLoading && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8">
@@ -230,7 +230,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
           
-          {view === "map" ? (
+          {view === "cities" ? (
             <div className="space-y-6">
               <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                 <Building2 className="w-6 h-6 text-brand-primary" /> Explore by City

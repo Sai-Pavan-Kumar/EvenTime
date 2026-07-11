@@ -328,7 +328,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
-            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=map")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <Building2 className="w-4 h-4 shrink-0" /> Cities
             </button>
 
@@ -492,7 +492,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         </Link>
 
-        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
+        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'cities' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
           <div className="w-5 h-5 flex items-center justify-center">
             <Building2 className="w-[18px] h-[18px]" />
           </div>

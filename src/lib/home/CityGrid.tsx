@@ -73,7 +73,7 @@ export function CityGrid({ events }: CityGridProps) {
 
           <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
             <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city}
+              {city.toLowerCase() === "online" ? "Online" : city}
             </h3>
             <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
               <CalendarDays className="w-3 h-3 text-brand-primary" />
