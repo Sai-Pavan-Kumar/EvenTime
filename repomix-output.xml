@@ -205,9 +205,9 @@ src/components/layout/LaunchScreen.tsx
 src/components/layout/Navbar.tsx
 src/components/profile/DelayedActionModal.tsx
 src/components/profile/DeleteEventForm.tsx
-src/components/profile/FollowButton.tsx
 src/components/profile/MobileSignOutButton.tsx
 src/components/profile/OnboardingModal.tsx
+src/components/shared/LoadMoreGrid.tsx
 src/components/skeletons/EventCardSkeleton.tsx
 src/components/ui/button.tsx
 src/components/ui/skeleton.tsx
@@ -1286,57 +1286,61 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
 }
 </file>
 
-<file path="src/components/profile/FollowButton.tsx">
+<file path="src/components/shared/LoadMoreGrid.tsx">
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { ArrowRight } from "lucide-react";
+import { EventCard } from "@/app/events/EventCard";
 
-export function FollowButton({ curatorId, initialIsFollowing }: { curatorId: string, initialIsFollowing: boolean }) {
-  const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
-  const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClient();
+const PAGE_SIZE = 8;
 
-  const toggleFollow = async () => {
-    setIsLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      alert("Please login to follow curators!");
-      setIsLoading(false);
-      return;
-    }
-
-    if (isFollowing) {
-      // Unfollow logic
-      await supabase
-        .from("followers")
-        .delete()
-        .eq("follower_id", user.id)
-        .eq("curator_id", curatorId);
-    } else {
-      // Follow logic
-      await supabase
-        .from("followers")
-        .insert({ follower_id: user.id, curator_id: curatorId });
-    }
-    
-    setIsFollowing(!isFollowing);
-    setIsLoading(false);
-  };
+export function LoadMoreGrid({
+  events,
+  gridClass,
+  hideOrganizer = false,
+}: {
+  events: any[];
+  gridClass: string;
+  hideOrganizer?: boolean;
+}) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visibleEvents = events.slice(0, visibleCount);
 
   return (
-    <button 
-      onClick={toggleFollow} 
-      disabled={isLoading}
-      className={`px-6 py-2.5 rounded-full font-bold transition-all active:scale-95 ${
-        isFollowing 
-          ? "bg-slate-200 text-slate-700 hover:bg-slate-300" 
-          : "bg-[#6C47FF] text-white hover:bg-[#5535e0]"
-      }`}
-    >
-      {isLoading ? "Loading..." : (isFollowing ? "Following" : "Follow")}
-    </button>
+    <div className="space-y-8">
+      <div className={gridClass}>
+        {visibleEvents.map((event: any) => (
+          <EventCard
+            key={event.id}
+            id={event.id}
+            slug={event.slug || event.id}
+            title={event.title || "Untitled Event"}
+            category={event.category || "General"}
+            date={event.date_string || "TBA"}
+            city={event.location || event.city || "Online"}
+            imageUrl={event.poster_url || "/window.svg"}
+            organizerName={event.organizer_name || "Organizer"}
+            organizerUsername={event.profiles?.username}
+            isFree={event.is_free ?? false}
+            audience={event.target_audience ?? []}
+            hideOrganizer={hideOrganizer}
+          />
+        ))}
+      </div>
+
+      {events.length > visibleCount && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
+          >
+            Load More
+            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 </file>
@@ -4558,7 +4562,7 @@ export function CityGrid({ events }: CityGridProps) {
 
   // Sort cities: most events first, then alphabetically
   // "online" is pulled out and always pinned first, regardless of count
-  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online");
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
   const cities = Array.from(cityMap.entries())
     .filter(([city]) => city.toLowerCase() !== "online")
     .sort((a, b) => {
@@ -5314,7 +5318,7 @@ export const CITY_CONFIG: Record<string, {
 export const getCityConfig = (city: string) => {
   const fallback = { 
     backgroundImage: '/cities/default.webp', 
-    coverImage: '/cities/default.webp', 
+    coverImage: null as string | null, 
     accentColor: '#6C47FF' 
   };
   
@@ -5329,6 +5333,88 @@ export const getCityConfig = (city: string) => {
     coverImage: `/cities/covers/${key}.webp`
   };
 };
+</file>
+
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event, index) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.location || event.city!}
+            imageUrl={event.poster_url || defaultImage}
+           organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+           organizerUsername={(event as any).profiles?.username}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
 </file>
 
 <file path="src/proxy.ts">
@@ -5460,6 +5546,335 @@ export function AdminHeader() {
 }
 </file>
 
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // 1. Fetch user session to determine if they are a student
+  const { data: { user } } = await supabase.auth.getUser();
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 2. Build the strict visibility filter
+  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
+  if (user) {
+    visibilityFilter += `,creator_id.eq.${user.id}`;
+  }
+  if (profile?.user_type === 'student' && profile?.college_id) {
+       visibilityFilter += `,college_id.eq.${profile.college_id}`;
+  }
+
+  // 3. Fetch events securely
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
+    .eq("status", "approved")
+    .ilike("city", decodedCity)
+    .gte("date_string", todayStr)
+    .or(visibilityFilter)
+    .order("date_string", { ascending: true })
+    .limit(50);
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-surface-base pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero — only shown if a real cover image exists for this city */}
+      {cityConfig.coverImage && (
+        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+            <img 
+              src={cityConfig.coverImage} 
+              alt={decodedCity} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/events/[slug]/page.tsx">
+import { Metadata } from "next";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import EventClientUI from "./EventClientUI";
+
+// Helper function to check if the slug is a valid UUID
+const isValidUUID = (id: string) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+  
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select("title, category, date_string, description, status");
+    
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: event } = await query.maybeSingle();
+
+  if (!event || event.status !== "approved") return { title: "Event Not Found" };
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const ogUrl = new URL(`${baseUrl}/api/og`);
+
+  ogUrl.searchParams.set("title", event.title);
+  ogUrl.searchParams.set("category", event.category);
+  ogUrl.searchParams.set("date", event.date_string || "TBA");
+
+  return {
+    title: `${event.title} | EvenTime`,
+    description: event.description || `Join this ${event.category} event on EvenTime!`,
+    alternates: {
+      canonical: `${baseUrl}/events/${slug}`,
+    },
+    openGraph: {
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      url: `${baseUrl}/events/${slug}`,
+      type: "website",
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: event.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      images: [ogUrl.toString()],
+    },
+  };
+}
+
+export default async function EventPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+
+ const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select(EVENT_DETAIL_FIELDS);
+
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: finalEvent } = await query.maybeSingle();
+
+  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
+  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
+  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
+
+  if (!finalEvent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
+        Event not found.
+      </div>
+    );
+  }
+
+  // Ensure pending/rejected events are only visible to the creator or an admin
+  if (finalEvent.status !== "approved") {
+    const { data: { user } } = await supabase.auth.getUser();
+    const isCreator = user?.id === finalEvent.creator_id;
+    
+    let isAdmin = false;
+    if (user && !isCreator) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      isAdmin = profile?.role === "admin";
+    }
+
+    if (!isCreator && !isAdmin) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
+          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
+          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
+        </div>
+      );
+    }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: finalEvent.title,
+    description: finalEvent.description,
+    startDate: finalEvent.date_string ? `${finalEvent.date_string}${finalEvent.start_time ? `T${finalEvent.start_time}` : ""}` : undefined,
+    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}${finalEvent.end_time ? `T${finalEvent.end_time}` : ""}` : undefined,
+    eventAttendanceMode: finalEvent.is_virtual 
+      ? "https://schema.org/OnlineEventAttendanceMode" 
+      : "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    location: finalEvent.is_virtual
+      ? {
+          "@type": "VirtualLocation",
+          url: finalEvent.registration_link || finalEvent.website || eventUrl,
+        }
+      : {
+          "@type": "Place",
+          name: finalEvent.location || "TBA",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: finalEvent.city || "TBA",
+          },
+        },
+    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
+    offers: {
+      "@type": "Offer",
+      url: finalEvent.registration_link || eventUrl,
+      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
+      priceCurrency: "INR", 
+      availability: "https://schema.org/InStock"
+    },
+    organizer: {
+      "@type": "Organization",
+      name: finalEvent.organizer_name || "EvenTime",
+    }
+  };
+
+  // NEW: Fetch Similar Events based on the same category
+  let similarEvents: any[] = [];
+  if (finalEvent.category) {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("events")
+      .select(EVENT_DETAIL_FIELDS)
+      .eq("category", finalEvent.category)
+      .eq("status", "approved")
+      .gte("date_string", todayStr) // NEW: Removes past events!
+      .neq("id", finalEvent.id)
+      .order("created_at", { ascending: false })
+      .limit(6); // Increased limit to 6 so slider looks good
+    
+    if (data) {
+    similarEvents = data;
+    }
+  }
+
+ // Fetch up to 3 interested user avatars for social proof
+  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
+  {
+    const { data: interestedRows } = await supabase
+      .from("interested_events")
+      .select("profiles(avatar_url, username)")
+      .eq("event_id", finalEvent.id)
+      .limit(3);
+
+    if (interestedRows && interestedRows.length > 0) {
+      interestedAvatars = interestedRows
+        .map((r: any) => r.profiles as any)
+        .filter(Boolean);
+    }
+  }
+
+  // Pass the data cleanly to the client UI
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+    </>
+  );
+}
+</file>
+
 <file path="src/app/leaderboard/page.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { createClient } from "@/lib/supabase/server";
@@ -5468,6 +5883,8 @@ import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { generateHMAC } from "@/lib/hmac";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export const revalidate = 0;
 
@@ -5497,24 +5914,38 @@ export default async function LeaderboardPage() {
     redirect("/");
   }
 
-  const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
+  const getCachedLeaders = unstable_cache(
+    async () => {
+      const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
 
-  const { data: excludedProfiles } = EXCLUDED_EMAILS.length
-    ? await supabase.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
-    : { data: [] };
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
 
-  const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
+      const { data: excludedProfiles } = EXCLUDED_EMAILS.length
+        ? await supabaseAnon.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
+        : { data: [] };
 
-  const { data: leadersRaw } = await supabase
-    .from("leaderboard_view")
-    .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
-    .order("et_score", { ascending: false })
-    .limit(55);
+      const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
 
-  const leaders = (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
+      const { data: leadersRaw } = await supabaseAnon
+        .from("leaderboard_view")
+        .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
+        .order("et_score", { ascending: false })
+        .limit(55);
+
+      return (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
+    },
+    ['leaderboard_cache'],
+    { tags: ['leaderboard'], revalidate: 600 } // Cache for 10 minutes
+  );
+
+  const leaders = await getCachedLeaders();
 
   const topThree = leaders?.slice(0, 3) || [];
   const restOfLeaders = leaders?.slice(3) || [];
@@ -5663,9 +6094,11 @@ export default async function LeaderboardPage() {
              <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-[#6C47FF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
              
              <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
-               <div className="w-20 h-20 bg-amber-50 border border-amber-100 rounded-[24px] flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500">
-                 <Trophy className="w-10 h-10 text-amber-500" />
-               </div>
+               <img
+                 src="/throne-empty.webp"
+                 alt="Empty throne"
+                 className="w-48 h-48 object-contain mb-4"
+               />
                <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
                  The Throne is Empty
                </h3>
@@ -6111,88 +6544,6 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
 }
 </file>
 
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event, index) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
-            imageUrl={event.poster_url || defaultImage}
-           organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
-           organizerUsername={(event as any).profiles?.username}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/FilterChips.tsx">
 "use client";
 
@@ -6322,537 +6673,6 @@ const nextConfig: NextConfig = {
 
 // NEW: Export the configuration wrapped with PWA
 export default withPWA(nextConfig);
-</file>
-
-<file path="src/app/[username]/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventCard } from "@/app/events/EventCard";
-import Image from "next/image";
-import { FollowButton } from "@/components/profile/FollowButton";
-import type { ProfileRow } from "@/types";
-
-export const dynamic = "force-dynamic";
-
-type ExtendedProfileRow = Partial<ProfileRow> & {
-  preferred_cities?: string[] | null;
-  user_type?: string | null;
-  graduation_year?: string | null;
-};
-const calculateCompletion = (prof: ExtendedProfileRow | null) => {
-  if (!prof) return 0;
-  let score = 0;
-  if (prof.username) score += 25;
-  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
-  if (prof.goals && prof.goals.length > 0) score += 25;
-  const isStudent = prof.user_type === "student";
-  if (!isStudent) {
-    score += 25;
-  } else if (prof.graduation_year) {
-    score += 25;
-  }
-  return score;
-};
-
-export default async function CuratorPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
-  const supabase = await createClient();
-
-  // NEW: Get current logged-in user to handle follow logic
-  const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
-  // AFTER - one query (Checks username or ID in a single round trip)
-  const decodedUsername = decodeURIComponent(username);
-  const { data: curator } = await supabase
-    .from("profiles")
-    .select(PROFILE_FIELDS)
-    .or(`username.eq.${decodedUsername},id.eq.${decodedUsername}`)
-    .maybeSingle();
-
-  if (!curator) {
-    return (
-      <div className="min-h-screen bg-surface-base">
-        <Navbar />
-        <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
-      </div>
-    );
-  }
-
-  // Fix: Running the remaining dependent queries in parallel using Promise.all
-   const [
-    { data: events },
-    followResult,
-    { count: followerCount },
-    { data: appSettings }
-  ] = await Promise.all([
-    // 1. Fetch Curator's Approved Events
-    supabase
-      .from("events")
-      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
-      .eq("creator_id", curator.id)
-      .eq("status", "approved")
-      .order("created_at", { ascending: false }),
-      
-    // 2. Check if current user is following this curator
-    currentUser
-      ? supabase
-          .from("followers")
-          .select("id")
-          .eq("follower_id", currentUser.id)
-          .eq("curator_id", curator.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    // 3. Get total follower count for the UI
-    supabase
-      .from("followers")
-      .select("*", { count: "exact", head: true })
-      .eq("curator_id", curator.id),
-    // 4. Check if leaderboard / ET Score is enabled platform-wide
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
-  ]);
-  const isFollowing = !!followResult.data;
-  // Dynamic ga events anni thirigi saves count ni sum chesthundi
-  const impactSaves = events?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
-  const etScore = curator.et_score || 100;
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const avatarUrl = curator.avatar_url || "/window.svg";
-  const completionPercentage = calculateCompletion(curator);
-
-  // NEW: Dynamic Profile Tiers Logic
-  const eventCount = events?.length || 0;
-  let strokeColor = "#6C47FF"; // Default Purple
-  let isGold = false;
-
-  if (eventCount >= 69) {
-    strokeColor = "url(#goldGradient)";
-    isGold = true;
-  } else if (eventCount >= 30) {
-    strokeColor = "#C0C0C0"; // Silver
-  } else if (eventCount >= 10) {
-    strokeColor = "#CD7F32"; // Bronze
-  }
-
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-        <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
-          <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 144 144">
-              {isGold && (
-                <defs>
-                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FDE047" />
-                    <stop offset="50%" stopColor="#F59E0B" />
-                    <stop offset="100%" stopColor="#D97706" />
-                  </linearGradient>
-                </defs>
-              )}
-              <circle cx="72" cy="72" r="68" fill="none" stroke="#F5F5F7" strokeWidth="4" />
-              <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-            </svg>
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
-              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
-            </div>
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
-            <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
-            <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
-            
-            <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
-              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</span>
-                <span className="text-xl font-black text-slate-900">{eventCount}</span>
-              </div>
-              
-              {/* NEW: Followers Count */}
-              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
-                <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
-              </div>
-              {appSettings?.leaderboard_enabled && (
-                <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
-                  <span className="text-xl font-black text-slate-900">{impactSaves}</span>
-                </div>
-              )}
-              {leaderboardEnabled && (
-                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
-                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
-                  <span className="text-xl font-black text-amber-600">{etScore}</span>
-                </div>
-              )}
-
-              {/* NEW: Follow Button (Hidden if viewing own profile or logged out) */}
-              {currentUser && currentUser.id !== curator.id && (
-                <div className="ml-0 md:ml-auto mt-4 md:mt-0">
-                  <FollowButton curatorId={curator.id} initialIsFollowing={isFollowing} />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {events && events.length > 0 ? (
-              events.map((event) => (
-                <EventCard 
-               key={event.id}
-              id={event.id}
-              slug={event.slug || event.id}
-              title={event.title || "Untitled Event"}
-              category={event.category || "General"}
-              date={event.date_string || "TBA"}
-             city={event.location || event.city || "Online"}
-             imageUrl={event.poster_url || "/window.svg"}
-             organizerName={event.organizer_name || "Organizer"}
-             organizerUsername={(event as any).profiles?.username}
-             isFree={event.is_free ?? false} // boolean null check
-             audience={event.target_audience ?? []} // array null check
-              />
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
-                <p className="text-[#86868B] font-bold uppercase tracking-widest text-xs">No active events posted</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  // 1. Fetch user session to determine if they are a student
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  // 2. Build the strict visibility filter
-  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
-  if (user) {
-    visibilityFilter += `,creator_id.eq.${user.id}`;
-  }
-  if (profile?.user_type === 'student' && profile?.college_id) {
-       visibilityFilter += `,college_id.eq.${profile.college_id}`;
-  }
-
-  // 3. Fetch events securely
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, profiles(username)")
-    .eq("status", "approved")
-    .ilike("city", decodedCity)
-    .gte("date_string", todayStr)
-    .or(visibilityFilter)
-    .order("date_string", { ascending: true })
-    .limit(50);
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-surface-base pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero */}
-      <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-          <img 
-            src={cityConfig.backgroundImage} 
-            alt={decodedCity} 
-            className="w-full h-full object-cover"
-          />
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-slate-900 font-heading capitalize">
-            Events happening in {decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/events/[slug]/page.tsx">
-import { Metadata } from "next";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import EventClientUI from "./EventClientUI";
-
-// Helper function to check if the slug is a valid UUID
-const isValidUUID = (id: string) => {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-};
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-  
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select("title, category, date_string, description, status");
-    
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: event } = await query.maybeSingle();
-
-  if (!event || event.status !== "approved") return { title: "Event Not Found" };
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
-  const ogUrl = new URL(`${baseUrl}/api/og`);
-
-  ogUrl.searchParams.set("title", event.title);
-  ogUrl.searchParams.set("category", event.category);
-  ogUrl.searchParams.set("date", event.date_string || "TBA");
-
-  return {
-    title: `${event.title} | EvenTime`,
-    description: event.description || `Join this ${event.category} event on EvenTime!`,
-    alternates: {
-      canonical: `${baseUrl}/events/${slug}`,
-    },
-    openGraph: {
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      url: `${baseUrl}/events/${slug}`,
-      type: "website",
-      images: [
-        {
-          url: ogUrl.toString(),
-          width: 1200,
-          height: 630,
-          alt: event.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      images: [ogUrl.toString()],
-    },
-  };
-}
-
-export default async function EventPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
-
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select(EVENT_DETAIL_FIELDS);
-
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: finalEvent } = await query.maybeSingle();
-
-  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
-  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
-  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
-
-  if (!finalEvent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
-        Event not found.
-      </div>
-    );
-  }
-
-  // Ensure pending/rejected events are only visible to the creator or an admin
-  if (finalEvent.status !== "approved") {
-    const { data: { user } } = await supabase.auth.getUser();
-    const isCreator = user?.id === finalEvent.creator_id;
-    
-    let isAdmin = false;
-    if (user && !isCreator) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      isAdmin = profile?.role === "admin";
-    }
-
-    if (!isCreator && !isAdmin) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
-          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
-          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
-        </div>
-      );
-    }
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
-  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: finalEvent.title,
-    description: finalEvent.description,
-    startDate: finalEvent.date_string ? `${finalEvent.date_string}${finalEvent.start_time ? `T${finalEvent.start_time}` : ""}` : undefined,
-    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}${finalEvent.end_time ? `T${finalEvent.end_time}` : ""}` : undefined,
-    eventAttendanceMode: finalEvent.is_virtual 
-      ? "https://schema.org/OnlineEventAttendanceMode" 
-      : "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus: "https://schema.org/EventScheduled",
-    location: finalEvent.is_virtual
-      ? {
-          "@type": "VirtualLocation",
-          url: finalEvent.registration_link || finalEvent.website || eventUrl,
-        }
-      : {
-          "@type": "Place",
-          name: finalEvent.location || "TBA",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: finalEvent.city || "TBA",
-          },
-        },
-    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
-    offers: {
-      "@type": "Offer",
-      url: finalEvent.registration_link || eventUrl,
-      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
-      priceCurrency: "INR", 
-      availability: "https://schema.org/InStock"
-    },
-    organizer: {
-      "@type": "Organization",
-      name: finalEvent.organizer_name || "EvenTime",
-    }
-  };
-
-  // NEW: Fetch Similar Events based on the same category
-  let similarEvents: any[] = [];
-  if (finalEvent.category) {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_DETAIL_FIELDS)
-      .eq("category", finalEvent.category)
-      .eq("status", "approved")
-      .gte("date_string", todayStr) // NEW: Removes past events!
-      .neq("id", finalEvent.id)
-      .order("created_at", { ascending: false })
-      .limit(6); // Increased limit to 6 so slider looks good
-    
-    if (data) {
-    similarEvents = data;
-    }
-  }
-
- // Fetch up to 3 interested user avatars for social proof
-  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
-  {
-    const { data: interestedRows } = await supabase
-      .from("interested_events")
-      .select("profiles(avatar_url, username)")
-      .eq("event_id", finalEvent.id)
-      .limit(3);
-
-    if (interestedRows && interestedRows.length > 0) {
-      interestedAvatars = interestedRows
-        .map((r: any) => r.profiles as any)
-        .filter(Boolean);
-    }
-  }
-
-  // Pass the data cleanly to the client UI
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
-    </>
-  );
-}
 </file>
 
 <file path="src/components/profile/DelayedActionModal.tsx">
@@ -6992,6 +6812,171 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
       )}
     </AnimatePresence>,
     document.body
+  );
+}
+</file>
+
+<file path="src/app/[username]/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
+import Image from "next/image";
+import type { ProfileRow } from "@/types";
+
+export const dynamic = "force-dynamic";
+
+type ExtendedProfileRow = Partial<ProfileRow> & {
+  preferred_cities?: string[] | null;
+  user_type?: string | null;
+  graduation_year?: string | null;
+};
+const calculateCompletion = (prof: ExtendedProfileRow | null) => {
+  if (!prof) return 0;
+  let score = 0;
+  if (prof.username) score += 25;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
+  if (prof.goals && prof.goals.length > 0) score += 25;
+  const isStudent = prof.user_type === "student";
+  if (!isStudent) {
+    score += 25;
+  } else if (prof.graduation_year) {
+    score += 25;
+  }
+  return score;
+};
+
+export default async function CuratorPage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const supabase = await createClient();
+
+  // NEW: Get current logged-in user to handle follow logic
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
+  // AFTER - one query (Checks username or ID in a single round trip)
+  const decodedUsername = decodeURIComponent(username);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_REGEX.test(decodedUsername);
+
+  const { data: curator } = await supabase
+    .from("profiles")
+    .select(PROFILE_FIELDS)
+    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
+    .maybeSingle();
+
+  if (!curator) {
+    return (
+      <div className="min-h-screen bg-surface-base">
+        <Navbar />
+        <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
+      </div>
+    );
+  }
+
+  // Fix: Running the remaining dependent queries in parallel using Promise.all
+   const [
+    { data: events },
+    { data: appSettings }
+  ] = await Promise.all([
+    // 1. Fetch Curator's Approved Events (oldest first)
+    supabase
+      .from("events")
+      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
+      .eq("creator_id", curator.id)
+      .eq("status", "approved")
+      .order("created_at", { ascending: true }),
+
+    // 2. Check if leaderboard / ET Score is enabled platform-wide
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+  ]);
+  // Dynamic ga events anni thirigi saves count ni sum chesthundi
+  const impactSaves = events?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
+  const etScore = curator.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const avatarUrl = curator.avatar_url || "/window.svg";
+  const completionPercentage = calculateCompletion(curator);
+
+  // NEW: Dynamic Profile Tiers Logic
+  const eventCount = events?.length || 0;
+  let strokeColor = "#6C47FF"; // Default Purple
+  let isGold = false;
+
+  if (eventCount >= 69) {
+    strokeColor = "url(#goldGradient)";
+    isGold = true;
+  } else if (eventCount >= 30) {
+    strokeColor = "#C0C0C0"; // Silver
+  } else if (eventCount >= 10) {
+    strokeColor = "#CD7F32"; // Bronze
+  }
+
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
+          <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 144 144">
+              {isGold && (
+                <defs>
+                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FDE047" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#D97706" />
+                  </linearGradient>
+                </defs>
+              )}
+              <circle cx="72" cy="72" r="68" fill="none" stroke="#F5F5F7" strokeWidth="4" />
+              <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+            </svg>
+            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
+              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
+            </div>
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
+            <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
+            <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
+            
+            <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
+              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</span>
+                <span className="text-xl font-black text-slate-900">{eventCount}</span>
+              </div>
+              
+              {appSettings?.leaderboard_enabled && (
+                <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
+                  <span className="text-xl font-black text-slate-900">{impactSaves}</span>
+                </div>
+              )}
+              {leaderboardEnabled && (
+                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
+                  <span className="text-xl font-black text-amber-600">{etScore}</span>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
+          {events && events.length > 0 ? (
+            <LoadMoreGrid
+              events={events}
+              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              hideOrganizer
+            />
+          ) : (
+            <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
+              <p className="text-[#86868B] font-bold uppercase tracking-widest text-xs">No active events posted</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
 </file>
@@ -8741,6 +8726,557 @@ export default async function AdminFeedbackPage() {
 }
 </file>
 
+<file path="src/app/events/[slug]/EventClientUI.tsx">
+"use client";
+
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { submitReportAction } from "../report-actions";
+import { getCategoryConfig } from "@/lib/category-config";
+import { EventCard } from "@/app/events/EventCard";
+import type { EventRow } from "@/types";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Navbar } from "@/components/layout/Navbar";
+
+export interface EventUIProps {
+  event: any;
+  similarEvents?: any[];
+  curatorUsername?: string | null;
+  same_college_interested_count?: number;
+  interestedAvatars?: { avatar_url: string | null; username: string | null }[];
+  collegeName?: string | null;
+}
+
+export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [], collegeName = null }: EventUIProps) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReported, setIsReported] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isInterested, setIsInterested] = useState(false);
+  const [isLoadingInterest, setIsLoadingInterest] = useState(true);
+  const totalInterested = event.interested_events?.[0]?.count || 0;
+  const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
+
+  const safeTitle = event.title ?? "Event Details";
+  const safeCategory = event.category ?? "General";
+  const safeOrganizer = curatorUsername || event.organizer_name || "Unknown Organizer";
+  const safeRegistrationLink = event.registration_link ?? "#";
+  const safeId = event.id ?? "";
+  const safeCreatorId = event.creator_id ?? "";
+
+  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
+  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
+  const eventUrl = typeof window !== "undefined" ? window.location.href : "";
+  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
+  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
+
+  const googleCalendarUrl = (() => {
+    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    const title = encodeURIComponent(`${safeTitle} · via EvenTime`);
+    const dateStr = event.date_string?.replace(/-/g, "") ?? "";
+    const dates = dateStr ? `${dateStr}/${dateStr}` : "";
+    const details = encodeURIComponent(event.description ?? "");
+    const location = encodeURIComponent(event.is_virtual ? "Online" : (event.location ?? ""));
+    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
+  })();
+
+  useEffect(() => {
+    const fetchInitialState = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { setIsLoadingInterest(false); return; }
+        setCurrentUser(user);
+
+        let isAdmin = false;
+        if (user.id !== safeCreatorId) {
+          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+          isAdmin = profile?.role === "admin";
+        }
+
+        if (user.id === safeCreatorId || isAdmin) {
+          setIsCuratorOrAdmin(true);
+          setIsLoadingInterest(false);
+          return;
+        }
+
+        if (safeId) {
+          const { data, error } = await supabase
+            .from("interested_events")
+            .select("id")
+            .eq("event_id", safeId)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (data && !error) setIsInterested(true);
+        }
+      } catch (err) {
+        console.error("Error fetching interest state:", err);
+      } finally {
+        setIsLoadingInterest(false);
+      }
+    };
+    fetchInitialState();
+  }, [safeId, safeCreatorId, supabase]);
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(eventUrl);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const downloadStory = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(storyImageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.webp`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      console.error("Failed to download image", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleInterestedClick = async () => {
+    if (isLoadingInterest) return;
+    if (!currentUser) { setIsAuthModalOpen(true); return; }
+    if (isCuratorOrAdmin) return;
+
+    const previousState = isInterested;
+    setIsInterested(!previousState);
+    setLocalInterestCount((prev: number) => !previousState ? prev + 1 : Math.max(0, prev - 1));
+
+    try {
+      if (!previousState) {
+        const { error } = await supabase.from("interested_events").insert({ event_id: safeId, user_id: currentUser.id }).select();
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      } else {
+        const { error } = await supabase.from("interested_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
+        if (error) throw new Error(error.message || JSON.stringify(error));
+      }
+    } catch (error: any) {
+      console.error("Failed to update interest status:", error.message || error);
+      setIsInterested(previousState);
+      setLocalInterestCount((prev: number) => previousState ? prev + 1 : Math.max(0, prev - 1));
+      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
+    }
+  };
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scroll = (dir: "left" | "right") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-white pb-8">
+      <Navbar />
+    {event.status === "pending" && (
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500" />
+          <p className="text-amber-800 font-medium text-sm">
+            This event is pending admin approval. It is currently only visible to you.
+          </p>
+        </div>
+      )}
+    
+      <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
+
+        {/* Back + Actions */}
+        <div className="flex justify-between items-center w-full">
+          <button onClick={() => router.push("/")} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+              <Flag className="w-5 h-5" />
+            </button>
+            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+              <Share2 className="w-5 h-5 text-slate-900" />
+            </button>
+          </div>
+        </div>
+
+        {/* Full-width centered title */}
+        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-primary font-heading leading-[1.1] text-center">
+          {safeTitle}
+        </h1>
+
+        {/* TWO-COLUMN LAYOUT */}
+        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
+
+          {/* LEFT COLUMN — sticky */}
+          <div className="lg:sticky lg:top-8 space-y-6">
+
+            {imageUrl ? (
+              <div className="relative w-full rounded-3x1 overflow-hidden">
+                <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
+              </div>
+            ) : null}
+
+            {/* Desktop Action Buttons */}
+            <div className="hidden md:flex gap-4">
+              {!isPastEvent && (
+                <Link
+                  href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                  className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
+                >
+                  Register <ExternalLink className="w-4 h-4" />
+                </Link>
+              )}
+              {currentUser?.id === safeCreatorId ? (
+                <Link
+                  href={`/events/${event.slug || safeId}/edit`}
+                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                >
+                  Edit Event
+                </Link>
+              ) : (
+                <button
+                  onClick={handleInterestedClick}
+                  disabled={isLoadingInterest || isCuratorOrAdmin}
+                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                    isCuratorOrAdmin
+                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      : isInterested
+                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                        : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                  }`}
+                >
+                  {isLoadingInterest
+                    ? <Loader2 className="w-5 h-5 animate-spin" />
+                    : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? "✓ Saved" : "Interested"))
+                  }
+                </button>
+              )}
+            </div>
+
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-8">
+
+            {/* About Event */}
+            <div className="space-y-3">
+              <h2 className="text-xl font-bold text-slate-900">About Event</h2>
+              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
+                {event.description}
+              </div>
+            </div>
+
+            {/* Event Details Card */}
+            <div className="bg-slate-50 rounded-3x1 p-6 border border-slate-100 space-y-5">
+
+              {/* Curated by */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-base">✍️</span>
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Curated by</p>
+                  <p className="text-[14px] font-bold text-slate-900">{safeOrganizer}</p>
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <CalendarDays className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Date & Time</p>
+                  <p className="text-[14px] font-bold text-slate-900">{displayDate} · {event.start_time || "TBA"}</p>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
+                </div>
+                <div>
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Location</p>
+                  <p className="text-[14px] font-bold text-slate-900">{event.is_virtual ? "Online Platform" : event.location}</p>
+                </div>
+              </div>
+
+              {/* College (if applicable) */}
+              {collegeName && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-base">🏢</span>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hosted by</p>
+                    <p className="text-[14px] font-bold text-slate-900">{collegeName}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Add to Calendar */}
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
+                  <span className="text-base">📅</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Add to Calendar</p>
+                  <a
+                    href={googleCalendarUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[14px] font-bold text-brand-primary hover:underline"
+                  >
+                    Add to Google Calendar &rarr;
+                  </a>
+                </div>
+              </div>
+
+              {/* Interested people with avatars */}
+              {localInterestCount > 0 && (
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
+                  {interestedAvatars.length > 0 && (
+                    <div className="flex -space-x-2">
+                      {interestedAvatars.map((u, i) => (
+                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0">
+                          {u.avatar_url ? (
+                            <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
+                          ) : (
+                            <div className="w-full h-full bg-brand-primary/20 flex items-center justify-center text-[10px] font-bold text-brand-primary">
+                              {(u.username || "?")[0].toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                                    <p className="text-sm font-semibold text-slate-700">
+                    {localInterestCount} {localInterestCount === 1 ? "person" : "people"} interested
+                  </p>
+                </div>
+              )}
+
+              {/* Mobile Action Buttons (Inline) */}
+              <div className="md:hidden flex gap-3 pt-2 border-t border-slate-200 mt-2">
+                {currentUser?.id === safeCreatorId ? (
+                  <Link
+                    href={`/events/${event.slug || safeId}/edit`}
+                    className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                  >
+                    Edit Event
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleInterestedClick}
+                    disabled={isLoadingInterest || isCuratorOrAdmin}
+                    className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
+                      isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
+                    }`}
+                  >
+                    {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? " Saved" : "Interested"))}
+                  </button>
+                )}
+                {!isPastEvent && (
+                  <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                    Register <ExternalLink className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Similar Events - separate full-width section */}
+      {similarEvents && similarEvents.length > 0 && (
+        <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
+            <div className="hidden md:flex gap-2">
+              <button onClick={() => scroll("left")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
+                <ChevronLeft className="w-5 h-5 text-slate-600" />
+              </button>
+              <button onClick={() => scroll("right")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
+                <ChevronRight className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+          </div>
+          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {similarEvents.filter((simEvent) => {
+              // FIX: Filter out events that are today but whose time has already passed
+              if (!simEvent.date_string) return true;
+              const eventDate = new Date(simEvent.date_string);
+              if (simEvent.start_time) {
+                const [time, modifier] = simEvent.start_time.split(" ");
+                let [hours, minutes] = time.split(":");
+                if (hours === "12") hours = "00";
+                if (modifier === "PM") hours = parseInt(hours, 10) + 12;
+                eventDate.setHours(hours, minutes, 0, 0);
+              }
+              return eventDate.getTime() > new Date().getTime();
+            }).map((simEvent) => (
+              <div key={simEvent.id} className="w-70 shrink-0">
+                <EventCard
+                  id={simEvent.id!}
+                  slug={simEvent.slug || simEvent.id!}
+                  title={simEvent.title || "Untitled Event"}
+                  category={simEvent.category || "General"}
+                  date={simEvent.date_string || "TBA"}
+                  city={simEvent.location || simEvent.city || "Online"}
+                  imageUrl={simEvent.poster_url || "/window.svg"}
+                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
+                  organizerUsername={simEvent.profiles?.username}
+                  isFree={simEvent.is_free ?? false}
+                  audience={simEvent.target_audience ?? []}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {isAuthModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
+            >
+              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                <Users className="w-7 h-7 text-slate-600" />
+              </div>
+              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
+              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Share Modal */}
+      <AnimatePresence>
+        {isShareModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="flex justify-between items-center p-5 border-b border-slate-100">
+                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
+                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
+                <div className="relative w-full aspect-9/16 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
+                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
+                </div>
+                <div className="flex flex-col gap-3 w-full">
+                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-text-primary hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
+                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
+                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
+                  </button>
+                  <button onClick={copyLink} className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
+                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                    {isCopied ? "Link Copied!" : "Copy Event Link"}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Report Modal */}
+      <AnimatePresence>
+        {isReportModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
+            >
+              <div className="p-6 text-center border-b border-slate-100 relative">
+                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <AlertTriangle className="w-6 h-6 text-red-500" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
+                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
+              </div>
+              <div className="p-6">
+                {isReported ? (
+                  <div className="text-center py-4">
+                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+                    <p className="font-bold text-slate-900">Report Submitted</p>
+                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
+                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
+                  </div>
+                ) : (
+                  <form action={async (formData) => { await submitReportAction(formData); setIsReported(true); }} className="flex flex-col gap-3">
+                    <input type="hidden" name="eventId" value={safeId} />
+                    <input type="hidden" name="curatorId" value={safeCreatorId} />
+                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
+                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
+                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
+                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                        </div>
+                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
+                      </label>
+                    ))}
+                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
+                      Submit Report
+                    </button>
+                  </form>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/events/EventCard.tsx">
 "use client";
 
@@ -8764,6 +9300,7 @@ export default async function AdminFeedbackPage() {
     imageUrl: string;
     organizerName: string;
     organizerUsername?: string; // NEW: links to curator's public page
+    hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
     isFree: boolean;
     isFeatured?: boolean;
     matchLabel?: string;
@@ -8789,6 +9326,7 @@ export default async function AdminFeedbackPage() {
     imageUrl,
     organizerName,
     organizerUsername,
+    hideOrganizer = false,
     isFree,
     isFeatured = false,
     matchLabel,
@@ -9074,7 +9612,7 @@ export default async function AdminFeedbackPage() {
                   className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
                   style={{ fontFamily: "'Switzer', sans-serif" }}
                 >
-                  Curated by {organizerUsername ? (
+                  {!hideOrganizer && <>Curated by {organizerUsername ? (
                     <Link
                       href={`/${organizerUsername}`}
                       onClick={(e) => e.stopPropagation()}
@@ -9084,7 +9622,7 @@ export default async function AdminFeedbackPage() {
                     </Link>
                   ) : (
                     organizerName
-                  )}
+                  )}</>}
                   {!isFree && (
                     <>
                       <span className="text-slate-300">|</span>
@@ -10000,14 +10538,27 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
               </form>
 
               <div ref={mobileCalendarRef} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowMobileCalendar((v) => !v)}
-                  className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
-                >
-                  <CalendarDays className="w-4 h-4 text-brand-primary" />
-                  {mobileDateDisplay}
-                </button>
+                <div className="sm:hidden flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full bg-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileCalendar((v) => !v)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#555570] active:scale-95 transition-all"
+                  >
+                    <CalendarDays className="w-4 h-4 text-brand-primary" />
+                    {mobileDateDisplay}
+                  </button>
+                  {leaderboardEnabled && (
+                    <>
+                      <span className="w-px h-4 bg-slate-200" />
+                      <Link
+                        href="/leaderboard"
+                        className="flex items-center justify-center w-6 h-6 rounded-full text-[#6C47FF] active:scale-95 transition-all"
+                      >
+                        <Trophy className="w-4 h-4" />
+                      </Link>
+                    </>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowMobileCalendar((v) => !v)}
@@ -10025,15 +10576,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   </div>
                 )}
               </div>
-
-              {leaderboardEnabled && (
-                <Link
-                  href="/leaderboard"
-                  className="sm:hidden shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-slate-50 text-[#6C47FF] active:scale-95 transition-all"
-                >
-                  <Trophy className="w-4 h-4" />
-                </Link>
-              )}
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
@@ -10179,7 +10721,9 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </Link>
 
         <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-          <Building2 className="w-5 h-5" />
+          <div className="w-5 h-5 flex items-center justify-center">
+            <Building2 className="w-[18px] h-[18px]" />
+          </div>
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Cities</span>
         </button>
 
@@ -11026,557 +11570,6 @@ export default function GlobalError({
 }
 </file>
 
-<file path="src/app/events/[slug]/EventClientUI.tsx">
-"use client";
-
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Share2, ArrowLeft, Flag, X, CheckCircle2, AlertTriangle, CalendarDays, MapPin, Globe, Download, Copy, ExternalLink, Users, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { submitReportAction } from "../report-actions";
-import { getCategoryConfig } from "@/lib/category-config";
-import { EventCard } from "@/app/events/EventCard";
-import type { EventRow } from "@/types";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { Navbar } from "@/components/layout/Navbar";
-
-export interface EventUIProps {
-  event: any;
-  similarEvents?: any[];
-  curatorUsername?: string | null;
-  same_college_interested_count?: number;
-  interestedAvatars?: { avatar_url: string | null; username: string | null }[];
-  collegeName?: string | null;
-}
-
-export default function EventClientUI({ event, similarEvents = [], curatorUsername = null, interestedAvatars = [], collegeName = null }: EventUIProps) {
-  const router = useRouter();
-  const supabase = createClient();
-
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [isReported, setIsReported] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isInterested, setIsInterested] = useState(false);
-  const [isLoadingInterest, setIsLoadingInterest] = useState(true);
-  const totalInterested = event.interested_events?.[0]?.count || 0;
-  const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
-
-  const safeTitle = event.title ?? "Event Details";
-  const safeCategory = event.category ?? "General";
-  const safeOrganizer = curatorUsername || event.organizer_name || "Unknown Organizer";
-  const safeRegistrationLink = event.registration_link ?? "#";
-  const safeId = event.id ?? "";
-  const safeCreatorId = event.creator_id ?? "";
-
-  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
-  const displayDate = event.date_string ? format(parseISO(event.date_string), "EEEE, MMMM do") : "";
-  const eventUrl = typeof window !== "undefined" ? window.location.href : "";
-  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
-  const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDate)}&organizer=${encodeURIComponent(safeOrganizer)}`;
-
-  const googleCalendarUrl = (() => {
-    const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";
-    const title = encodeURIComponent(`${safeTitle} · via EvenTime`);
-    const dateStr = event.date_string?.replace(/-/g, "") ?? "";
-    const dates = dateStr ? `${dateStr}/${dateStr}` : "";
-    const details = encodeURIComponent(event.description ?? "");
-    const location = encodeURIComponent(event.is_virtual ? "Online" : (event.location ?? ""));
-    return `${base}&text=${title}&dates=${dates}&details=${details}&location=${location}`;
-  })();
-
-  useEffect(() => {
-    const fetchInitialState = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { setIsLoadingInterest(false); return; }
-        setCurrentUser(user);
-
-        let isAdmin = false;
-        if (user.id !== safeCreatorId) {
-          const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-          isAdmin = profile?.role === "admin";
-        }
-
-        if (user.id === safeCreatorId || isAdmin) {
-          setIsCuratorOrAdmin(true);
-          setIsLoadingInterest(false);
-          return;
-        }
-
-        if (safeId) {
-          const { data, error } = await supabase
-            .from("interested_events")
-            .select("id")
-            .eq("event_id", safeId)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (data && !error) setIsInterested(true);
-        }
-      } catch (err) {
-        console.error("Error fetching interest state:", err);
-      } finally {
-        setIsLoadingInterest(false);
-      }
-    };
-    fetchInitialState();
-  }, [safeId, safeCreatorId, supabase]);
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(eventUrl);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const downloadStory = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(storyImageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeTitle.replace(/\s+/g, "-")}-Story.webp`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    } catch (err) {
-      console.error("Failed to download image", err);
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const handleInterestedClick = async () => {
-    if (isLoadingInterest) return;
-    if (!currentUser) { setIsAuthModalOpen(true); return; }
-    if (isCuratorOrAdmin) return;
-
-    const previousState = isInterested;
-    setIsInterested(!previousState);
-    setLocalInterestCount((prev: number) => !previousState ? prev + 1 : Math.max(0, prev - 1));
-
-    try {
-      if (!previousState) {
-        const { error } = await supabase.from("interested_events").insert({ event_id: safeId, user_id: currentUser.id }).select();
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      } else {
-        const { error } = await supabase.from("interested_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
-        if (error) throw new Error(error.message || JSON.stringify(error));
-      }
-    } catch (error: any) {
-      console.error("Failed to update interest status:", error.message || error);
-      setIsInterested(previousState);
-      setLocalInterestCount((prev: number) => previousState ? prev + 1 : Math.max(0, prev - 1));
-      alert(`Database Error: ${error.message || "Failed to update"}. Please check your Supabase table and RLS policies!`);
-    }
-  };
-
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: "left" | "right") => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollBy({ left: dir === "right" ? 280 : -280, behavior: "smooth" });
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-white pb-8">
-      <Navbar />
-    {event.status === "pending" && (
-        <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-center gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-500" />
-          <p className="text-amber-800 font-medium text-sm">
-            This event is pending admin approval. It is currently only visible to you.
-          </p>
-        </div>
-      )}
-    
-      <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-10">
-
-        {/* Back + Actions */}
-        <div className="flex justify-between items-center w-full">
-          <button onClick={() => router.push("/")} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-            <ArrowLeft className="w-5 h-5 text-slate-900" />
-          </button>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
-              <Flag className="w-5 h-5" />
-            </button>
-            <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
-              <Share2 className="w-5 h-5 text-slate-900" />
-            </button>
-          </div>
-        </div>
-
-        {/* Full-width centered title */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-brand-primary font-heading leading-[1.1] text-center">
-          {safeTitle}
-        </h1>
-
-        {/* TWO-COLUMN LAYOUT */}
-        <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
-
-          {/* LEFT COLUMN — sticky */}
-          <div className="lg:sticky lg:top-8 space-y-6">
-
-            {imageUrl ? (
-              <div className="relative w-full rounded-3x1 overflow-hidden">
-                <Image src={imageUrl} alt={safeTitle} width={1200} height={675} className="w-full h-auto object-contain" priority />
-              </div>
-            ) : null}
-
-            {/* Desktop Action Buttons */}
-            <div className="hidden md:flex gap-4">
-              {!isPastEvent && (
-                <Link
-                  href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
-                  className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
-                >
-                  Register <ExternalLink className="w-4 h-4" />
-                </Link>
-              )}
-              {currentUser?.id === safeCreatorId ? (
-                <Link
-                  href={`/events/${event.slug || safeId}/edit`}
-                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
-                >
-                  Edit Event
-                </Link>
-              ) : (
-                <button
-                  onClick={handleInterestedClick}
-                  disabled={isLoadingInterest || isCuratorOrAdmin}
-                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                    isCuratorOrAdmin
-                      ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                      : isInterested
-                        ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
-                        : "bg-slate-100 text-slate-900 hover:bg-slate-200"
-                  }`}
-                >
-                  {isLoadingInterest
-                    ? <Loader2 className="w-5 h-5 animate-spin" />
-                    : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? "✓ Saved" : "Interested"))
-                  }
-                </button>
-              )}
-            </div>
-
-          </div>
-
-          {/* RIGHT COLUMN */}
-          <div className="space-y-8">
-
-            {/* About Event */}
-            <div className="space-y-3">
-              <h2 className="text-xl font-bold text-slate-900">About Event</h2>
-              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
-                {event.description}
-              </div>
-            </div>
-
-            {/* Event Details Card */}
-            <div className="bg-slate-50 rounded-3x1 p-6 border border-slate-100 space-y-5">
-
-              {/* Curated by */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">✍️</span>
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Curated by</p>
-                  <p className="text-[14px] font-bold text-slate-900">{safeOrganizer}</p>
-                </div>
-              </div>
-
-              {/* Date & Time */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <CalendarDays className="w-5 h-5 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Date & Time</p>
-                  <p className="text-[14px] font-bold text-slate-900">{displayDate} · {event.start_time || "TBA"}</p>
-                </div>
-              </div>
-
-              {/* Location */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  {event.is_virtual ? <Globe className="w-5 h-5 text-slate-400" /> : <MapPin className="w-5 h-5 text-slate-400" />}
-                </div>
-                <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Location</p>
-                  <p className="text-[14px] font-bold text-slate-900">{event.is_virtual ? "Online Platform" : event.location}</p>
-                </div>
-              </div>
-
-              {/* College (if applicable) */}
-              {collegeName && (
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                    <span className="text-base">🏢</span>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Hosted by</p>
-                    <p className="text-[14px] font-bold text-slate-900">{collegeName}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Add to Calendar */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">📅</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">Add to Calendar</p>
-                  <a
-                    href={googleCalendarUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[14px] font-bold text-brand-primary hover:underline"
-                  >
-                    Add to Google Calendar &rarr;
-                  </a>
-                </div>
-              </div>
-
-              {/* Interested people with avatars */}
-              {localInterestCount > 0 && (
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
-                  {interestedAvatars.length > 0 && (
-                    <div className="flex -space-x-2">
-                      {interestedAvatars.map((u, i) => (
-                        <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0">
-                          {u.avatar_url ? (
-                            <Image src={u.avatar_url} alt={u.username || ""} width={32} height={32} className="object-cover w-full h-full" />
-                          ) : (
-                            <div className="w-full h-full bg-brand-primary/20 flex items-center justify-center text-[10px] font-bold text-brand-primary">
-                              {(u.username || "?")[0].toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                                    <p className="text-sm font-semibold text-slate-700">
-                    {localInterestCount} {localInterestCount === 1 ? "person" : "people"} interested
-                  </p>
-                </div>
-              )}
-
-              {/* Mobile Action Buttons (Inline) */}
-              <div className="md:hidden flex gap-3 pt-2 border-t border-slate-200 mt-2">
-                {currentUser?.id === safeCreatorId ? (
-                  <Link
-                    href={`/events/${event.slug || safeId}/edit`}
-                    className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
-                  >
-                    Edit Event
-                  </Link>
-                ) : (
-                  <button
-                    onClick={handleInterestedClick}
-                    disabled={isLoadingInterest || isCuratorOrAdmin}
-                    className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 ${
-                      isCuratorOrAdmin ? "bg-slate-100 text-slate-400 cursor-not-allowed" : isInterested ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-200 text-slate-900"
-                    }`}
-                  >
-                    {isLoadingInterest ? <Loader2 className="w-5 h-5 animate-spin" /> : (isCuratorOrAdmin ? "View Only (Admin)" : (isInterested ? " Saved" : "Interested"))}
-                  </button>
-                )}
-                {!isPastEvent && (
-                  <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-                    Register <ExternalLink className="w-4 h-4" />
-                  </Link>
-                )}
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* Similar Events - separate full-width section */}
-      {similarEvents && similarEvents.length > 0 && (
-        <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-slate-900">Similar Events</h2>
-            <div className="hidden md:flex gap-2">
-              <button onClick={() => scroll("left")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
-                <ChevronLeft className="w-5 h-5 text-slate-600" />
-              </button>
-              <button onClick={() => scroll("right")} className="p-2 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors">
-                <ChevronRight className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
-          </div>
-          <div ref={scrollRef} className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            {similarEvents.filter((simEvent) => {
-              // FIX: Filter out events that are today but whose time has already passed
-              if (!simEvent.date_string) return true;
-              const eventDate = new Date(simEvent.date_string);
-              if (simEvent.start_time) {
-                const [time, modifier] = simEvent.start_time.split(" ");
-                let [hours, minutes] = time.split(":");
-                if (hours === "12") hours = "00";
-                if (modifier === "PM") hours = parseInt(hours, 10) + 12;
-                eventDate.setHours(hours, minutes, 0, 0);
-              }
-              return eventDate.getTime() > new Date().getTime();
-            }).map((simEvent) => (
-              <div key={simEvent.id} className="w-70 shrink-0">
-                <EventCard
-                  id={simEvent.id!}
-                  slug={simEvent.slug || simEvent.id!}
-                  title={simEvent.title || "Untitled Event"}
-                  category={simEvent.category || "General"}
-                  date={simEvent.date_string || "TBA"}
-                  city={simEvent.location || simEvent.city || "Online"}
-                  imageUrl={simEvent.poster_url || "/window.svg"}
-                  organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
-                  organizerUsername={simEvent.profiles?.username}
-                  isFree={simEvent.is_free ?? false}
-                  audience={simEvent.target_audience ?? []}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Auth Modal */}
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col p-6 text-center border border-slate-100"
-            >
-              <button onClick={() => setIsAuthModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                <Users className="w-7 h-7 text-slate-600" />
-              </div>
-              <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Share Modal */}
-      <AnimatePresence>
-        {isShareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsShareModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
-            >
-              <div className="flex justify-between items-center p-5 border-b border-slate-100">
-                <h3 className="font-heading font-bold text-lg text-slate-900">Share Event</h3>
-                <button onClick={() => setIsShareModalOpen(false)} className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 flex flex-col items-center">
-                <div className="relative w-full aspect-9/16 bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner mb-6">
-                  <Image src={storyImageUrl} alt="Story Invite" fill className="object-cover" unoptimized />
-                </div>
-                <div className="flex flex-col gap-3 w-full">
-                  <button onClick={downloadStory} disabled={isDownloading} className="w-full bg-text-primary hover:bg-black text-white px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70">
-                    {isDownloading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isDownloading ? "Generating HQ Poster..." : "Download Story Poster"}
-                  </button>
-                  <button onClick={copyLink} className="w-full bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 px-6 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95">
-                    {isCopied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                    {isCopied ? "Link Copied!" : "Copy Event Link"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Report Modal */}
-      <AnimatePresence>
-        {isReportModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsReportModalOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl flex flex-col"
-            >
-              <div className="p-6 text-center border-b border-slate-100 relative">
-                <button onClick={() => setIsReportModalOpen(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                  <AlertTriangle className="w-6 h-6 text-red-500" />
-                </div>
-                <h3 className="font-heading font-bold text-xl text-slate-900">Report Event</h3>
-                <p className="text-sm text-slate-500 mt-1">Help us keep the community safe.</p>
-              </div>
-              <div className="p-6">
-                {isReported ? (
-                  <div className="text-center py-4">
-                    <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                    <p className="font-bold text-slate-900">Report Submitted</p>
-                    <p className="text-sm text-slate-500 mt-1">Our admin team will review this shortly.</p>
-                    <button onClick={() => setIsReportModalOpen(false)} className="mt-6 w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-xl">Close</button>
-                  </div>
-                ) : (
-                  <form action={async (formData) => { await submitReportAction(formData); setIsReported(true); }} className="flex flex-col gap-3">
-                    <input type="hidden" name="eventId" value={safeId} />
-                    <input type="hidden" name="curatorId" value={safeCreatorId} />
-                    {["Broken Link", "Incorrect Location", "Fake/Spam Event", "Wrong Date/Time"].map((reason) => (
-                      <label key={reason} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${reportReason === reason ? "border-red-500 bg-red-50" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <input type="radio" name="reason" value={reason} className="hidden" onChange={() => setReportReason(reason)} required />
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${reportReason === reason ? "border-red-500" : "border-slate-300"}`}>
-                          {reportReason === reason && <div className="w-2 h-2 bg-red-500 rounded-full" />}
-                        </div>
-                        <span className={`text-sm font-bold ${reportReason === reason ? "text-red-700" : "text-slate-700"}`}>{reason}</span>
-                      </label>
-                    ))}
-                    <button type="submit" disabled={!reportReason} className="mt-4 w-full bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white px-6 py-4 rounded-xl font-bold text-sm transition-all">
-                      Submit Report
-                    </button>
-                  </form>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
-</file>
-
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -11997,6 +11990,86 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       </motion.div>
     </div>
   );
+}
+</file>
+
+<file path="src/lib/home/fetchHomePageData.ts">
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
+import type { EventRow } from "@/types";
+
+export async function fetchHomePageData() {
+  // Use anon client so it's fully static and doesn't rely on cookies or auth headers
+  const supabaseAnon = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
+
+  const serverTime = new Date();
+  const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const yyyy = todayIST.getFullYear();
+  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
+  const dd = String(todayIST.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+  
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
+
+  // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
+  const getCachedGlobalData = unstable_cache(
+    async () => {
+      // Fetch only public events (exclude strictly college-only events unless target audience allows it)
+      let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
+      
+       const { data: rawAllEvents } = await supabaseAnon
+        .from("events")
+        .select(PUBLIC_EVENT_FIELDS)
+        .eq("status", "approved")
+        .or(visibilityFilter)
+        .order("is_featured", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      // Fetch platform stats for hero section
+      const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
+      const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
+      
+      return {
+        rawAllEvents: rawAllEvents || [],
+        platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
+      };
+    },
+    ['global_events_cache'],
+    { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
+  );
+
+  // Grab the data instantly from Cache (No DB load)
+  const { rawAllEvents, platformStats } = await getCachedGlobalData();
+  const allEvents = rawAllEvents as Partial<EventRow>[];
+
+  // Derive dynamic lists from the cached events for filters
+  const activeCategories = Array.from(new Set(allEvents.map(e => e.category).filter(Boolean) as string[]));
+  const dynamicChips = activeCategories.length > 0 
+    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat }))]
+    : [];
+
+  const activeLocations = Array.from(new Set(allEvents.map(e => e.city).filter(Boolean) as string[]));
+  const dynamicLocationChips = activeLocations.length > 0
+    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc, value: loc }))]
+    : [];
+
+  const allEventDates = Array.from(new Set(allEvents.map(e => e.date_string).filter(Boolean) as string[]));
+  const featuredEvents = allEvents.filter(e => e.is_featured);
+
+  return {
+    allEvents,
+    dynamicChips,
+    dynamicLocationChips,
+    allEventDates,
+    featuredEvents,
+    platformStats,
+    displayToday: `${todayIST.getDate()} ${todayIST.toLocaleDateString('en-US', { month: 'short' })}`
+  };
 }
 </file>
 
@@ -12526,86 +12599,6 @@ export default function SettingsClient({
   }
 </file>
 
-<file path="src/lib/home/fetchHomePageData.ts">
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import { unstable_cache } from "next/cache";
-import type { EventRow } from "@/types";
-
-export async function fetchHomePageData() {
-  // Use anon client so it's fully static and doesn't rely on cookies or auth headers
-  const supabaseAnon = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  );
-
-  const serverTime = new Date();
-  const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const yyyy = todayIST.getFullYear();
-  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
-  const dd = String(todayIST.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
-
-  // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
-  const getCachedGlobalData = unstable_cache(
-    async () => {
-      // Fetch only public events (exclude strictly college-only events unless target audience allows it)
-      let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
-      
-       const { data: rawAllEvents } = await supabaseAnon
-        .from("events")
-        .select(PUBLIC_EVENT_FIELDS)
-        .eq("status", "approved")
-        .or(visibilityFilter)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      // Fetch platform stats for hero section
-      const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
-      const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
-      
-      return {
-        rawAllEvents: rawAllEvents || [],
-        platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
-      };
-    },
-    ['global_events_cache'],
-    { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
-  );
-
-  // Grab the data instantly from Cache (No DB load)
-  const { rawAllEvents, platformStats } = await getCachedGlobalData();
-  const allEvents = rawAllEvents as Partial<EventRow>[];
-
-  // Derive dynamic lists from the cached events for filters
-  const activeCategories = Array.from(new Set(allEvents.map(e => e.category).filter(Boolean) as string[]));
-  const dynamicChips = activeCategories.length > 0 
-    ? [{ name: "All", value: "" }, ...activeCategories.map(cat => ({ name: `${cat}s`, value: cat }))]
-    : [];
-
-  const activeLocations = Array.from(new Set(allEvents.map(e => e.city).filter(Boolean) as string[]));
-  const dynamicLocationChips = activeLocations.length > 0
-    ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc, value: loc }))]
-    : [];
-
-  const allEventDates = Array.from(new Set(allEvents.map(e => e.date_string).filter(Boolean) as string[]));
-  const featuredEvents = allEvents.filter(e => e.is_featured);
-
-  return {
-    allEvents,
-    dynamicChips,
-    dynamicLocationChips,
-    allEventDates,
-    featuredEvents,
-    platformStats,
-    displayToday: `${todayIST.getDate()} ${todayIST.toLocaleDateString('en-US', { month: 'short' })}`
-  };
-}
-</file>
-
 <file path="src/app/admin/actions.ts">
 "use server";
 
@@ -12759,6 +12752,7 @@ export async function punishCuratorAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/profile");
+  revalidateTag("leaderboard");
   return { success: true };
 }
 
@@ -12864,6 +12858,7 @@ if (!event) {
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   revalidateTag("events", "events");
+  revalidateTag("leaderboard");
   return { success: true };
 }
 

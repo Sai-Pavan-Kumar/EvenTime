@@ -150,6 +150,7 @@ export async function punishCuratorAction(formData: FormData) {
 
   revalidatePath("/admin");
   revalidatePath("/profile");
+  revalidateTag("leaderboard", "leaderboard");
   return { success: true };
 }
 
@@ -255,6 +256,7 @@ if (!event) {
   revalidatePath("/admin");
   revalidatePath("/admin/events");
   revalidateTag("events", "events");
+  revalidateTag("leaderboard", "leaderboard");
   return { success: true };
 }
 

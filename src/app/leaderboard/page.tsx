@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { generateHMAC } from "@/lib/hmac";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 export const revalidate = 0;
 
@@ -34,24 +36,38 @@ export default async function LeaderboardPage() {
     redirect("/");
   }
 
-  const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
+  const getCachedLeaders = unstable_cache(
+    async () => {
+      const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
 
-  const { data: excludedProfiles } = EXCLUDED_EMAILS.length
-    ? await supabase.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
-    : { data: [] };
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
 
-  const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
+      const { data: excludedProfiles } = EXCLUDED_EMAILS.length
+        ? await supabaseAnon.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
+        : { data: [] };
 
-  const { data: leadersRaw } = await supabase
-    .from("leaderboard_view")
-    .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
-    .order("et_score", { ascending: false })
-    .limit(55);
+      const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
 
-  const leaders = (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
+      const { data: leadersRaw } = await supabaseAnon
+        .from("leaderboard_view")
+        .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
+        .order("et_score", { ascending: false })
+        .limit(55);
+
+      return (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
+    },
+    ['leaderboard_cache'],
+    { tags: ['leaderboard'], revalidate: 600 } // Cache for 10 minutes
+  );
+
+  const leaders = await getCachedLeaders();
 
   const topThree = leaders?.slice(0, 3) || [];
   const restOfLeaders = leaders?.slice(3) || [];
@@ -200,9 +216,11 @@ export default async function LeaderboardPage() {
              <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-[#6C47FF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
              
              <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
-               <div className="w-20 h-20 bg-amber-50 border border-amber-100 rounded-[24px] flex items-center justify-center mb-6 shadow-inner rotate-3 hover:rotate-0 transition-transform duration-500">
-                 <Trophy className="w-10 h-10 text-amber-500" />
-               </div>
+               <img
+                 src="/throne-empty.webp"
+                 alt="Empty throne"
+                 className="w-48 h-48 object-contain mb-4"
+               />
                <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
                  The Throne is Empty
                </h3>

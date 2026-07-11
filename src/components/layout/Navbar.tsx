@@ -287,14 +287,27 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
               </form>
 
               <div ref={mobileCalendarRef} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowMobileCalendar((v) => !v)}
-                  className="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold text-[#555570] bg-slate-50 active:scale-95 transition-all"
-                >
-                  <CalendarDays className="w-4 h-4 text-brand-primary" />
-                  {mobileDateDisplay}
-                </button>
+                <div className="sm:hidden flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full bg-slate-50">
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileCalendar((v) => !v)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#555570] active:scale-95 transition-all"
+                  >
+                    <CalendarDays className="w-4 h-4 text-brand-primary" />
+                    {mobileDateDisplay}
+                  </button>
+                  {leaderboardEnabled && (
+                    <>
+                      <span className="w-px h-4 bg-slate-200" />
+                      <Link
+                        href="/leaderboard"
+                        className="flex items-center justify-center w-6 h-6 rounded-full text-[#6C47FF] active:scale-95 transition-all"
+                      >
+                        <Trophy className="w-4 h-4" />
+                      </Link>
+                    </>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowMobileCalendar((v) => !v)}
@@ -312,15 +325,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   </div>
                 )}
               </div>
-
-              {leaderboardEnabled && (
-                <Link
-                  href="/leaderboard"
-                  className="sm:hidden shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-slate-50 text-[#6C47FF] active:scale-95 transition-all"
-                >
-                  <Trophy className="w-4 h-4" />
-                </Link>
-              )}
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
@@ -466,7 +470,9 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </Link>
 
         <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=map")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'map' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-          <Building2 className="w-5 h-5" />
+          <div className="w-5 h-5 flex items-center justify-center">
+            <Building2 className="w-[18px] h-[18px]" />
+          </div>
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Cities</span>
         </button>
 

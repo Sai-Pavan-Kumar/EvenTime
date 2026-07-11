@@ -131,7 +131,7 @@ export const CITY_CONFIG: Record<string, {
 export const getCityConfig = (city: string) => {
   const fallback = { 
     backgroundImage: '/cities/default.webp', 
-    coverImage: '/cities/default.webp', 
+    coverImage: null as string | null, 
     accentColor: '#6C47FF' 
   };
   

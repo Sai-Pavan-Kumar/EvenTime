@@ -34,7 +34,7 @@ export function CityGrid({ events }: CityGridProps) {
 
   // Sort cities: most events first, then alphabetically
   // "online" is pulled out and always pinned first, regardless of count
-  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online");
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
   const cities = Array.from(cityMap.entries())
     .filter(([city]) => city.toLowerCase() !== "online")
     .sort((a, b) => {

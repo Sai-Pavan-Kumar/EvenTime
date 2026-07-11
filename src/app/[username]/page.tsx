@@ -1,8 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
-import { EventCard } from "@/app/events/EventCard";
+import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
 import Image from "next/image";
-import { FollowButton } from "@/components/profile/FollowButton";
 import type { ProfileRow } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -58,36 +57,19 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   // Fix: Running the remaining dependent queries in parallel using Promise.all
    const [
     { data: events },
-    followResult,
-    { count: followerCount },
     { data: appSettings }
   ] = await Promise.all([
-    // 1. Fetch Curator's Approved Events
+    // 1. Fetch Curator's Approved Events (oldest first)
     supabase
       .from("events")
       .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
       .eq("creator_id", curator.id)
       .eq("status", "approved")
-      .order("created_at", { ascending: false }),
-      
-    // 2. Check if current user is following this curator
-    currentUser
-      ? supabase
-          .from("followers")
-          .select("id")
-          .eq("follower_id", currentUser.id)
-          .eq("curator_id", curator.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
-    // 3. Get total follower count for the UI
-    supabase
-      .from("followers")
-      .select("*", { count: "exact", head: true })
-      .eq("curator_id", curator.id),
-    // 4. Check if leaderboard / ET Score is enabled platform-wide
+      .order("created_at", { ascending: true }),
+
+    // 2. Check if leaderboard / ET Score is enabled platform-wide
     supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
-  const isFollowing = !!followResult.data;
   // Dynamic ga events anni thirigi saves count ni sum chesthundi
   const impactSaves = events?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
   const etScore = curator.et_score || 100;
@@ -143,11 +125,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 <span className="text-xl font-black text-slate-900">{eventCount}</span>
               </div>
               
-              {/* NEW: Followers Count */}
-              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Followers</span>
-                <span className="text-xl font-black text-slate-900">{followerCount || 0}</span>
-              </div>
               {appSettings?.leaderboard_enabled && (
                 <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
@@ -161,42 +138,23 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
                 </div>
               )}
 
-              {/* NEW: Follow Button (Hidden if viewing own profile or logged out) */}
-              {currentUser && currentUser.id !== curator.id && (
-                <div className="ml-0 md:ml-auto mt-4 md:mt-0">
-                  <FollowButton curatorId={curator.id} initialIsFollowing={isFollowing} />
-                </div>
-              )}
             </div>
           </div>
         </div>
 
         <div className="space-y-6">
           <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {events && events.length > 0 ? (
-              events.map((event) => (
-                <EventCard 
-               key={event.id}
-              id={event.id}
-              slug={event.slug || event.id}
-              title={event.title || "Untitled Event"}
-              category={event.category || "General"}
-              date={event.date_string || "TBA"}
-             city={event.location || event.city || "Online"}
-             imageUrl={event.poster_url || "/window.svg"}
-             organizerName={event.organizer_name || "Organizer"}
-             organizerUsername={(event as any).profiles?.username}
-             isFree={event.is_free ?? false} // boolean null check
-             audience={event.target_audience ?? []} // array null check
-              />
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
-                <p className="text-[#86868B] font-bold uppercase tracking-widest text-xs">No active events posted</p>
-              </div>
-            )}
-          </div>
+          {events && events.length > 0 ? (
+            <LoadMoreGrid
+              events={events}
+              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              hideOrganizer
+            />
+          ) : (
+            <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
+              <p className="text-[#86868B] font-bold uppercase tracking-widest text-xs">No active events posted</p>
+            </div>
+          )}
         </div>
       </div>
     </main>

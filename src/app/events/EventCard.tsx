@@ -20,6 +20,7 @@
     imageUrl: string;
     organizerName: string;
     organizerUsername?: string; // NEW: links to curator's public page
+    hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
     isFree: boolean;
     isFeatured?: boolean;
     matchLabel?: string;
@@ -45,6 +46,7 @@
     imageUrl,
     organizerName,
     organizerUsername,
+    hideOrganizer = false,
     isFree,
     isFeatured = false,
     matchLabel,
@@ -330,7 +332,7 @@
                   className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
                   style={{ fontFamily: "'Switzer', sans-serif" }}
                 >
-                  Curated by {organizerUsername ? (
+                  {!hideOrganizer && <>Curated by {organizerUsername ? (
                     <Link
                       href={`/${organizerUsername}`}
                       onClick={(e) => e.stopPropagation()}
@@ -340,7 +342,7 @@
                     </Link>
                   ) : (
                     organizerName
-                  )}
+                  )}</>}
                   {!isFree && (
                     <>
                       <span className="text-slate-300">|</span>
