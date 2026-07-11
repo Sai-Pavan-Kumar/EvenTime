@@ -21,6 +21,7 @@
     organizerName: string;
     organizerUsername?: string; // NEW: links to curator's public page
     hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
+    hidePastBadge?: boolean; // NEW: hide the "Past Event" badge (used inside a dedicated Archive tab)
     isFree: boolean;
     isFeatured?: boolean;
     matchLabel?: string;
@@ -47,6 +48,7 @@
     organizerName,
     organizerUsername,
     hideOrganizer = false,
+    hidePastBadge = false,
     isFree,
     isFeatured = false,
     matchLabel,
@@ -293,7 +295,7 @@
 
                 {/* Badges Overlay (FOMO & Status) — below the top row */}
                 <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && (
+                  {statusLabel && !(hidePastBadge && statusLabel === "Past Event") && (
                     <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
                       {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
                       {statusLabel}

@@ -200,7 +200,13 @@ export function HomePageClient(props: HomePageClientProps) {
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
         {view !== "map" && (
           <>
-            {!user && (
+            {isAuthLoading && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8">
+                <div className="h-16 bg-slate-100 rounded-2xl animate-pulse" />
+              </div>
+            )}
+
+            {!isAuthLoading && !user && (
               <div className="relative">
                 <HeroSection stats={platformStats} />
               </div>
@@ -228,7 +234,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             </div>
 
-          {!user && !q && !date && !category && (
+          {!isAuthLoading && !user && !q && !date && !category && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
             </div>

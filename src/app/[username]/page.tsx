@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
-import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
+import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
 import Image from "next/image";
 import type { ProfileRow } from "@/types";
 
@@ -145,14 +145,10 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
         <div className="space-y-6">
           <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
           {events && events.length > 0 ? (
-            <LoadMoreGrid
-              events={events}
-              gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              hideOrganizer
-            />
+            <CuratorEventsTabs events={events} />
           ) : (
             <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
-              <p className="text-[#86868B] font-bold uppercase tracking-widest text-xs">No active events posted</p>
+              <p className="text-text-secondary font-bold uppercase tracking-widest text-xs">No active events posted</p>
             </div>
           )}
         </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { generateHMAC } from "@/lib/hmac";
+import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
@@ -84,20 +85,17 @@ export default async function LeaderboardPage() {
 
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-center mb-16 space-y-4">
-          <div className="relative inline-flex items-center justify-center w-24 h-24 mb-2">
-            <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-2xl animate-pulse" />
-            <div className="relative w-16 h-16 rounded-[24px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-xl shadow-amber-500/20 flex items-center justify-center rotate-3 hover:rotate-0 transition-transform duration-500">
-              <Crown className="w-8 h-8 text-amber-500 drop-shadow-md" />
+          <div className="flex items-center justify-center gap-3">
+            <div className="relative shrink-0 w-12 h-12 rounded-[16px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-lg shadow-amber-500/20 flex items-center justify-center rotate-3">
+              <Crown className="w-6 h-6 text-amber-500 drop-shadow-md" />
             </div>
+            <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
+              Top Curators
+            </h1>
           </div>
-          <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
-            Top Curators
-          </h1>
-          <p className="text-[#86868B] font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2">
+          <p className="text-text-secondary font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2 flex-wrap">
             Ranked by trust, impact, and consistency. 
-            <span className="inline-flex items-center gap-1 text-xs bg-slate-200 px-2 py-1 rounded-full text-slate-600 cursor-help" title="Base Score (100) + Complete your profile (+50) + 20 per approved event + 10 per unique save/interest on your events">
-              <Info className="w-3 h-3" /> How ET Score works
-            </span>
+            <ScoreInfoButton />
           </p>
         </div>
 
