@@ -31,7 +31,7 @@ const calculateCompletion = (prof: any) => {
 
 type ChipType = { name: string; value: string; count?: number };
 
-function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [] }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+function NavbarInner({ variant = 'default', categoryChips = [], locationChips = [], platformStats }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[]; platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number } }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profileDetails, setProfileDetails] = useState<any>(null);
@@ -397,6 +397,29 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     </nav>
 
+    {platformStats && (
+      <div className="sticky top-[64px] z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-6 sm:gap-10 overflow-x-auto">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.event_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Events</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.city_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Cities</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.category_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Categories</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="text-sm font-black text-slate-900">{platformStats.user_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Users</span>
+          </div>
+        </div>
+      </div>
+    )}
+
     {showMobileSearch && (
       <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col pb-24"> 
        <form
@@ -543,10 +566,10 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   );
 }
 
-export function Navbar({ variant = 'default', categoryChips, locationChips }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[] }) {
+export function Navbar({ variant = 'default', categoryChips, locationChips, platformStats }: { variant?: 'default' | 'centered'; categoryChips?: ChipType[]; locationChips?: ChipType[]; platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number } }) {
   return (
     <Suspense fallback={null}>
-      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} />
+      <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} platformStats={platformStats} />
     </Suspense>
   );
 }

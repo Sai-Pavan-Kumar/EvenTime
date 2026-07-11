@@ -197,7 +197,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
   return (
     <main className="min-h-screen bg-surface-base">
-      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} />
+      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} platformStats={platformStats} />
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && user && !profile?.is_onboarded && (
@@ -219,28 +219,6 @@ export function HomePageClient(props: HomePageClientProps) {
                 <HeroSection stats={platformStats} />
               </div>
             )}
-
-            {/* PLATFORM STATS STRIP */}
-            <div className={`sticky top-[80px] z-40 mx-auto mb-10 w-max ${!user ? '-mt-8' : 'mt-8'}`}>
-              <div className="flex items-center divide-x divide-slate-200 bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-6 py-3">
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.event_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Events</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.city_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Cities</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.category_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Categories</span>
-                </div>
-                <div className="flex flex-col items-center px-3">
-                  <span className="text-base font-black text-slate-900">{String(platformStats?.user_count ?? 0).padStart(2, '0')}</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Users</span>
-                </div>
-              </div>
-            </div>
 
           {!isAuthLoading && !user && !q && !date && !category && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -268,13 +246,6 @@ export function HomePageClient(props: HomePageClientProps) {
                     <CalendarDays className="w-6 h-6 text-brand-primary" /> 
                     {category ? `${category}s` : "What's happening"}
                   </h2>
-                  {!category && !branch && !location && (
-                    <p className="text-slate-500 text-sm font-medium mt-1">
-                      🔥 <span className="font-bold text-slate-700">{platformStats?.event_count ?? 0} events</span> live right now across{" "}
-                      <span className="font-bold text-slate-700">{platformStats?.city_count ?? 0} cities</span> ·{" "}
-                      <span className="font-bold text-slate-700">{platformStats?.user_count ?? 0} curators</span> building with EvenTime
-                    </p>
-                  )}
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
 
