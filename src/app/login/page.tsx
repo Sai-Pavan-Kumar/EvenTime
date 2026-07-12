@@ -12,7 +12,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [attempts, setAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
-    const [hasConsented, setHasConsented] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -93,7 +93,7 @@ export default function LoginPage() {
 
           {/* Top Logo */}
           <div className="relative z-10 w-16 h-16">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
           </div>
 
           {/* Center Pitch */}
@@ -118,7 +118,7 @@ export default function LoginPage() {
           
           {/* Mobile Logo (Visible only on small screens) */}
           <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo.png" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
           </div>
 
           <div className="mb-8">
