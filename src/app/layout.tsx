@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
@@ -123,6 +124,7 @@ export default async function RootLayout({
         <Footer /> {/* Render the Footer globally */}
         
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
