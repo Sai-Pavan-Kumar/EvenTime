@@ -178,7 +178,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             <ArrowLeft className="w-5 h-5 text-slate-900" />
           </button>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsReportModalOpen(true)} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+            <button onClick={() => { if (!currentUser) { setIsAuthModalOpen(true); return; } setIsReportModalOpen(true); }} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
               <Flag className="w-5 h-5" />
             </button>
             <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">

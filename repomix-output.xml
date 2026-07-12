@@ -40,7 +40,283 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
-.github/workflows/ci.yml
+.github/
+  workflows/
+    ci.yml
+public/
+  card-backgrounds/
+    ai-event.webp
+    auto-ev-expo.webp
+    awards-night.webp
+    career-event.webp
+    charity-event.webp
+    college-event.webp
+    college-fest.webp
+    comedy-show.webp
+    community-event.webp
+    concert.webp
+    conference.webp
+    creator-meetup.webp
+    default-event.webp
+    developer-event.webp
+    exhibition.webp
+    film-festival.webp
+    fitness-event.webp
+    food-festival.webp
+    founder-meetup.webp
+    gaming-esports.webp
+    hackathon.webp
+    investor-event.webp
+    music-festival.webp
+    open-mic.webp
+    pet-event.webp
+    running-event.webp
+    sports-tournament.webp
+    startup-event.webp
+    summit.webp
+    tech-event.webp
+    wellness-event.webp
+    women-event.webp
+    workshop.webp
+  cities/
+    covers/
+      hyderabad1.webp
+    ahmedabad.webp
+    bengaluru.webp
+    bhopal.webp
+    chennai.webp
+    coimbatore.webp
+    guntur.webp
+    gurugram.webp
+    hyderabad2.webp
+    indore.webp
+    jaipur.webp
+    kakinada.webp
+    kanpur.webp
+    karimnagar.webp
+    khammam.webp
+    kochi.webp
+    kolkata.webp
+    lucknow.webp
+    mangaluru.webp
+    mumbai.webp
+    mysuru.webp
+    nagpur.webp
+    new-delhi.webp
+    nizambad.webp
+    noida.webp
+    online2.webp
+    pune.webp
+    thiruvananthapuram.webp
+    tirupati.webp
+    vijayawada.webp
+    visakhapatnam.webp
+    warangal.webp
+  illustrations/
+    404_state3.webp
+    empty_state3.webp
+    error_state3.webp
+    search_state.webp
+  landing-assets/
+    benefits1.webp
+    what1.webp
+    why1.webp
+  empty-alerts.webp
+  empty-category.webp
+  empty-profile.webp
+  empty-saved.webp
+  file.svg
+  globe.svg
+  hero-section-v2.webp
+  icon-192.webp
+  llms.txt
+  logo.webp
+  manifest.json
+  next.svg
+  sb-logo.webp
+  throne-empty.webp
+  vercel.svg
+  window.svg
+src/
+  app/
+    [username]/
+      page.tsx
+    about/
+      page.tsx
+    admin/
+      colleges/
+        page.tsx
+      events/
+        DeleteConfirmButton.tsx
+        page.tsx
+        StatusSelect.tsx
+      feedback/
+        page.tsx
+      reports/
+        page.tsx
+      users/
+        page.tsx
+      actions.ts
+      AdminHeader.tsx
+      AdminSidebar.tsx
+      layout.tsx
+      loading.tsx
+      page.tsx
+      revalidateEventsAction.ts
+    api/
+      extract/
+        route.ts
+      og/
+        leaderboard/
+          route.tsx
+        story/
+          route.tsx
+        route.tsx
+      revalidate/
+        route.ts
+      sentry-example-api/
+        route.ts
+      upload/
+        presign/
+          route.ts
+    auth/
+      callback/
+        route.ts
+    categories/
+      [category]/
+        page.tsx
+    cities/
+      [city]/
+        page.tsx
+    events/
+      [slug]/
+        edit/
+          page.tsx
+        EventClientUI.tsx
+        loading.tsx
+        page.tsx
+      new/
+        page.tsx
+      EventCard.tsx
+      report-actions.ts
+    leaderboard/
+      loading.tsx
+      page.tsx
+    login/
+      page.tsx
+    privacy/
+      page.tsx
+    profile/
+      settings/
+        actions.ts
+        page.tsx
+        SettingsClient.tsx
+      action.ts
+      loading.tsx
+      MobileFeedbackWrapper.tsx
+      page.tsx
+    redirect/
+      page.tsx
+    terms/
+      page.tsx
+    error.tsx
+    global-error.tsx
+    globals.css
+    icon.png
+    layout.tsx
+    loading.tsx
+    page.tsx
+    robots.ts
+    sitemap.ts
+  components/
+    layout/
+      CalendarStrip.tsx
+      FeedbackModal.tsx
+      Footer.tsx
+      LaunchScreen.tsx
+      Navbar.tsx
+    leaderboard/
+      ScoreInfoButton.tsx
+    profile/
+      DelayedActionModal.tsx
+      DeleteEventForm.tsx
+      MobileSignOutButton.tsx
+      OnboardingModal.tsx
+    shared/
+      CuratorEventsTabs.tsx
+      LoadMoreGrid.tsx
+    skeletons/
+      EventCardSkeleton.tsx
+    ui/
+      button.tsx
+      skeleton.tsx
+  config/
+    theme.ts
+  features/
+    create-event/
+      components/
+        SharedUI.tsx
+        StepFeatured.tsx
+        StepMandatory.tsx
+        StepMedia.tsx
+      hooks/
+        useCollegeSearch.ts
+        useDuplicateCheck.ts
+        useEventExtraction.ts
+        useEventSubmit.ts
+        useImageCrop.ts
+      constants.ts
+      CreateEventForm.tsx
+      CreateEventFormLazy.tsx
+      types.ts
+  lib/
+    auth/
+      permissions.ts
+    constants/
+      branches.ts
+      cities.ts
+      cookies.ts
+      goals.ts
+    events/
+      match.ts
+    home/
+      CityGrid.tsx
+      EmptyState.tsx
+      EventGrid.tsx
+      fetchHomePageData.ts
+      FilterChips.tsx
+      HeroSection.tsx
+      HomePageClient.tsx
+      LandingIntro.tsx
+      not-found.tsx
+    supabase/
+      admin.ts
+      client.ts
+      server.ts
+    utils/
+      date.ts
+    category-config.ts
+    city-config.ts
+    hmac.ts
+    utils.ts
+  types/
+    database.ts
+    index.ts
+    nprogress.d.ts
+  instrumentation-client.ts
+  instrumentation.ts
+  proxy.ts
+supabase/
+  .temp/
+    cli-latest
+    gotrue-version
+    linked-project.json
+    pooler-url
+    postgres-version
+    project-ref
+    rest-version
+    storage-migration
+    storage-version
 .gitignore
 .npmrc
 .openspec-ignore
@@ -50,390 +326,14 @@ next.config.ts
 package.json
 postcss.config.mjs
 proxy.ts
-public/card-backgrounds/ai-event.webp
-public/card-backgrounds/auto-ev-expo.webp
-public/card-backgrounds/awards-night.webp
-public/card-backgrounds/career-event.webp
-public/card-backgrounds/charity-event.webp
-public/card-backgrounds/college-event.webp
-public/card-backgrounds/college-fest.webp
-public/card-backgrounds/comedy-show.webp
-public/card-backgrounds/community-event.webp
-public/card-backgrounds/concert.webp
-public/card-backgrounds/conference.webp
-public/card-backgrounds/creator-meetup.webp
-public/card-backgrounds/default-event.webp
-public/card-backgrounds/developer-event.webp
-public/card-backgrounds/exhibition.webp
-public/card-backgrounds/film-festival.webp
-public/card-backgrounds/fitness-event.webp
-public/card-backgrounds/food-festival.webp
-public/card-backgrounds/founder-meetup.webp
-public/card-backgrounds/gaming-esports.webp
-public/card-backgrounds/hackathon.webp
-public/card-backgrounds/investor-event.webp
-public/card-backgrounds/music-festival.webp
-public/card-backgrounds/open-mic.webp
-public/card-backgrounds/pet-event.webp
-public/card-backgrounds/running-event.webp
-public/card-backgrounds/sports-tournament.webp
-public/card-backgrounds/startup-event.webp
-public/card-backgrounds/summit.webp
-public/card-backgrounds/tech-event.webp
-public/card-backgrounds/wellness-event.webp
-public/card-backgrounds/women-event.webp
-public/card-backgrounds/workshop.webp
-public/cities/ahmedabad.webp
-public/cities/bengaluru.webp
-public/cities/bhopal.webp
-public/cities/chennai.webp
-public/cities/coimbatore.webp
-public/cities/covers/hyderabad1.webp
-public/cities/guntur.webp
-public/cities/gurugram.webp
-public/cities/hyderabad2.webp
-public/cities/indore.webp
-public/cities/jaipur.webp
-public/cities/kakinada.webp
-public/cities/kanpur.webp
-public/cities/karimnagar.webp
-public/cities/khammam.webp
-public/cities/kochi.webp
-public/cities/kolkata.webp
-public/cities/lucknow.webp
-public/cities/mangaluru.webp
-public/cities/mumbai.webp
-public/cities/mysuru.webp
-public/cities/nagpur.webp
-public/cities/new-delhi.webp
-public/cities/nizambad.webp
-public/cities/noida.webp
-public/cities/online2.webp
-public/cities/pune.webp
-public/cities/thiruvananthapuram.webp
-public/cities/tirupati.webp
-public/cities/vijayawada.webp
-public/cities/visakhapatnam.webp
-public/cities/warangal.webp
-public/empty-alerts.webp
-public/empty-category.webp
-public/empty-profile.webp
-public/empty-saved.webp
-public/file.svg
-public/globe.svg
-public/hero-section-v2.webp
-public/icon-192.webp
-public/illustrations/404_state3.webp
-public/illustrations/empty_state3.webp
-public/illustrations/error_state3.webp
-public/illustrations/search_state.webp
-public/landing-assets/benefits1.webp
-public/landing-assets/what1.webp
-public/landing-assets/why1.webp
-public/llms.txt
-public/logo.webp
-public/manifest.json
-public/next.svg
-public/sb-logo.webp
-public/throne-empty.webp
-public/vercel.svg
-public/window.svg
 README.md
 sentry.edge.config.ts
 sentry.server.config.ts
-src/app/[username]/page.tsx
-src/app/about/page.tsx
-src/app/admin/actions.ts
-src/app/admin/AdminHeader.tsx
-src/app/admin/AdminSidebar.tsx
-src/app/admin/colleges/page.tsx
-src/app/admin/events/DeleteConfirmButton.tsx
-src/app/admin/events/page.tsx
-src/app/admin/events/StatusSelect.tsx
-src/app/admin/feedback/page.tsx
-src/app/admin/layout.tsx
-src/app/admin/loading.tsx
-src/app/admin/page.tsx
-src/app/admin/reports/page.tsx
-src/app/admin/revalidateEventsAction.ts
-src/app/admin/users/page.tsx
-src/app/api/extract/route.ts
-src/app/api/og/leaderboard/route.tsx
-src/app/api/og/route.tsx
-src/app/api/og/story/route.tsx
-src/app/api/revalidate/route.ts
-src/app/api/sentry-example-api/route.ts
-src/app/api/upload/presign/route.ts
-src/app/auth/callback/route.ts
-src/app/categories/[category]/page.tsx
-src/app/cities/[city]/page.tsx
-src/app/error.tsx
-src/app/events/[slug]/edit/page.tsx
-src/app/events/[slug]/EventClientUI.tsx
-src/app/events/[slug]/loading.tsx
-src/app/events/[slug]/page.tsx
-src/app/events/EventCard.tsx
-src/app/events/new/page.tsx
-src/app/events/report-actions.ts
-src/app/global-error.tsx
-src/app/globals.css
-src/app/icon.png
-src/app/layout.tsx
-src/app/leaderboard/loading.tsx
-src/app/leaderboard/page.tsx
-src/app/loading.tsx
-src/app/login/page.tsx
-src/app/page.tsx
-src/app/privacy/page.tsx
-src/app/profile/action.ts
-src/app/profile/loading.tsx
-src/app/profile/MobileFeedbackWrapper.tsx
-src/app/profile/page.tsx
-src/app/profile/settings/actions.ts
-src/app/profile/settings/page.tsx
-src/app/profile/settings/SettingsClient.tsx
-src/app/redirect/page.tsx
-src/app/robots.ts
-src/app/sitemap.ts
-src/app/terms/page.tsx
-src/components/layout/CalendarStrip.tsx
-src/components/layout/FeedbackModal.tsx
-src/components/layout/Footer.tsx
-src/components/layout/LaunchScreen.tsx
-src/components/layout/Navbar.tsx
-src/components/leaderboard/ScoreInfoButton.tsx
-src/components/profile/DelayedActionModal.tsx
-src/components/profile/DeleteEventForm.tsx
-src/components/profile/MobileSignOutButton.tsx
-src/components/profile/OnboardingModal.tsx
-src/components/shared/CuratorEventsTabs.tsx
-src/components/shared/LoadMoreGrid.tsx
-src/components/skeletons/EventCardSkeleton.tsx
-src/components/ui/button.tsx
-src/components/ui/skeleton.tsx
-src/config/theme.ts
-src/features/create-event/components/SharedUI.tsx
-src/features/create-event/components/StepFeatured.tsx
-src/features/create-event/components/StepMandatory.tsx
-src/features/create-event/components/StepMedia.tsx
-src/features/create-event/constants.ts
-src/features/create-event/CreateEventForm.tsx
-src/features/create-event/CreateEventFormLazy.tsx
-src/features/create-event/hooks/useCollegeSearch.ts
-src/features/create-event/hooks/useDuplicateCheck.ts
-src/features/create-event/hooks/useEventExtraction.ts
-src/features/create-event/hooks/useEventSubmit.ts
-src/features/create-event/hooks/useImageCrop.ts
-src/features/create-event/types.ts
-src/instrumentation-client.ts
-src/instrumentation.ts
-src/lib/auth/permissions.ts
-src/lib/category-config.ts
-src/lib/city-config.ts
-src/lib/constants/branches.ts
-src/lib/constants/cities.ts
-src/lib/constants/cookies.ts
-src/lib/constants/goals.ts
-src/lib/events/match.ts
-src/lib/hmac.ts
-src/lib/home/CityGrid.tsx
-src/lib/home/EmptyState.tsx
-src/lib/home/EventGrid.tsx
-src/lib/home/fetchHomePageData.ts
-src/lib/home/FilterChips.tsx
-src/lib/home/HeroSection.tsx
-src/lib/home/HomePageClient.tsx
-src/lib/home/LandingIntro.tsx
-src/lib/home/not-found.tsx
-src/lib/supabase/admin.ts
-src/lib/supabase/client.ts
-src/lib/supabase/server.ts
-src/lib/utils.ts
-src/lib/utils/date.ts
-src/proxy.ts
-src/types/database.ts
-src/types/index.ts
-src/types/nprogress.d.ts
-supabase/.temp/cli-latest
-supabase/.temp/gotrue-version
-supabase/.temp/linked-project.json
-supabase/.temp/pooler-url
-supabase/.temp/postgres-version
-supabase/.temp/project-ref
-supabase/.temp/rest-version
-supabase/.temp/storage-migration
-supabase/.temp/storage-version
 tsconfig.json
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
-
-<file path=".openspec-ignore">
-# Dependencies
-node_modules
-.next
-.git
-dist
-build
-
-# Environment & Keys
-.env
-.env.local
-.env.*
-
-# Logs
-*.log
-npm-debug.log*
-
-# Generated files
-repomix-output.xml
-project_context.txt
-*.png
-*.jpg
-*.webp
-
-# OS files
-.DS_Store
-Thumbs.db
-</file>
-
-<file path="components.json">
-{
-  "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "base-lyra",
-  "rsc": true,
-  "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/app/globals.css",
-    "baseColor": "neutral",
-    "cssVariables": true,
-    "prefix": ""
-  },
-  "iconLibrary": "phosphor",
-  "rtl": false,
-  "aliases": {
-    "components": "@/components",
-    "utils": "@/lib/utils",
-    "ui": "@/components/ui",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
-  },
-  "menuColor": "default",
-  "menuAccent": "subtle",
-  "registries": {}
-}
-</file>
-
-<file path="eslint.config.mjs">
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
-</file>
-
-<file path="postcss.config.mjs">
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
-
-export default config;
-</file>
-
-<file path="proxy.ts">
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
-
-// NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-        },
-      },
-    }
-  );
-
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  const isProtected = 
-    request.nextUrl.pathname.startsWith('/events/new') || 
-    request.nextUrl.pathname.endsWith('/edit') || 
-    request.nextUrl.pathname.startsWith('/profile') || 
-    request.nextUrl.pathname.startsWith('/admin');
-    
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return response;
-}
-
-// Ensure the config remains to avoid unnecessary runs
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-};
-</file>
 
 <file path="public/file.svg">
 <svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
@@ -470,45 +370,6 @@ College students and young professionals in India.
 
 <file path="public/window.svg">
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
-</file>
-
-<file path="README.md">
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
 <file path="src/app/admin/events/DeleteConfirmButton.tsx">
@@ -563,6 +424,83 @@ export function StatusSelect({ eventId, initialStatus }: { eventId: string, init
       <option value="rejected">Rejected</option>
     </select>
   );
+}
+</file>
+
+<file path="src/app/api/og/story/route.tsx">
+import { ImageResponse } from 'next/og';
+import { NextRequest } from 'next/server';
+
+export const runtime = 'edge';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const title = searchParams.get('title') || 'Exclusive Event';
+    const category = searchParams.get('category') || 'Event';
+    const date = searchParams.get('date') || 'TBA';
+    const organizer = searchParams.get('organizer') || 'EvenTime';
+
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#0A0A0B',
+            padding: '80px',
+            position: 'relative',
+          }}
+        >
+          {/* Neon Glow Background Blobs */}
+          <div style={{ display: 'flex', position: 'absolute', top: '-15%', left: '-10%', width: '900px', height: '900px', backgroundColor: '#6C47FF', borderRadius: '500px', filter: 'blur(180px)', opacity: 0.25 }} />
+          <div style={{ display: 'flex', position: 'absolute', bottom: '-10%', right: '-5%', width: '700px', height: '700px', backgroundColor: '#059669', borderRadius: '500px', filter: 'blur(160px)', opacity: 0.15 }} />
+
+          {/* Top Branding */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '100px' }}>
+            <div style={{ display: 'flex', width: '60px', height: '60px', backgroundColor: '#6C47FF', borderRadius: '16px', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: 'white', fontSize: '32px', fontWeight: 'bold' }}>E</span>
+            </div>
+            <span style={{ color: 'white', fontSize: '36px', fontWeight: 'bold', letterSpacing: '-1px' }}>EvenTime</span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', border: '1.5px solid rgba(108, 71, 255, 0.4)', padding: '10px 20px', borderRadius: '100px', alignSelf: 'flex-start', marginBottom: '40px' }}>
+              <span style={{ color: '#A855F7', fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '4px' }}>{category}</span>
+            </div>
+            
+            <div style={{ display: 'flex' }}>
+              <h1 style={{ color: 'white', fontSize: '110px', fontWeight: 'bold', lineHeight: 1.1, marginBottom: '60px', letterSpacing: '-4px' }}>
+                {title}
+              </h1>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <span style={{ color: 'white', fontSize: '48px', fontWeight: '600' }}>{date}</span>
+              <span style={{ color: '#86868B', fontSize: '38px' }}>Managed by @{organizer}</span>
+            </div>
+          </div>
+
+          {/* Footer with Domain */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '60px' }}>
+            <div style={{ display: 'flex' }}>
+              <span style={{ color: '#6C47FF', fontSize: '32px', fontWeight: 'bold', letterSpacing: '2px' }}>EVENTIME.SBHUB.IN</span>
+            </div>
+            <div style={{ display: 'flex', backgroundColor: 'white', padding: '18px 40px', borderRadius: '100px' }}>
+              <span style={{ color: 'black', fontSize: '24px', fontWeight: 'bold' }}>Register Now</span>
+            </div>
+          </div>
+        </div>
+      ),
+      { width: 1080, height: 1920 }
+    );
+  } catch (e: unknown) {
+  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+  console.error(errorMessage);
+  return new Response(`Failed to generate image`, { status: 500 });
+}
 }
 </file>
 
@@ -642,83 +580,6 @@ export async function GET(req: NextRequest) {
     console.error(errorMessage);
     return new Response(`Failed to generate image`, { status: 500 });
   }
-}
-</file>
-
-<file path="src/app/api/og/story/route.tsx">
-import { ImageResponse } from 'next/og';
-import { NextRequest } from 'next/server';
-
-export const runtime = 'edge';
-
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const title = searchParams.get('title') || 'Exclusive Event';
-    const category = searchParams.get('category') || 'Event';
-    const date = searchParams.get('date') || 'TBA';
-    const organizer = searchParams.get('organizer') || 'EvenTime';
-
-    return new ImageResponse(
-      (
-        <div
-          style={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#0A0A0B',
-            padding: '80px',
-            position: 'relative',
-          }}
-        >
-          {/* Neon Glow Background Blobs */}
-          <div style={{ display: 'flex', position: 'absolute', top: '-15%', left: '-10%', width: '900px', height: '900px', backgroundColor: '#6C47FF', borderRadius: '500px', filter: 'blur(180px)', opacity: 0.25 }} />
-          <div style={{ display: 'flex', position: 'absolute', bottom: '-10%', right: '-5%', width: '700px', height: '700px', backgroundColor: '#059669', borderRadius: '500px', filter: 'blur(160px)', opacity: 0.15 }} />
-
-          {/* Top Branding */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '100px' }}>
-            <div style={{ display: 'flex', width: '60px', height: '60px', backgroundColor: '#6C47FF', borderRadius: '16px', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: 'white', fontSize: '32px', fontWeight: 'bold' }}>E</span>
-            </div>
-            <span style={{ color: 'white', fontSize: '36px', fontWeight: 'bold', letterSpacing: '-1px' }}>EvenTime</span>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center' }}>
-            <div style={{ display: 'flex', border: '1.5px solid rgba(108, 71, 255, 0.4)', padding: '10px 20px', borderRadius: '100px', alignSelf: 'flex-start', marginBottom: '40px' }}>
-              <span style={{ color: '#A855F7', fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '4px' }}>{category}</span>
-            </div>
-            
-            <div style={{ display: 'flex' }}>
-              <h1 style={{ color: 'white', fontSize: '110px', fontWeight: 'bold', lineHeight: 1.1, marginBottom: '60px', letterSpacing: '-4px' }}>
-                {title}
-              </h1>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <span style={{ color: 'white', fontSize: '48px', fontWeight: '600' }}>{date}</span>
-              <span style={{ color: '#86868B', fontSize: '38px' }}>Managed by @{organizer}</span>
-            </div>
-          </div>
-
-          {/* Footer with Domain */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '60px' }}>
-            <div style={{ display: 'flex' }}>
-              <span style={{ color: '#6C47FF', fontSize: '32px', fontWeight: 'bold', letterSpacing: '2px' }}>EVENTIME.SBHUB.IN</span>
-            </div>
-            <div style={{ display: 'flex', backgroundColor: 'white', padding: '18px 40px', borderRadius: '100px' }}>
-              <span style={{ color: 'black', fontSize: '24px', fontWeight: 'bold' }}>Register Now</span>
-            </div>
-          </div>
-        </div>
-      ),
-      { width: 1080, height: 1920 }
-    );
-  } catch (e: unknown) {
-  const errorMessage = e instanceof Error ? e.message : 'Unknown error';
-  console.error(errorMessage);
-  return new Response(`Failed to generate image`, { status: 500 });
-}
 }
 </file>
 
@@ -1038,113 +899,6 @@ export async function submitReportAction(formData: FormData) {
 }
 </file>
 
-<file path="src/app/profile/action.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Unauthorized" };
-  
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "No event ID" };
-  
-  // Verify ownership before deleting AND fetch the poster_url
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id, poster_url")
-    .eq("id", eventId)
-    .single();
-    
-  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
-  
-  // Soft delete: just mark the event, move it to the 30-day trash.
-  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
-  // since the event can still be viewed/restored from trash before then.
-  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
-  redirect("/profile");
-}
-
-// NEW: Server action for creating a college securely
-export async function createCollegeAction(collegeName: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return { error: "Unauthorized" };
-  
-  const trimmed = collegeName.trim();
-  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
-    return { error: "College name must be between 3 and 100 characters." };
-  }
-  
-  // Check for near-duplicate first
-  const { data: existing } = await supabase
-    .from("colleges")
-    .select("id, name")
-    .ilike("name", trimmed)
-    .maybeSingle();
-    
-  if (existing) return { data: existing }; // return existing, don't duplicate
-  
-  const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const { data, error } = await supabase
-    .from("colleges")
-    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
-    .select("id, name, slug")
-    .single();
-    
-  if (error) return { error: "Failed to add college." };
-  
-  revalidatePath("/");
-  return { data };
-}
-
-// NEW: Server action for platform feedback
-export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const trimmedMessage = message?.trim() || "";
-  if (!trimmedMessage) {
-    return { error: "Message cannot be empty." };
-  }
-  if (trimmedMessage.length > 500) {
-    return { error: "Message must be 500 characters or less." };
-  }
-
-  if (user) {
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const { data: recent } = await supabase
-      .from("platform_feedback")
-      .select("id")
-      .eq("user_id", user.id)
-      .gte("created_at", oneMinuteAgo)
-      .limit(1);
-      
-    if (recent && recent.length > 0) {
-      return { error: "Please wait a minute before submitting again." };
-    }
-  }
-  
-  const { error } = await supabase
-    .from("platform_feedback")
-    .insert([{ 
-      type, 
-      message: trimmedMessage,
-      user_id: user?.id || null 
-    }]);
-    
-  if (error) return { error: "Failed to submit feedback." };
-  
-  return { success: true };
-}
-</file>
-
 <file path="src/components/layout/FeedbackModal.tsx">
 "use client";
 
@@ -1427,6 +1181,81 @@ export const theme = {
 };
 </file>
 
+<file path="src/features/create-event/hooks/useImageCrop.ts">
+import { useState } from "react";
+import { toast } from "sonner";
+
+const createImage = (url: string): Promise<HTMLImageElement> =>
+  new Promise((resolve, reject) => {
+    const image = new window.Image();
+    image.addEventListener("load", () => resolve(image));
+    image.addEventListener("error", (error) => reject(error));
+    image.src = url;
+  });
+  
+interface PixelCrop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+async function getCroppedImg(imageSrc: string, pixelCrop: PixelCrop): Promise<File | null> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(new File([blob], "cropped.jpg", { type: "image/jpeg" }));
+      else resolve(null);
+    }, "image/jpeg");
+  });
+}
+
+export function useImageCrop(initialPosterUrl?: string) {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(initialPosterUrl || null);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [rawImage, setRawImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { toast.error("File size must be under 10MB"); return; }
+    const imageUrl = URL.createObjectURL(file);
+    setRawImage(imageUrl); setIsCropping(true);
+  };
+
+  const handleCropComplete = async () => {
+    if (!rawImage || !croppedAreaPixels) return;
+    setIsCompressing(true); setIsCropping(false);
+    try {
+      const croppedFile = await getCroppedImg(rawImage, croppedAreaPixels);
+      if (!croppedFile) throw new Error("Cropping failed");
+      const { default: imageCompression } = await import("browser-image-compression");
+      const compressedFile = await imageCompression(croppedFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
+      setImageFile(compressedFile); setPreviewUrl(URL.createObjectURL(compressedFile));
+    } catch (err) { console.error(err); toast.error("Failed to crop image."); }
+    finally { setIsCompressing(false); setRawImage(null); }
+  };
+
+  return {
+    imageFile, setImageFile, previewUrl, setPreviewUrl,
+    isCompressing, rawImage, setRawImage, crop, setCrop, zoom, setZoom,
+    croppedAreaPixels, setCroppedAreaPixels, isCropping, setIsCropping,
+    handleImageUpload, handleCropComplete
+  };
+}
+</file>
+
 <file path="src/features/create-event/constants.ts">
 export const CATEGORY_TEMPLATES: Record<string, string> = {
   "AI Event": `About the Event:\n\nWho Should Attend:`,
@@ -1506,81 +1335,6 @@ export const teamOptions = ["Solo", "Teams of 2-4", "Teams of 4+", "Both Solo & 
 export const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 export const mins = ["00", "15", "30", "45"];
 export const ampms = ["AM", "PM"];
-</file>
-
-<file path="src/features/create-event/hooks/useImageCrop.ts">
-import { useState } from "react";
-import { toast } from "sonner";
-
-const createImage = (url: string): Promise<HTMLImageElement> =>
-  new Promise((resolve, reject) => {
-    const image = new window.Image();
-    image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    image.src = url;
-  });
-  
-interface PixelCrop {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-async function getCroppedImg(imageSrc: string, pixelCrop: PixelCrop): Promise<File | null> {
-  const image = await createImage(imageSrc);
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
-  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(new File([blob], "cropped.jpg", { type: "image/jpeg" }));
-      else resolve(null);
-    }, "image/jpeg");
-  });
-}
-
-export function useImageCrop(initialPosterUrl?: string) {
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(initialPosterUrl || null);
-  const [isCompressing, setIsCompressing] = useState(false);
-  const [rawImage, setRawImage] = useState<string | null>(null);
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const [isCropping, setIsCropping] = useState(false);
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { toast.error("File size must be under 10MB"); return; }
-    const imageUrl = URL.createObjectURL(file);
-    setRawImage(imageUrl); setIsCropping(true);
-  };
-
-  const handleCropComplete = async () => {
-    if (!rawImage || !croppedAreaPixels) return;
-    setIsCompressing(true); setIsCropping(false);
-    try {
-      const croppedFile = await getCroppedImg(rawImage, croppedAreaPixels);
-      if (!croppedFile) throw new Error("Cropping failed");
-      const { default: imageCompression } = await import("browser-image-compression");
-      const compressedFile = await imageCompression(croppedFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
-      setImageFile(compressedFile); setPreviewUrl(URL.createObjectURL(compressedFile));
-    } catch (err) { console.error(err); toast.error("Failed to crop image."); }
-    finally { setIsCompressing(false); setRawImage(null); }
-  };
-
-  return {
-    imageFile, setImageFile, previewUrl, setPreviewUrl,
-    isCompressing, rawImage, setRawImage, crop, setCrop, zoom, setZoom,
-    croppedAreaPixels, setCroppedAreaPixels, isCropping, setIsCropping,
-    handleImageUpload, handleCropComplete
-  };
-}
 </file>
 
 <file path="src/features/create-event/types.ts">
@@ -1911,15 +1665,6 @@ export async function createClient() {
 }
 </file>
 
-<file path="src/lib/utils.ts">
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
-</file>
-
 <file path="src/lib/utils/date.ts">
 import { parseISO } from "date-fns";
 
@@ -1934,6 +1679,15 @@ export function parseEventDateString(dateStr: string): Date | null {
   } catch {
     return null;
   }
+}
+</file>
+
+<file path="src/lib/utils.ts">
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
 }
 </file>
 
@@ -2022,6 +1776,211 @@ optimize-existing-functions-again
 v1.60.4
 </file>
 
+<file path=".openspec-ignore">
+# Dependencies
+node_modules
+.next
+.git
+dist
+build
+
+# Environment & Keys
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# Generated files
+repomix-output.xml
+project_context.txt
+*.png
+*.jpg
+*.webp
+
+# OS files
+.DS_Store
+Thumbs.db
+</file>
+
+<file path="components.json">
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-lyra",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "iconLibrary": "phosphor",
+  "rtl": false,
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "menuColor": "default",
+  "menuAccent": "subtle",
+  "registries": {}
+}
+</file>
+
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="proxy.ts">
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
+
+// NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
+export async function proxy(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
+      },
+    }
+  );
+
+  // Use getUser() for high-security checks
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // NEW: Global Authentication Check Strategy
+  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
+  response.cookies.set({
+    name: 'client_auth',
+    value: user ? 'true' : 'false',
+    path: '/',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  // 1. If user IS logged in and tries to go to login page, send to profile
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
+
+  const isProtected = 
+    request.nextUrl.pathname.startsWith('/events/new') || 
+    request.nextUrl.pathname.endsWith('/edit') || 
+    request.nextUrl.pathname.startsWith('/profile') || 
+    request.nextUrl.pathname.startsWith('/admin');
+    
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+// Ensure the config remains to avoid unnecessary runs
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
 <file path="tsconfig.json">
 {
   "compilerOptions": {
@@ -2059,63 +2018,6 @@ v1.60.4
 }
 </file>
 
-<file path=".npmrc">
-legacy-peer-deps=true
-</file>
-
-<file path="package.json">
-{
-  "name": "eventime",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "context": "npx code-to-text . -o project_context.txt",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/s3-request-presigner": "^3.1045.0",
-    "@base-ui/react": "^1.4.1",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@phosphor-icons/react": "^2.1.10",
-    "@sentry/nextjs": "^10.63.0",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
-    "browser-image-compression": "^2.0.2",
-    "cheerio": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.14.0",
-    "next": "16.2.6",
-    "nextjs-toploader": "^3.9.17",
-    "react": "19.2.6",
-    "react-day-picker": "^10.0.0",
-    "react-dom": "^19.2.6",
-    "react-easy-crop": "^5.5.7",
-    "shadcn": "^4.7.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^25",
-    "@types/nprogress": "^0.2.3",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9.21.0",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^6"
-  }
-}
-</file>
-
 <file path="public/manifest.json">
 {
   "name": "EvenTime",
@@ -2138,51 +2040,6 @@ legacy-peer-deps=true
     }
   ]
 }
-</file>
-
-<file path="sentry.edge.config.ts">
-// This file configures the initialization of Sentry for edge features (middleware, edge routes, and so on).
-// The config you add here will be used whenever one of the edge features is loaded.
-// Note that this config is unrelated to the Vercel Edge Runtime and is also required when running locally.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
-
-import * as Sentry from "@sentry/nextjs";
-
-Sentry.init({
-  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
-</file>
-
-<file path="sentry.server.config.ts">
-// This file configures the initialization of Sentry on the server.
-// The config you add here will be used whenever the server handles a request.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
-
-import * as Sentry from "@sentry/nextjs";
-
-Sentry.init({
-  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
 </file>
 
 <file path="src/app/admin/revalidateEventsAction.ts">
@@ -2858,36 +2715,6 @@ export async function POST(request: Request) {
 }
 </file>
 
-<file path="src/app/global-error.tsx">
-"use client";
-
-import * as Sentry from "@sentry/nextjs";
-import NextError from "next/error";
-import { useEffect } from "react";
-
-export default function GlobalError({
-  error,
-}: {
-  error: Error & { digest?: string };
-}) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <html lang="en">
-      <body>
-        {/* `NextError` is the default Next.js error page component. Its type
-        definition requires a `statusCode` prop. However, since the App Router
-        does not expose status codes for errors, we simply pass 0 to render a
-        generic error message. */}
-        <NextError statusCode={0} />
-      </body>
-    </html>
-  );
-}
-</file>
-
 <file path="src/app/leaderboard/loading.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -2962,78 +2789,120 @@ export default function LeaderboardLoading() {
 }
 </file>
 
-<file path="src/app/loading.tsx">
-// File: src/app/loading.tsx
-import { Navbar } from "@/components/layout/Navbar";
-import { EventCardSkeleton } from "@/components/skeletons/EventCardSkeleton";
-import { Skeleton } from "@/components/ui/skeleton";
+<file path="src/app/profile/action.ts">
+"use server";
 
-export default function Loading() {
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      
-      <div className="flex flex-col">
-        {/* Fake Hero Section */}
-        <div className="relative w-full h-[400px] bg-slate-900 overflow-hidden flex items-center justify-center">
-          <div className="text-center space-y-6 z-10">
-            <Skeleton className="h-12 w-[300px] sm:w-[500px] bg-slate-800 rounded-lg mx-auto" />
-            <Skeleton className="h-6 w-[250px] sm:w-[400px] bg-slate-800 rounded-md mx-auto" />
-          </div>
-        </div>
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
 
-        {/* Fake Sticky Discovery Pill */}
-        <div className="z-40 mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-4 w-max max-w-[90vw] -mt-8 mb-10">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            <Skeleton className="w-16 h-8 rounded-full" />
-            <Skeleton className="w-20 h-8 rounded-full" />
-            <Skeleton className="w-24 h-8 rounded-full hidden sm:block" />
-          </div>
-          <div className="h-6 w-px bg-slate-300 shrink-0" />
-          <Skeleton className="w-28 h-8 rounded-full" />
-        </div>
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
-          <div className="space-y-6">
-            {/* Header Area */}
-            <div className="flex items-center justify-between">
-              <div>
-                <Skeleton className="w-48 h-8 rounded-lg mb-2" />
-                <Skeleton className="w-64 h-4 rounded-md" />
-              </div>
-            </div>
-            
-            {/* Skeletons Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <EventCardSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/page.tsx">
-import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
-import { HomePageClient } from "@/lib/home/HomePageClient";
-import { Suspense } from "react";
-
-export const revalidate = 3600; // Cache the buffet for 1 hour
-
-export default async function Home() {
-  // Fetch only the global public buffet securely from the backend logic
-  const data = await fetchHomePageData();
+  if (!user) return { error: "Unauthorized" };
   
-  // Wrapped in Suspense so Next.js can safely generate a 100% Static Page
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-surface-base animate-pulse" />}>
-      <HomePageClient {...data} />
-    </Suspense>
-  );
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "No event ID" };
+  
+  // Verify ownership before deleting AND fetch the poster_url
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, poster_url")
+    .eq("id", eventId)
+    .single();
+    
+  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
+  
+  // Soft delete: just mark the event, move it to the 30-day trash.
+  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
+  // since the event can still be viewed/restored from trash before then.
+  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
+  redirect("/profile");
+}
+
+// NEW: Server action for creating a college securely
+export async function createCollegeAction(collegeName: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return { error: "Unauthorized" };
+  
+  const trimmed = collegeName.trim();
+  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
+    return { error: "College name must be between 3 and 100 characters." };
+  }
+  
+  // Check for near-duplicate first
+  const { data: existing } = await supabase
+    .from("colleges")
+    .select("id, name")
+    .ilike("name", trimmed)
+    .maybeSingle();
+    
+  if (existing) return { data: existing }; // return existing, don't duplicate
+  
+ const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const { data, error } = await supabase
+    .from("colleges")
+    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
+    .select("id, name, slug")
+    .single();
+
+  if (error) {
+    // 23505 = unique constraint violation — someone else created the exact same college a split second before us. Instead of showing an error, just fetch and return that one, since it's the same college anyway.
+    if (error.code === "23505") {
+      const { data: raceWinner } = await supabase
+        .from("colleges")
+        .select("id, name, slug")
+        .ilike("name", trimmed)
+        .maybeSingle();
+      if (raceWinner) return { data: raceWinner };
+    }
+    return { error: "Failed to add college." };
+  }
+  
+  revalidatePath("/");
+  return { data };
+}
+// NEW: Server action for platform feedback
+export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const trimmedMessage = message?.trim() || "";
+  if (!trimmedMessage) {
+    return { error: "Message cannot be empty." };
+  }
+  if (trimmedMessage.length > 500) {
+    return { error: "Message must be 500 characters or less." };
+  }
+
+  if (user) {
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    const { data: recent } = await supabase
+      .from("platform_feedback")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", oneMinuteAgo)
+      .limit(1);
+      
+    if (recent && recent.length > 0) {
+      return { error: "Please wait a minute before submitting again." };
+    }
+  }
+  
+  const { error } = await supabase
+    .from("platform_feedback")
+    .insert([{ 
+      type, 
+      message: trimmedMessage,
+      user_id: user?.id || null 
+    }]);
+    
+  if (error) return { error: "Failed to submit feedback." };
+  
+  return { success: true };
 }
 </file>
 
@@ -3203,6 +3072,111 @@ export default function RedirectPage() {
   return (
     <Suspense fallback={null}>
       <RedirectContent />
+    </Suspense>
+  );
+}
+</file>
+
+<file path="src/app/global-error.tsx">
+"use client";
+
+import * as Sentry from "@sentry/nextjs";
+import NextError from "next/error";
+import { useEffect } from "react";
+
+export default function GlobalError({
+  error,
+}: {
+  error: Error & { digest?: string };
+}) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <html lang="en">
+      <body>
+        {/* `NextError` is the default Next.js error page component. Its type
+        definition requires a `statusCode` prop. However, since the App Router
+        does not expose status codes for errors, we simply pass 0 to render a
+        generic error message. */}
+        <NextError statusCode={0} />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/app/loading.tsx">
+// File: src/app/loading.tsx
+import { Navbar } from "@/components/layout/Navbar";
+import { EventCardSkeleton } from "@/components/skeletons/EventCardSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function Loading() {
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+      
+      <div className="flex flex-col">
+        {/* Fake Hero Section */}
+        <div className="relative w-full h-[400px] bg-slate-900 overflow-hidden flex items-center justify-center">
+          <div className="text-center space-y-6 z-10">
+            <Skeleton className="h-12 w-[300px] sm:w-[500px] bg-slate-800 rounded-lg mx-auto" />
+            <Skeleton className="h-6 w-[250px] sm:w-[400px] bg-slate-800 rounded-md mx-auto" />
+          </div>
+        </div>
+
+        {/* Fake Sticky Discovery Pill */}
+        <div className="z-40 mx-auto bg-white/95 backdrop-blur-md rounded-full shadow-lg border border-slate-200 px-4 py-2 flex items-center gap-4 w-max max-w-[90vw] -mt-8 mb-10">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            <Skeleton className="w-16 h-8 rounded-full" />
+            <Skeleton className="w-20 h-8 rounded-full" />
+            <Skeleton className="w-24 h-8 rounded-full hidden sm:block" />
+          </div>
+          <div className="h-6 w-px bg-slate-300 shrink-0" />
+          <Skeleton className="w-28 h-8 rounded-full" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
+          <div className="space-y-6">
+            {/* Header Area */}
+            <div className="flex items-center justify-between">
+              <div>
+                <Skeleton className="w-48 h-8 rounded-lg mb-2" />
+                <Skeleton className="w-64 h-4 rounded-md" />
+              </div>
+            </div>
+            
+            {/* Skeletons Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <EventCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/page.tsx">
+import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
+import { HomePageClient } from "@/lib/home/HomePageClient";
+import { Suspense } from "react";
+
+export const revalidate = 3600; // Cache the buffet for 1 hour
+
+export default async function Home() {
+  // Fetch only the global public buffet securely from the backend logic
+  const data = await fetchHomePageData();
+  
+  // Wrapped in Suspense so Next.js can safely generate a 100% Static Page
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-surface-base animate-pulse" />}>
+      <HomePageClient {...data} />
     </Suspense>
   );
 }
@@ -3810,35 +3784,6 @@ export function ConfidenceField({ status, children }: { status: FieldStatus; chi
 }
 </file>
 
-<file path="src/features/create-event/CreateEventFormLazy.tsx">
-"use client";
-
-import dynamic from "next/dynamic";
-import type { CreateEventFormProps } from "./types";
-
-const CreateEventForm = dynamic(
-  () => import("./CreateEventForm").then((mod) => mod.CreateEventForm),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="max-w-2xl mx-auto animate-pulse space-y-6">
-        <div className="h-8 w-1/3 bg-slate-200 rounded-lg" />
-        <div className="h-64 bg-slate-100 rounded-[32px]" />
-      </div>
-    ),
-  }
-);
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean;
-  isCurrentUserAdmin?: boolean;
-}
-
-export function CreateEventFormLazy(props: ExtendedFormProps) {
-  return <CreateEventForm {...props} />;
-}
-</file>
-
 <file path="src/features/create-event/hooks/useCollegeSearch.ts">
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -4030,43 +3975,169 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
 }
 </file>
 
-<file path="src/instrumentation-client.ts">
-// This file configures the initialization of Sentry on the client.
-// The added config here will be used whenever a users loads a page in their browser.
-// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+<file path="src/features/create-event/CreateEventFormLazy.tsx">
+"use client";
 
-import * as Sentry from "@sentry/nextjs";
+import dynamic from "next/dynamic";
+import type { CreateEventFormProps } from "./types";
 
-Sentry.init({
-  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
-
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-  tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
-
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
-});
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
-</file>
-
-<file path="src/instrumentation.ts">
-import * as Sentry from "@sentry/nextjs";
-
-export async function register() {
-  if (process.env.NEXT_RUNTIME === "nodejs") {
-    await import("../sentry.server.config");
+const CreateEventForm = dynamic(
+  () => import("./CreateEventForm").then((mod) => mod.CreateEventForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="max-w-2xl mx-auto animate-pulse space-y-6">
+        <div className="h-8 w-1/3 bg-slate-200 rounded-lg" />
+        <div className="h-64 bg-slate-100 rounded-[32px]" />
+      </div>
+    ),
   }
+);
 
-  if (process.env.NEXT_RUNTIME === "edge") {
-    await import("../sentry.edge.config");
-  }
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean;
+  isCurrentUserAdmin?: boolean;
 }
 
-export const onRequestError = Sentry.captureRequestError;
+export function CreateEventFormLazy(props: ExtendedFormProps) {
+  return <CreateEventForm {...props} />;
+}
+</file>
+
+<file path="src/lib/home/FilterChips.tsx">
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useTransition } from "react";
+import NProgress from "nprogress";
+
+
+export interface FilterChipsProps {
+  dynamicChips: { name: string; value: string; count?: number }[];
+  category?: string;
+  location?: string;
+  q?: string;
+  branch?: string;
+  paramName?: "category" | "location";
+}
+
+export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  if (!dynamicChips || dynamicChips.length === 0) return null;
+
+  const activeVal = paramName === "category" ? category : location;
+  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
+
+  return (
+    <div className="relative flex items-center shrink-0">
+      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
+      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
+        <span>
+          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
+        </span>
+        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
+      <select
+        value={activeVal || ""}
+        onChange={(e) => {
+          NProgress.start();
+          const val = e.target.value;
+          const params = new URLSearchParams();
+
+          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
+          if (paramName === "category") {
+            if (val) params.set("category", val);
+          } else {
+            if (val) params.set("location", val);
+          }
+
+          if (q) params.set("q", q);
+          if (branch) params.set("branch", branch);
+          
+          startTransition(() => {
+            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
+          });
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      >
+        {dynamicChips.map((chip) => (
+          <option key={chip.name} value={chip.value}>
+            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/supabase/client.ts">
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/types/database';
+
+// SAFEGUARD: Fix iOS Safari Private Browsing crash (SecurityError on localStorage)
+if (typeof window !== 'undefined') {
+  try {
+    window.localStorage.getItem('test');
+  } catch (error) {
+    console.warn('localStorage is blocked by iOS/Safari. Injecting memory fallback.');
+    const memoryStorage = {
+      getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null
+    };
+    try {
+      Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
+      Object.defineProperty(window, 'sessionStorage', { value: memoryStorage, writable: true });
+    } catch (e) {}
+  }
+
+  // SAFEGUARD: Fix iOS WebSocket insecure operation crash
+  try {
+    const OriginalWebSocket = window.WebSocket;
+    if (OriginalWebSocket) {
+      window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
+        try {
+          return new OriginalWebSocket(url, protocols);
+        } catch (e) {
+          console.warn("WebSocket blocked by iOS/Safari:", e);
+          return { // Return dummy closed WebSocket to prevent app crash
+            close: () => {}, send: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => true,
+            readyState: 3, CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, url: url?.toString() || ""
+          } as unknown as WebSocket;
+        }
+      } as any;
+      window.WebSocket.prototype = OriginalWebSocket.prototype;
+      Object.assign(window.WebSocket, OriginalWebSocket);
+    }
+  } catch (e) {}
+}
+
+// Shared instance to ensure all components listen to the exact same auth state
+let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | undefined;
+
+// This creates a secure connection to Supabase from the browser with a 30-day session expiry configuration
+export function createClient() {
+  if (supabaseClient) return supabaseClient;
+
+  supabaseClient = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        maxAge: 2592000, // Explicitly configuration for 30 days in seconds
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        // Note: HttpOnly is omitted here intentionally. It must be enforced on the server-side client.
+      }
+    }
+  );
+
+  return supabaseClient;
+}
 </file>
 
 <file path="src/lib/category-config.ts">
@@ -4281,140 +4352,92 @@ export const getCategoryConfig = (category: string) => {
 };
 </file>
 
-<file path="src/lib/home/FilterChips.tsx">
-"use client";
+<file path="src/instrumentation-client.ts">
+// This file configures the initialization of Sentry on the client.
+// The added config here will be used whenever a users loads a page in their browser.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import NProgress from "nprogress";
+import * as Sentry from "@sentry/nextjs";
 
+Sentry.init({
+  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
 
-export interface FilterChipsProps {
-  dynamicChips: { name: string; value: string; count?: number }[];
-  category?: string;
-  location?: string;
-  q?: string;
-  branch?: string;
-  paramName?: "category" | "location";
-}
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
 
-export function FilterChips({ dynamicChips, category, location, q, branch, paramName = "category" }: FilterChipsProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  if (!dynamicChips || dynamicChips.length === 0) return null;
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
+  sendDefaultPii: true,
+});
 
-  const activeVal = paramName === "category" ? category : location;
-  const activeChip = dynamicChips.find(c => c.value === (activeVal || "")) || dynamicChips[0];
-
-  return (
-    <div className="relative flex items-center shrink-0">
-      {/* VISUAL TEXT: Clean, minimal Apple-esque styling that flows with "Explore:" */}
-      <div className="flex items-center gap-1 text-slate-900 text-sm font-bold pointer-events-none pr-1">
-        <span>
-          {activeChip.name} {typeof activeChip.count === 'number' ? `(${activeChip.count})` : ""}
-        </span>
-        <svg className="w-4 h-4 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-        </svg>
-      </div>
-
-      {/* INVISIBLE NATIVE SELECT: Overlays exactly on top to catch clicks */}
-      <select
-        value={activeVal || ""}
-        onChange={(e) => {
-          NProgress.start();
-          const val = e.target.value;
-          const params = new URLSearchParams();
-
-          // Changing one filter resets the other — avoids impossible combos (e.g. a category with zero events in the new location)
-          if (paramName === "category") {
-            if (val) params.set("category", val);
-          } else {
-            if (val) params.set("location", val);
-          }
-
-          if (q) params.set("q", q);
-          if (branch) params.set("branch", branch);
-          
-          startTransition(() => {
-            router.push(params.toString() ? `/?${params.toString()}` : "/", { scroll: false });
-          });
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-      >
-        {dynamicChips.map((chip) => (
-          <option key={chip.name} value={chip.value}>
-            {chip.name} {typeof chip.count === 'number' ? `(${chip.count})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
 </file>
 
-<file path="src/lib/supabase/client.ts">
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database';
+<file path="src/instrumentation.ts">
+import * as Sentry from "@sentry/nextjs";
 
-// SAFEGUARD: Fix iOS Safari Private Browsing crash (SecurityError on localStorage)
-if (typeof window !== 'undefined') {
-  try {
-    window.localStorage.getItem('test');
-  } catch (error) {
-    console.warn('localStorage is blocked by iOS/Safari. Injecting memory fallback.');
-    const memoryStorage = {
-      getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null
-    };
-    try {
-      Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
-      Object.defineProperty(window, 'sessionStorage', { value: memoryStorage, writable: true });
-    } catch (e) {}
+export async function register() {
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("../sentry.server.config");
   }
 
-  // SAFEGUARD: Fix iOS WebSocket insecure operation crash
-  try {
-    const OriginalWebSocket = window.WebSocket;
-    if (OriginalWebSocket) {
-      window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
-        try {
-          return new OriginalWebSocket(url, protocols);
-        } catch (e) {
-          console.warn("WebSocket blocked by iOS/Safari:", e);
-          return { // Return dummy closed WebSocket to prevent app crash
-            close: () => {}, send: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => true,
-            readyState: 3, CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, url: url?.toString() || ""
-          } as unknown as WebSocket;
-        }
-      } as any;
-      window.WebSocket.prototype = OriginalWebSocket.prototype;
-      Object.assign(window.WebSocket, OriginalWebSocket);
-    }
-  } catch (e) {}
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("../sentry.edge.config");
+  }
 }
 
-// Shared instance to ensure all components listen to the exact same auth state
-let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | undefined;
+export const onRequestError = Sentry.captureRequestError;
+</file>
 
-// This creates a secure connection to Supabase from the browser with a 30-day session expiry configuration
-export function createClient() {
-  if (supabaseClient) return supabaseClient;
+<file path=".npmrc">
+legacy-peer-deps=true
+</file>
 
-  supabaseClient = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookieOptions: {
-        maxAge: 2592000, // Explicitly configuration for 30 days in seconds
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        // Note: HttpOnly is omitted here intentionally. It must be enforced on the server-side client.
-      }
-    }
-  );
+<file path="sentry.edge.config.ts">
+// This file configures the initialization of Sentry for edge features (middleware, edge routes, and so on).
+// The config you add here will be used whenever one of the edge features is loaded.
+// Note that this config is unrelated to the Vercel Edge Runtime and is also required when running locally.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
-  return supabaseClient;
-}
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
+
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
+
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
+  sendDefaultPii: true,
+});
+</file>
+
+<file path="sentry.server.config.ts">
+// This file configures the initialization of Sentry on the server.
+// The config you add here will be used whenever the server handles a request.
+// https://docs.sentry.io/platforms/javascript/guides/nextjs/
+
+import * as Sentry from "@sentry/nextjs";
+
+Sentry.init({
+  dsn: "https://406d5a849bdd607eabf555d6a1759de3@o4511663740747776.ingest.us.sentry.io/4511663740944384",
+
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
+
+  // Enable logs to be sent to Sentry
+  enableLogs: true,
+
+  // Enable sending user PII (Personally Identifiable Information)
+  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
+  sendDefaultPii: true,
+});
 </file>
 
 <file path="src/app/about/page.tsx">
@@ -4549,90 +4572,6 @@ export default function AdminLoading() {
             </div>
           </div>
         </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/categories/[category]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}): Promise<Metadata> {
-  const { category } = await params;
-  // Convert URL friendly "hackathons-and-events" back to "hackathons and events"
-  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
-
-  return {
-    title: `${decodedCategory} Events | EvenTime`,
-    description: `Discover the best ${decodedCategory} events, meetups, and workshops on EvenTime.`,
-  };
-}
-
-export default async function CategoryPage({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}) {
-  const { category } = await params;
-  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  // 1. Fetch user session to determine if they are a student
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  // 2. Build the strict visibility filter (exactly like the homepage)
-  let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
-  
-  if (user) {
-    visibilityFilter += `,creator_id.eq.${user.id}`;
-  }
-  if (profile?.user_type === 'student' && profile?.college_id) {
-       visibilityFilter += `,college_id.eq.${profile.college_id}`;
-  }
-
-  // 3. Fetch all approved events securely by applying the filter
-  const { data: events } = await supabase
-    .from("events")
-    .select("id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-    .eq("status", "approved")
-    .ilike("category", decodedCategory)
-    .or(visibilityFilter) // SECURE: Apply the privacy rules here!
-    .order("date_string", { ascending: true });
-
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-10">
-          <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
-            {decodedCategory} Events
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">
-            Discover and join the best {decodedCategory.toLowerCase()} events.
-          </p>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No events found in this category</p>
-          </div>
-        )}
       </div>
     </main>
   );
@@ -4935,31 +4874,6 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
 }
 </file>
 
-<file path="src/lib/hmac.ts">
-// Edge-compatible HMAC using Web Crypto API
-export async function generateHMAC(data: string): Promise<string> {
-  const secret = process.env.OG_SECRET;
-  if (!secret) throw new Error("Missing OG_SECRET environment variable for secure HMAC generation");
-  
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"]
-  );
-
-  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
-  
-  // Convert ArrayBuffer to Hex string
-  const hashArray = Array.from(new Uint8Array(signature));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return hashHex;
-}
-</file>
-
 <file path="src/lib/home/EventGrid.tsx">
 "use client";
 
@@ -5038,6 +4952,201 @@ export function EventGrid({
       })}
       </AnimatePresence>
     </div>
+  );
+}
+</file>
+
+<file path="src/lib/hmac.ts">
+// Edge-compatible HMAC using Web Crypto API
+export async function generateHMAC(data: string): Promise<string> {
+  const secret = process.env.OG_SECRET;
+  if (!secret) throw new Error("Missing OG_SECRET environment variable for secure HMAC generation");
+  
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"]
+  );
+
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  
+  // Convert ArrayBuffer to Hex string
+  const hashArray = Array.from(new Uint8Array(signature));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return hashHex;
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "eventime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "context": "npx code-to-text . -o project_context.txt",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
+    "@base-ui/react": "^1.4.1",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.63.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "@vercel/analytics": "^2.0.1",
+    "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "nextjs-toploader": "^3.9.17",
+    "react": "19.2.6",
+    "react-day-picker": "^10.0.0",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "shadcn": "^4.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^25",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9.21.0",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
+</file>
+
+<file path="src/app/categories/[category]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}): Promise<Metadata> {
+  const { category } = await params;
+  // Convert URL friendly "hackathons-and-events" back to "hackathons and events"
+  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+
+  return {
+    title: `${decodedCategory} Events | EvenTime`,
+    description: `Discover the best ${decodedCategory} events, meetups, and workshops on EvenTime.`,
+  };
+}
+
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = await params;
+  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
+
+  // CACHED: public events for this category (same for every anonymous/non-student visitor)
+  const getCachedPublicCategoryEvents = unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const { data } = await supabaseAnon
+        .from("events")
+        .select(CATEGORY_FIELDS)
+        .eq("status", "approved")
+        .ilike("category", decodedCategory)
+        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
+        .order("date_string", { ascending: true })
+        .limit(50);
+      return data || [];
+    },
+    [`category_events_${decodedCategory.toLowerCase()}`],
+    { tags: ["events"], revalidate: 600 } // 10 minutes
+  );
+
+  // Auth check + cached public fetch run at the same time
+  const [{ data: { user } }, publicEvents] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublicCategoryEvents(),
+  ]);
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // Tiny, uncached, bounded-to-1-user query for their own extra visible events
+  let personalEvents: any[] = [];
+  if (user) {
+    let extraFilter = `creator_id.eq.${user.id}`;
+    if (profile?.user_type === "student" && profile?.college_id) {
+      extraFilter += `,college_id.eq.${profile.college_id}`;
+    }
+    const { data } = await supabase
+      .from("events")
+      .select(CATEGORY_FIELDS)
+      .eq("status", "approved")
+      .ilike("category", decodedCategory)
+      .or(extraFilter)
+      .order("date_string", { ascending: true })
+      .limit(50);
+    personalEvents = data || [];
+  }
+
+  const eventMap = new Map();
+  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
+  const events = Array.from(eventMap.values());
+
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-10">
+          <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
+            {decodedCategory} Events
+          </h1>
+          <p className="text-slate-500 font-medium mt-2">
+            Discover and join the best {decodedCategory.toLowerCase()} events.
+          </p>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No events found in this category</p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
 </file>
@@ -5554,6 +5663,66 @@ export function StepMedia(props: StepMediaProps) {
         </button>
       </div>
     </motion.div>
+  );
+}
+</file>
+
+<file path="src/lib/home/HeroSection.tsx">
+"use client";
+
+import Image from "next/image";
+
+interface PlatformStats {
+  event_count: number;
+  city_count: number;
+  category_count: number;
+  user_count: number;
+}
+
+export function HeroSection({ stats }: { stats?: PlatformStats }) {
+  return (
+    <div className="relative w-full bg-white overflow-hidden">
+      
+      {/* Background Image Layer (DESKTOP ONLY) */}
+      <div className="absolute inset-0 z-0 hidden md:block">
+        <Image 
+          src="/hero-section-v2.webp" 
+          alt="EvenTime Hero Background" 
+          fill
+          priority
+          unoptimized={true}
+          // object-right-bottom ensures the stage (which is on the right) and the bottom edge are perfectly visible
+          className="object-cover object-right-bottom"
+        />
+      </div>
+      
+      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between md:min-h-[450px] lg:min-h-[550px]">
+        
+        {/* Text Layer: Left Aligned always. 
+            Mobile: -mb-10 pulls the image up so text overlaps it (saves height).
+            Desktop: mb-20 pushes the text upwards from center for better visibility. */}
+        <div className="relative z-20 w-full px-4 sm:px-8 pt-12 -mb-10 sm:-mb-14 md:mt-0 md:mb-24 lg:mb-32 md:w-3/5 text-left">
+          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-text-primary tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
+            The Dictionary
+            <br />
+            for <span className="text-brand-primary">Events.</span>
+          </h1>    
+        </div>
+
+        {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
+        <div className="w-full md:hidden relative z-0 aspect-[2.5/1] mb-12 sm:mb-16">
+          <Image 
+            src="/hero-section-v2.webp" 
+            alt="EvenTime Hero Background" 
+            fill
+            priority
+            unoptimized={true}
+            className="object-contain object-bottom"
+          />
+        </div>
+
+      </div>
+    </div>
   );
 }
 </file>
@@ -6102,6 +6271,96 @@ export default function LoginPage() {
 }
 </file>
 
+<file path="src/lib/home/CityGrid.tsx">
+"use client";
+
+import Link from "next/link";
+import { CalendarDays } from "lucide-react";
+import type { EventRow } from "@/types";
+import { getCityConfig } from "@/lib/city-config";
+import { parseEventDateString } from "@/lib/utils/date";
+import { differenceInCalendarDays } from "date-fns";
+
+export interface CityGridProps {
+  events: Partial<EventRow>[];
+}
+
+
+export function CityGrid({ events }: CityGridProps) {
+  // Group upcoming events by city and count them
+  const cityMap = new Map<string, number>();
+
+  events.forEach((event) => {
+    const city = event.city?.trim();
+    if (!city) return;
+    
+    // Skip counting past events
+    const checkDate = parseEventDateString(event.date_string || "");
+    if (checkDate) {
+      const today = new Date();
+      if (differenceInCalendarDays(checkDate, today) < 0) {
+        return; 
+      }
+    }
+
+    cityMap.set(city, (cityMap.get(city) || 0) + 1);
+  });
+
+  // Sort cities: most events first, then alphabetically
+  // "online" is pulled out and always pinned first, regardless of count
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
+  const cities = Array.from(cityMap.entries())
+    .filter(([city]) => city.toLowerCase() !== "online")
+    .sort((a, b) => {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    });
+  if (onlineEntry) cities.unshift(onlineEntry);
+
+  if (cities.length === 0) {
+    return (
+      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
+        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
+          We couldn't find any events with a city location right now.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+     {cities.map(([city, count]) => (
+        <Link
+          key={city}
+          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+        >
+          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
+            <img
+              src={getCityConfig(city).backgroundImage}
+              alt={city}
+              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
+            />
+          </div>
+
+          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
+            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
+              {city.toLowerCase() === "online" ? "Online" : city}
+            </h3>
+            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
+              <CalendarDays className="w-3 h-3 text-brand-primary" />
+              {count} {count === 1 ? "Event" : "Events"}
+            </span>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/city-config.ts">
 export const CITY_CONFIG: Record<string, {
   backgroundImage: string;
@@ -6253,155 +6512,6 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
-<file path="src/lib/home/CityGrid.tsx">
-"use client";
-
-import Link from "next/link";
-import { CalendarDays } from "lucide-react";
-import type { EventRow } from "@/types";
-import { getCityConfig } from "@/lib/city-config";
-import { parseEventDateString } from "@/lib/utils/date";
-import { differenceInCalendarDays } from "date-fns";
-
-export interface CityGridProps {
-  events: Partial<EventRow>[];
-}
-
-
-export function CityGrid({ events }: CityGridProps) {
-  // Group upcoming events by city and count them
-  const cityMap = new Map<string, number>();
-
-  events.forEach((event) => {
-    const city = event.city?.trim();
-    if (!city) return;
-    
-    // Skip counting past events
-    const checkDate = parseEventDateString(event.date_string || "");
-    if (checkDate) {
-      const today = new Date();
-      if (differenceInCalendarDays(checkDate, today) < 0) {
-        return; 
-      }
-    }
-
-    cityMap.set(city, (cityMap.get(city) || 0) + 1);
-  });
-
-  // Sort cities: most events first, then alphabetically
-  // "online" is pulled out and always pinned first, regardless of count
-  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
-  const cities = Array.from(cityMap.entries())
-    .filter(([city]) => city.toLowerCase() !== "online")
-    .sort((a, b) => {
-      if (b[1] !== a[1]) return b[1] - a[1];
-      return a[0].localeCompare(b[0]);
-    });
-  if (onlineEntry) cities.unshift(onlineEntry);
-
-  if (cities.length === 0) {
-    return (
-      <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-        <h3 className="text-slate-900 font-bold text-xl">No Cities Found</h3>
-        <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">
-          We couldn't find any events with a city location right now.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-     {cities.map(([city, count]) => (
-        <Link
-          key={city}
-          href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
-        >
-          <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
-          </div>
-
-          <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
-            <h3 className="font-bold text-[18px] leading-snug truncate text-left text-slate-900">
-              {city.toLowerCase() === "online" ? "Online" : city}
-            </h3>
-            <span className="text-slate-500 text-[12px] font-semibold flex items-center gap-1.5">
-              <CalendarDays className="w-3 h-3 text-brand-primary" />
-              {count} {count === 1 ? "Event" : "Events"}
-            </span>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
-</file>
-
 <file path="src/components/profile/DelayedActionModal.tsx">
 "use client";
 
@@ -6543,137 +6653,63 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
 }
 </file>
 
-<file path="src/lib/home/HeroSection.tsx">
-"use client";
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
 
-import Image from "next/image";
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
 
-interface PlatformStats {
-  event_count: number;
-  city_count: number;
-  category_count: number;
-  user_count: number;
-}
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          
+        ],
+      },
+    ]
+  }
+};
 
-export function HeroSection({ stats }: { stats?: PlatformStats }) {
-  return (
-    <div className="relative w-full bg-white overflow-hidden">
-      
-      {/* Background Image Layer (DESKTOP ONLY) */}
-      <div className="absolute inset-0 z-0 hidden md:block">
-        <Image 
-          src="/hero-section-v2.webp" 
-          alt="EvenTime Hero Background" 
-          fill
-          priority
-          unoptimized={true}
-          // object-right-bottom ensures the stage (which is on the right) and the bottom edge are perfectly visible
-          className="object-cover object-right-bottom"
-        />
-      </div>
-      
-      <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between md:min-h-[450px] lg:min-h-[550px]">
-        
-        {/* Text Layer: Left Aligned always. 
-            Mobile: -mb-10 pulls the image up so text overlaps it (saves height).
-            Desktop: mb-20 pushes the text upwards from center for better visibility. */}
-        <div className="relative z-20 w-full px-4 sm:px-8 pt-12 -mb-10 sm:-mb-14 md:mt-0 md:mb-24 lg:mb-32 md:w-3/5 text-left">
-          <h1 className="text-4xl leading-[1.1] sm:text-5xl md:text-6xl lg:text-[80px] font-heading font-extrabold text-text-primary tracking-[-0.02em] md:[text-shadow:_0_2px_24px_rgba(255,255,255,0.8),_0_0_48px_rgba(255,255,255,0.6)]">
-            The Dictionary
-            <br />
-            for <span className="text-brand-primary">Events.</span>
-          </h1>    
-        </div>
-
-        {/* Image Layer (MOBILE ONLY) - Added mb-16 so stats bar overlaps white space instead of image */}
-        <div className="w-full md:hidden relative z-0 aspect-[2.5/1] mb-12 sm:mb-16">
-          <Image 
-            src="/hero-section-v2.webp" 
-            alt="EvenTime Hero Background" 
-            fill
-            priority
-            unoptimized={true}
-            className="object-contain object-bottom"
-          />
-        </div>
-
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/AdminSidebar.tsx">
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
-
-export function AdminSidebar() {
-  const pathname = usePathname();
-
-  const links = [
-    { name: "Overview", href: "/admin", icon: LayoutDashboard },
-    { name: "Events Queue", href: "/admin/events", icon: CalendarDays },
-    { name: "User Directory", href: "/admin/users", icon: Users },
-    { name: "Colleges", href: "/admin/colleges", icon: Building2 },
-    { name: "Moderation", href: "/admin/reports", icon: ShieldAlert },
-    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning },
-  ];
-
-  return (
-    <aside className="w-[300px] bg-surface-base hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
-      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        
-        {/* LOGO AREA */}
-        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-[12px] bg-[#6C47FF] flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
-              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
-            </div>
-            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-brand-primary">OS</span></h2>
-          </Link>
-        </div>
-        
-        {/* MENU */}
-        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
-          <div>
-            <p className="px-4 text-[11px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
-            <nav className="space-y-2">
-              {links.map((link) => {
-                const isActive = pathname === link.href;
-                const Icon = link.icon;
-                return (
-                  <Link 
-                    key={link.name} 
-                    href={link.href} 
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
-                      isActive 
-                        ? "bg-[#EDE8FF] text-brand-primary" 
-                        : "text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A]"
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 ${isActive ? "text-brand-primary" : "text-[#6B7280]"}`} /> 
-                    <span className="text-[15px]">{link.name}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="p-6 border-t border-black/[0.04] shrink-0">
-          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A] transition-colors">
-            <Settings className="w-4 h-4 text-[#6B7280]" />
-            <span className="text-[15px]">Exit Admin Mode</span>
-          </Link>
-        </div>
-
-      </div>
-    </aside>
-  );
-}
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/admin/colleges/page.tsx">
@@ -6751,25 +6787,6 @@ export default async function AdminCollegesPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/layout.tsx">
-import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="h-screen flex overflow-hidden bg-surface-base">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
       </div>
     </div>
   );
@@ -7076,6 +7093,98 @@ export default async function AdminUsersPage() {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/admin/AdminSidebar.tsx">
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+
+  const links = [
+    { name: "Overview", href: "/admin", icon: LayoutDashboard },
+    { name: "Events Queue", href: "/admin/events", icon: CalendarDays },
+    { name: "User Directory", href: "/admin/users", icon: Users },
+    { name: "Colleges", href: "/admin/colleges", icon: Building2 },
+    { name: "Moderation", href: "/admin/reports", icon: ShieldAlert },
+    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning },
+  ];
+
+  return (
+    <aside className="w-[300px] bg-surface-base hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
+      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        
+        {/* LOGO AREA */}
+        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-[12px] bg-[#6C47FF] flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
+              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
+            </div>
+            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-brand-primary">OS</span></h2>
+          </Link>
+        </div>
+        
+        {/* MENU */}
+        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
+          <div>
+            <p className="px-4 text-[11px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
+            <nav className="space-y-2">
+              {links.map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link 
+                    key={link.name} 
+                    href={link.href} 
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
+                      isActive 
+                        ? "bg-[#EDE8FF] text-brand-primary" 
+                        : "text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A]"
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "text-brand-primary" : "text-[#6B7280]"}`} /> 
+                    <span className="text-[15px]">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="p-6 border-t border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A] transition-colors">
+            <Settings className="w-4 h-4 text-[#6B7280]" />
+            <span className="text-[15px]">Exit Admin Mode</span>
+          </Link>
+        </div>
+
+      </div>
+    </aside>
+  );
+}
+</file>
+
+<file path="src/app/admin/layout.tsx">
+import { AdminSidebar } from "./AdminSidebar";
+import { AdminHeader } from "./AdminHeader";
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="h-screen flex overflow-hidden bg-surface-base">
+      <AdminSidebar />
+      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
+        <AdminHeader />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -7540,182 +7649,6 @@ export default async function LeaderboardPage() {
         )}
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/features/create-event/CreateEventForm.tsx">
-"use client";
-
-import { useState, useEffect, SetStateAction } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
-import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
-function toLocalDateString(d: Date) { 
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-// Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
-import { useImageCrop } from "./hooks/useImageCrop";
-import { useEventSubmit } from "./hooks/useEventSubmit";
-
-// New 2-Step Components
-import { StepMandatory } from "./components/StepMandatory";
-import { StepFeatured } from "./components/StepFeatured";
-
-interface ExtendedFormProps extends CreateEventFormProps {
-  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
-  isCurrentUserAdmin?: boolean; // FIX: Controls the admin warnings
-}
-
-export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false, isCurrentUserAdmin = false }: ExtendedFormProps) {
-  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
-  const supabase = createClient();
-
-  // Unified State Object
-  const [eventData, setEventData] = useState({
-    regLink: initialData?.registration_link || "",
-    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
-    title: initialData?.title || "",
-    category: initialData?.category || "",
-    isCreatingNewCategory: false,
-    selectedAudience: initialData?.target_audience || [],
-    description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
-    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
-    collegeBranch: initialData?.college_branch || "",
-    collegeYear: initialData?.college_year || "",
-    collegeOnly: initialData?.college_only || false,
-    collegeId: initialData?.college_id || null,
-    collegeName: initialData?.colleges?.name || "",
-    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "",
-    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "",
-    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
-    hasEndTime: !!initialData?.end_time,
-    hasEndDate: !!initialData?.end_date_string,
-    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
-    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
-    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
-    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
-    isOnline: initialData?.is_virtual || false,
-    isFree: initialData?.is_free ?? true,
-    price: initialData?.price?.toString() || "",
-    // Step 2 Adv/Featured
-    isFeatured: initialData?.is_featured || false,
-    organizer: initialData?.organizer_name || "",
-    prizes: initialData?.prizes || "",
-    teamSize: initialData?.team_size || "",
-    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
-    website: initialData?.website || ""
-  });
-
-  const updateData = (updates: Partial<typeof eventData>) => {
-    setEventData((prev) => ({ ...prev, ...updates }));
-  };
-
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined,
-    currentEventId: initialData?.id,
-    initialIsTrusted: eventData.isTrustedDomain,
-    isAdmin: isCurrentUserAdmin // FIX: Idhi actual admin parameter
-  });
-  
-  const crop = useImageCrop(initialData?.poster_url ?? undefined);
-  const { isSubmitting, submitEvent } = useEventSubmit();
-
-   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-   // Removed the useEffect that ran extraction on edit load, as it was overwriting manual edits!
-  const handleSubmit = () => {
-    submitEvent({
-      title: eventData.title,
-      category: eventData.category,
-      organizer_name: eventData.organizer,
-      description: eventData.description,
-      target_audience: eventData.selectedAudience,
-      start_time: (eventData.selectedHour && eventData.selectedMin) ? `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}` : null,
-      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
-      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
-      location: eventData.isOnline ? "Virtual Event" : eventData.location,
-      city: eventData.isOnline ? "online" : eventData.city,
-      is_virtual: eventData.isOnline,
-      is_free: eventData.isFree,
-      price: eventData.isFree ? 0 : Number(eventData.price),
-      registration_link: eventData.regLink,
-      prizes: eventData.prizes,
-      team_size: eventData.teamSize,
-      website: eventData.website,
-      is_featured: eventData.isFeatured,
-    status: (eventData.isTrustedDomain && eventData.regLink) ? "approved" : "pending",
-      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
-      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
-      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
-      college_year: isCollegeCategory ? eventData.collegeYear : null,
-      college_only: isCollegeCategory ? eventData.collegeOnly : null,
-      college_id: isCollegeCategory ? eventData.collegeId : null,
-      imageFile: crop.imageFile, 
-      previewUrl: crop.previewUrl
-    }, isEditing, initialData?.id);
-  };
-
-  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
-
-  return (
-    <div className="max-w-3xl mx-auto w-full">
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
-        </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
-        </p>
-      </div>
-
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
-        <AnimatePresence mode="wait">
-          {step === 0 && (
-            <StepMandatory 
-              data={eventData} 
-              updateData={updateData} 
-              isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); 
-              }}
-              isValid={Boolean(step0Valid)}
-              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
-              onSubmit={handleSubmit}
-              isAdminFeatureEnabled={isAdminFeatureEnabled}
-              isCurrentUserAdmin={isCurrentUserAdmin}
-              isEditing={isEditing}
-            />
-          )}
-            {step === 1 && (
-              <StepFeatured 
-                data={eventData} 
-                updateData={updateData} 
-                crop={crop}
-                onBack={() => setStep(0)} 
-                onSubmit={handleSubmit} 
-                isSubmitting={isSubmitting}
-                isEditing={isEditing}
-                isAdminFeatureEnabled={isAdminFeatureEnabled}
-              />
-            )}
-        </AnimatePresence>
-      </div>
-    </div>
   );
 }
 </file>
@@ -8846,6 +8779,185 @@ export function useEventSubmit() {
   };
 
   return { isSubmitting, submitEvent };
+}
+</file>
+
+<file path="src/features/create-event/CreateEventForm.tsx">
+"use client";
+
+import { useState, useEffect, SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { FieldStatus, CreateEventFormProps } from "./types";
+import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+function toLocalDateString(d: Date) { 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+// Hooks
+import { useEventExtraction } from "./hooks/useEventExtraction";
+import { useImageCrop } from "./hooks/useImageCrop";
+import { useEventSubmit } from "./hooks/useEventSubmit";
+
+// New 2-Step Components
+import { StepMandatory } from "./components/StepMandatory";
+import { StepFeatured } from "./components/StepFeatured";
+
+interface ExtendedFormProps extends CreateEventFormProps {
+  isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
+  isCurrentUserAdmin?: boolean; // FIX: Controls the admin warnings
+}
+
+export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false, isCurrentUserAdmin = false }: ExtendedFormProps) {
+  const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const supabase = createClient();
+
+  // Unified State Object
+  const [eventData, setEventData] = useState({
+    regLink: initialData?.registration_link || "",
+    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
+    title: initialData?.title || "",
+    category: initialData?.category || "",
+    isCreatingNewCategory: false,
+    selectedAudience: initialData?.target_audience || [],
+    description: initialData?.description || "",
+    location: initialData?.location || "",
+    city: initialData?.city || "",
+    selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
+    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
+    collegeBranch: initialData?.college_branch || "",
+    collegeYear: initialData?.college_year || "",
+    collegeOnly: initialData?.college_only || false,
+    collegeId: initialData?.college_id || null,
+    collegeName: initialData?.colleges?.name || "",
+    selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "",
+    selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "",
+    selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
+    hasEndTime: !!initialData?.end_time,
+    hasEndDate: !!initialData?.end_date_string,
+    endDate: (initialData?.end_date_string ? new Date(initialData.end_date_string) : undefined) as Date | undefined,
+    endHour: initialData?.end_time ? initialData.end_time.split(":")[0] : "08",
+    endMin: initialData?.end_time ? initialData.end_time.split(":")[1].substring(0, 2) : "00",
+    endAmPm: initialData?.end_time ? initialData.end_time.slice(-2) : "PM",
+    isOnline: initialData?.is_virtual || false,
+    isFree: initialData?.is_free ?? true,
+    price: initialData?.price?.toString() || "",
+    // Step 2 Adv/Featured
+    isFeatured: initialData?.is_featured || false,
+    organizer: initialData?.organizer_name || "",
+    prizes: initialData?.prizes || "",
+    teamSize: initialData?.team_size || "",
+    registrationDeadline: (initialData?.registration_deadline ? new Date(initialData.registration_deadline) : undefined) as Date | undefined,
+    website: initialData?.website || ""
+  });
+
+  const updateData = (updates: Partial<typeof eventData>) => {
+    setEventData((prev) => ({ ...prev, ...updates }));
+  };
+
+  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  const extraction = useEventExtraction({ 
+    setTitle: (v) => updateData({ title: v }), 
+    setDescription: (v) => updateData({ description: v }), 
+    setLocation: (v) => updateData({ location: v }), 
+    setSelectedDate: (v) => updateData({ selectedDate: v }), 
+    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
+    initialLink: initialData?.registration_link ?? undefined,
+    currentEventId: initialData?.id,
+    initialIsTrusted: eventData.isTrustedDomain,
+    isAdmin: isCurrentUserAdmin 
+  });
+  
+  const crop = useImageCrop(initialData?.poster_url ?? undefined);
+  const { isSubmitting, submitEvent } = useEventSubmit();
+
+   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
+  const handleSubmit = () => {
+    if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
+      alert("Please select your college before restricting this event to it — or turn off 'College Only' if you want it open to everyone.");
+      return;
+    }
+    submitEvent({
+      title: eventData.title,
+      category: eventData.category,
+      organizer_name: eventData.organizer,
+      description: eventData.description,
+      target_audience: eventData.selectedAudience,
+      start_time: (eventData.selectedHour && eventData.selectedMin) ? `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}` : null,
+      end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
+      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
+      location: eventData.isOnline ? "Virtual Event" : eventData.location,
+      city: eventData.isOnline ? "online" : eventData.city,
+      is_virtual: eventData.isOnline,
+      is_free: eventData.isFree,
+      price: eventData.isFree ? 0 : Number(eventData.price),
+      registration_link: eventData.regLink,
+      prizes: eventData.prizes,
+      team_size: eventData.teamSize,
+      website: eventData.website,
+      is_featured: eventData.isFeatured,
+    status: (eventData.isTrustedDomain && eventData.regLink) ? "approved" : "pending",
+      registration_deadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
+      branch_tags: isCollegeCategory && eventData.collegeBranch ? [eventData.collegeBranch] : null,
+      college_branch: isCollegeCategory ? eventData.collegeBranch : null,
+      college_year: isCollegeCategory ? eventData.collegeYear : null,
+      college_only: isCollegeCategory && eventData.collegeId ? eventData.collegeOnly : false,
+      college_id: isCollegeCategory ? eventData.collegeId : null,
+      imageFile: crop.imageFile, 
+      previewUrl: crop.previewUrl
+    }, isEditing, initialData?.id);
+  };
+
+  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+
+  return (
+    <div className="max-w-3xl mx-auto w-full">
+      <div className="mb-10 text-center">
+        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
+          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+        </h1>
+        <p className="text-slate-500 text-sm">
+          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        </p>
+      </div>
+
+      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+        <AnimatePresence mode="wait">
+          {step === 0 && (
+            <StepMandatory 
+              data={eventData} 
+              updateData={updateData} 
+              isCollegeCategory={isCollegeCategory}
+              extraction={extraction}
+              onNext={() => {
+                if (isAdminFeatureEnabled) setStep(1);
+                else handleSubmit(); 
+              }}
+              isValid={Boolean(step0Valid)}
+              isSubmitting={isSubmitting && !isAdminFeatureEnabled}
+              onSubmit={handleSubmit}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+              isCurrentUserAdmin={isCurrentUserAdmin}
+              isEditing={isEditing}
+            />
+          )}
+            {step === 1 && (
+              <StepFeatured 
+                data={eventData} 
+                updateData={updateData} 
+                crop={crop}
+                onBack={() => setStep(0)} 
+                onSubmit={handleSubmit} 
+                isSubmitting={isSubmitting}
+                isEditing={isEditing}
+                isAdminFeatureEnabled={isAdminFeatureEnabled}
+              />
+            )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -11804,138 +11916,6 @@ export default function GlobalError({
 }
 </file>
 
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
-
-import { headers } from "next/headers";
-
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const headersList = await headers();
-  const nonce = headersList.get("x-nonce") || undefined;
-
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
-            {`
-              (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-            `}
-          </Script>
-        )}
-
-        {/* Google Analytics GA4 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
-            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
-      </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
-        
-        <Toaster />
-      </body>
-    </html>
-  );
-}
-</file>
-
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -12883,6 +12863,140 @@ export default function SettingsClient({
     </main>
     );
   }
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+
+import { headers } from "next/headers";
+
+// 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || undefined;
+
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {/* Forcing the browser to load Switzer directly */}
+        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
+        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+        
+        {/* Microsoft Clarity */}
+        {process.env.NEXT_PUBLIC_CLARITY_ID && (
+          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
+            {`
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
+            `}
+          </Script>
+        )}
+
+        {/* Google Analytics GA4 */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
+            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
+          {children}
+        </div>
+        
+        <Footer /> {/* Render the Footer globally */}
+        
+        <Toaster />
+        <Analytics />
+      </body>
+    </html>
+  );
+}
 </file>
 
 <file path="src/app/admin/actions.ts">
