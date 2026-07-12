@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { PostHogProvider } from "./providers";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
@@ -117,11 +118,14 @@ export default async function RootLayout({
         />
         <LaunchScreen /> {/* Added LaunchScreen component here */}
         
-        {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}        <div className="flex-1 w-full flex flex-col">
-          {children}
-        </div>
-        
-        <Footer /> {/* Render the Footer globally */}
+        <PostHogProvider>
+          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
+          <div className="flex-1 w-full flex flex-col">
+            {children}
+          </div>
+          
+          <Footer /> {/* Render the Footer globally */}
+        </PostHogProvider>
         
         <Toaster />
         <Analytics />
