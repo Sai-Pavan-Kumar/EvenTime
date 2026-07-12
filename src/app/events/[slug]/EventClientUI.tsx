@@ -34,6 +34,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalReason, setAuthModalReason] = useState<"interested" | "report">("interested");
   const [isInterested, setIsInterested] = useState(false);
   const [isLoadingInterest, setIsLoadingInterest] = useState(true);
   const totalInterested = event.interested_events?.[0]?.count || 0;
@@ -128,7 +129,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
   const handleInterestedClick = async () => {
     if (isLoadingInterest) return;
-    if (!currentUser) { setIsAuthModalOpen(true); return; }
+    if (!currentUser) { setAuthModalReason("interested"); setIsAuthModalOpen(true); return; }
     if (isCuratorOrAdmin) return;
 
     const previousState = isInterested;
@@ -178,7 +179,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             <ArrowLeft className="w-5 h-5 text-slate-900" />
           </button>
           <div className="flex items-center gap-2">
-            <button onClick={() => { if (!currentUser) { setIsAuthModalOpen(true); return; } setIsReportModalOpen(true); }} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
+            <button onClick={() => { if (!currentUser) { setAuthModalReason("report"); setIsAuthModalOpen(true); return; } setIsReportModalOpen(true); }} className="p-2 text-slate-400 hover:text-red-500 rounded-full transition-colors">
               <Flag className="w-5 h-5" />
             </button>
             <button onClick={() => setIsShareModalOpen(true)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -444,7 +445,11 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 <Users className="w-7 h-7 text-slate-600" />
               </div>
               <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Wait a second!</h3>
-              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">Please sign in to save events and build your personal calendar.</p>
+              <p className="text-sm text-slate-500 mt-2 mb-6 font-medium">
+                {authModalReason === "report"
+                  ? "Please sign in to report this event."
+                  : "Please sign in to save events and build your personal calendar."}
+              </p>
               <div className="flex gap-3">
                 <button onClick={() => setIsAuthModalOpen(false)} className="flex-1 bg-slate-100 text-slate-900 font-bold py-3.5 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
                 <button onClick={() => router.push(`/login?next=${encodeURIComponent(new URL(window.location.href).pathname)}`)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-xl hover:bg-[#5835e5] transition-colors">Sign In</button>
