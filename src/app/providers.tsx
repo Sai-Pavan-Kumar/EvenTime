@@ -25,7 +25,8 @@ function PostHogPageview() {
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      api_host: "/ingest",
+      ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
       person_profiles: "identified_only", // don't create profiles for anonymous guests until they sign in — keeps free tier usage lower
       capture_pageview: false, // we manually track pageviews below (needed for Next.js App Router client-side navigation)
     });
