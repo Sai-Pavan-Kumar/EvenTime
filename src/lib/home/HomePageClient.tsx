@@ -144,10 +144,15 @@ export function HomePageClient(props: HomePageClientProps) {
   // Smart cascading filters: options in each dropdown narrow down based on
   // the OTHER filter currently selected — computed from already-loaded
   // events (liveAllEvents), no extra database call.
+  const isUpcomingEvent = (e: Partial<EventRow>) => {
+    const checkDate = parseEventDateString(e.date_string || "");
+    if (!checkDate) return true;
+    return differenceInCalendarDays(checkDate, new Date()) >= 0;
+  };
+
   const cascadingCategoryChips = useMemo(() => {
-    const source = location
-      ? (liveAllEvents || []).filter((e) => e.city === location)
-      : (liveAllEvents || []);
+    const upcoming = (liveAllEvents || []).filter(isUpcomingEvent);
+    const source = location ? upcoming.filter((e) => e.city === location) : upcoming;
     const cats = Array.from(new Set(source.map((e) => e.category).filter(Boolean) as string[]));
     return cats.length > 0
       ? [{ name: "All", value: "" }, ...cats.map((cat) => ({ name: `${cat}s`, value: cat }))]
@@ -155,9 +160,8 @@ export function HomePageClient(props: HomePageClientProps) {
   }, [liveAllEvents, location, dynamicChips]);
 
   const cascadingLocationChips = useMemo(() => {
-    const source = category
-      ? (liveAllEvents || []).filter((e) => e.category === category)
-      : (liveAllEvents || []);
+    const upcoming = (liveAllEvents || []).filter(isUpcomingEvent);
+    const source = category ? upcoming.filter((e) => e.category === category) : upcoming;
     const locs = Array.from(new Set(source.map((e) => e.city).filter(Boolean) as string[]));
     return locs.length > 0
       ? [{ name: "Anywhere", value: "" }, ...locs.map((loc) => ({ name: loc, value: loc }))]
@@ -171,6 +175,11 @@ export function HomePageClient(props: HomePageClientProps) {
 
   let filteredAllEvents = liveAllEvents || [];
   
+  // Category + Location only narrow results once BOTH are picked together —
+  // picking just one alone keeps the current view unchanged, so the person
+  // can use the (now cascading) second dropdown before results jump around.
+  const bothCategoryAndLocationPicked = !!category && !!location;
+
   if (!noFiltersActive) {
     filteredAllEvents = filteredAllEvents.filter(e => {
       let match = true;
@@ -179,8 +188,10 @@ export function HomePageClient(props: HomePageClientProps) {
         if (e.date_string !== date) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
-        if (category && e.category !== category) match = false;
-        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+        if (bothCategoryAndLocationPicked) {
+          if (category && e.category !== category) match = false;
+          if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
+        }
       }
 
       if (q) {

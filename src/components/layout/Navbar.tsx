@@ -273,12 +273,12 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
                 {showDesktopFilters && hasFilterChips && (
-                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center gap-4 z-20">
-                    <div className="flex items-center gap-2">
+                  <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center flex-wrap gap-x-8 gap-y-3 z-20">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-bold text-slate-500 shrink-0">Categories:</span>
                       <FilterChips dynamicChips={categoryChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="category" />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-bold text-slate-500 shrink-0">Location:</span>
                       <FilterChips dynamicChips={locationChips} category={categoryParam} location={locationParam} branch={branchParam} paramName="location" />
                     </div>
