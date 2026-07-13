@@ -164,7 +164,7 @@ export function HomePageClient(props: HomePageClientProps) {
     const source = category ? upcoming.filter((e) => e.category === category) : upcoming;
     const locs = Array.from(new Set(source.map((e) => e.city).filter(Boolean) as string[]));
     return locs.length > 0
-      ? [{ name: "Anywhere", value: "" }, ...locs.map((loc) => ({ name: loc, value: loc }))]
+      ? [{ name: "Anywhere", value: "" }, ...locs.map((loc) => ({ name: loc.toLowerCase() === "online" ? "Online" : loc, value: loc }))]
       : dynamicLocationChips;
   }, [liveAllEvents, category, dynamicLocationChips]);
 
@@ -278,7 +278,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
                     <CalendarDays className="w-6 h-6 text-brand-primary" /> 
-                    {category ? `${category}s` : "What's happening"}
+                    {category && location ? `${category}s in ${location === "online" ? "Online" : location}` : "What's happening"}
                   </h2>
                   {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
                   {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
