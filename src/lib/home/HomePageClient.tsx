@@ -168,17 +168,13 @@ export function HomePageClient(props: HomePageClientProps) {
       : dynamicLocationChips;
   }, [liveAllEvents, category, dynamicLocationChips]);
 
+  const bothCategoryAndLocationPicked = !!category && !!location;
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
   const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
 
   let filteredAllEvents = liveAllEvents || [];
-  
-  // Category + Location only narrow results once BOTH are picked together —
-  // picking just one alone keeps the current view unchanged, so the person
-  // can use the (now cascading) second dropdown before results jump around.
-  const bothCategoryAndLocationPicked = !!category && !!location;
 
   if (!noFiltersActive) {
     filteredAllEvents = filteredAllEvents.filter(e => {
