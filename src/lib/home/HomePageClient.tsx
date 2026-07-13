@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useEffect, useState, Suspense } from "react";
+import { useRef, useEffect, useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
@@ -141,6 +141,29 @@ export function HomePageClient(props: HomePageClientProps) {
     }
   }, [profile, user, liveAllEvents]);
 
+  // Smart cascading filters: options in each dropdown narrow down based on
+  // the OTHER filter currently selected — computed from already-loaded
+  // events (liveAllEvents), no extra database call.
+  const cascadingCategoryChips = useMemo(() => {
+    const source = location
+      ? (liveAllEvents || []).filter((e) => e.city === location)
+      : (liveAllEvents || []);
+    const cats = Array.from(new Set(source.map((e) => e.category).filter(Boolean) as string[]));
+    return cats.length > 0
+      ? [{ name: "All", value: "" }, ...cats.map((cat) => ({ name: `${cat}s`, value: cat }))]
+      : dynamicChips;
+  }, [liveAllEvents, location, dynamicChips]);
+
+  const cascadingLocationChips = useMemo(() => {
+    const source = category
+      ? (liveAllEvents || []).filter((e) => e.category === category)
+      : (liveAllEvents || []);
+    const locs = Array.from(new Set(source.map((e) => e.city).filter(Boolean) as string[]));
+    return locs.length > 0
+      ? [{ name: "Anywhere", value: "" }, ...locs.map((loc) => ({ name: loc, value: loc }))]
+      : dynamicLocationChips;
+  }, [liveAllEvents, category, dynamicLocationChips]);
+
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
@@ -197,7 +220,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
   return (
     <main className="min-h-screen bg-surface-base">
-      <Navbar categoryChips={dynamicChips} locationChips={dynamicLocationChips} platformStats={platformStats} />
+      <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && user && !profile?.is_onboarded && (
@@ -220,7 +243,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             )}
 
-          {!isAuthLoading && !user && !q && !date && !category && (
+          {!isAuthLoading && !user && !q && !date && !category && !location && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
             </div>
@@ -309,9 +332,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       </Link>
                     </div>
                     
-                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
+                    <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden -mx-4 px-4 md:mx-0 md:px-0">                    
                       {upcomingFeatured.map((event: Partial<EventRow>) => (
-                        <div key={`featured-${event.id}`} className="min-w-70 sm:min-w-[320px] md:min-w-[350px] max-w-[350px] snap-start shrink-0">
+                        <div key={`featured-${event.id}`} className="min-w-70 sm:min-w-[320px] md:min-w-87.5 max-w-87.5 snap-start shrink-0">
                           <EventCard 
                             id={event.id as string}
                             slug={event.slug || (event.id as string)}
