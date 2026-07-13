@@ -214,7 +214,7 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             )}
 
-            {!isAuthLoading && !user && (
+            {!isAuthLoading && !user && !q && !date && !category && !location && (
               <div className="relative">
                 <HeroSection stats={platformStats} />
               </div>
