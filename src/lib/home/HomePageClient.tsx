@@ -130,13 +130,18 @@ export function HomePageClient(props: HomePageClientProps) {
       fetchCollegeEvents();
     }
 
+    // Around You must match the user's preferred_cities (if they've set any)
+    const preferredCities = profile?.preferred_cities || [];
+    const cityMatch = (e: Partial<EventRow>) =>
+      preferredCities.length === 0 || (e.city ? preferredCities.includes(e.city) : false);
+
     // Split into For You and Around You based on profile goals
     if ((profile?.goals?.length ?? 0) > 0) {
       const goalSet = new Set(profile!.goals);
       setLivePersonalizedEvents(nonCampusEvents.filter(e => e.category && goalSet.has(e.category)));
-      setLiveAroundYouEvents(nonCampusEvents.filter(e => !(e.category && goalSet.has(e.category))));
+      setLiveAroundYouEvents(nonCampusEvents.filter(cityMatch));
     } else {
-      setLiveAroundYouEvents(nonCampusEvents);
+      setLiveAroundYouEvents(nonCampusEvents.filter(cityMatch));
       setLivePersonalizedEvents([]);
     }
   }, [profile, user, liveAllEvents]);

@@ -13,6 +13,7 @@ import type { EventRow } from "@/types";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
+import { toast } from "sonner";
 
 export interface EventUIProps {
   event: any;
@@ -208,17 +209,27 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
               {!isPastEvent && (
-                <Link
-                  href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
-                  className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
-                >
-                  Register <ExternalLink className="w-4 h-4" />
-                </Link>
+                event.registration_link ? (
+                  <Link
+                    href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                    className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
+                  >
+                    Register <ExternalLink className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => toast.info("This event doesn't have a registration link yet — check the description above for more details.")}
+                    className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 cursor-default"
+                  >
+                    No Link Available
+                  </button>
+                )
               )}
               {currentUser?.id === safeCreatorId ? (
                 <Link
                   href={`/events/${event.slug || safeId}/edit`}
-                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-brand-primary text-white hover:bg-[#5835e5]"
                 >
                   Edit Event
                 </Link>
@@ -351,7 +362,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 {currentUser?.id === safeCreatorId ? (
                   <Link
                     href={`/events/${event.slug || safeId}/edit`}
-                    className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-[#6C47FF] text-white hover:bg-[#5835e5]"
+                    className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-brand-primary text-white hover:bg-[#5835e5]"
                   >
                     Edit Event
                   </Link>
@@ -367,9 +378,19 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   </button>
                 )}
                 {!isPastEvent && (
-                  <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
-                    Register <ExternalLink className="w-4 h-4" />
-                  </Link>
+                  event.registration_link ? (
+                    <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                      Register <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toast.info("This event doesn't have a registration link yet — check the description above for more details.")}
+                      className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 cursor-default"
+                    >
+                      No Link Available
+                    </button>
+                  )
                 )}
               </div>
 

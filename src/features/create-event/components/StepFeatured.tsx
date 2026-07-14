@@ -35,13 +35,13 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
               </div>
               <div className="flex gap-4">
                 <button type="button" onClick={() => { crop.setIsCropping(false); crop.setRawImage(null); }} className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-100">Cancel</button>
-                <button type="button" onClick={crop.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-[#6C47FF] flex justify-center items-center gap-2"><Crop className="w-4 h-4"/> Save</button>
+                <button type="button" onClick={crop.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-brand-primary flex justify-center items-center gap-2"><Crop className="w-4 h-4"/> Save</button>
               </div>
             </div>
           ) : !crop.previewUrl ? (
             <div className="relative group w-full max-w-[280px] mx-auto">
               <input type="file" accept="image/*" onChange={crop.handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-              <div className="w-full aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-white hover:border-[#6C47FF] hover:bg-[#6C47FF]/5">
+              <div className="w-full aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-white hover:border-[#6C47FF] hover:bg-brand-primary/5">
                 <UploadCloud className="w-10 h-10 mb-3 text-slate-300" />
                 <span className="text-sm font-bold text-slate-600">Upload Poster (1:1)</span>
               </div>
@@ -66,7 +66,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
 
       <div className="pt-8 border-t border-slate-200 flex justify-between items-center">
         <button type="button" onClick={onBack} className="flex items-center gap-2 text-slate-500 font-bold px-4 py-2"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button type="button" onClick={onSubmit} disabled={isSubmitting || (data.isFeatured && !crop.previewUrl)} className="bg-[#6C47FF] hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
+        <button type="button" onClick={onSubmit} disabled={isSubmitting || (data.isFeatured && !crop.previewUrl)} className="bg-brand-primary hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
         {isEditing ? "Update Event" : (data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval")} <CheckCircle2 className="w-4 h-4" />        </button>
       </div>
     </motion.div>

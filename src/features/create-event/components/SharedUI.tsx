@@ -46,8 +46,8 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
         <span className="text-base font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
         <div className="flex gap-1">
-          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-[#6C47FF]/10 transition-colors">‹</button>
-          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-[#6C47FF]/10 transition-colors">›</button>
+          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">‹</button>
+          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">›</button>
         </div>
       </div>
       <div className="px-4 py-3">
@@ -59,7 +59,7 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1; const past = isPast(d); const selected = isSelected(d); const todayCell = isToday(d);
             return (
-              <button key={d} type="button" disabled={past} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", past ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-[#6C47FF] text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !past ? "text-slate-700 hover:bg-[#6C47FF]/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
+              <button key={d} type="button" disabled={past} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", past ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !past ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
             );
           })}
         </div>
@@ -113,7 +113,7 @@ export function LocationSearch({ value, onChange }: { value: string; onChange: (
               const parts = [r.address.city || r.address.town || r.address.village, r.address.state, r.address.country].filter(Boolean);
               const label = parts.join(", ") || r.display_name.split(",").slice(0, 3).join(",");
               return (
-                <button key={i} type="button" onClick={() => handleSelect(r)} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-[#6C47FF]/5 transition-colors text-left border-b border-slate-100 last:border-0">
+                <button key={i} type="button" onClick={() => handleSelect(r)} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-primary/5 transition-colors text-left border-b border-slate-100 last:border-0">
                   <MapPin className="w-4 h-4 text-brand-primary mt-0.5 shrink-0" />
                   <div><div className="text-sm font-semibold text-slate-800 truncate">{label}</div></div>
                 </button>

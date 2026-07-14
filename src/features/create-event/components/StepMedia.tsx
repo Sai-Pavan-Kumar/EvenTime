@@ -45,13 +45,13 @@ export function StepMedia(props: StepMediaProps) {
             </div>
             <div className="flex items-center gap-4">
               <button type="button" onClick={() => { props.setIsCropping(false); props.setRawImage(null); }} className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">Cancel</button>
-              <button type="button" onClick={props.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-[#6C47FF] hover:bg-[#5835e5] transition-colors flex justify-center items-center gap-2"><Crop className="w-4 h-4" /> Crop & Save</button>
+              <button type="button" onClick={props.handleCropComplete} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-brand-primary hover:bg-[#5835e5] transition-colors flex justify-center items-center gap-2"><Crop className="w-4 h-4" /> Crop & Save</button>
             </div>
           </div>
         ) : !props.previewUrl ? (
           <div className="relative group w-full max-w-[280px] mx-auto">
             <input type="file" accept="image/*" onChange={props.handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" disabled={props.isCompressing} />
-            <div className={`w-full aspect-[4/5] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all ${props.isCompressing ? "border-slate-300 bg-slate-100" : "border-slate-300 bg-white group-hover:border-[#6C47FF] group-hover:bg-[#6C47FF]/5"}`}>
+            <div className={`w-full aspect-[4/5] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all ${props.isCompressing ? "border-slate-300 bg-slate-100" : "border-slate-300 bg-white group-hover:border-[#6C47FF] group-hover:bg-brand-primary/5"}`}>
               {props.isCompressing ? <div className="w-8 h-8 border-4 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin mb-3" /> : <div className="flex flex-col items-center text-slate-400 p-6 text-center"><UploadCloud className="w-10 h-10 mb-3 text-slate-300" /><span className="text-sm font-bold text-slate-600">Upload Poster</span><span className="text-xs mt-1">4:5 ratio</span></div>}
             </div>
           </div>
@@ -77,7 +77,7 @@ export function StepMedia(props: StepMediaProps) {
         <label className="block text-sm font-semibold text-slate-700">Is this a paid event? <span className="text-red-500">*</span></label>
         <div className="grid grid-cols-2 gap-4">
           <button type="button" onClick={() => { props.setIsFree(true); props.setPrice(""); }} className={`py-4 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${props.isFree ? "border-[#6C47FF] bg-white shadow-sm" : "border-transparent bg-slate-100"}`}>
-            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${props.isFree ? "bg-[#6C47FF]" : "border-2 border-slate-300"}`}>{props.isFree && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
+            <div className={`w-4 h-4 rounded-full flex items-center justify-center ${props.isFree ? "bg-brand-primary" : "border-2 border-slate-300"}`}>{props.isFree && <div className="w-1.5 h-1.5 bg-white rounded-full" />}</div>
             <div className="text-left"><div className={`text-sm font-bold ${props.isFree ? "text-brand-primary" : "text-slate-600"}`}>Free Event</div></div>
           </button>
           <button type="button" onClick={() => props.setIsFree(false)} className={`py-4 px-4 rounded-xl border-2 flex items-center gap-3 transition-all ${!props.isFree ? "border-[#1D1D1F] bg-white shadow-sm" : "border-transparent bg-slate-100"}`}>
@@ -154,7 +154,7 @@ export function StepMedia(props: StepMediaProps) {
 
       <div className="pt-8 border-t border-slate-200 flex justify-between items-center mt-8">
         <button type="button" onClick={props.onBack} className="flex items-center gap-2 text-slate-500 hover:text-slate-900 font-bold px-4 py-2"><ArrowLeft className="w-4 h-4" /> Back</button>
-        <button type="button" onClick={e => { e.preventDefault(); props.onSubmit(); }} disabled={!props.isValid || props.isSubmitting} className="bg-[#6C47FF] hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold active:scale-95 transition-all shadow-lg shadow-[#6C47FF]/20 flex items-center gap-2">
+        <button type="button" onClick={e => { e.preventDefault(); props.onSubmit(); }} disabled={!props.isValid || props.isSubmitting} className="bg-brand-primary hover:bg-[#5535e0] disabled:bg-slate-300 text-white px-8 py-4 rounded-full text-sm font-bold active:scale-95 transition-all shadow-lg shadow-[#6C47FF]/20 flex items-center gap-2">
           {props.isSubmitting ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Publishing...</> : <>Publish Event <CheckCircle2 className="w-4 h-4" /></>}
         </button>
       </div>

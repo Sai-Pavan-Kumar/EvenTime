@@ -75,7 +75,7 @@ export function LandingIntro({
       </div>
 
       {/* SECTION 3: Why we built it */}
-      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-[#6C47FF]/5 rounded-3xl p-8 md:p-12">
+      <div className="flex flex-col md:flex-row-reverse items-center gap-12 mb-24 bg-brand-primary/5 rounded-3xl p-8 md:p-12">
         <div className="flex-1 space-y-6 flex flex-col">
             <h2 className="text-3xl md:text-5xl font-heading font-black text-slate-900 mb-6 leading-tight">
               The story behind EvenTime.

@@ -194,7 +194,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                               setCollegeSearchQuery(item.name); 
                               setShowCollegeDropdown(false); 
                             }} 
-                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-[#6C47FF]/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none"
+                            className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none"
                           >
                             🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                           </button>
@@ -207,7 +207,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                               handleCreateCollege(collegeSearchQuery);
                             }} 
                             disabled={isCreatingCollege} 
-                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-[#6C47FF]/5 hover:bg-[#6C47FF]/10 transition-colors flex items-center gap-2 sticky bottom-0"
+                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0"
                           >
                             {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
                             {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
@@ -362,7 +362,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                  Continue to Next Step
               </button>
             ) : (
-              <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-[#6C47FF] hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
+              <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-brand-primary hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
               {isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")} <CheckCircle2 className="w-5 h-5" />
               </button>
             )}

@@ -487,7 +487,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
         </button>
 
         <Link href="/events/new" onClick={(e) => { setShowMobileSearch(false); handleProtectedAction(e); }} className="flex flex-col items-center justify-center w-full h-full">
-          <div className="w-12 h-12 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
+          <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
             <SquarePlus className="w-6 h-6 text-white" />
           </div>
         </Link>

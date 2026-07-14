@@ -40,7 +40,7 @@ export default function LaunchScreen() {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 bg-[#6C47FF] flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 bg-brand-primary flex flex-col items-center justify-center overflow-hidden"
           style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
         >
           {/* Animated Logo */}

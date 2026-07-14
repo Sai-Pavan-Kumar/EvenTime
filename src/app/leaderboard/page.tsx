@@ -211,7 +211,7 @@ export default async function LeaderboardPage() {
           /* EMPTY STATE - NO CURATORS YET */
           <div className="flex flex-col items-center justify-center bg-white rounded-[40px] p-10 md:p-16 border border-slate-200 shadow-xl shadow-slate-200/40 max-w-2xl mx-auto relative overflow-hidden mb-20">
              <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-amber-400/10 rounded-full blur-3xl animate-pulse" />
-             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-[#6C47FF]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
              
              <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
                <img

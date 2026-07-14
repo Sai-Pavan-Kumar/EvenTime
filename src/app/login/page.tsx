@@ -86,7 +86,7 @@ export default function LoginPage() {
       >
         
         {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-[#6C47FF] p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+        <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
           {/* Aesthetic Background Glows */}
           <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
           <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />

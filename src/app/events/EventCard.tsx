@@ -425,7 +425,7 @@
                   <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
                     Cancel
                   </button>
-                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
                     Sign In
                   </Link>
                 </div>

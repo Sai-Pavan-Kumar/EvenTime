@@ -139,7 +139,7 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
                 relative flex flex-col items-center justify-center h-10 w-full rounded-xl text-sm transition-all
                 ${!isCurrentMonth ? "text-slate-300" : "text-slate-700"}
                 ${isSelected 
-                  ? "bg-[#6C47FF] text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
+                  ? "bg-brand-primary text-white shadow-md shadow-[#6C47FF]/30 font-bold scale-105 z-10" 
                   : "hover:bg-slate-100 font-medium"}
                 ${isToday && !isSelected ? "border border-[#6C47FF]/30 text-brand-primary" : "border border-transparent"}
               `}

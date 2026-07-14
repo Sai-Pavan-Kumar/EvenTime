@@ -22,7 +22,7 @@ export function AdminHeader() {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
         </button>
         
-        <div className="w-10 h-10 rounded-full bg-[#6C47FF] flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
+        <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
           ET
         </div>
       </div>

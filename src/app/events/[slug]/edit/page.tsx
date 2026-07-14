@@ -22,6 +22,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
   // Inside your EditEventPage return
 return (
   <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
+    <Navbar />
     {/* Clean Apple-style Header */}
     <div className="max-w-2xl mx-auto mb-10">
        <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>

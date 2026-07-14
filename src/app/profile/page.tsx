@@ -270,7 +270,7 @@ function ProfileContent() {
                     <Bookmark className="w-4 h-4" /> Saved Events
                   </div>
                   {savedEvents.length > 0 && (
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-[#6C47FF]/10 text-brand-primary" : "bg-slate-100 text-slate-500"}`}>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeTab === "saved" ? "bg-brand-primary/10 text-brand-primary" : "bg-slate-100 text-slate-500"}`}>
                       {savedEvents.length}
                     </span>
                   )}
@@ -305,7 +305,7 @@ function ProfileContent() {
               </div>
 
               <div className="p-4 pt-1 mb-2 mt-auto">
-                <Link href="/events/new" className="w-full bg-[#6C47FF] hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
+                <Link href="/events/new" className="w-full bg-brand-primary hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
                   <Plus className="w-4 h-4" /> Create New Event
                 </Link>
               </div>
@@ -398,7 +398,7 @@ function ProfileContent() {
                   </div>
                   <h3 className="text-slate-900 font-bold text-xl">Ready to Make an Impact?</h3>
                   <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto mb-8">You haven't posted any events yet. Share your first event with the community!</p>
-                  <Link href="/events/new" className="inline-flex items-center gap-2 bg-[#6C47FF] hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
+                  <Link href="/events/new" className="inline-flex items-center gap-2 bg-brand-primary hover:bg-[#5535E0] text-white px-7 py-3.5 rounded-full text-sm font-bold transition-all shadow-md active:scale-95">
                     <Plus className="w-4 h-4" /> Create Your First Event
                   </Link>
                 </div>

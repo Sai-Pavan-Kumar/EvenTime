@@ -123,7 +123,7 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
                   </p>
                   <button
                     onClick={handleCTA}
-                    className="w-full bg-[#6C47FF] text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
+                    className="w-full bg-brand-primary text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-[#6C47FF]/20"
                   >
                     {isGuest ? "Sign In Now" : "Setup Profile"} <ArrowRight className="w-4 h-4" />
                   </button>

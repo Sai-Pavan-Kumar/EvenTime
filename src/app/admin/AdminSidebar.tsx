@@ -22,7 +22,7 @@ export function AdminSidebar() {
         {/* LOGO AREA */}
         <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-[12px] bg-[#6C47FF] flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
+            <div className="w-10 h-10 rounded-[12px] bg-brand-primary flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
               <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
             </div>
             <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-brand-primary">OS</span></h2>
