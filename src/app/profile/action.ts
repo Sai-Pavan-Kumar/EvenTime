@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
+import { revalidatePath, revalidateTag } from "next/cache"; // NEW: Imported for cache revalidation
 
 export async function deleteEventAction(formData: FormData) {
   const supabase = await createClient();
@@ -26,6 +26,12 @@ export async function deleteEventAction(formData: FormData) {
   // Image is NOT removed from R2 here — only the 30-day purge job removes it,
   // since the event can still be viewed/restored from trash before then.
   await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
+
+  // Bust the homepage/city/category caches so the deleted event disappears immediately
+  revalidateTag("events", "events");
+  revalidatePath("/", "layout");
+  revalidatePath("/cities/[city]", "page");
+
   redirect("/profile");
 }
 
