@@ -161,7 +161,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
   };
 
   return (
-    <main className="min-h-screen bg-white pb-8">
+    <main className="min-h-screen bg-white pb-8 overflow-x-hidden">
       <Navbar />
     {event.status === "pending" && (
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center justify-center gap-3">
@@ -261,7 +261,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             {/* About Event */}
             <div className="space-y-3">
               <h2 className="text-xl font-bold text-slate-900">About Event</h2>
-              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap">
+              <div className="prose prose-slate max-w-none text-slate-700 font-sans text-[16px] leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                 {event.description}
               </div>
             </div>
