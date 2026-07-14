@@ -124,7 +124,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }, isEditing, initialData?.id);
   };
 
-  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline || (eventData.location && eventData.city));
+  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city));
 
   return (
     <div className="max-w-3xl mx-auto w-full">

@@ -64,7 +64,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       
       {/* LINK INPUT */}
       <div className="space-y-2">
-        <label className="block text-sm font-semibold text-slate-700">Registration Link <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span></label>
+        <label className="block text-sm font-semibold text-slate-700">Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}</label>
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
