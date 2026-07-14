@@ -130,16 +130,21 @@ export function HomePageClient(props: HomePageClientProps) {
       fetchCollegeEvents();
     }
 
-    // Around You must match the user's preferred_cities (if they've set any)
+    // City match: online events always pass (no city restriction on them).
+    // If user hasn't picked any preferred_cities yet, treat every city as a match.
     const preferredCities = profile?.preferred_cities || [];
     const cityMatch = (e: Partial<EventRow>) =>
-      preferredCities.length === 0 || (e.city ? preferredCities.includes(e.city) : false);
+      e.is_virtual ||
+      preferredCities.length === 0 ||
+      (e.city ? preferredCities.includes(e.city) : false);
 
-    // Split into For You and Around You based on profile goals
+    // For You = preferred category AND preferred city (or online)
+    // Around You = preferred city (or online), MINUS whatever is already in For You
     if ((profile?.goals?.length ?? 0) > 0) {
       const goalSet = new Set(profile!.goals);
-      setLivePersonalizedEvents(nonCampusEvents.filter(e => e.category && goalSet.has(e.category)));
-      setLiveAroundYouEvents(nonCampusEvents.filter(cityMatch));
+      const isForYouMatch = (e: Partial<EventRow>) => cityMatch(e) && !!(e.category && goalSet.has(e.category));
+      setLivePersonalizedEvents(nonCampusEvents.filter(isForYouMatch));
+      setLiveAroundYouEvents(nonCampusEvents.filter(e => cityMatch(e) && !isForYouMatch(e)));
     } else {
       setLiveAroundYouEvents(nonCampusEvents.filter(cityMatch));
       setLivePersonalizedEvents([]);
