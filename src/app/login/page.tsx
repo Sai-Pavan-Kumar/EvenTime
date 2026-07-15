@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [hasConsented, setHasConsented] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [isResetLoading, setIsResetLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -197,29 +199,34 @@ export default function LoginPage() {
           </p>
 
           {!isSignUp && (
-            <div className="text-right -mt-2 mb-2">
+            <div className="text-right -mt-2 mb-1">
               <button
                 type="button"
+                disabled={isResetLoading}
                 onClick={async () => {
                   const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
                   if (!emailInput) {
-                    toast.error("Enter your email above first.");
+                    setResetMessage("Enter your email above first.");
                     return;
                   }
-                  const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
+                  setIsResetLoading(true);
+                  setResetMessage(null);
+                  await supabase.auth.resetPasswordForEmail(emailInput, {
                     redirectTo: `${window.location.origin}/reset-password`,
                   });
-                  if (error) {
-                    toast.error(error.message);
-                  } else {
-                    toast.success("Password reset link sent! Check your email.");
-                  }
+                  setIsResetLoading(false);
+                  setResetMessage("If an account exists with this email, a reset link has been sent.");
                 }}
-                className="text-xs font-bold text-brand-primary hover:underline"
+                className="text-xs font-bold text-brand-primary hover:underline disabled:opacity-50"
               >
                 Forgot password?
               </button>
             </div>
+          )}
+          {resetMessage && (
+            <p className="text-[11px] text-slate-500 font-medium font-['Switzer'] -mt-1 mb-2 text-right">
+              {resetMessage}
+            </p>
           )}
 
           {/* Clean Divider */}

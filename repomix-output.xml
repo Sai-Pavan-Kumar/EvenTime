@@ -329,7 +329,6 @@ eslint.config.mjs
 next.config.ts
 package.json
 postcss.config.mjs
-proxy.ts
 README.md
 sentry.edge.config.ts
 sentry.server.config.ts
@@ -676,75 +675,6 @@ export default function EventLoading() {
           </div>
         </div>
       </div>
-    </main>
-  );
-}
-</file>
-
-<file path="src/app/reset-password/page.tsx">
-"use client";
-
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Lock } from "lucide-react";
-import { toast } from "sonner";
-
-export default function ResetPasswordPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [password, setPassword] = useState("");
-  const router = useRouter();
-  const supabase = createClient();
-
-  const handleReset = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
-    setIsLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Password updated! Please sign in.");
-      router.push("/login");
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[440px] bg-white rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] p-8 sm:p-12"
-      >
-        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Set New Password</h2>
-        <p className="text-slate-500 text-sm font-medium mb-8">Enter a new password for your account.</p>
-
-        <form onSubmit={handleReset} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">New Password</label>
-            <div className="relative group">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-              <input
-                type="password" required minLength={6} value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-4 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-              />
-            </div>
-            <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
-              Min 6 characters, with uppercase, lowercase, a number & a symbol.
-            </p>
-          </div>
-
-          <button
-            type="submit" disabled={isLoading}
-            className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-          >
-            {isLoading ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Update Password <ArrowRight className="w-4 h-4" /></>}
-          </button>
-        </form>
-      </motion.div>
     </main>
   );
 }
@@ -1849,6 +1779,54 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   ],
   "exclude": ["node_modules"]
 }
+</file>
+
+<file path=".github/workflows/ci.yml">
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Audit URLs using Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://et.sbhub.in/
+          uploadArtifacts: true 
+          temporaryPublicStorage: true
 </file>
 
 <file path="public/manifest.json">
@@ -4420,6 +4398,75 @@ export default function RedirectPage() {
 }
 </file>
 
+<file path="src/app/reset-password/page.tsx">
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Lock } from "lucide-react";
+import { toast } from "sonner";
+
+export default function ResetPasswordPage() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [password, setPassword] = useState("");
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleReset = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    const { error } = await supabase.auth.updateUser({ password });
+    setIsLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated! Please sign in.");
+      router.push("/login");
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[440px] bg-white rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] p-8 sm:p-12"
+      >
+        <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Set New Password</h2>
+        <p className="text-slate-500 text-sm font-medium mb-8">Enter a new password for your account.</p>
+
+        <form onSubmit={handleReset} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
+              <input
+                type="password" required minLength={6} value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-4 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+              />
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
+              Min 6 characters, with uppercase, lowercase, a number & a symbol.
+            </p>
+          </div>
+
+          <button
+            type="submit" disabled={isLoading}
+            className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+          >
+            {isLoading ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Update Password <ArrowRight className="w-4 h-4" /></>}
+          </button>
+        </form>
+      </motion.div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/app/global-error.tsx">
 "use client";
 
@@ -5317,84 +5364,6 @@ export const onRequestError = Sentry.captureRequestError;
 legacy-peer-deps=true
 </file>
 
-<file path="proxy.ts">
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
-
-// NEXT.JS 16.2+: The function MUST be named 'proxy' instead of 'middleware'
-export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-        },
-      },
-    }
-  );
-
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  const isProtected = 
-    request.nextUrl.pathname.startsWith('/events/new') || 
-    request.nextUrl.pathname.endsWith('/edit') || 
-    request.nextUrl.pathname.startsWith('/profile') || 
-    request.nextUrl.pathname.startsWith('/et98');
-    
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return response;
-}
-
-// Ensure the config remains to avoid unnecessary runs
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-};
-</file>
-
 <file path="sentry.edge.config.ts">
 // This file configures the initialization of Sentry for edge features (middleware, edge routes, and so on).
 // The config you add here will be used whenever one of the edge features is loaded.
@@ -5438,54 +5407,6 @@ Sentry.init({
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
 });
-</file>
-
-<file path=".github/workflows/ci.yml">
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  build:
-    name: Build & Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
-  lighthouse:
-    name: Lighthouse Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Audit URLs using Lighthouse
-        uses: treosh/lighthouse-ci-action@v12
-        with:
-          urls: |
-            https://et.sbhub.in/
-          uploadArtifacts: true 
-          temporaryPublicStorage: true
 </file>
 
 <file path="src/app/profile/settings/page.tsx">
@@ -6974,53 +6895,6 @@ export function StepMedia(props: StepMediaProps) {
 }
 </file>
 
-<file path="src/proxy.ts">
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-export function proxy(request: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-    style-src 'self' https://api.fontshare.com;
-    img-src 'self' blob: data: https: http:;
-    font-src 'self' https://api.fontshare.com;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  `;
-  
-  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-  const response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-  
-  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-  return response;
-}
-
-export const config = {
-  matcher: [
-    {
-      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
-  ],
-};
-</file>
-
 <file path="package.json">
 {
   "name": "eventime",
@@ -7774,6 +7648,108 @@ export const getCityConfig = (city: string) => {
     ...config,
     coverImage: `/cities/covers/${key}.webp`
   };
+};
+</file>
+
+<file path="src/proxy.ts">
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
+
+export async function proxy(request: NextRequest) {
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
+    style-src 'self' https://api.fontshare.com;
+    img-src 'self' blob: data: https: http:;
+    font-src 'self' https://api.fontshare.com;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  `;
+  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
+      },
+    }
+  );
+
+  // Use getUser() for high-security checks
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // NEW: Global Authentication Check Strategy
+  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
+  response.cookies.set({
+    name: 'client_auth',
+    value: user ? 'true' : 'false',
+    path: '/',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  // 1. If user IS logged in and tries to go to login page, send to profile
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
+
+  const isProtected =
+    request.nextUrl.pathname.startsWith('/events/new') ||
+    request.nextUrl.pathname.endsWith('/edit') ||
+    request.nextUrl.pathname.startsWith('/profile') ||
+    request.nextUrl.pathname.startsWith('/et98');
+
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    {
+      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
+  ],
 };
 </file>
 
@@ -10027,256 +10003,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
-<file path="src/app/login/page.tsx">
-"use client";
-
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
-import { toast } from "sonner";
-
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-  const [hasConsented, setHasConsented] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
- const handleLogin = async (provider: 'google' | 'github') => {
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    setIsLoading(provider);
-    await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
-
-   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
-    setIsLoading('email');
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
-      : await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 3) {
-        // Calculate exponential cooldown: 30s, 60s, 120s, etc.
-        const penaltyMultiplier = Math.pow(2, newAttempts - 3);
-        const cooldownMs = 30000 * penaltyMultiplier;
-        
-        toast.error(`Too many failed attempts. Please wait ${cooldownMs / 1000} seconds before trying again.`);
-        setIsLockedOut(true);
-        
-        setTimeout(() => {
-          setIsLockedOut(false);
-          // We don't reset attempts here, so the next failure triggers a longer cooldown
-        }, cooldownMs);
-      } else {
-        toast.error(isSignUp ? error.message : "Invalid email or password.");
-      }
-      setIsLoading(null);
-    } else if (isSignUp) {
-      setIsLoading(null);
-      toast.success("Account created! Check your email to confirm, then sign in.");
-      setIsSignUp(false);
-    } else {
-      setAttempts(0); // Reset attempts on success
-      router.push("/");
-      router.refresh();
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
-      {/* THE PERFECT 2:1 SPLIT LAYOUT
-        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
-        - Mobile: auto height, vertical stack
-      */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
-      >
-        
-        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
-          {/* Aesthetic Background Glows */}
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
-
-          {/* Top Logo */}
-          <div className="relative z-10 w-16 h-16">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
-          </div>
-
-          {/* Center Pitch */}
-          <div className="relative z-10 mt-auto mb-16">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              Stop Searching.<br />Start Attending.
-            </h1>
-            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
-              The ultimate stage for Gen-Z curators and seekers to discover the best events.
-            </p>
-          </div>
-
-          {/* Bottom Footer Area */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="h-1 w-8 bg-white/30 rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
-        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
-          
-          {/* Mobile Logo (Visible only on small screens) */}
-          <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
-            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-
-           <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
-                  className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {isSignUp && (
-                <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
-                  Min 6 characters, with uppercase, lowercase, a number & a symbol.
-                </p>
-              )}
-            </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
-                </label>
-            </div>
-            <button 
-              type="submit" disabled={!!isLoading || isLockedOut}
-              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-            >
-               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          <p className="text-center text-xs text-slate-500 font-medium mt-4">
-            {isSignUp ? "Already have an account?" : "New here?"}{" "}
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </button>
-          </p>
-
-          {!isSignUp && (
-            <div className="text-right -mt-2 mb-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
-                  if (!emailInput) {
-                    toast.error("Enter your email above first.");
-                    return;
-                  }
-                  const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
-                    redirectTo: `${window.location.origin}/reset-password`,
-                  });
-                  if (error) {
-                    toast.error(error.message);
-                  } else {
-                    toast.success("Password reset link sent! Check your email.");
-                  }
-                }}
-                className="text-xs font-bold text-brand-primary hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
-          )}
-
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
-        </div>
-      </motion.div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/lib/home/LandingIntro.tsx">
 import Image from "next/image";
 import { Star, CalendarDays, Building2, TrendingUp, CheckCircle2 } from "lucide-react";
@@ -10528,79 +10254,254 @@ export default function NotFound() {
 }
 </file>
 
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
+<file path="src/app/login/page.tsx">
+"use client";
 
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: false,
-  aggressiveFrontEndNavCaching: false,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
 
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-      {
-        source: "/ingest/decide",
-        destination: "https://us.i.posthog.com/decide",
-      },
-    ];
-  },
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    setIsLoading(provider);
+    await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    if (isLockedOut) {
+      toast.error("Too many failed attempts. Please wait before trying again.");
+      return;
+    }
+
+    setIsLoading('email');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = isSignUp
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+      : await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      
+      if (newAttempts >= 3) {
+        // Calculate exponential cooldown: 30s, 60s, 120s, etc.
+        const penaltyMultiplier = Math.pow(2, newAttempts - 3);
+        const cooldownMs = 30000 * penaltyMultiplier;
+        
+        toast.error(`Too many failed attempts. Please wait ${cooldownMs / 1000} seconds before trying again.`);
+        setIsLockedOut(true);
+        
+        setTimeout(() => {
+          setIsLockedOut(false);
+          // We don't reset attempts here, so the next failure triggers a longer cooldown
+        }, cooldownMs);
+      } else {
+        toast.error(isSignUp ? error.message : "Invalid email or password.");
+      }
+      setIsLoading(null);
+    } else if (isSignUp) {
+      setIsLoading(null);
+      toast.success("Account created! Check your email to confirm, then sign in.");
+      setIsSignUp(false);
+    } else {
+      setAttempts(0); // Reset attempts on success
+      router.push("/");
+      router.refresh();
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
+      {/* THE PERFECT 2:1 SPLIT LAYOUT
+        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
+        - Mobile: auto height, vertical stack
+      */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
+      >
+        
+        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
+        <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+          {/* Aesthetic Background Glows */}
+          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
+
+          {/* Top Logo */}
+          <div className="relative z-10 w-16 h-16">
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+          </div>
+
+          {/* Center Pitch */}
+          <div className="relative z-10 mt-auto mb-16">
+            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
+              Stop Searching.<br />Start Attending.
+            </h1>
+            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
+              The ultimate stage for Gen-Z curators and seekers to discover the best events.
+            </p>
+          </div>
+
+          {/* Bottom Footer Area */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="h-1 w-8 bg-white/30 rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
+        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
           
-        ],
-      },
-    ]
-  }
-};
+          {/* Mobile Logo (Visible only on small screens) */}
+          <div className="md:hidden w-14 h-14 relative mb-8">
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+          </div>
 
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
+            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
+                <input 
+                  type="email" name="email" required placeholder="name@email.com" 
+                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+
+           <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
+                <input 
+                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
+                  className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {isSignUp && (
+                <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
+                  Min 6 characters, with uppercase, lowercase, a number & a symbol.
+                </p>
+              )}
+            </div>
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
+                </label>
+            </div>
+            <button 
+              type="submit" disabled={!!isLoading || isLockedOut}
+              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+            >
+               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-slate-500 font-medium mt-4">
+            {isSignUp ? "Already have an account?" : "New here?"}{" "}
+            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
+
+          {!isSignUp && (
+            <div className="text-right -mt-2 mb-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
+                  if (!emailInput) {
+                    toast.error("Enter your email above first.");
+                    return;
+                  }
+                  const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  if (error) {
+                    toast.error(error.message);
+                  } else {
+                    toast.success("Password reset link sent! Check your email.");
+                  }
+                }}
+                className="text-xs font-bold text-brand-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
+          {/* Clean Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
+          </div>
+
+          {/* Social Logins */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
+              GitHub
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+    </main>
+  );
+}
 </file>
 
 <file path="src/app/error.tsx">
@@ -11049,6 +10950,95 @@ export async function fetchHomePageData() {
     displayToday: `${todayIST.getDate()} ${todayIST.toLocaleDateString('en-US', { month: 'short' })}`
   };
 }
+</file>
+
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  experimental: {
+    cacheLife: {
+      events: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+      leaderboard: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+    },
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "https://us.i.posthog.com/decide",
+      },
+    ];
+  },
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
 </file>
 
 <file path="src/app/profile/page.tsx">
