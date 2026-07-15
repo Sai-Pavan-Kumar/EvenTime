@@ -162,18 +162,18 @@ export default function SettingsClient({
   return (
     <main className="min-h-screen bg-surface-base pb-32">
       <Navbar />
-      {/* Mobile-Optimized Sticky Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center gap-4">
-        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
-          <ArrowLeft className="w-5 h-5 text-slate-900" />
-        </button>
-        <div>
-          <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
-          <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
-        </div>
-      </nav>
 
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8">
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-6">
+        <div className="bg-white rounded-t-[24px] border border-b-0 border-slate-100 shadow-sm sticky top-0 z-40 px-6 py-4 flex items-center gap-4">
+          <button type="button" onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          <div>
+            <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
+            <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-b-[24px] border border-t-0 border-slate-100 shadow-sm px-6 pt-2 pb-6 -mt-px">
         {missingItems.length > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
             <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
@@ -422,30 +422,29 @@ export default function SettingsClient({
               {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
             </p>
 
-            <div className="flex flex-wrap gap-2.5">
+            <div className="flex flex-wrap gap-2">
               {categoriesList.map((goal) => {
                 const isSelected = selectedGoals.includes(goal);
                 const count = categoryCounts[goal] || 0;
+                const isDisabled = !isSelected && !isAdmin && selectedGoals.length >= 6;
                 return (
                   <button
                     key={goal}
                     type="button"
                     onClick={() => toggleGoal(goal)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center gap-2 border ${
-                      isSelected 
-                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-md shadow-black/10" 
-                        : !isAdmin && selectedGoals.length >= 6
-                        ? "bg-white text-slate-300 border-transparent cursor-not-allowed"
+                    disabled={isDisabled}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                      isSelected
+                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                        : isDisabled
+                        ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
                         : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
                     {goal}
                     {count > 0 && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ml-1 font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-[#5835E5]/10 text-[#5835E5]'}`}>
-                        {count}
-                      </span>
+                      <span className="ml-1 opacity-60">({count})</span>
                     )}
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
                   </button>
                 );
               })}
@@ -509,6 +508,7 @@ export default function SettingsClient({
           </div>
 
         </form>
+      </div>
       </div>
     </main>
     );
