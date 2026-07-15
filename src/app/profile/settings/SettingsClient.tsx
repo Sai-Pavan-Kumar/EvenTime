@@ -160,7 +160,7 @@ export default function SettingsClient({
   if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
 
   return (
-    <main className="min-h-screen bg-surface-base pb-32">
+    <main className="min-h-screen bg-surface-base pb-8">
       <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 md:px-6 pt-6">
@@ -197,9 +197,9 @@ export default function SettingsClient({
               {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
             </div>
 
-            <div className="space-y-5">
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What's your name?</label>
+            <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What's your name?</label>
                 <input 
                   type="text" 
                   name="fullName" 
@@ -208,15 +208,15 @@ export default function SettingsClient({
                   required
                   disabled={isLocked}
                   placeholder="Your Name"
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
               </div>
 
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Public Username</label>
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Public Username</label>
                 <div className="relative flex items-center">
-                <span className="absolute left-4 text-slate-400 font-bold z-10">@</span>
+                  <span className="text-slate-400 font-bold mr-1">@</span>
                   <input 
                     type="text" 
                     name="username" 
@@ -229,15 +229,15 @@ export default function SettingsClient({
                     pattern="[A-Za-z0-9]+"
                     title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
                     placeholder="your_handle"
-                    className="w-full bg-[#F8F9FB] border-none text-slate-900 pl-10 pr-10 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                    className="w-full bg-transparent border-none text-slate-900 p-0 pr-8 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
-                  {isLocked && <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />}
+                  {isLocked && <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
                 </div>
-                <p className="text-xs text-slate-400 mt-2 ml-1">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
+                <p className="text-xs text-slate-400 mt-1.5">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
               </div>
 
               {/* Editable: City Multi-Select (max 3) */}
-              <div>
+              <div className="px-4 py-3.5 bg-[#F8F9FB]">
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
                 </label>
@@ -255,8 +255,8 @@ export default function SettingsClient({
                           isSelected
                             ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
                             : isDisabled
-                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                            ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
                         }`}
                       >
                         {loc}
@@ -266,14 +266,14 @@ export default function SettingsClient({
                 </div>
               </div>
 
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What are you</label>
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What are you</label>
                 <select 
                   value={userType} 
                   onChange={e => setUserType(e.target.value)} 
                   required
                   disabled={isLocked}
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="" disabled>Select your role</option>
                   {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
@@ -282,7 +282,6 @@ export default function SettingsClient({
                 </select>
                 {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
               </div>
-
             </div>
           </div>
 
@@ -305,19 +304,19 @@ export default function SettingsClient({
                   {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
                 </div>
 
-                <div className="space-y-5">
+                <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
                   {/* College Search Dropdown */}
-                  <div className="relative" data-college-dropdown>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
+                  <div className="relative px-4 py-3.5 bg-[#F8F9FB]" data-college-dropdown>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">College Name</label>
                     {isLocked ? (
                       <div className="relative">
                         <input
                           type="text"
                           value={college}
                           disabled
-                          className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
                         />
-                        <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       </div>
                     ) : (
                       <>
@@ -327,10 +326,10 @@ export default function SettingsClient({
                           value={collegeSearchQuery}
                           onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
                           onFocus={() => setShowCollegeDropdown(true)}
-                          className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none"
                         />
                          {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                          <div className="absolute left-4 right-4 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
                             {isSearchingColleges && (
                               <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
                             )}
@@ -359,21 +358,20 @@ export default function SettingsClient({
                             )}
                           </div>
                         )}
-                        <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Can't find your college? It will be added automatically.</p>
+                        <p className="text-[10px] text-slate-400 mt-1.5">Can't find your college? It will be added automatically.</p>
                       </>
                     )}
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Branch</label>
                       <select
                         value={branch}
                         onChange={e => setBranch(e.target.value)}
                         required={userType === "Student"}
                         disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="" disabled>Select</option>
                         {INDIAN_COLLEGE_BRANCHES.map(b => (
@@ -383,14 +381,14 @@ export default function SettingsClient({
                       {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
                     </div>
 
-                    <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
+                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Yr of Graduation</label>
                       <select 
                         value={year}
                         onChange={e => setYear(e.target.value)}
                         required={userType === "Student"}
                         disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <option value="" disabled>Select</option>
                         {["2024", "2025", "2026", "2027", "2028", "2029", "2030"].map(y => (
@@ -491,7 +489,7 @@ export default function SettingsClient({
             </div>
           </div>
           {/* Fixed Save Button */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
+          <div className="relative bg-transparent border-none p-0">
             <button 
               type="submit" 
               disabled={isSubmitting}
