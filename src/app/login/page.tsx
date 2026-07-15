@@ -193,7 +193,7 @@ export default function LoginPage() {
 
           <p className="text-center text-xs text-slate-500 font-medium mt-4">
             {isSignUp ? "Already have an account?" : "New here?"}{" "}
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
+             <button type="button" onClick={() => { setIsSignUp(!isSignUp); setResetMessage(null); }} className="text-brand-primary font-bold hover:underline">
               {isSignUp ? "Sign In" : "Sign Up"}
             </button>
           </p>
@@ -223,8 +223,8 @@ export default function LoginPage() {
               </button>
             </div>
           )}
-          {resetMessage && (
-            <p className="text-[11px] text-slate-500 font-medium font-['Switzer'] -mt-1 mb-2 text-right">
+          {!isSignUp && resetMessage && (
+            <p className="text-[11px] text-slate-500 font-medium -mt-1 mb-2 text-right">
               {resetMessage}
             </p>
           )}

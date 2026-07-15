@@ -7,7 +7,7 @@ export async function proxy(request: NextRequest) {
   const cspHeader = `
     default-src 'self';
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-    style-src 'self' https://api.fontshare.com;
+   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
     img-src 'self' blob: data: https: http:;
     font-src 'self' https://api.fontshare.com;
     connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io;
