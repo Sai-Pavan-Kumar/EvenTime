@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock } from "lucide-react";
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -145,15 +146,28 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="space-y-1.5">
+           <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
                 <input 
-                  type="password" name="password" required placeholder="••••••••" 
-                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
+                  className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
+              {isSignUp && (
+                <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
+                  Min 6 characters, with uppercase, lowercase, a number & a symbol.
+                </p>
+              )}
             </div>
             <div className="flex items-start gap-3 mt-4 mb-2">
               <input 
@@ -181,6 +195,32 @@ export default function LoginPage() {
               {isSignUp ? "Sign In" : "Sign Up"}
             </button>
           </p>
+
+          {!isSignUp && (
+            <div className="text-right -mt-2 mb-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
+                  if (!emailInput) {
+                    toast.error("Enter your email above first.");
+                    return;
+                  }
+                  const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  if (error) {
+                    toast.error(error.message);
+                  } else {
+                    toast.success("Password reset link sent! Check your email.");
+                  }
+                }}
+                className="text-xs font-bold text-brand-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
 
           {/* Clean Divider */}
           <div className="relative flex items-center justify-center my-8">

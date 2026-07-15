@@ -13,6 +13,20 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet', 'react-leaflet'],
    turbopack: {},
+  experimental: {
+    cacheLife: {
+      events: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+      leaderboard: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+    },
+  },
   async rewrites() {
     return [
       {
