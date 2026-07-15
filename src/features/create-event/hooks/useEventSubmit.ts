@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { TablesInsert } from "@/types/database";
 import { toast } from "sonner";
-import { revalidateEventsCacheAction } from "@/app/admin/revalidateEventsAction";
+import { revalidateEventsCacheAction } from "@/app/et98/revalidateEventsAction";
 type SubmitPayload = TablesInsert<"events"> & {
   imageFile?: File | null;
   previewUrl?: string | null;

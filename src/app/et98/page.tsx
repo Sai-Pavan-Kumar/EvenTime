@@ -109,7 +109,7 @@ export default async function AdminDashboard() {
             <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
               Event Approval Queue
             </h2>
-            <Link href="/admin/events" className="text-[14px] font-semibold text-brand-primary hover:text-[#5535E0] font-['Switzer']">View All</Link>
+            <Link href="/et98/events" className="text-[14px] font-semibold text-brand-primary hover:text-[#5535E0] font-['Switzer']">View All</Link>
           </div>
           
           <div className="space-y-4">

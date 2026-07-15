@@ -339,7 +339,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
             )}
 
             {isAdmin && (
-              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
+              <Link href="/et98" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
                 <Settings className="w-4 h-4 shrink-0" /> Admin
               </Link>
             )}

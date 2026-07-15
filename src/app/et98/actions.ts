@@ -56,8 +56,8 @@ export async function approveEventAction(formData: FormData) {
   }
 
  revalidatePath("/", "layout"); 
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
   revalidateTag("events", "events");
   return { success: true };
 }
@@ -89,7 +89,7 @@ export async function rejectEventAction(formData: FormData) {
 
  revalidatePath("/", "layout"); 
   revalidatePath("/");
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   revalidateTag("events", "events");
   return { success: true, creatorId: event.creator_id, title: event.title };
 }
@@ -102,7 +102,7 @@ export async function resolveReportAction(formData: FormData) {
 
   await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
 
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   return { success: true };
 }
 
@@ -139,7 +139,7 @@ export async function punishCuratorAction(formData: FormData) {
   );
 
   if (trustedReporterIds.size < 5) {
-    revalidatePath("/admin");
+    revalidatePath("/et98");
     return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
   }
 
@@ -148,7 +148,7 @@ export async function punishCuratorAction(formData: FormData) {
     p_amount: 25
   });
 
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   revalidatePath("/profile");
   revalidateTag("leaderboard", "leaderboard");
   return { success: true };
@@ -170,8 +170,8 @@ export async function deleteEventAction(formData: FormData) {
   
    revalidatePath("/", "layout"); 
   revalidatePath("/");
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
   revalidateTag("events", "events");
   return { success: true };
 }
@@ -195,8 +195,8 @@ export async function deleteUserAction(formData: FormData) {
   const adminClient = createAdminClient();
   await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
 
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
+  revalidatePath("/et98");
+  revalidatePath("/et98/users");
   return { success: true };
 }
 
@@ -213,8 +213,8 @@ export async function updateUserRoleAction(formData: FormData) {
   const adminClient = createAdminClient();
   await adminClient.from("profiles").update({ role: newRole }).eq("id", userId);
   
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
+  revalidatePath("/et98");
+  revalidatePath("/et98/users");
   return { success: true };
 }
 
@@ -253,8 +253,8 @@ if (!event) {
    revalidatePath("/");
   revalidatePath("/", "layout"); 
   revalidatePath("/cities/[city]", "page");
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
   revalidateTag("events", "events");
   revalidateTag("leaderboard", "leaderboard");
   return { success: true };
@@ -273,7 +273,7 @@ export async function toggleLeaderboardAction(formData: FormData) {
     return { error: "Failed to update setting." };
   }
 
-  revalidatePath("/admin");
+  revalidatePath("/et98");
 
   revalidatePath("/");
   revalidatePath("/leaderboard");
@@ -295,7 +295,7 @@ export async function toggleFeaturedAction(formData: FormData) {
     return { error: "Failed to update featured status." };
   }
    revalidatePath("/", "layout"); 
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   revalidatePath("/");
   revalidateTag("events", "events");
   return { success: true };

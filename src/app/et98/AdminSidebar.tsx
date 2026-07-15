@@ -7,12 +7,12 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   const links = [
-    { name: "Overview", href: "/admin", icon: LayoutDashboard },
-    { name: "Events Queue", href: "/admin/events", icon: CalendarDays },
-    { name: "User Directory", href: "/admin/users", icon: Users },
-    { name: "Colleges", href: "/admin/colleges", icon: Building2 },
-    { name: "Moderation", href: "/admin/reports", icon: ShieldAlert },
-    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning },
+    { name: "Overview", href: "/et98", icon: LayoutDashboard },
+    { name: "Events Queue", href: "/et98/events", icon: CalendarDays },
+    { name: "User Directory", href: "/et98/users", icon: Users },
+    { name: "Colleges", href: "/et98/colleges", icon: Building2 },
+    { name: "Moderation", href: "/et98/reports", icon: ShieldAlert },
+    { name: "Feedback", href: "/et98/feedback", icon: MessageSquareWarning },
   ];
 
   return (

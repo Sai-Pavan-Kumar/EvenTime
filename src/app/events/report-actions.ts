@@ -60,7 +60,7 @@ export async function submitReportAction(formData: FormData) {
   }
   
   // FIX: Clear the cache for the admin page so new reports show up immediately!
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   revalidatePath("/");
 
   return { success: true };

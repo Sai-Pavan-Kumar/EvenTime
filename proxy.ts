@@ -55,7 +55,7 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/events/new') || 
     request.nextUrl.pathname.endsWith('/edit') || 
     request.nextUrl.pathname.startsWith('/profile') || 
-    request.nextUrl.pathname.startsWith('/admin');
+    request.nextUrl.pathname.startsWith('/et98');
     
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

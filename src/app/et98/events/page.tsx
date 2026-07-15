@@ -64,19 +64,19 @@ export default async function AdminEventsPage(props: PageProps) {
 
       {/* Filter Tabs */}
       <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
-        <Link href="/admin/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+        <Link href="/et98/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
           All Events
         </Link>
-        <Link href="/admin/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+        <Link href="/et98/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
           Pending
         </Link>
-        <Link href="/admin/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+        <Link href="/et98/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
           Approved
         </Link>
-        <Link href="/admin/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+        <Link href="/et98/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
           Rejected
         </Link>
-        <Link href="/admin/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+        <Link href="/et98/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
           Trash
         </Link>
       </div>

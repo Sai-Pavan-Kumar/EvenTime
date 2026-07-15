@@ -209,9 +209,11 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
               {!isPastEvent && (
-                event.registration_link ? (
+               event.registration_link ? (
                   <Link
                     href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
                   >
                     Register <ExternalLink className="w-4 h-4" />
@@ -379,7 +381,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 )}
                 {!isPastEvent && (
                   event.registration_link ? (
-                    <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                    <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
                       Register <ExternalLink className="w-4 h-4" />
                     </Link>
                   ) : (

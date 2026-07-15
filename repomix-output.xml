@@ -144,26 +144,6 @@ src/
       page.tsx
     about/
       page.tsx
-    admin/
-      colleges/
-        page.tsx
-      events/
-        DeleteConfirmButton.tsx
-        page.tsx
-        StatusSelect.tsx
-      feedback/
-        page.tsx
-      reports/
-        page.tsx
-      users/
-        page.tsx
-      actions.ts
-      AdminHeader.tsx
-      AdminSidebar.tsx
-      layout.tsx
-      loading.tsx
-      page.tsx
-      revalidateEventsAction.ts
     api/
       extract/
         route.ts
@@ -189,6 +169,26 @@ src/
     cities/
       [city]/
         page.tsx
+    et98/
+      colleges/
+        page.tsx
+      events/
+        DeleteConfirmButton.tsx
+        page.tsx
+        StatusSelect.tsx
+      feedback/
+        page.tsx
+      reports/
+        page.tsx
+      users/
+        page.tsx
+      actions.ts
+      AdminHeader.tsx
+      AdminSidebar.tsx
+      layout.tsx
+      loading.tsx
+      page.tsx
+      revalidateEventsAction.ts
     events/
       [slug]/
         edit/
@@ -372,61 +372,6 @@ College students and young professionals in India.
 
 <file path="public/window.svg">
 <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
-</file>
-
-<file path="src/app/admin/events/DeleteConfirmButton.tsx">
-"use client";
-
-import { Trash2 } from "lucide-react";
-
-export function DeleteConfirmButton() {
-  return (
-    <button 
-      type="submit" 
-      onClick={(e) => {
-        if (!window.confirm("Are you sure you want to delete this event? This cannot be undone.")) {
-          e.preventDefault();
-        }
-      }}
-      className="p-2 bg-white text-slate-400 hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 rounded-lg transition-colors" 
-      title="Delete Event Completely"
-    >
-      <Trash2 className="w-5 h-5" />
-    </button>
-  );
-}
-</file>
-
-<file path="src/app/admin/events/StatusSelect.tsx">
-"use client";
-
-import { useState } from "react";
-
-export function StatusSelect({ eventId, initialStatus }: { eventId: string, initialStatus: string }) {
-  const [status, setStatus] = useState(initialStatus || "pending");
-
-  const colorClasses = {
-    approved: "bg-emerald-50 text-emerald-600",
-    rejected: "bg-red-50 text-red-600",
-    pending: "bg-amber-50 text-amber-600",
-  };
-
-  return (
-    <select
-      name="status"
-      value={status}
-      onChange={(e) => setStatus(e.target.value)}
-      form={`update-${eventId}`}
-      className={`text-xs font-bold px-2 py-1.5 rounded-md uppercase tracking-wider outline-none cursor-pointer border border-transparent focus:border-slate-300 transition-colors ${
-        colorClasses[status as keyof typeof colorClasses] || colorClasses.pending
-      }`}
-    >
-      <option value="pending">Pending</option>
-      <option value="approved">Approved</option>
-      <option value="rejected">Rejected</option>
-    </select>
-  );
-}
 </file>
 
 <file path="src/app/api/og/story/route.tsx">
@@ -657,6 +602,1490 @@ export async function GET(request: Request) {
 }
 </file>
 
+<file path="src/app/et98/colleges/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { Building2, Users } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminCollegesPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) {
+    redirect("/");
+  }
+
+  // Fetch all profiles with a college attached
+  const { data: collegesData } = await supabase
+    .from("profiles")
+    .select("college")
+    .not("college", "is", null);
+
+  // Group and count
+  const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
+    if (profile.college) {
+      acc[profile.college] = (acc[profile.college] || 0) + 1;
+    }
+    return acc;
+  }, {}) || {};
+  
+  // Sort descending by user count
+  const allColleges = Object.entries(collegeCounts).sort(([, a], [, b]) => b - a);
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(108,71,255,0.08)]">
+          <Building2 className="w-7 h-7 text-brand-primary" />
+        </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">College Analytics</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Global platform adoption ranked by institution.</p>
+        </div>
+      </div>
+
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="p-8 border-b border-black/[0.04] bg-[#FFFFFF] flex items-center justify-between">
+          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
+          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
+        </div>
+        
+        <div className="divide-y divide-black/[0.04]">
+          {allColleges.length > 0 ? (
+            allColleges.map(([college, count], index) => (
+              <div key={college} className="flex items-center justify-between p-8 hover:bg-surface-base/50 transition-colors">
+                <div className="flex items-center gap-5">
+                  <span className="w-8 text-[18px] font-black text-[#6B7280] text-right font-['Outfit']">#{index + 1}</span>
+                  <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
+                  <Users className="w-4 h-4 text-brand-primary" />
+                  <span className="font-bold text-brand-primary font-['Outfit'] text-[15px]">{count}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-sm font-['Outfit']">
+              No college data available
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/events/DeleteConfirmButton.tsx">
+"use client";
+
+import { Trash2 } from "lucide-react";
+
+export function DeleteConfirmButton() {
+  return (
+    <button 
+      type="submit" 
+      onClick={(e) => {
+        if (!window.confirm("Are you sure you want to delete this event? This cannot be undone.")) {
+          e.preventDefault();
+        }
+      }}
+      className="p-2 bg-white text-slate-400 hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 rounded-lg transition-colors" 
+      title="Delete Event Completely"
+    >
+      <Trash2 className="w-5 h-5" />
+    </button>
+  );
+}
+</file>
+
+<file path="src/app/et98/events/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft, Trash2, CheckCircle, XCircle, ImageIcon, Save } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+import { deleteEventAction, updateEventDetailsAction } from "../actions";
+import { DeleteConfirmButton } from "./DeleteConfirmButton";
+import { StatusSelect } from "./StatusSelect";
+
+export const dynamic = "force-dynamic";
+
+type PageProps = {
+  searchParams: Promise<{ filter?: string }>;
+};
+
+export default async function AdminEventsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const filter = searchParams.filter || "all";
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) redirect("/");
+
+  let query = supabase.from("events").select(`
+    id, slug, title, category, poster_url, status,profiles ( full_name )`).order('created_at', { ascending: false }).limit(50);
+
+  if (filter === "pending") query = query.eq("status", "pending");
+  else if (filter === "approved") query = query.eq("status", "approved");
+  else if (filter === "rejected") query = query.eq("status", "rejected");
+  else if (filter === "deleted") query = query.eq("status", "deleted");
+  else query = query.neq("status", "deleted");
+
+  const { data: events, error } = await query;
+
+  if (error) {
+    console.error("Error fetching events:", error.message || JSON.stringify(error));
+  }
+
+  async function handleUpdate(formData: FormData) {
+    "use server";
+    await updateEventDetailsAction(formData);
+  }
+
+  async function handleDelete(formData: FormData) {
+    "use server";
+    await deleteEventAction(formData);
+  }
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Event Management</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review, approve, and manage all platform events.</p>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+        <Link href="/et98/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          All Events
+        </Link>
+        <Link href="/et98/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Pending
+        </Link>
+        <Link href="/et98/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Approved
+        </Link>
+        <Link href="/et98/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Rejected
+        </Link>
+        <Link href="/et98/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Trash
+        </Link>
+      </div>
+
+      {/* Data Table Container */}
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Event Details</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Creator</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Category</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Status</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04]">
+              {events && events.length > 0 ? (
+                events.map((event) => (
+                  <tr key={event.id} className="hover:bg-surface-base/50 transition-colors">
+                    
+                    {/* Event Image & Title */}
+                    <td className="px-8 py-6">
+                      <form id={`update-${event.id}`} action={handleUpdate}>
+                        <input type="hidden" name="eventId" value={event.id} />
+                      </form>
+                      <div className="flex items-center gap-5">
+                        <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
+                          {event.poster_url ? (
+                            <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
+                          ) : (
+                            <Image src="/window.svg" alt="Default Poster" fill sizes="88px" className="object-cover" />
+                          )}
+                        </div>
+                        <div>
+                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors group/title">
+                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-brand-primary leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
+                          </Link>
+                          <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Creator Info */}
+                    <td className="px-8 py-6">
+                      <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
+                        {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown User"}
+                      </span>
+                    </td>
+
+                    {/* Category (Editable) */}
+                    <td className="px-8 py-6">
+                      <input 
+                        type="text" 
+                        name="category" 
+                        defaultValue={event.category || ""} 
+                        form={`update-${event.id}`} 
+                        placeholder="Category"
+                        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
+                      />
+                    </td>
+
+                    {/* Status (Editable) */}
+                    <td className="px-8 py-6">
+                      <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-end gap-3">
+                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
+                          <CheckCircle className="w-5 h-5" />
+                        </button>
+
+                        <form action={handleDelete}>
+                          <input type="hidden" name="eventId" value={event.id} />
+                          <DeleteConfirmButton />
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                    No events found in this category
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/events/StatusSelect.tsx">
+"use client";
+
+import { useState } from "react";
+
+export function StatusSelect({ eventId, initialStatus }: { eventId: string, initialStatus: string }) {
+  const [status, setStatus] = useState(initialStatus || "pending");
+
+  const colorClasses = {
+    approved: "bg-emerald-50 text-emerald-600",
+    rejected: "bg-red-50 text-red-600",
+    pending: "bg-amber-50 text-amber-600",
+  };
+
+  return (
+    <select
+      name="status"
+      value={status}
+      onChange={(e) => setStatus(e.target.value)}
+      form={`update-${eventId}`}
+      className={`text-xs font-bold px-2 py-1.5 rounded-md uppercase tracking-wider outline-none cursor-pointer border border-transparent focus:border-slate-300 transition-colors ${
+        colorClasses[status as keyof typeof colorClasses] || colorClasses.pending
+      }`}
+    >
+      <option value="pending">Pending</option>
+      <option value="approved">Approved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+  );
+}
+</file>
+
+<file path="src/app/et98/feedback/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { MessageSquareWarning } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminFeedbackPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) {
+    redirect("/");
+  }
+
+  const { data: platformFeedback, error } = await supabase
+    .from("platform_feedback")
+    .select("id, type, message, created_at, user_id")
+    .order("created_at", { ascending: false });
+
+  const userIds = platformFeedback?.map((f: any) => f.user_id).filter(Boolean) || [];
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, username")
+    .in("id", userIds);
+    
+  const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
+
+  if (error) {
+    console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
+  }
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(51,128,240,0.08)]">
+          <MessageSquareWarning className="w-7 h-7 text-[#3380F0]" />
+        </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Feedback & Bugs</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review all user-submitted bug reports and feature requests.</p>
+        </div>
+      </div>
+
+      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="divide-y divide-black/[0.04]">
+          {platformFeedback && platformFeedback.length > 0 ? (
+            platformFeedback.map((feedback: any) => (
+              <div key={feedback.id} className="p-8 hover:bg-surface-base/50 transition-colors">
+                <div className="flex items-start justify-between gap-5 mb-4">
+                  <div className="flex items-center gap-4">
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-brand-accent'}`}>
+                      {feedback.type}
+                    </span>
+                    <span className="text-[13px] font-bold font-['Switzer'] text-[#6B7280]">
+                      {new Date(feedback.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-surface-base p-6 rounded-[20px] mt-4">
+                  <p className="text-[16px] font-['Switzer'] text-[#0D0D1A] whitespace-pre-wrap leading-relaxed">{feedback.message}</p>
+                </div>
+                
+                <div className="mt-5 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[#EDE8FF] flex items-center justify-center shrink-0">
+                    <span className="text-[12px] font-bold font-['Outfit'] text-brand-primary">
+                      {feedback.profiles?.full_name?.charAt(0) || "?"}
+                    </span>
+                  </div>
+                  <p className="text-[14px] text-[#555570] font-medium font-['Switzer']">
+                    Submitted by <span className="text-[#0D0D1A] font-bold">{feedback.profiles?.full_name || "Anonymous User"}</span>
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-[0.2em] text-[13px] font-['Outfit']">
+              No feedback submitted yet
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/reports/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
+import { resolveReportAction, punishCuratorAction } from "../actions";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+export const dynamic = "force-dynamic";
+
+type ReportWithEvent = {
+  id: string;
+  reason: string;
+  status: string | null;
+  created_at: string;
+  curator_id: string | null;
+  events: { title: string } | null;
+};
+
+export default async function AdminReportsPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) {
+    redirect("/");
+  }
+
+  async function handleResolve(formData: FormData) {
+    "use server";
+    await resolveReportAction(formData);
+  }
+
+  async function handlePunish(formData: FormData) {
+    "use server";
+    await punishCuratorAction(formData);
+  }
+
+  const { data: activeReports, error: reportsError } = await supabase
+    .from("event_reports")
+    .select(`
+      id,
+      reason,
+      status,
+      created_at,
+      curator_id,
+      events ( title )
+    `)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false }) as { data: ReportWithEvent[] | null, error: unknown };
+
+  if (reportsError) {
+    console.error("Fetch Reports Error:", reportsError);
+  }
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(239,68,68,0.08)]">
+          <AlertTriangle className="w-7 h-7 text-[#EF4444]" />
+        </div>
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Reports</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review and manage community-flagged events.</p>
+        </div>
+      </div>
+
+      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="divide-y divide-black/[0.04]">
+          {activeReports && activeReports.length > 0 ? (
+            activeReports.map((report) => (
+              <div key={report.id} className="p-8 hover:bg-surface-base/50 transition-colors">
+                <div className="flex items-start justify-between gap-5 mb-5">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                      {report.reason}
+                    </span>
+                    <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
+                    <p className="text-[14px] font-['Switzer'] text-[#6B7280] mt-1.5">
+                    Reported on: {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#6B7280] bg-surface-base px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
+                </div>
+                
+                <div className="flex gap-4 mt-8">
+                  <form action={handleResolve} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-surface-base text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
+                      Dismiss (Safe)
+                    </button>
+                  </form>
+                  
+                  <form action={handlePunish} className="w-[200px]">
+                    <input type="hidden" name="reportId" value={report.id} />
+                    <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
+                      Punish (-150 ET)
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="p-24 text-center flex flex-col items-center justify-center">
+              <div className="w-[72px] h-[72px] rounded-full bg-surface-base flex items-center justify-center mb-5">
+                <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
+              </div>
+              <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
+              <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/users/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+import { deleteUserAction, updateUserRoleAction } from "../actions";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminUsersPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) redirect("/");
+
+  const { data: users, error } = await supabase
+    .from("profiles")
+    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
+    .is("deleted_at", null);
+
+  if (error) {
+    console.error("Error fetching users:", error.message || JSON.stringify(error));
+  }
+
+  async function handleRoleUpdate(formData: FormData) {
+    "use server";
+    await updateUserRoleAction(formData);
+  }
+
+  async function handleDeleteUser(formData: FormData) {
+    "use server";
+    await deleteUserAction(formData);
+  }
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Management</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">View, edit, and manage all registered users.</p>
+        </div>
+      </div>
+
+      {/* Data Table Container */}
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User Type</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Cities</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Categories</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Role</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">ET Score</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04]">
+              {users && users.length > 0 ? (
+                users.map((profile) => (
+                  <tr key={profile.id} className="hover:bg-surface-base/50 transition-colors">
+                    
+                    {/* Avatar & Info */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-[44px] h-[44px] rounded-full bg-surface-base border border-black/[0.04] flex items-center justify-center overflow-hidden shrink-0">
+                          {profile.avatar_url ? (
+                            <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={44} height={44} className="object-cover w-full h-full" />
+                          ) : (
+                            <UserIcon className="w-5 h-5 text-[#6B7280]" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold font-['Outfit'] text-[#0D0D1A] text-[16px] leading-tight">{profile.full_name || "Anonymous User"}</p>
+                          <p className="text-[13px] font-medium font-['Switzer'] text-[#555570] mt-1">{profile.email}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* User Type */}
+                    <td className="px-8 py-6">
+                      {profile.user_type ? (
+                        <span className="text-[14px] font-bold font-['Outfit'] text-[#0D0D1A] whitespace-nowrap">{profile.user_type}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Interested Cities */}
+                    <td className="px-8 py-6">
+                      {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570]">{profile.preferred_cities.join(", ")}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Categories */}
+                    <td className="px-8 py-6">
+                      {profile.goals && profile.goals.length > 0 ? (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570] line-clamp-2 max-w-[200px]">{profile.goals.join(", ")}</span>
+                      ) : (
+                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
+                      )}
+                    </td>
+
+                    {/* Role Badge */}
+                    <td className="px-8 py-6">
+                      {profile.role === "admin" ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(108,71,255,0.08)] text-brand-primary text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                          <Shield className="w-3.5 h-3.5" /> Admin
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-surface-base text-[#555570] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
+                          <UserIcon className="w-3.5 h-3.5" /> User
+                        </span>
+                      )}
+                    </td>
+
+                    {/* ET Score */}
+                    <td className="px-8 py-6">
+                      <span className="text-[18px] font-black text-[#0D0D1A] font-['Outfit']">{profile.et_score || 0}</span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center justify-end gap-3">
+                        
+                        {/* Role Toggle */}
+                        {profile.id !== user.id && (
+                          <form action={handleRoleUpdate}>
+                            <input type="hidden" name="userId" value={profile.id} />
+                            <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
+                            <button 
+                              type="submit" 
+                              className={`px-4 py-2 rounded-full text-[13px] font-bold font-['Outfit'] transition-colors ${
+                                profile.role === "admin" 
+                                  ? "bg-surface-base text-[#555570] hover:bg-[#EAEAEA]" 
+                                  : "bg-[#EDE8FF] text-brand-primary hover:bg-[#DED5FF]"
+                              }`}
+                            >
+                              {profile.role === "admin" ? "Demote" : "Make Admin"}
+                            </button>
+                          </form>
+                        )}
+
+                        {/* Delete */}
+                        {profile.id !== user.id && (
+                          <form action={handleDeleteUser}>
+                            <input type="hidden" name="userId" value={profile.id} />
+                            <button 
+                              type="submit" 
+                              className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#EF4444] hover:text-white transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                    No users found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/actions.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { revalidatePath, revalidateTag } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+async function verifyAdmin(supabase: SupabaseClient<Database>) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  return requireAdmin(supabase, user.id);
+}
+
+export async function approveEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  const adminClient = createAdminClient();
+  // Derive creator server-side — never trust client
+  const { data: event, error: selectError } = await adminClient
+    .from("events")
+    .select("creator_id")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) {
+    console.error("Select failed:", selectError);
+    return { error: "Event not found." };
+  }
+
+  const { error: eventError } = await adminClient
+    .from("events")
+    .update({ status: "approved" })
+    .eq("id", eventId);
+
+  if (eventError) {
+    console.error("Event update failed:", eventError);
+    return { error: "Event update failed" };
+  }
+
+  const { error: profileError } = await adminClient.rpc('award_event_approval_score', {
+    p_user_id: event.creator_id,
+    p_event_id: eventId
+  });
+
+  if (profileError) {
+    console.error("Score update failed:", profileError);
+    return { error: "Score update failed" };
+  }
+
+ revalidatePath("/", "layout"); 
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
+  revalidateTag("events", "events");
+  return { success: true };
+}
+
+export async function rejectEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const eventId = formData.get("eventId") as string;
+  const reason = formData.get("reason") as string | null;
+
+  const adminClient = createAdminClient();
+  const { data: event, error: selectError } = await adminClient
+    .from("events")
+    .select("creator_id, title")
+    .eq("id", eventId)
+    .single();
+
+  if (!event?.creator_id) {
+    console.error("Select failed in reject:", selectError);
+    return { error: "Event not found." };
+  }
+
+  await adminClient
+    .from("events")
+    .update({ status: "rejected" })
+    .eq("id", eventId);
+
+ revalidatePath("/", "layout"); 
+  revalidatePath("/");
+  revalidatePath("/et98");
+  revalidateTag("events", "events");
+  return { success: true, creatorId: event.creator_id, title: event.title };
+}
+export async function resolveReportAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+
+  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
+
+  revalidatePath("/et98");
+  return { success: true };
+}
+
+export async function punishCuratorAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
+
+  const reportId = formData.get("reportId") as string;
+  if (!reportId) return { error: "Missing reportId." };
+
+  // Derive curator and event from the report — never trust client
+  const { data: report } = await supabase
+    .from("event_reports")
+    .select("curator_id, event_id")
+    .eq("id", reportId)
+    .single();
+
+  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
+
+  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
+  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  const { data: allReports } = await supabase
+    .from("event_reports")
+    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .eq("event_id", report.event_id);
+
+  const trustedReporterIds = new Set(
+    (allReports || [])
+      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
+      .map((r: any) => r.reporter_id)
+  );
+
+  if (trustedReporterIds.size < 5) {
+    revalidatePath("/et98");
+    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
+  }
+
+  await supabase.rpc('apply_leaderboard_penalty', {
+    p_user_id: report.curator_id,
+    p_amount: 25
+  });
+
+  revalidatePath("/et98");
+  revalidatePath("/profile");
+  revalidateTag("leaderboard", "leaderboard");
+  return { success: true };
+}
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "Missing eventId." };
+
+  const adminClient = createAdminClient();
+  // Soft Delete: Just update the status to 'deleted'
+  const { data: deleted, error } = await adminClient.from("events").update({ status: "deleted" }).eq("id", eventId).select();
+  if (error) throw new Error("Delete failed: " + error.message);
+  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+   revalidatePath("/", "layout"); 
+  revalidatePath("/");
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
+  revalidateTag("events", "events");
+  return { success: true };
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  if (!userId) return { error: "Missing userId." };
+
+  // Soft delete: mark the row, then ban login immediately.
+  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
+  const { error } = await supabase
+    .from("profiles")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) return { error: "Failed to delete user." };
+
+  const adminClient = createAdminClient();
+  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
+
+  revalidatePath("/et98");
+  revalidatePath("/et98/users");
+  return { success: true };
+}
+
+export async function updateUserRoleAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const userId = formData.get("userId") as string;
+  const newRole = formData.get("role") as string;
+  
+  if (!userId || !newRole) return { error: "Missing required fields." };
+
+  const adminClient = createAdminClient();
+  await adminClient.from("profiles").update({ role: newRole }).eq("id", userId);
+  
+  revalidatePath("/et98");
+  revalidatePath("/et98/users");
+  return { success: true };
+}
+
+export async function updateEventDetailsAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("eventId") as string;
+  const category = formData.get("category") as string;
+  const newStatus = formData.get("status") as string;
+  
+  if (!eventId) return { error: "Missing eventId." };
+
+  const adminClient = createAdminClient();
+  const { data: event, error: fetchError } = await adminClient
+  .from("events")
+  .select("status, creator_id")
+  .eq("id", eventId)
+  .single();
+
+if (!event) {
+  console.error("Event fetch failed:", fetchError);
+  return { error: "Event not found." };
+}
+  const { data: updated, error: updateError } = await adminClient.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
+  if (updateError) throw new Error("Update failed: " + updateError.message);
+  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
+  
+  // NOTE: Scoring is now fully automatic — leaderboard_view counts approved
+  // events live, so approving/un-approving an event updates the score by
+  // itself. No manual score RPC call needed here anymore.
+  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
+     await adminClient.from("events").update({ approved_at: new Date().toISOString() }).eq("id", eventId);
+  }
+   revalidatePath("/");
+  revalidatePath("/", "layout"); 
+  revalidatePath("/cities/[city]", "page");
+  revalidatePath("/et98");
+  revalidatePath("/et98/events");
+  revalidateTag("events", "events");
+  revalidateTag("leaderboard", "leaderboard");
+  return { success: true };
+}
+
+export async function toggleLeaderboardAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle leaderboard failed:", error);
+    return { error: "Failed to update setting." };
+  }
+
+  revalidatePath("/et98");
+
+  revalidatePath("/");
+  revalidatePath("/leaderboard");
+  return { success: true };
+}
+
+export async function toggleFeaturedAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const eventId = formData.get("event_id") as string;
+  const isFeatured = formData.get("is_featured") === "true";
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.from("events").update({ is_featured: isFeatured }).eq("id", eventId);
+  if (error) {
+    console.error("Toggle featured failed:", error);
+    return { error: "Failed to update featured status." };
+  }
+   revalidatePath("/", "layout"); 
+  revalidatePath("/et98");
+  revalidatePath("/");
+  revalidateTag("events", "events");
+  return { success: true };
+}
+</file>
+
+<file path="src/app/et98/AdminHeader.tsx">
+"use client";
+import { Bell } from "lucide-react";
+import { usePathname } from "next/navigation";
+
+export function AdminHeader() {
+  const pathname = usePathname();
+  
+  const pathParts = pathname.split('/').filter(p => p !== '');
+  const currentPage = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : 'Overview';
+
+  return (
+    <header className="h-[112px] flex items-center justify-between px-10 shrink-0 pt-6">
+      <div className="flex items-center gap-2 text-[15px] font-bold font-['Switzer'] text-[#555570]">
+        <span>Admin</span>
+        <span className="text-[#6B7280]">/</span>
+        <span className="text-[#0D0D1A]">{currentPage}</span>
+      </div>
+
+      <div className="flex items-center gap-5">
+        <button className="relative text-[#6B7280] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
+        </button>
+        
+        <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
+          ET
+        </div>
+      </div>
+    </header>
+  );
+}
+</file>
+
+<file path="src/app/et98/AdminSidebar.tsx">
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+
+  const links = [
+    { name: "Overview", href: "/et98", icon: LayoutDashboard },
+    { name: "Events Queue", href: "/et98/events", icon: CalendarDays },
+    { name: "User Directory", href: "/et98/users", icon: Users },
+    { name: "Colleges", href: "/et98/colleges", icon: Building2 },
+    { name: "Moderation", href: "/et98/reports", icon: ShieldAlert },
+    { name: "Feedback", href: "/et98/feedback", icon: MessageSquareWarning },
+  ];
+
+  return (
+    <aside className="w-[300px] bg-surface-base hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
+      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        
+        {/* LOGO AREA */}
+        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 rounded-[12px] bg-brand-primary flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
+              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
+            </div>
+            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-brand-primary">OS</span></h2>
+          </Link>
+        </div>
+        
+        {/* MENU */}
+        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
+          <div>
+            <p className="px-4 text-[11px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
+            <nav className="space-y-2">
+              {links.map((link) => {
+                const isActive = pathname === link.href;
+                const Icon = link.icon;
+                return (
+                  <Link 
+                    key={link.name} 
+                    href={link.href} 
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
+                      isActive 
+                        ? "bg-[#EDE8FF] text-brand-primary" 
+                        : "text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A]"
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 ${isActive ? "text-brand-primary" : "text-[#6B7280]"}`} /> 
+                    <span className="text-[15px]">{link.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* FOOTER */}
+        <div className="p-6 border-t border-black/[0.04] shrink-0">
+          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A] transition-colors">
+            <Settings className="w-4 h-4 text-[#6B7280]" />
+            <span className="text-[15px]">Exit Admin Mode</span>
+          </Link>
+        </div>
+
+      </div>
+    </aside>
+  );
+}
+</file>
+
+<file path="src/app/et98/layout.tsx">
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/permissions";
+import { AdminSidebar } from "./AdminSidebar";
+import { AdminHeader } from "./AdminHeader";
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) redirect("/");
+
+  return (
+    <div className="h-screen flex overflow-hidden bg-surface-base">
+      <AdminSidebar />
+      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
+        <AdminHeader />
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/loading.tsx">
+import { Skeleton } from "@/components/ui/skeleton";
+
+export default function AdminLoading() {
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Header */}
+        <div className="mb-8">
+          <Skeleton className="h-10 w-64 rounded-lg mb-2" />
+          <Skeleton className="h-5 w-72 rounded-md" />
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
+              <Skeleton className="w-6 h-6 rounded-md mb-4" />
+              <Skeleton className="w-24 h-4 rounded-md mb-3" />
+              <Skeleton className="w-16 h-10 rounded-md" />
+            </div>
+          ))}
+        </div>
+
+        {/* Top Colleges Skeleton */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
+          <div className="flex justify-between mb-6">
+            <Skeleton className="h-6 w-48 rounded-md" />
+            <Skeleton className="h-6 w-6 rounded-md" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-xl bg-slate-50" />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom Split Grids */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Approval Queue */}
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 flex justify-between">
+              <Skeleton className="h-6 w-48 rounded-md" />
+            </div>
+            <div className="divide-y divide-slate-100">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-6 flex flex-col gap-4">
+                  <div className="flex gap-4">
+                    <Skeleton className="w-20 h-14 rounded-xl shrink-0" />
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-full rounded-md" />
+                      <Skeleton className="h-4 w-1/2 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Skeleton className="h-8 flex-1 rounded-full" />
+                    <Skeleton className="h-8 flex-1 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* User Reports */}
+          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-6 border-b border-slate-100 bg-red-50/30 flex justify-between">
+              <Skeleton className="h-6 w-32 rounded-md" />
+            </div>
+            <div className="divide-y divide-slate-100">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="p-6">
+                  <div className="flex justify-between mb-3">
+                    <div className="space-y-2 flex-1">
+                      <Skeleton className="h-5 w-20 rounded-md" />
+                      <Skeleton className="h-5 w-3/4 rounded-md mt-2" />
+                    </div>
+                    <Skeleton className="h-5 w-16 rounded-md" />
+                  </div>
+                  <div className="flex gap-2 mt-4">
+                    <Skeleton className="h-8 flex-1 rounded-lg" />
+                    <Skeleton className="h-8 flex-1 rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/et98/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { CheckCircle, XCircle, Users, ShieldAlert, BarChart3, Ticket, TrendingUp } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
+import { requireAdmin } from "@/lib/auth/permissions";
+
+export const dynamic = "force-dynamic";
+
+type ReportWithEvent = {
+  id: string;
+  reason: string;
+  status: string | null;
+  created_at: string;
+  curator_id: string | null;
+  events: { title: string } | null;
+};
+
+export default async function AdminDashboard() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) {
+    redirect("/");
+  }
+
+  // Server Actions
+  async function handleApprove(formData: FormData) { "use server"; await approveEventAction(formData); }
+  async function handleReject(formData: FormData) { "use server"; await rejectEventAction(formData); }
+  async function handleResolve(formData: FormData) { "use server"; await resolveReportAction(formData); }
+  async function handlePunish(formData: FormData) { "use server"; await punishCuratorAction(formData); }
+  async function handleToggleLeaderboard(formData: FormData) { "use server"; await toggleLeaderboardAction(formData); }
+  async function handleToggleFeatured(formData: FormData) { "use server"; await toggleFeaturedAction(formData); }
+
+  // Fetch Data
+  const [
+    { count: totalUsers },
+    { count: totalEvents },
+    { data: appSettings },
+    { data: pendingEvents },
+    { data: activeReports }
+  ] = await Promise.all([
+    supabase.from("profiles").select("*", { count: "exact", head: true }),
+    supabase.from("events").select("*", { count: "exact", head: true }),
+    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle(),
+    supabase.from("events").select("id, slug, title, category, poster_url, created_at, profiles:creator_id ( full_name )").eq("status", "pending").order("created_at", { ascending: false }).limit(10),
+    supabase.from("event_reports").select("id, reason, status, created_at, curator_id, events ( title )").eq("status", "pending").order("created_at", { ascending: false }).limit(5)
+  ]);
+
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const featuredEnabled = appSettings?.featured_enabled ?? true;
+  const reports = activeReports as unknown as ReportWithEvent[];
+
+  return (
+    <div className="px-10 pb-12 max-w-350 mx-auto space-y-12">
+      
+      {/* HEADER CONTROLS */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Overview</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Monitor your platform metrics and moderation queues.</p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
+            <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">LEADERBOARD · LIVE</span>
+          </div>
+
+          <form action={handleToggleFeatured}>
+            <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
+            <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${featuredEnabled ? "bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-surface-elevated text-[#6B7280]"}`}>
+              <div className={`w-2.5 h-2.5 rounded-full ${featuredEnabled ? "bg-brand-primary" : "bg-[#6B7280]"}`} />
+              <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">FEATURED SYSTEM</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* METRICS GRID */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: "TOTAL USERS", value: totalUsers || 0, icon: Users, color: "text-[#3380F0]", bg: "bg-[rgba(51,128,240,0.08)]" },
+          { label: "TOTAL EVENTS", value: totalEvents || 0, icon: Ticket, color: "text-brand-primary", bg: "bg-[rgba(108,71,255,0.08)]" },
+          { label: "PENDING APPROVALS", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-brand-accent", bg: "bg-[rgba(245,158,11,0.08)]" },
+          { label: "ACTIVE REPORTS", value: reports?.length || 0, icon: ShieldAlert, color: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.08)]" }
+        ].map((stat, i) => (
+          <div key={i} className="bg-surface-card p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 transform hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-8">
+              <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${stat.bg}`}>
+                <stat.icon className={`w-7 h-7 ${stat.color}`} />
+              </div>
+            </div>
+            <h3 className="text-[56px] font-black font-['Outfit'] text-[#0D0D1A] tracking-[-2px] leading-none">{stat.value}</h3>
+            <p className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit'] mt-4">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* LEFT COLUMN: EVENTS QUEUE (Takes 2/3 width) */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
+              Event Approval Queue
+            </h2>
+            <Link href="/et98/events" className="text-[14px] font-semibold text-brand-primary hover:text-[#5535E0] font-['Switzer']">View All</Link>
+          </div>
+          
+          <div className="space-y-4">
+            {pendingEvents && pendingEvents.length > 0 ? (
+              pendingEvents.map((event) => (
+                <div key={event.id} className="bg-surface-card p-5 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 flex items-center justify-between group">
+                  <div className="flex items-center gap-6">
+                    <div className="w-30 h-19 rounded-lg bg-surface-base overflow-hidden relative shrink-0">
+                      <Image src={event.poster_url || "/window.svg"} alt="Poster" fill sizes="120px" className="object-cover" />
+                    </div>
+                    <div>
+                      <div className="mb-2">
+                        <span className="inline-block px-3 py-1.5 rounded-md bg-[#EDE8FF] text-brand-primary text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
+                          {event.category}
+                        </span>
+                      </div>
+                      <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="font-bold font-['Outfit'] text-[20px] text-[#0D0D1A] hover:text-brand-primary transition-colors line-clamp-1">
+                        {event.title}
+                      </Link>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-[14px] font-['Switzer'] text-[#555570]">
+                          {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown Organizer"}
+                        </span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#D1D1D6]"></span>
+                        <span className="text-[14px] font-['Switzer'] text-[#6B7280]">
+                          {event.created_at ? new Date(event.created_at as string).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <form action={handleReject}>
+                      <input type="hidden" name="eventId" value={event.id} />
+                      <button type="submit" className="w-12 h-12 rounded-full flex items-center justify-center text-[#555570] bg-surface-base hover:bg-[#EF4444] hover:text-white transition-all duration-200">
+                        <XCircle className="w-6 h-6" />
+                      </button>
+                    </form>
+                    <form action={handleApprove}>
+                      <input type="hidden" name="eventId" value={event.id ?? ""} />
+                      <button type="submit" className="px-8 h-12 rounded-full flex items-center justify-center gap-2 bg-brand-primary text-white font-['Outfit'] font-bold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(108,71,255,0.2)]">
+                        <CheckCircle className="w-5 h-5" /> Approve
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="bg-surface-card rounded-[32px] p-20 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="w-20 h-20 rounded-full bg-surface-base flex items-center justify-center mb-6">
+                  <CheckCircle className="w-10 h-10 text-[#6B7280]" />
+                </div>
+                <p className="text-[24px] font-bold font-['Outfit'] text-[#0D0D1A]">The stage is empty</p>
+                <p className="text-[16px] text-[#555570] font-['Switzer'] mt-2">No events waiting for your approval.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN: MODERATION (Takes 1/3 width) */}
+        <div className="space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
+              Moderation Queue
+            </h2>
+          </div>
+          
+          <div className="space-y-4">
+            {reports && reports.length > 0 ? (
+              reports.map((report) => (
+                <div key={report.id} className="bg-surface-card p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300">
+                  <div className="mb-4">
+                    <span className="inline-block px-3 py-1.5 rounded-md bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
+                      {report.reason}
+                    </span>
+                  </div>
+                  <h4 className="text-[18px] font-bold font-['Outfit'] text-[#0D0D1A] line-clamp-2 leading-snug">{report.events?.title || "Unknown Event"}</h4>
+                  <p className="text-[14px] text-[#6B7280] font-['Switzer'] mt-2">Reported on {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+                  
+                  <div className="flex gap-4 mt-8">
+                    <form action={handleResolve} className="flex-1">
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <button type="submit" className="w-full h-12 rounded-full bg-surface-base text-[#0D0D1A] font-['Outfit'] font-bold text-[14px] hover:bg-[#EAEAEA] transition-colors border border-black/4`">
+                        Dismiss
+                      </button>
+                    </form>
+                    <form action={handlePunish} className="flex-1">
+                      <input type="hidden" name="reportId" value={report.id} />
+                      <button type="submit" className="w-full h-12 rounded-full bg-[#EF4444] text-white font-['Outfit'] font-bold text-[14px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
+                        Punish
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              ))
+            ) : (
+               <div className="bg-surface-card rounded-[32px] p-16 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
+                <div className="w-18 h-18 rounded-full bg-surface-base flex items-center justify-center mb-5">
+                  <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
+                </div>
+                <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
+                <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/app/et98/revalidateEventsAction.ts">
+"use server";
+
+import { revalidateTag } from "next/cache";
+
+export async function revalidateEventsCacheAction() {
+  revalidateTag("events", "events");
+}
+</file>
+
 <file path="src/app/events/[slug]/loading.tsx">
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventCardSkeleton } from "@/components/skeletons/EventCardSkeleton";
@@ -797,7 +2226,7 @@ export async function submitReportAction(formData: FormData) {
   }
   
   // FIX: Clear the cache for the admin page so new reports show up immediately!
-  revalidatePath("/admin");
+  revalidatePath("/et98");
   revalidatePath("/");
 
   return { success: true };
@@ -1887,7 +3316,7 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/events/new') || 
     request.nextUrl.pathname.endsWith('/edit') || 
     request.nextUrl.pathname.startsWith('/profile') || 
-    request.nextUrl.pathname.startsWith('/admin');
+    request.nextUrl.pathname.startsWith('/et98');
     
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
@@ -2049,16 +3478,6 @@ export default function AboutPage() {
       </div>
     </main>
   );
-}
-</file>
-
-<file path="src/app/admin/revalidateEventsAction.ts">
-"use server";
-
-import { revalidateTag } from "next/cache";
-
-export async function revalidateEventsCacheAction() {
-  revalidateTag("events", "events");
 }
 </file>
 
@@ -2837,123 +4256,6 @@ export default function LeaderboardLoading() {
 }
 </file>
 
-<file path="src/app/profile/action.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache"; // NEW: Imported for cache revalidation
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) return { error: "Unauthorized" };
-  
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "No event ID" };
-  
-  // Verify ownership before deleting AND fetch the poster_url
-  const { data: event } = await supabase
-    .from("events")
-    .select("creator_id, poster_url")
-    .eq("id", eventId)
-    .single();
-    
-  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
-  
-  // Soft delete: just mark the event, move it to the 30-day trash.
-  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
-  // since the event can still be viewed/restored from trash before then.
-  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
-  redirect("/profile");
-}
-
-// NEW: Server action for creating a college securely
-export async function createCollegeAction(collegeName: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  if (!user) return { error: "Unauthorized" };
-  
-  const trimmed = collegeName.trim();
-  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
-    return { error: "College name must be between 3 and 100 characters." };
-  }
-  
-  // Check for near-duplicate first
-  const { data: existing } = await supabase
-    .from("colleges")
-    .select("id, name")
-    .ilike("name", trimmed)
-    .maybeSingle();
-    
-  if (existing) return { data: existing }; // return existing, don't duplicate
-  
- const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-  const { data, error } = await supabase
-    .from("colleges")
-    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
-    .select("id, name, slug")
-    .single();
-
-  if (error) {
-    // 23505 = unique constraint violation — someone else created the exact same college a split second before us. Instead of showing an error, just fetch and return that one, since it's the same college anyway.
-    if (error.code === "23505") {
-      const { data: raceWinner } = await supabase
-        .from("colleges")
-        .select("id, name, slug")
-        .ilike("name", trimmed)
-        .maybeSingle();
-      if (raceWinner) return { data: raceWinner };
-    }
-    return { error: "Failed to add college." };
-  }
-  
-  revalidatePath("/");
-  return { data };
-}
-// NEW: Server action for platform feedback
-export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const trimmedMessage = message?.trim() || "";
-  if (!trimmedMessage) {
-    return { error: "Message cannot be empty." };
-  }
-  if (trimmedMessage.length > 500) {
-    return { error: "Message must be 500 characters or less." };
-  }
-
-  if (user) {
-    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
-    const { data: recent } = await supabase
-      .from("platform_feedback")
-      .select("id")
-      .eq("user_id", user.id)
-      .gte("created_at", oneMinuteAgo)
-      .limit(1);
-      
-    if (recent && recent.length > 0) {
-      return { error: "Please wait a minute before submitting again." };
-    }
-  }
-  
-  const { error } = await supabase
-    .from("platform_feedback")
-    .insert([{ 
-      type, 
-      message: trimmedMessage,
-      user_id: user?.id || null 
-    }]);
-    
-  if (error) return { error: "Failed to submit feedback." };
-  
-  return { success: true };
-}
-</file>
-
 <file path="src/app/profile/loading.tsx">
 import { Navbar } from "@/components/layout/Navbar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -3240,7 +4542,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin/", "/profile/settings/"],
+      disallow: ["/et98/", "/profile/settings/"],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
   };
@@ -4084,99 +5386,6 @@ Sentry.init({
 });
 </file>
 
-<file path="src/app/admin/loading.tsx">
-import { Skeleton } from "@/components/ui/skeleton";
-
-export default function AdminLoading() {
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-8">
-          <Skeleton className="h-10 w-64 rounded-lg mb-2" />
-          <Skeleton className="h-5 w-72 rounded-md" />
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
-              <Skeleton className="w-6 h-6 rounded-md mb-4" />
-              <Skeleton className="w-24 h-4 rounded-md mb-3" />
-              <Skeleton className="w-16 h-10 rounded-md" />
-            </div>
-          ))}
-        </div>
-
-        {/* Top Colleges Skeleton */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm mb-8">
-          <div className="flex justify-between mb-6">
-            <Skeleton className="h-6 w-48 rounded-md" />
-            <Skeleton className="h-6 w-6 rounded-md" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-xl bg-slate-50" />
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom Split Grids */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Approval Queue */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-slate-100 flex justify-between">
-              <Skeleton className="h-6 w-48 rounded-md" />
-            </div>
-            <div className="divide-y divide-slate-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-6 flex flex-col gap-4">
-                  <div className="flex gap-4">
-                    <Skeleton className="w-20 h-14 rounded-xl shrink-0" />
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-full rounded-md" />
-                      <Skeleton className="h-4 w-1/2 rounded-md" />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 flex-1 rounded-full" />
-                    <Skeleton className="h-8 flex-1 rounded-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* User Reports */}
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-slate-100 bg-red-50/30 flex justify-between">
-              <Skeleton className="h-6 w-32 rounded-md" />
-            </div>
-            <div className="divide-y divide-slate-100">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-6">
-                  <div className="flex justify-between mb-3">
-                    <div className="space-y-2 flex-1">
-                      <Skeleton className="h-5 w-20 rounded-md" />
-                      <Skeleton className="h-5 w-3/4 rounded-md mt-2" />
-                    </div>
-                    <Skeleton className="h-5 w-16 rounded-md" />
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Skeleton className="h-8 flex-1 rounded-lg" />
-                    <Skeleton className="h-8 flex-1 rounded-lg" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/profile/settings/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -4231,6 +5440,129 @@ export default async function SettingsPage() {
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
  return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
+}
+</file>
+
+<file path="src/app/profile/action.ts">
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath, revalidateTag } from "next/cache"; // NEW: Imported for cache revalidation
+
+export async function deleteEventAction(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Unauthorized" };
+  
+  const eventId = formData.get("eventId") as string;
+  if (!eventId) return { error: "No event ID" };
+  
+  // Verify ownership before deleting AND fetch the poster_url
+  const { data: event } = await supabase
+    .from("events")
+    .select("creator_id, poster_url")
+    .eq("id", eventId)
+    .single();
+    
+  if (event?.creator_id !== user.id) return { error: "Unauthorized" };
+  
+  // Soft delete: just mark the event, move it to the 30-day trash.
+  // Image is NOT removed from R2 here — only the 30-day purge job removes it,
+  // since the event can still be viewed/restored from trash before then.
+  await supabase.from("events").update({ status: "deleted" }).eq("id", eventId);
+
+  // Bust the homepage/city/category caches so the deleted event disappears immediately
+  revalidateTag("events", "events");
+  revalidatePath("/", "layout");
+  revalidatePath("/cities/[city]", "page");
+
+  redirect("/profile");
+}
+
+// NEW: Server action for creating a college securely
+export async function createCollegeAction(collegeName: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return { error: "Unauthorized" };
+  
+  const trimmed = collegeName.trim();
+  if (!trimmed || trimmed.length < 3 || trimmed.length > 100) {
+    return { error: "College name must be between 3 and 100 characters." };
+  }
+  
+  // Check for near-duplicate first
+  const { data: existing } = await supabase
+    .from("colleges")
+    .select("id, name")
+    .ilike("name", trimmed)
+    .maybeSingle();
+    
+  if (existing) return { data: existing }; // return existing, don't duplicate
+  
+ const slug = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const { data, error } = await supabase
+    .from("colleges")
+    .insert([{ name: trimmed, slug: `${slug}-${Date.now()}` }])
+    .select("id, name, slug")
+    .single();
+
+  if (error) {
+    // 23505 = unique constraint violation — someone else created the exact same college a split second before us. Instead of showing an error, just fetch and return that one, since it's the same college anyway.
+    if (error.code === "23505") {
+      const { data: raceWinner } = await supabase
+        .from("colleges")
+        .select("id, name, slug")
+        .ilike("name", trimmed)
+        .maybeSingle();
+      if (raceWinner) return { data: raceWinner };
+    }
+    return { error: "Failed to add college." };
+  }
+  
+  revalidatePath("/");
+  return { data };
+}
+// NEW: Server action for platform feedback
+export async function submitFeedbackAction(type: 'bug' | 'feature', message: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  const trimmedMessage = message?.trim() || "";
+  if (!trimmedMessage) {
+    return { error: "Message cannot be empty." };
+  }
+  if (trimmedMessage.length > 500) {
+    return { error: "Message must be 500 characters or less." };
+  }
+
+  if (user) {
+    const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+    const { data: recent } = await supabase
+      .from("platform_feedback")
+      .select("id")
+      .eq("user_id", user.id)
+      .gte("created_at", oneMinuteAgo)
+      .limit(1);
+      
+    if (recent && recent.length > 0) {
+      return { error: "Please wait a minute before submitting again." };
+    }
+  }
+  
+  const { error } = await supabase
+    .from("platform_feedback")
+    .insert([{ 
+      type, 
+      message: trimmedMessage,
+      user_id: user?.id || null 
+    }]);
+    
+  if (error) return { error: "Failed to submit feedback." };
+  
+  return { success: true };
 }
 </file>
 
@@ -4990,6 +6322,54 @@ export async function generateHMAC(data: string): Promise<string> {
 }
 </file>
 
+<file path=".github/workflows/ci.yml">
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Audit URLs using Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://et.sbhub.in/
+          uploadArtifacts: true 
+          temporaryPublicStorage: true
+</file>
+
 <file path="src/app/categories/[category]/page.tsx">
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -5623,54 +7003,6 @@ export const config = {
     "typescript": "^6"
   }
 }
-</file>
-
-<file path=".github/workflows/ci.yml">
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  build:
-    name: Build & Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
-  lighthouse:
-    name: Lighthouse Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Audit URLs using Lighthouse
-        uses: treosh/lighthouse-ci-action@v12
-        with:
-          urls: |
-            https://et.sbhub.in/
-          uploadArtifacts: true 
-          temporaryPublicStorage: true
 </file>
 
 <file path="src/app/events/[slug]/page.tsx">
@@ -6374,40 +7706,6 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
-<file path="src/app/admin/AdminHeader.tsx">
-"use client";
-import { Bell } from "lucide-react";
-import { usePathname } from "next/navigation";
-
-export function AdminHeader() {
-  const pathname = usePathname();
-  
-  const pathParts = pathname.split('/').filter(p => p !== '');
-  const currentPage = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : 'Overview';
-
-  return (
-    <header className="h-[112px] flex items-center justify-between px-10 shrink-0 pt-6">
-      <div className="flex items-center gap-2 text-[15px] font-bold font-['Switzer'] text-[#555570]">
-        <span>Admin</span>
-        <span className="text-[#6B7280]">/</span>
-        <span className="text-[#0D0D1A]">{currentPage}</span>
-      </div>
-
-      <div className="flex items-center gap-5">
-        <button className="relative text-[#6B7280] hover:text-[#0D0D1A] transition-colors p-2.5 hover:bg-[#FFFFFF] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.06)] bg-transparent">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#EF4444] rounded-full border-2 border-[#F5F5F7]"></span>
-        </button>
-        
-        <div className="w-10 h-10 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06)] cursor-pointer text-white font-['Outfit'] font-bold text-[14px]">
-          ET
-        </div>
-      </div>
-    </header>
-  );
-}
-</file>
-
 <file path="src/components/layout/LaunchScreen.tsx">
 "use client";
 
@@ -6925,412 +8223,6 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
         </AnimatePresence>
       </motion.div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/colleges/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { Building2, Users } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-export const dynamic = "force-dynamic";
-
-export default async function AdminCollegesPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) {
-    redirect("/");
-  }
-
-  // Fetch all profiles with a college attached
-  const { data: collegesData } = await supabase
-    .from("profiles")
-    .select("college")
-    .not("college", "is", null);
-
-  // Group and count
-  const collegeCounts = collegesData?.reduce((acc: Record<string, number>, profile) => {
-    if (profile.college) {
-      acc[profile.college] = (acc[profile.college] || 0) + 1;
-    }
-    return acc;
-  }, {}) || {};
-  
-  // Sort descending by user count
-  const allColleges = Object.entries(collegeCounts).sort(([, a], [, b]) => b - a);
-
-  return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      {/* Header Section */}
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(108,71,255,0.08)]">
-          <Building2 className="w-7 h-7 text-brand-primary" />
-        </div>
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">College Analytics</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Global platform adoption ranked by institution.</p>
-        </div>
-      </div>
-
-      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="p-8 border-b border-black/[0.04] bg-[#FFFFFF] flex items-center justify-between">
-          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Institution Name</span>
-          <span className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit']">Total Users</span>
-        </div>
-        
-        <div className="divide-y divide-black/[0.04]">
-          {allColleges.length > 0 ? (
-            allColleges.map(([college, count], index) => (
-              <div key={college} className="flex items-center justify-between p-8 hover:bg-surface-base/50 transition-colors">
-                <div className="flex items-center gap-5">
-                  <span className="w-8 text-[18px] font-black text-[#6B7280] text-right font-['Outfit']">#{index + 1}</span>
-                  <span className="font-bold text-[#0D0D1A] text-[18px] font-['Outfit']">{college}</span>
-                </div>
-                <div className="flex items-center gap-2 bg-[#EDE8FF] px-5 py-2.5 rounded-full">
-                  <Users className="w-4 h-4 text-brand-primary" />
-                  <span className="font-bold text-brand-primary font-['Outfit'] text-[15px]">{count}</span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-sm font-['Outfit']">
-              No college data available
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/reports/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
-import { resolveReportAction, punishCuratorAction } from "../actions";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-export const dynamic = "force-dynamic";
-
-type ReportWithEvent = {
-  id: string;
-  reason: string;
-  status: string | null;
-  created_at: string;
-  curator_id: string | null;
-  events: { title: string } | null;
-};
-
-export default async function AdminReportsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) {
-    redirect("/");
-  }
-
-  async function handleResolve(formData: FormData) {
-    "use server";
-    await resolveReportAction(formData);
-  }
-
-  async function handlePunish(formData: FormData) {
-    "use server";
-    await punishCuratorAction(formData);
-  }
-
-  const { data: activeReports, error: reportsError } = await supabase
-    .from("event_reports")
-    .select(`
-      id,
-      reason,
-      status,
-      created_at,
-      curator_id,
-      events ( title )
-    `)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false }) as { data: ReportWithEvent[] | null, error: unknown };
-
-  if (reportsError) {
-    console.error("Fetch Reports Error:", reportsError);
-  }
-
-  return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      {/* Header Section */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(239,68,68,0.08)]">
-          <AlertTriangle className="w-7 h-7 text-[#EF4444]" />
-        </div>
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Reports</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review and manage community-flagged events.</p>
-        </div>
-      </div>
-
-      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-        <div className="divide-y divide-black/[0.04]">
-          {activeReports && activeReports.length > 0 ? (
-            activeReports.map((report) => (
-              <div key={report.id} className="p-8 hover:bg-surface-base/50 transition-colors">
-                <div className="flex items-start justify-between gap-5 mb-5">
-                  <div>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
-                      {report.reason}
-                    </span>
-                    <h4 className="font-bold text-[20px] font-['Outfit'] text-[#0D0D1A] mt-3 leading-snug">{report.events?.title || "Unknown Event"}</h4>
-                    <p className="text-[14px] font-['Switzer'] text-[#6B7280] mt-1.5">
-                    Reported on: {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                    </p>
-                  </div>
-                  <span className="text-[11px] font-bold text-[#6B7280] bg-surface-base px-3 py-1.5 rounded-[12px] uppercase tracking-[0.15em] font-['Outfit']">Pending</span>
-                </div>
-                
-                <div className="flex gap-4 mt-8">
-                  <form action={handleResolve} className="w-[200px]">
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <button type="submit" className="w-full bg-surface-base text-[#0D0D1A] font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:bg-[#EAEAEA] transition-colors border border-black/[0.04]">
-                      Dismiss (Safe)
-                    </button>
-                  </form>
-                  
-                  <form action={handlePunish} className="w-[200px]">
-                    <input type="hidden" name="reportId" value={report.id} />
-                    <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
-                      Punish (-150 ET)
-                    </button>
-                  </form>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-24 text-center flex flex-col items-center justify-center">
-              <div className="w-[72px] h-[72px] rounded-full bg-surface-base flex items-center justify-center mb-5">
-                <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
-              </div>
-              <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
-              <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/users/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Trash2, Shield, User as UserIcon } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-import { deleteUserAction, updateUserRoleAction } from "../actions";
-
-export const dynamic = "force-dynamic";
-
-export default async function AdminUsersPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) redirect("/");
-
-  const { data: users, error } = await supabase
-    .from("profiles")
-    .select("id, email, full_name, avatar_url, role, et_score, user_type, preferred_cities, goals")
-    .is("deleted_at", null);
-
-  if (error) {
-    console.error("Error fetching users:", error.message || JSON.stringify(error));
-  }
-
-  async function handleRoleUpdate(formData: FormData) {
-    "use server";
-    await updateUserRoleAction(formData);
-  }
-
-  async function handleDeleteUser(formData: FormData) {
-    "use server";
-    await deleteUserAction(formData);
-  }
-
-  return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      {/* Header Section */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">User Management</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">View, edit, and manage all registered users.</p>
-        </div>
-      </div>
-
-      {/* Data Table Container */}
-      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">User Type</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Cities</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Categories</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Role</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">ET Score</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {users && users.length > 0 ? (
-                users.map((profile) => (
-                  <tr key={profile.id} className="hover:bg-surface-base/50 transition-colors">
-                    
-                    {/* Avatar & Info */}
-                    <td className="px-8 py-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-[44px] h-[44px] rounded-full bg-surface-base border border-black/[0.04] flex items-center justify-center overflow-hidden shrink-0">
-                          {profile.avatar_url ? (
-                            <Image src={profile.avatar_url} alt={profile.full_name || "User"} width={44} height={44} className="object-cover w-full h-full" />
-                          ) : (
-                            <UserIcon className="w-5 h-5 text-[#6B7280]" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-bold font-['Outfit'] text-[#0D0D1A] text-[16px] leading-tight">{profile.full_name || "Anonymous User"}</p>
-                          <p className="text-[13px] font-medium font-['Switzer'] text-[#555570] mt-1">{profile.email}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* User Type */}
-                    <td className="px-8 py-6">
-                      {profile.user_type ? (
-                        <span className="text-[14px] font-bold font-['Outfit'] text-[#0D0D1A] whitespace-nowrap">{profile.user_type}</span>
-                      ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
-                      )}
-                    </td>
-
-                    {/* Interested Cities */}
-                    <td className="px-8 py-6">
-                      {profile.preferred_cities && profile.preferred_cities.length > 0 ? (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570]">{profile.preferred_cities.join(", ")}</span>
-                      ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
-                      )}
-                    </td>
-
-                    {/* Categories */}
-                    <td className="px-8 py-6">
-                      {profile.goals && profile.goals.length > 0 ? (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#555570] line-clamp-2 max-w-[200px]">{profile.goals.join(", ")}</span>
-                      ) : (
-                        <span className="text-[14px] font-medium font-['Switzer'] text-[#6B7280] italic">Not specified</span>
-                      )}
-                    </td>
-
-                    {/* Role Badge */}
-                    <td className="px-8 py-6">
-                      {profile.role === "admin" ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-[rgba(108,71,255,0.08)] text-brand-primary text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
-                          <Shield className="w-3.5 h-3.5" /> Admin
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] bg-surface-base text-[#555570] text-[11px] font-bold uppercase tracking-[0.15em] font-['Outfit']">
-                          <UserIcon className="w-3.5 h-3.5" /> User
-                        </span>
-                      )}
-                    </td>
-
-                    {/* ET Score */}
-                    <td className="px-8 py-6">
-                      <span className="text-[18px] font-black text-[#0D0D1A] font-['Outfit']">{profile.et_score || 0}</span>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-8 py-6">
-                      <div className="flex items-center justify-end gap-3">
-                        
-                        {/* Role Toggle */}
-                        {profile.id !== user.id && (
-                          <form action={handleRoleUpdate}>
-                            <input type="hidden" name="userId" value={profile.id} />
-                            <input type="hidden" name="role" value={profile.role === "admin" ? "user" : "admin"} />
-                            <button 
-                              type="submit" 
-                              className={`px-4 py-2 rounded-full text-[13px] font-bold font-['Outfit'] transition-colors ${
-                                profile.role === "admin" 
-                                  ? "bg-surface-base text-[#555570] hover:bg-[#EAEAEA]" 
-                                  : "bg-[#EDE8FF] text-brand-primary hover:bg-[#DED5FF]"
-                              }`}
-                            >
-                              {profile.role === "admin" ? "Demote" : "Make Admin"}
-                            </button>
-                          </form>
-                        )}
-
-                        {/* Delete */}
-                        {profile.id !== user.id && (
-                          <form action={handleDeleteUser}>
-                            <input type="hidden" name="userId" value={profile.id} />
-                            <button 
-                              type="submit" 
-                              className="w-[40px] h-[40px] rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#EF4444] hover:text-white transition-colors"
-                              title="Delete User"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </form>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
-                    No users found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/layout.tsx">
-import { AdminSidebar } from "./AdminSidebar";
-import { AdminHeader } from "./AdminHeader";
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="h-screen flex overflow-hidden bg-surface-base">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
-        <AdminHeader />
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </div>
     </div>
   );
 }
@@ -8254,6 +9146,7 @@ export default function LoginPage() {
   const [attempts, setAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -8269,7 +9162,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!hasConsented) {
       toast.error("Please agree to the Data Collection Policy to continue.");
@@ -8285,7 +9178,9 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = isSignUp
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+      : await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       const newAttempts = attempts + 1;
@@ -8304,9 +9199,13 @@ export default function LoginPage() {
           // We don't reset attempts here, so the next failure triggers a longer cooldown
         }, cooldownMs);
       } else {
-        toast.error("Invalid email or password.");
+        toast.error(isSignUp ? error.message : "Invalid email or password.");
       }
       setIsLoading(null);
+    } else if (isSignUp) {
+      setIsLoading(null);
+      toast.success("Account created! Check your email to confirm, then sign in.");
+      setIsSignUp(false);
     } else {
       setAttempts(0); // Reset attempts on success
       router.push("/");
@@ -8363,8 +9262,8 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
-            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
+            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4">
@@ -8405,9 +9304,16 @@ export default function LoginPage() {
               type="submit" disabled={!!isLoading || isLockedOut}
               className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
             >
-              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
+               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
+
+          <p className="text-center text-xs text-slate-500 font-medium mt-4">
+            {isSignUp ? "Already have an account?" : "New here?"}{" "}
+            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
 
           {/* Clean Divider */}
           <div className="relative flex items-center justify-center my-8">
@@ -9260,265 +10166,13 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
-<file path="src/app/admin/events/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Trash2, CheckCircle, XCircle, ImageIcon, Save } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-import { deleteEventAction, updateEventDetailsAction } from "../actions";
-import { DeleteConfirmButton } from "./DeleteConfirmButton";
-import { StatusSelect } from "./StatusSelect";
-
-export const dynamic = "force-dynamic";
-
-type PageProps = {
-  searchParams: Promise<{ filter?: string }>;
-};
-
-export default async function AdminEventsPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const filter = searchParams.filter || "all";
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) redirect("/");
-
-  let query = supabase.from("events").select(`
-    id, slug, title, category, poster_url, status,profiles ( full_name )`).order('created_at', { ascending: false }).limit(50);
-
-  if (filter === "pending") query = query.eq("status", "pending");
-  else if (filter === "approved") query = query.eq("status", "approved");
-  else if (filter === "rejected") query = query.eq("status", "rejected");
-  else if (filter === "deleted") query = query.eq("status", "deleted");
-  else query = query.neq("status", "deleted");
-
-  const { data: events, error } = await query;
-
-  if (error) {
-    console.error("Error fetching events:", error.message || JSON.stringify(error));
-  }
-
-  async function handleUpdate(formData: FormData) {
-    "use server";
-    await updateEventDetailsAction(formData);
-  }
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
-  }
-
-  return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      
-      {/* Header Section */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Event Management</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review, approve, and manage all platform events.</p>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
-        <Link href="/admin/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          All Events
-        </Link>
-        <Link href="/admin/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Pending
-        </Link>
-        <Link href="/admin/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Approved
-        </Link>
-        <Link href="/admin/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Rejected
-        </Link>
-        <Link href="/admin/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Trash
-        </Link>
-      </div>
-
-      {/* Data Table Container */}
-      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Event Details</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Creator</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Category</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Status</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {events && events.length > 0 ? (
-                events.map((event) => (
-                  <tr key={event.id} className="hover:bg-surface-base/50 transition-colors">
-                    
-                    {/* Event Image & Title */}
-                    <td className="px-8 py-6">
-                      <form id={`update-${event.id}`} action={handleUpdate}>
-                        <input type="hidden" name="eventId" value={event.id} />
-                      </form>
-                      <div className="flex items-center gap-5">
-                        <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
-                          {event.poster_url ? (
-                            <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
-                          ) : (
-                            <Image src="/window.svg" alt="Default Poster" fill sizes="88px" className="object-cover" />
-                          )}
-                        </div>
-                        <div>
-                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors group/title">
-                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-brand-primary leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
-                          </Link>
-                          <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Creator Info */}
-                    <td className="px-8 py-6">
-                      <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
-                        {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown User"}
-                      </span>
-                    </td>
-
-                    {/* Category (Editable) */}
-                    <td className="px-8 py-6">
-                      <input 
-                        type="text" 
-                        name="category" 
-                        defaultValue={event.category || ""} 
-                        form={`update-${event.id}`} 
-                        placeholder="Category"
-                        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
-                      />
-                    </td>
-
-                    {/* Status (Editable) */}
-                    <td className="px-8 py-6">
-                      <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-8 py-6">
-                      <div className="flex items-center justify-end gap-3">
-                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
-                          <CheckCircle className="w-5 h-5" />
-                        </button>
-
-                        <form action={handleDelete}>
-                          <input type="hidden" name="eventId" value={event.id} />
-                          <DeleteConfirmButton />
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
-                    No events found in this category
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/app/admin/AdminSidebar.tsx">
-"use client";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
-
-export function AdminSidebar() {
-  const pathname = usePathname();
-
-  const links = [
-    { name: "Overview", href: "/admin", icon: LayoutDashboard },
-    { name: "Events Queue", href: "/admin/events", icon: CalendarDays },
-    { name: "User Directory", href: "/admin/users", icon: Users },
-    { name: "Colleges", href: "/admin/colleges", icon: Building2 },
-    { name: "Moderation", href: "/admin/reports", icon: ShieldAlert },
-    { name: "Feedback", href: "/admin/feedback", icon: MessageSquareWarning },
-  ];
-
-  return (
-    <aside className="w-[300px] bg-surface-base hidden lg:flex flex-col h-full shrink-0 p-6 pr-0">
-      <div className="bg-[#FFFFFF] rounded-[32px] flex flex-col h-full shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        
-        {/* LOGO AREA */}
-        <div className="h-[96px] flex items-center px-8 border-b border-black/[0.04] shrink-0">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-[12px] bg-brand-primary flex items-center justify-center group-hover:bg-[#8B6FFF] transition-colors">
-              <span className="text-white font-black font-['Outfit'] text-[16px]">ET</span>
-            </div>
-            <h2 className="font-['Outfit'] font-bold text-[#0D0D1A] text-[20px] tracking-tight">EvenTime <span className="text-brand-primary">OS</span></h2>
-          </Link>
-        </div>
-        
-        {/* MENU */}
-        <div className="flex-1 py-8 px-6 overflow-y-auto space-y-8">
-          <div>
-            <p className="px-4 text-[11px] font-bold text-[#6B7280] uppercase tracking-[0.2em] mb-4 font-['Outfit']">Main Menu</p>
-            <nav className="space-y-2">
-              {links.map((link) => {
-                const isActive = pathname === link.href;
-                const Icon = link.icon;
-                return (
-                  <Link 
-                    key={link.name} 
-                    href={link.href} 
-                    className={`flex items-center gap-3 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] transition-all duration-200 ${
-                      isActive 
-                        ? "bg-[#EDE8FF] text-brand-primary" 
-                        : "text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A]"
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 ${isActive ? "text-brand-primary" : "text-[#6B7280]"}`} /> 
-                    <span className="text-[15px]">{link.name}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-        <div className="p-6 border-t border-black/[0.04] shrink-0">
-          <Link href="/" className="flex items-center justify-center gap-2 px-4 py-3.5 rounded-full font-semibold font-['Switzer'] text-[#555570] hover:bg-surface-base hover:text-[#0D0D1A] transition-colors">
-            <Settings className="w-4 h-4 text-[#6B7280]" />
-            <span className="text-[15px]">Exit Admin Mode</span>
-          </Link>
-        </div>
-
-      </div>
-    </aside>
-  );
-}
-</file>
-
 <file path="src/features/create-event/hooks/useEventSubmit.ts">
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { TablesInsert } from "@/types/database";
 import { toast } from "sonner";
-import { revalidateEventsCacheAction } from "@/app/admin/revalidateEventsAction";
+import { revalidateEventsCacheAction } from "@/app/et98/revalidateEventsAction";
 type SubmitPayload = TablesInsert<"events"> & {
   imageFile?: File | null;
   previewUrl?: string | null;
@@ -9962,99 +10616,6 @@ const nextConfig: NextConfig = {
 export default withPWA(nextConfig);
 </file>
 
-<file path="src/app/admin/feedback/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { MessageSquareWarning } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-export const dynamic = "force-dynamic";
-
-export default async function AdminFeedbackPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) {
-    redirect("/");
-  }
-
-  const { data: platformFeedback, error } = await supabase
-    .from("platform_feedback")
-    .select("id, type, message, created_at, user_id")
-    .order("created_at", { ascending: false });
-
-  const userIds = platformFeedback?.map((f: any) => f.user_id).filter(Boolean) || [];
-  const { data: profilesData } = await supabase
-    .from("profiles")
-    .select("id, full_name, email, username")
-    .in("id", userIds);
-    
-  const profilesMap = new Map(profilesData?.map((p: any) => [p.id, p]) || []);
-
-  if (error) {
-    console.error("Fetch Feedback Error:", JSON.stringify(error, null, 2));
-  }
-
-  return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      {/* Header Section */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-14 h-14 rounded-[20px] flex items-center justify-center bg-[rgba(51,128,240,0.08)]">
-          <MessageSquareWarning className="w-7 h-7 text-[#3380F0]" />
-        </div>
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Feedback & Bugs</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review all user-submitted bug reports and feature requests.</p>
-        </div>
-      </div>
-
-      <div className="bg-[#FFFFFF] rounded-[32px] overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-        <div className="divide-y divide-black/[0.04]">
-          {platformFeedback && platformFeedback.length > 0 ? (
-            platformFeedback.map((feedback: any) => (
-              <div key={feedback.id} className="p-8 hover:bg-surface-base/50 transition-colors">
-                <div className="flex items-start justify-between gap-5 mb-4">
-                  <div className="flex items-center gap-4">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[12px] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em] ${feedback.type === 'bug' ? 'bg-[rgba(239,68,68,0.08)] text-[#EF4444]' : 'bg-[rgba(245,158,11,0.08)] text-brand-accent'}`}>
-                      {feedback.type}
-                    </span>
-                    <span className="text-[13px] font-bold font-['Switzer'] text-[#6B7280]">
-                      {new Date(feedback.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} at {new Date(feedback.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="bg-surface-base p-6 rounded-[20px] mt-4">
-                  <p className="text-[16px] font-['Switzer'] text-[#0D0D1A] whitespace-pre-wrap leading-relaxed">{feedback.message}</p>
-                </div>
-                
-                <div className="mt-5 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#EDE8FF] flex items-center justify-center shrink-0">
-                    <span className="text-[12px] font-bold font-['Outfit'] text-brand-primary">
-                      {feedback.profiles?.full_name?.charAt(0) || "?"}
-                    </span>
-                  </div>
-                  <p className="text-[14px] text-[#555570] font-medium font-['Switzer']">
-                    Submitted by <span className="text-[#0D0D1A] font-bold">{feedback.profiles?.full_name || "Anonymous User"}</span>
-                  </p>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-24 text-center text-[#6B7280] font-bold uppercase tracking-[0.2em] text-[13px] font-['Outfit']">
-              No feedback submitted yet
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/error.tsx">
 "use client";
 
@@ -10376,232 +10937,6 @@ export async function fetchHomePageData() {
     platformStats,
     displayToday: `${todayIST.getDate()} ${todayIST.toLocaleDateString('en-US', { month: 'short' })}`
   };
-}
-</file>
-
-<file path="src/app/admin/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import { CheckCircle, XCircle, Users, ShieldAlert, BarChart3, Ticket, TrendingUp } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { approveEventAction, rejectEventAction, resolveReportAction, punishCuratorAction, toggleLeaderboardAction, toggleFeaturedAction } from "./actions";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-export const dynamic = "force-dynamic";
-
-type ReportWithEvent = {
-  id: string;
-  reason: string;
-  status: string | null;
-  created_at: string;
-  curator_id: string | null;
-  events: { title: string } | null;
-};
-
-export default async function AdminDashboard() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) {
-    redirect("/");
-  }
-
-  // Server Actions
-  async function handleApprove(formData: FormData) { "use server"; await approveEventAction(formData); }
-  async function handleReject(formData: FormData) { "use server"; await rejectEventAction(formData); }
-  async function handleResolve(formData: FormData) { "use server"; await resolveReportAction(formData); }
-  async function handlePunish(formData: FormData) { "use server"; await punishCuratorAction(formData); }
-  async function handleToggleLeaderboard(formData: FormData) { "use server"; await toggleLeaderboardAction(formData); }
-  async function handleToggleFeatured(formData: FormData) { "use server"; await toggleFeaturedAction(formData); }
-
-  // Fetch Data
-  const [
-    { count: totalUsers },
-    { count: totalEvents },
-    { data: appSettings },
-    { data: pendingEvents },
-    { data: activeReports }
-  ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("events").select("*", { count: "exact", head: true }),
-    supabase.from("app_settings").select("leaderboard_enabled, featured_enabled").eq("id", 1).maybeSingle(),
-    supabase.from("events").select("id, slug, title, category, poster_url, created_at, profiles:creator_id ( full_name )").eq("status", "pending").order("created_at", { ascending: false }).limit(10),
-    supabase.from("event_reports").select("id, reason, status, created_at, curator_id, events ( title )").eq("status", "pending").order("created_at", { ascending: false }).limit(5)
-  ]);
-
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const featuredEnabled = appSettings?.featured_enabled ?? true;
-  const reports = activeReports as unknown as ReportWithEvent[];
-
-  return (
-    <div className="px-10 pb-12 max-w-350 mx-auto space-y-12">
-      
-      {/* HEADER CONTROLS */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Platform Overview</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Monitor your platform metrics and moderation queues.</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-5 py-3 rounded-full bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#22C55E]" />
-            <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">LEADERBOARD · LIVE</span>
-          </div>
-
-          <form action={handleToggleFeatured}>
-            <input type="hidden" name="enabled" value={(!featuredEnabled).toString()} />
-            <button type="submit" className={`relative flex items-center gap-2 px-5 py-3 rounded-full transition-all duration-200 ${featuredEnabled ? "bg-surface-card text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)]" : "bg-surface-elevated text-[#6B7280]"}`}>
-              <div className={`w-2.5 h-2.5 rounded-full ${featuredEnabled ? "bg-brand-primary" : "bg-[#6B7280]"}`} />
-              <span className="text-[14px] font-bold font-['Outfit'] tracking-wide">FEATURED SYSTEM</span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* METRICS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: "TOTAL USERS", value: totalUsers || 0, icon: Users, color: "text-[#3380F0]", bg: "bg-[rgba(51,128,240,0.08)]" },
-          { label: "TOTAL EVENTS", value: totalEvents || 0, icon: Ticket, color: "text-brand-primary", bg: "bg-[rgba(108,71,255,0.08)]" },
-          { label: "PENDING APPROVALS", value: pendingEvents?.length || 0, icon: BarChart3, color: "text-brand-accent", bg: "bg-[rgba(245,158,11,0.08)]" },
-          { label: "ACTIVE REPORTS", value: reports?.length || 0, icon: ShieldAlert, color: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.08)]" }
-        ].map((stat, i) => (
-          <div key={i} className="bg-surface-card p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 transform hover:-translate-y-1">
-            <div className="flex items-center justify-between mb-8">
-              <div className={`w-14 h-14 rounded-lg flex items-center justify-center ${stat.bg}`}>
-                <stat.icon className={`w-7 h-7 ${stat.color}`} />
-              </div>
-            </div>
-            <h3 className="text-[56px] font-black font-['Outfit'] text-[#0D0D1A] tracking-[-2px] leading-none">{stat.value}</h3>
-            <p className="text-[12px] font-bold text-[#6B7280] uppercase tracking-[0.2em] font-['Outfit'] mt-4">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* MAIN CONTENT AREA */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* LEFT COLUMN: EVENTS QUEUE (Takes 2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
-              Event Approval Queue
-            </h2>
-            <Link href="/admin/events" className="text-[14px] font-semibold text-brand-primary hover:text-[#5535E0] font-['Switzer']">View All</Link>
-          </div>
-          
-          <div className="space-y-4">
-            {pendingEvents && pendingEvents.length > 0 ? (
-              pendingEvents.map((event) => (
-                <div key={event.id} className="bg-surface-card p-5 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300 flex items-center justify-between group">
-                  <div className="flex items-center gap-6">
-                    <div className="w-30 h-19 rounded-lg bg-surface-base overflow-hidden relative shrink-0">
-                      <Image src={event.poster_url || "/window.svg"} alt="Poster" fill sizes="120px" className="object-cover" />
-                    </div>
-                    <div>
-                      <div className="mb-2">
-                        <span className="inline-block px-3 py-1.5 rounded-md bg-[#EDE8FF] text-brand-primary text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
-                          {event.category}
-                        </span>
-                      </div>
-                      <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="font-bold font-['Outfit'] text-[20px] text-[#0D0D1A] hover:text-brand-primary transition-colors line-clamp-1">
-                        {event.title}
-                      </Link>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <span className="text-[14px] font-['Switzer'] text-[#555570]">
-                          {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown Organizer"}
-                        </span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#D1D1D6]"></span>
-                        <span className="text-[14px] font-['Switzer'] text-[#6B7280]">
-                          {event.created_at ? new Date(event.created_at as string).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <form action={handleReject}>
-                      <input type="hidden" name="eventId" value={event.id} />
-                      <button type="submit" className="w-12 h-12 rounded-full flex items-center justify-center text-[#555570] bg-surface-base hover:bg-[#EF4444] hover:text-white transition-all duration-200">
-                        <XCircle className="w-6 h-6" />
-                      </button>
-                    </form>
-                    <form action={handleApprove}>
-                      <input type="hidden" name="eventId" value={event.id ?? ""} />
-                      <button type="submit" className="px-8 h-12 rounded-full flex items-center justify-center gap-2 bg-brand-primary text-white font-['Outfit'] font-bold text-[15px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(108,71,255,0.2)]">
-                        <CheckCircle className="w-5 h-5" /> Approve
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="bg-surface-card rounded-[32px] p-20 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-                <div className="w-20 h-20 rounded-full bg-surface-base flex items-center justify-center mb-6">
-                  <CheckCircle className="w-10 h-10 text-[#6B7280]" />
-                </div>
-                <p className="text-[24px] font-bold font-['Outfit'] text-[#0D0D1A]">The stage is empty</p>
-                <p className="text-[16px] text-[#555570] font-['Switzer'] mt-2">No events waiting for your approval.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: MODERATION (Takes 1/3 width) */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="font-['Outfit'] font-bold text-[24px] text-[#0D0D1A] tracking-[-0.5px]">
-              Moderation Queue
-            </h2>
-          </div>
-          
-          <div className="space-y-4">
-            {reports && reports.length > 0 ? (
-              reports.map((report) => (
-                <div key={report.id} className="bg-surface-card p-8 rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(108,71,255,0.12),0_1px_4px_rgba(0,0,0,0.06)] transition-all duration-300">
-                  <div className="mb-4">
-                    <span className="inline-block px-3 py-1.5 rounded-md bg-[rgba(239,68,68,0.08)] text-[#EF4444] text-[11px] font-bold font-['Outfit'] uppercase tracking-[0.15em]">
-                      {report.reason}
-                    </span>
-                  </div>
-                  <h4 className="text-[18px] font-bold font-['Outfit'] text-[#0D0D1A] line-clamp-2 leading-snug">{report.events?.title || "Unknown Event"}</h4>
-                  <p className="text-[14px] text-[#6B7280] font-['Switzer'] mt-2">Reported on {new Date(report.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                  
-                  <div className="flex gap-4 mt-8">
-                    <form action={handleResolve} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full h-12 rounded-full bg-surface-base text-[#0D0D1A] font-['Outfit'] font-bold text-[14px] hover:bg-[#EAEAEA] transition-colors border border-black/4`">
-                        Dismiss
-                      </button>
-                    </form>
-                    <form action={handlePunish} className="flex-1">
-                      <input type="hidden" name="reportId" value={report.id} />
-                      <button type="submit" className="w-full h-12 rounded-full bg-[#EF4444] text-white font-['Outfit'] font-bold text-[14px] hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
-                        Punish
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              ))
-            ) : (
-               <div className="bg-surface-card rounded-[32px] p-16 text-center flex flex-col items-center justify-center shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)]">
-                <div className="w-18 h-18 rounded-full bg-surface-base flex items-center justify-center mb-5">
-                  <ShieldAlert className="w-8 h-8 text-[#6B7280]" />
-                </div>
-                <p className="text-[20px] font-bold font-['Outfit'] text-[#0D0D1A]">No active reports</p>
-                <p className="text-[15px] text-[#555570] font-['Switzer'] mt-2">Community is safe and clean.</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
 }
 </file>
 
@@ -11698,9 +12033,11 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
               {!isPastEvent && (
-                event.registration_link ? (
+               event.registration_link ? (
                   <Link
                     href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2"
                   >
                     Register <ExternalLink className="w-4 h-4" />
@@ -11868,7 +12205,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                 )}
                 {!isPastEvent && (
                   event.registration_link ? (
-                    <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                    <Link href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
                       Register <ExternalLink className="w-4 h-4" />
                     </Link>
                   ) : (
@@ -12589,66 +12926,6 @@ export default function SettingsClient({
   }
 </file>
 
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -12783,6 +13060,66 @@ export default async function RootLayout({
         <Analytics />
       </body>
     </html>
+  );
+}
+</file>
+
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }
 </file>
@@ -13129,7 +13466,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
             )}
 
             {isAdmin && (
-              <Link href="/admin" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
+              <Link href="/et98" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-red-500 hover:text-red-600 transition-colors shrink-0">
                 <Settings className="w-4 h-4 shrink-0" /> Admin
               </Link>
             )}
@@ -13362,311 +13699,6 @@ export function Navbar({ variant = 'default', categoryChips, locationChips, plat
       <NavbarInner variant={variant} categoryChips={categoryChips} locationChips={locationChips} platformStats={platformStats} />
     </Suspense>
   );
-}
-</file>
-
-<file path="src/app/admin/actions.ts">
-"use server";
-
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { revalidatePath, revalidateTag } from "next/cache";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database";
-import { requireAdmin } from "@/lib/auth/permissions";
-
-async function verifyAdmin(supabase: SupabaseClient<Database>) {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return false;
-
-  return requireAdmin(supabase, user.id);
-}
-
-export async function approveEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  const adminClient = createAdminClient();
-  // Derive creator server-side — never trust client
-  const { data: event, error: selectError } = await adminClient
-    .from("events")
-    .select("creator_id")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) {
-    console.error("Select failed:", selectError);
-    return { error: "Event not found." };
-  }
-
-  const { error: eventError } = await adminClient
-    .from("events")
-    .update({ status: "approved" })
-    .eq("id", eventId);
-
-  if (eventError) {
-    console.error("Event update failed:", eventError);
-    return { error: "Event update failed" };
-  }
-
-  const { error: profileError } = await adminClient.rpc('award_event_approval_score', {
-    p_user_id: event.creator_id,
-    p_event_id: eventId
-  });
-
-  if (profileError) {
-    console.error("Score update failed:", profileError);
-    return { error: "Score update failed" };
-  }
-
- revalidatePath("/", "layout"); 
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidateTag("events", "events");
-  return { success: true };
-}
-
-export async function rejectEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const eventId = formData.get("eventId") as string;
-  const reason = formData.get("reason") as string | null;
-
-  const adminClient = createAdminClient();
-  const { data: event, error: selectError } = await adminClient
-    .from("events")
-    .select("creator_id, title")
-    .eq("id", eventId)
-    .single();
-
-  if (!event?.creator_id) {
-    console.error("Select failed in reject:", selectError);
-    return { error: "Event not found." };
-  }
-
-  await adminClient
-    .from("events")
-    .update({ status: "rejected" })
-    .eq("id", eventId);
-
- revalidatePath("/", "layout"); 
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidateTag("events", "events");
-  return { success: true, creatorId: event.creator_id, title: event.title };
-}
-export async function resolveReportAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-
-  await supabase.from("event_reports").update({ status: "dismissed" }).eq("id", reportId);
-
-  revalidatePath("/admin");
-  return { success: true };
-}
-
-export async function punishCuratorAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized. Security breach logged.");
-
-  const reportId = formData.get("reportId") as string;
-  if (!reportId) return { error: "Missing reportId." };
-
-  // Derive curator and event from the report — never trust client
-  const { data: report } = await supabase
-    .from("event_reports")
-    .select("curator_id, event_id")
-    .eq("id", reportId)
-    .single();
-
-  if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
-
-  await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
-
-  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
-  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
-  const { data: allReports } = await supabase
-    .from("event_reports")
-    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
-    .eq("event_id", report.event_id);
-
-  const trustedReporterIds = new Set(
-    (allReports || [])
-      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
-      .map((r: any) => r.reporter_id)
-  );
-
-  if (trustedReporterIds.size < 5) {
-    revalidatePath("/admin");
-    return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
-  }
-
-  await supabase.rpc('apply_leaderboard_penalty', {
-    p_user_id: report.curator_id,
-    p_amount: 25
-  });
-
-  revalidatePath("/admin");
-  revalidatePath("/profile");
-  revalidateTag("leaderboard", "leaderboard");
-  return { success: true };
-}
-
-export async function deleteEventAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  if (!eventId) return { error: "Missing eventId." };
-
-  const adminClient = createAdminClient();
-  // Soft Delete: Just update the status to 'deleted'
-  const { data: deleted, error } = await adminClient.from("events").update({ status: "deleted" }).eq("id", eventId).select();
-  if (error) throw new Error("Delete failed: " + error.message);
-  if (!deleted || deleted.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-   revalidatePath("/", "layout"); 
-  revalidatePath("/");
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidateTag("events", "events");
-  return { success: true };
-}
-
-export async function deleteUserAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  if (!userId) return { error: "Missing userId." };
-
-  // Soft delete: mark the row, then ban login immediately.
-  // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
-  const { error } = await supabase
-    .from("profiles")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", userId);
-  if (error) return { error: "Failed to delete user." };
-
-  const adminClient = createAdminClient();
-  await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
-
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateUserRoleAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const userId = formData.get("userId") as string;
-  const newRole = formData.get("role") as string;
-  
-  if (!userId || !newRole) return { error: "Missing required fields." };
-
-  const adminClient = createAdminClient();
-  await adminClient.from("profiles").update({ role: newRole }).eq("id", userId);
-  
-  revalidatePath("/admin");
-  revalidatePath("/admin/users");
-  return { success: true };
-}
-
-export async function updateEventDetailsAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("eventId") as string;
-  const category = formData.get("category") as string;
-  const newStatus = formData.get("status") as string;
-  
-  if (!eventId) return { error: "Missing eventId." };
-
-  const adminClient = createAdminClient();
-  const { data: event, error: fetchError } = await adminClient
-  .from("events")
-  .select("status, creator_id")
-  .eq("id", eventId)
-  .single();
-
-if (!event) {
-  console.error("Event fetch failed:", fetchError);
-  return { error: "Event not found." };
-}
-  const { data: updated, error: updateError } = await adminClient.from("events").update({ category, status: newStatus }).eq("id", eventId).select();
-  if (updateError) throw new Error("Update failed: " + updateError.message);
-  if (!updated || updated.length === 0) throw new Error("Action Blocked: Check Supabase RLS Policies.");
-  
-  // NOTE: Scoring is now fully automatic — leaderboard_view counts approved
-  // events live, so approving/un-approving an event updates the score by
-  // itself. No manual score RPC call needed here anymore.
-  if (newStatus === "approved" && event.status !== "approved" && event.creator_id) {
-     await adminClient.from("events").update({ approved_at: new Date().toISOString() }).eq("id", eventId);
-  }
-   revalidatePath("/");
-  revalidatePath("/", "layout"); 
-  revalidatePath("/cities/[city]", "page");
-  revalidatePath("/admin");
-  revalidatePath("/admin/events");
-  revalidateTag("events", "events");
-  revalidateTag("leaderboard", "leaderboard");
-  return { success: true };
-}
-
-export async function toggleLeaderboardAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const enabled = formData.get("enabled") === "true";
-
-  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle leaderboard failed:", error);
-    return { error: "Failed to update setting." };
-  }
-
-  revalidatePath("/admin");
-
-  revalidatePath("/");
-  revalidatePath("/leaderboard");
-  return { success: true };
-}
-
-export async function toggleFeaturedAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
-
-  const eventId = formData.get("event_id") as string;
-  const isFeatured = formData.get("is_featured") === "true";
-
-  const adminClient = createAdminClient();
-  const { error } = await adminClient.from("events").update({ is_featured: isFeatured }).eq("id", eventId);
-  if (error) {
-    console.error("Toggle featured failed:", error);
-    return { error: "Failed to update featured status." };
-  }
-   revalidatePath("/", "layout"); 
-  revalidatePath("/admin");
-  revalidatePath("/");
-  revalidateTag("events", "events");
-  return { success: true };
 }
 </file>
 

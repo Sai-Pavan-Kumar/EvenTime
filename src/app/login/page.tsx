@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [attempts, setAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -28,7 +29,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!hasConsented) {
       toast.error("Please agree to the Data Collection Policy to continue.");
@@ -44,7 +45,9 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = isSignUp
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+      : await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       const newAttempts = attempts + 1;
@@ -63,9 +66,13 @@ export default function LoginPage() {
           // We don't reset attempts here, so the next failure triggers a longer cooldown
         }, cooldownMs);
       } else {
-        toast.error("Invalid email or password.");
+        toast.error(isSignUp ? error.message : "Invalid email or password.");
       }
       setIsLoading(null);
+    } else if (isSignUp) {
+      setIsLoading(null);
+      toast.success("Account created! Check your email to confirm, then sign in.");
+      setIsSignUp(false);
     } else {
       setAttempts(0); // Reset attempts on success
       router.push("/");
@@ -122,8 +129,8 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">Sign In</h2>
-            <p className="text-slate-500 text-sm font-medium">Access your curator dashboard.</p>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
+            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4">
@@ -164,9 +171,16 @@ export default function LoginPage() {
               type="submit" disabled={!!isLoading || isLockedOut}
               className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
             >
-              {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>Login <ArrowRight className="w-4 h-4" /></>}
+               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
+
+          <p className="text-center text-xs text-slate-500 font-medium mt-4">
+            {isSignUp ? "Already have an account?" : "New here?"}{" "}
+            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
 
           {/* Clean Divider */}
           <div className="relative flex items-center justify-center my-8">
