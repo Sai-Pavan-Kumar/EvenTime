@@ -148,14 +148,19 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   }, [supabase]);
 
   useEffect(() => {
-    supabase
+    let query = supabase
       .from("events")
       .select("date_string")
-      .eq("status", "approved")
-      .then(({ data }) => {
-        if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
-      });
-  }, [supabase]);
+      .eq("status", "approved");
+
+    if (profileDetails?.preferred_cities && profileDetails.preferred_cities.length > 0) {
+      query = query.in("city", profileDetails.preferred_cities);
+    }
+
+    query.then(({ data }) => {
+      if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
+    });
+  }, [supabase, profileDetails]);
 
   useEffect(() => {
     const hasQuery = searchQuery.trim().length > 0;

@@ -13,15 +13,18 @@ import { categoriesList } from "@/features/create-event/constants";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { createCollegeAction } from "@/app/profile/action";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+import { Navbar } from "@/components/layout/Navbar";
 
 
 export default function SettingsClient({ 
   profile, 
   categoryCounts = {},
+  cityCounts = {},
   userEmail
 }: { 
   profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
   categoryCounts?: Record<string, number>,
+  cityCounts?: Record<string, number>,
   userEmail?: string
 }) {
   const router = useRouter();
@@ -158,6 +161,7 @@ export default function SettingsClient({
 
   return (
     <main className="min-h-screen bg-surface-base pb-32">
+      <Navbar />
       {/* Mobile-Optimized Sticky Navbar */}
       <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center gap-4">
         <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
@@ -237,18 +241,6 @@ export default function SettingsClient({
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                   Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
                 </label>
-                {selectedCities.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {selectedCities.map(c => (
-                      <span key={c} className="inline-flex items-center gap-1.5 bg-[#1D1D1F] text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                        {c}
-                        <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
                 <div className="flex flex-wrap gap-2">
                   {CITIES.map(loc => {
                     const isSelected = selectedCities.includes(loc);

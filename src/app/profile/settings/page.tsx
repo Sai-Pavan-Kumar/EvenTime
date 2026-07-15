@@ -19,15 +19,17 @@ export default async function SettingsPage() {
   // College list is fetched client-side in SettingsClient for better search UX
 
   // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const { data: activeEvents } = await supabase
     .from("events")
-    .select("category")
-    .eq("is_published" as any, true)
-    .gte("start_time" as any, today);
+    .select("category, city")
+    .eq("status", "approved")
+    .gte("date_string", todayStr);
 
   // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
   const categoryCounts: Record<string, number> = {};
+  const cityCounts: Record<string, number> = {};
   if (activeEvents) {
     activeEvents.forEach(event => {
       if (event.category) {
@@ -46,9 +48,12 @@ export default async function SettingsPage() {
           categoryCounts[c] = (categoryCounts[c] || 0) + 1;
         });
       }
+      if ((event as any).city) {
+        cityCounts[(event as any).city] = (cityCounts[(event as any).city] || 0) + 1;
+      }
     });
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
- return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
+ return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} cityCounts={cityCounts} userEmail={user.email} />;
 }

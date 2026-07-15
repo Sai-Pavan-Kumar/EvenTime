@@ -359,11 +359,21 @@
                 </div>
 
                 {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                {collegeName ? (
+               <span className="truncate">{collegeName}, {city}</span>
+              ) : (
+             <Link
+            href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+           onClick={(e) => e.stopPropagation()}
+           className="truncate hover:text-brand-primary hover:underline transition-colors"
+      >
+        {city}
+      </Link>
+    )}
+  </div>
+)}
 
                 <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
                   <span className="flex items-center gap-1 shrink-0">

@@ -105,6 +105,15 @@ export function HomePageClient(props: HomePageClientProps) {
     fetchUserAndProfile();
   }, []);
 
+  // City match: online events always pass (no city restriction on them).
+  // If user hasn't picked any preferred_cities yet, treat every city as a match.
+  // Moved out of the effect below so the date-filter block further down can use it too.
+  const preferredCities = profile?.preferred_cities || [];
+  const cityMatch = (e: Partial<EventRow>) =>
+    e.is_virtual ||
+    preferredCities.length === 0 ||
+    (e.city ? preferredCities.includes(e.city) : false);
+
   // NEW: Organize the Buffet into Personalized Plates
   useEffect(() => {
     let nonCampusEvents = liveAllEvents || [];
@@ -129,14 +138,6 @@ export function HomePageClient(props: HomePageClientProps) {
       };
       fetchCollegeEvents();
     }
-
-    // City match: online events always pass (no city restriction on them).
-    // If user hasn't picked any preferred_cities yet, treat every city as a match.
-    const preferredCities = profile?.preferred_cities || [];
-    const cityMatch = (e: Partial<EventRow>) =>
-      e.is_virtual ||
-      preferredCities.length === 0 ||
-      (e.city ? preferredCities.includes(e.city) : false);
 
     // For You = preferred category AND preferred city (or online)
     // Around You = preferred city (or online), MINUS whatever is already in For You
@@ -192,6 +193,7 @@ export function HomePageClient(props: HomePageClientProps) {
       
       if (date) {
         if (e.date_string !== date) match = false;
+        if (!location && !cityMatch(e)) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
         if (bothCategoryAndLocationPicked) {

@@ -48,9 +48,16 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { error } = isSignUp
+    const { error, data } = isSignUp
       ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
       : await supabase.auth.signInWithPassword({ email, password });
+
+    // Supabase returns an empty identities array (not an error) when the email already has an unconfirmed account
+    if (isSignUp && !error && data?.user?.identities?.length === 0) {
+      setIsLoading(null);
+      toast.error("You've already signed up with this email. Check your inbox for the latest confirmation link — resubmitting invalidates older links.");
+      return;
+    }
 
     if (error) {
       const newAttempts = attempts + 1;
@@ -69,7 +76,11 @@ export default function LoginPage() {
           // We don't reset attempts here, so the next failure triggers a longer cooldown
         }, cooldownMs);
       } else {
-        toast.error(isSignUp ? error.message : "Invalid email or password.");
+        toast.error(
+          error.message === "Email not confirmed"
+            ? "Please confirm your email first — check your inbox for the verification link."
+            : (isSignUp ? error.message : "Invalid email or password.")
+        );
       }
       setIsLoading(null);
     } else if (isSignUp) {
@@ -92,7 +103,7 @@ export default function LoginPage() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:items-stretch"
       >
         
         {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}

@@ -183,7 +183,7 @@ function ProfileContent() {
 
   return (
     <main className="min-h-screen bg-surface-base">
-      <Navbar variant="centered" />
+      <Navbar />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     {/* Unified Master Box enclosing both Sidebar and Content */}
@@ -304,12 +304,7 @@ function ProfileContent() {
                 <MobileSignOutButton />
               </div>
 
-              <div className="p-4 pt-1 mb-2 mt-auto">
-                <Link href="/events/new" className="w-full bg-brand-primary hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
-                  <Plus className="w-4 h-4" /> Create New Event
-                </Link>
               </div>
-            </div>
           </div>
 
           {/* RIGHT CONTENT AREA */}

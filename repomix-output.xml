@@ -338,6 +338,54 @@ tsconfig.json
 <files>
 This section contains the contents of the repository's files.
 
+<file path=".github/workflows/ci.yml">
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Audit URLs using Lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://et.sbhub.in/
+          uploadArtifacts: true 
+          temporaryPublicStorage: true
+</file>
+
 <file path="public/file.svg">
 <svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
 </file>
@@ -1779,54 +1827,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
   ],
   "exclude": ["node_modules"]
 }
-</file>
-
-<file path=".github/workflows/ci.yml">
-name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-
-jobs:
-  build:
-    name: Build & Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js
-        run: npm run build
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-
-  lighthouse:
-    name: Lighthouse Audit
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Audit URLs using Lighthouse
-        uses: treosh/lighthouse-ci-action@v12
-        with:
-          urls: |
-            https://et.sbhub.in/
-          uploadArtifacts: true 
-          temporaryPublicStorage: true
 </file>
 
 <file path="public/manifest.json">
@@ -5431,15 +5431,17 @@ export default async function SettingsPage() {
   // College list is fetched client-side in SettingsClient for better search UX
 
   // NEW: Fetch active events to calculate counts per category
-  const today = new Date().toISOString();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const { data: activeEvents } = await supabase
     .from("events")
-    .select("category")
-    .eq("is_published" as any, true)
-    .gte("start_time" as any, today);
+    .select("category, city")
+    .eq("status", "approved")
+    .gte("date_string", todayStr);
 
   // Aggregate category counts (Robust parsing added to prevent failures if categories are arrays)
   const categoryCounts: Record<string, number> = {};
+  const cityCounts: Record<string, number> = {};
   if (activeEvents) {
     activeEvents.forEach(event => {
       if (event.category) {
@@ -5458,11 +5460,14 @@ export default async function SettingsPage() {
           categoryCounts[c] = (categoryCounts[c] || 0) + 1;
         });
       }
+      if ((event as any).city) {
+        cityCounts[(event as any).city] = (cityCounts[(event as any).city] || 0) + 1;
+      }
     });
   }
 
   // Cast profile to any to bypass strict Typescript errors until global types are updated
- return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} userEmail={user.email} />;
+ return <SettingsClient profile={profile as any} categoryCounts={categoryCounts} cityCounts={cityCounts} userEmail={user.email} />;
 }
 </file>
 
@@ -7651,108 +7656,6 @@ export const getCityConfig = (city: string) => {
 };
 </file>
 
-<file path="src/proxy.ts">
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
-
-export async function proxy(request: NextRequest) {
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-    style-src 'self' https://api.fontshare.com;
-    img-src 'self' blob: data: https: http:;
-    font-src 'self' https://api.fontshare.com;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  `;
-  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
-
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-  let response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-        },
-      },
-    }
-  );
-
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  const isProtected =
-    request.nextUrl.pathname.startsWith('/events/new') ||
-    request.nextUrl.pathname.endsWith('/edit') ||
-    request.nextUrl.pathname.startsWith('/profile') ||
-    request.nextUrl.pathname.startsWith('/et98');
-
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return response;
-}
-
-export const config = {
-  matcher: [
-    {
-      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
-  ],
-};
-</file>
-
 <file path="src/components/layout/LaunchScreen.tsx">
 "use client";
 
@@ -8812,11 +8715,21 @@ export default async function NewEventPage() {
                 </div>
 
                 {city && (
-                  <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{collegeName ? `${collegeName}, ${city}` : city}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                {collegeName ? (
+               <span className="truncate">{collegeName}, {city}</span>
+              ) : (
+             <Link
+            href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+           onClick={(e) => e.stopPropagation()}
+           className="truncate hover:text-brand-primary hover:underline transition-colors"
+      >
+        {city}
+      </Link>
+    )}
+  </div>
+)}
 
                 <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
                   <span className="flex items-center gap-1 shrink-0">
@@ -9842,6 +9755,109 @@ export const Constants = {
 } as const
 </file>
 
+<file path="src/proxy.ts">
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
+
+export async function proxy(request: NextRequest) {
+ const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
+   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
+    img-src 'self' blob: data: https: http:;
+    font-src 'self' https://api.fontshare.com;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  `;
+  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
+      },
+    }
+  );
+
+  // Use getUser() for high-security checks
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // NEW: Global Authentication Check Strategy
+  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
+  response.cookies.set({
+    name: 'client_auth',
+    value: user ? 'true' : 'false',
+    path: '/',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  // 1. If user IS logged in and tries to go to login page, send to profile
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
+
+  const isProtected =
+    request.nextUrl.pathname.startsWith('/events/new') ||
+    request.nextUrl.pathname.endsWith('/edit') ||
+    request.nextUrl.pathname.startsWith('/profile') ||
+    request.nextUrl.pathname.startsWith('/et98');
+
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    {
+      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
+  ],
+};
+</file>
+
 <file path="src/app/[username]/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -10250,256 +10266,6 @@ export default function NotFound() {
         </Link>
       </div>
     </div>
-  );
-}
-</file>
-
-<file path="src/app/login/page.tsx">
-"use client";
-
-import { createClient } from "@/lib/supabase/client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import Image from "next/image";
-import { toast } from "sonner";
-
-export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-  const [hasConsented, setHasConsented] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
- const handleLogin = async (provider: 'google' | 'github') => {
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    setIsLoading(provider);
-    await supabase.auth.signInWithOAuth({
-      provider: provider,
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
-  };
-
-   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!hasConsented) {
-      toast.error("Please agree to the Data Collection Policy to continue.");
-      return;
-    }
-    if (isLockedOut) {
-      toast.error("Too many failed attempts. Please wait before trying again.");
-      return;
-    }
-
-    setIsLoading('email');
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
-    const { error } = isSignUp
-      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
-      : await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      const newAttempts = attempts + 1;
-      setAttempts(newAttempts);
-      
-      if (newAttempts >= 3) {
-        // Calculate exponential cooldown: 30s, 60s, 120s, etc.
-        const penaltyMultiplier = Math.pow(2, newAttempts - 3);
-        const cooldownMs = 30000 * penaltyMultiplier;
-        
-        toast.error(`Too many failed attempts. Please wait ${cooldownMs / 1000} seconds before trying again.`);
-        setIsLockedOut(true);
-        
-        setTimeout(() => {
-          setIsLockedOut(false);
-          // We don't reset attempts here, so the next failure triggers a longer cooldown
-        }, cooldownMs);
-      } else {
-        toast.error(isSignUp ? error.message : "Invalid email or password.");
-      }
-      setIsLoading(null);
-    } else if (isSignUp) {
-      setIsLoading(null);
-      toast.success("Account created! Check your email to confirm, then sign in.");
-      setIsSignUp(false);
-    } else {
-      setAttempts(0); // Reset attempts on success
-      router.push("/");
-      router.refresh();
-    }
-  };
-
-  return (
-    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
-      {/* THE PERFECT 2:1 SPLIT LAYOUT
-        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
-        - Mobile: auto height, vertical stack
-      */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:h-[600px]"
-      >
-        
-        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
-        <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
-          {/* Aesthetic Background Glows */}
-          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
-          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
-
-          {/* Top Logo */}
-          <div className="relative z-10 w-16 h-16">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
-          </div>
-
-          {/* Center Pitch */}
-          <div className="relative z-10 mt-auto mb-16">
-            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
-              Stop Searching.<br />Start Attending.
-            </h1>
-            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
-              The ultimate stage for Gen-Z curators and seekers to discover the best events.
-            </p>
-          </div>
-
-          {/* Bottom Footer Area */}
-          <div className="relative z-10 flex items-center gap-3">
-            <div className="h-1 w-8 bg-white/30 rounded-full" />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
-          </div>
-        </div>
-
-        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
-        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
-          
-          {/* Mobile Logo (Visible only on small screens) */}
-          <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
-            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
-          </div>
-
-          <form onSubmit={handleEmailLogin} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
-                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-              </div>
-            </div>
-
-           <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
-                  className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {isSignUp && (
-                <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
-                  Min 6 characters, with uppercase, lowercase, a number & a symbol.
-                </p>
-              )}
-            </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
-                </label>
-            </div>
-            <button 
-              type="submit" disabled={!!isLoading || isLockedOut}
-              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
-            >
-               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
-            </button>
-          </form>
-
-          <p className="text-center text-xs text-slate-500 font-medium mt-4">
-            {isSignUp ? "Already have an account?" : "New here?"}{" "}
-            <button type="button" onClick={() => setIsSignUp(!isSignUp)} className="text-brand-primary font-bold hover:underline">
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </button>
-          </p>
-
-          {!isSignUp && (
-            <div className="text-right -mt-2 mb-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
-                  if (!emailInput) {
-                    toast.error("Enter your email above first.");
-                    return;
-                  }
-                  const { error } = await supabase.auth.resetPasswordForEmail(emailInput, {
-                    redirectTo: `${window.location.origin}/reset-password`,
-                  });
-                  if (error) {
-                    toast.error(error.message);
-                  } else {
-                    toast.success("Password reset link sent! Check your email.");
-                  }
-                }}
-                className="text-xs font-bold text-brand-primary hover:underline"
-              >
-                Forgot password?
-              </button>
-            </div>
-          )}
-
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
-          </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
-        </div>
-      </motion.div>
-    </main>
   );
 }
 </file>
@@ -11348,12 +11114,7 @@ function ProfileContent() {
                 <MobileSignOutButton />
               </div>
 
-              <div className="p-4 pt-1 mb-2 mt-auto">
-                <Link href="/events/new" className="w-full bg-brand-primary hover:bg-[#5535E0] text-white px-5 py-3.5 rounded-full font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm">
-                  <Plus className="w-4 h-4" /> Create New Event
-                </Link>
               </div>
-            </div>
           </div>
 
           {/* RIGHT CONTENT AREA */}
@@ -11918,730 +11679,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             )}
           </div>
         </motion.div>
-  );
-}
-</file>
-
-<file path="src/app/profile/settings/SettingsClient.tsx">
-"use client";
-
-import { useState, useEffect } from "react";
-import { CITIES } from "@/lib/constants/cities";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
-import { toast } from "sonner";
-import { updateProfileSettings } from "./actions";
-import { createClient } from "@/lib/supabase/client";
-import type { ProfileRow, CollegeRow } from "@/types";
-import { categoriesList } from "@/features/create-event/constants";
-import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { createCollegeAction } from "@/app/profile/action";
-import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
-
-
-export default function SettingsClient({ 
-  profile, 
-  categoryCounts = {},
-  userEmail
-}: { 
-  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number>,
-  userEmail?: string
-}) {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  
-  // Immutability flag: If profile is fully onboarded, lock identity/education fields.
-  const isLocked = !!profile?.is_onboarded;
-
-  // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
-  const [fullName, setFullName] = useState(profile?.full_name || "");
-  const [username, setUsername] = useState(profile?.username || "");
-  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
-  const [userType, setUserType] = useState(() => {
-    if (!profile?.user_type) return "";
-    const ut = profile.user_type;
-    if (ut === "student") return "Student";
-    return ut.charAt(0).toUpperCase() + ut.slice(1);
-  });
-  
-  // States for Education Logic
-  const [college, setCollege] = useState(profile?.college || "");
-  const [year, setYear] = useState(profile?.graduation_year || "");
-  const [branch, setBranch] = useState(profile?.branch || "");
-
-  // College search dropdown states
- 
-  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
-  const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
-  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
- const [isCreatingCollege, setIsCreatingCollege] = useState(false);
-
-  
-  // Align admin check with OnboardingModal exactly (checks role, type)
-   const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
-  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleCreateCollege = async (name: string) => {
-    setIsCreatingCollege(true);
-    const result = await createCollegeAction(name);
-    if (result.data && !result.error) {
-      setCollegesList(prev => [...prev, result.data as CollegeRow]);
-      setCollege(result.data.name);
-      setCollegeId(result.data.id);
-      setCollegeSearchQuery(result.data.name);
-    } else {
-      toast.error("Failed to add college. Please try again.");
-    }
-    setIsCreatingCollege(false);
-    setShowCollegeDropdown(false);
-  };
-
-  const toggleCity = (cityName: string) => {
-    if (selectedCities.includes(cityName)) {
-      setSelectedCities(selectedCities.filter(c => c !== cityName));
-    } else if (isAdmin || selectedCities.length < 3) {
-      setSelectedCities([...selectedCities, cityName]);
-    }
-  };
-
-  // State for Goals Selection
-  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
-
-  const toggleGoal = (goal: string) => {
-    if (selectedGoals.includes(goal)) {
-      setSelectedGoals(selectedGoals.filter(g => g !== goal));
-    } else if (isAdmin || selectedGoals.length < 6) {
-      setSelectedGoals([...selectedGoals, goal]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    const formData = new FormData(e.currentTarget);
-    
-    // Inject state variables directly into FormData.
-    // This is strictly required because `disabled` inputs are normally omitted from form submissions.
-    formData.set("fullName", fullName);
-    formData.set("username", username);
-    formData.set("user_type", userType.toLowerCase());
-    formData.set("preferred_cities", JSON.stringify(selectedCities));
-    
-    if (userType === "Student" && college) formData.set("college", college);
-    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
-    else formData.delete("college");
-
-    if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
-    else formData.delete("collegeId");
-    
-        formData.delete("yearOfStudying");
-
-    
-    if (userType === "Student" && year) formData.set("graduationYear", year);
-    else formData.delete("graduationYear");
-
-    if (userType === "Student" && branch) formData.set("branch", branch);
-    else formData.delete("branch");
-    
-    formData.delete("goals");
-    formData.append("goals", JSON.stringify(selectedGoals));
-
-    const result = await updateProfileSettings(formData);
-    
-    setIsSubmitting(false);
-
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Profile updated successfully!");
-      router.push("/profile");
-    }
-  };
-
-  // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
-  const isStudentNow = userType === "Student";
-  const missingItems: string[] = [];
-  if (!profile?.avatar_url) missingItems.push("Profile photo");
-  if (!username) missingItems.push("Username");
-  if (selectedCities.length === 0) missingItems.push("Preferred cities");
-  if (selectedGoals.length === 0) missingItems.push("Interest categories");
-  if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
-
-  return (
-    <main className="min-h-screen bg-surface-base pb-32">
-      {/* Mobile-Optimized Sticky Navbar */}
-      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center gap-4">
-        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
-          <ArrowLeft className="w-5 h-5 text-slate-900" />
-        </button>
-        <div>
-          <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
-          <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
-        </div>
-      </nav>
-
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8">
-        {missingItems.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-            <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-amber-700">Still missing to reach 100%:</p>
-              <p className="text-xs text-amber-600 font-medium mt-1">{missingItems.join(" · ")}</p>
-            </div>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* Section 1: Identify (Personal Info) */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4 text-blue-500" />
-                </div>
-                <h2 className="font-bold text-lg text-slate-900">Identity</h2>
-              </div>
-              {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
-            </div>
-
-            <div className="space-y-5">
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What's your name?</label>
-                <input 
-                  type="text" 
-                  name="fullName" 
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  required
-                  disabled={isLocked}
-                  placeholder="Your Name"
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                />
-                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-              </div>
-
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Public Username</label>
-                <div className="relative flex items-center">
-                <span className="absolute left-4 text-slate-400 font-bold z-10">@</span>
-                  <input 
-                    type="text" 
-                    name="username" 
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    required
-                    disabled={isLocked}
-                    minLength={3}
-                    maxLength={12}
-                    pattern="[A-Za-z0-9]+"
-                    title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
-                    placeholder="your_handle"
-                    className="w-full bg-[#F8F9FB] border-none text-slate-900 pl-10 pr-10 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                  />
-                  {isLocked && <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />}
-                </div>
-                <p className="text-xs text-slate-400 mt-2 ml-1">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
-              </div>
-
-              {/* Editable: City Multi-Select (max 3) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
-                </label>
-                {selectedCities.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {selectedCities.map(c => (
-                      <span key={c} className="inline-flex items-center gap-1.5 bg-[#1D1D1F] text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                        {c}
-                        <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
-                          <X className="w-3 h-3" />
-                        </button>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {CITIES.map(loc => {
-                    const isSelected = selectedCities.includes(loc);
-                    const isDisabled = !isSelected && !isAdmin && selectedCities.length >= 3;
-                    return (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => toggleCity(loc)}
-                        disabled={isDisabled}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                          isSelected
-                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
-                            : isDisabled
-                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
-                      >
-                        {loc}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="relative">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What are you</label>
-                <select 
-                  value={userType} 
-                  onChange={e => setUserType(e.target.value)} 
-                  required
-                  disabled={isLocked}
-                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                >
-                  <option value="" disabled>Select your role</option>
-                  {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-              </div>
-
-            </div>
-          </div>
-
-          {/* Education Context */}
-          <AnimatePresence>
-            {userType === "Student" && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: "auto" }} 
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm overflow-hidden"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <h2 className="font-bold text-lg text-slate-900">Education Context</h2>
-                  </div>
-                  {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
-                </div>
-
-                <div className="space-y-5">
-                  {/* College Search Dropdown */}
-                  <div className="relative" data-college-dropdown>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
-                    {isLocked ? (
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={college}
-                          disabled
-                          className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
-                        />
-                        <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="Type to search your college"
-                          value={collegeSearchQuery}
-                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
-                          onFocus={() => setShowCollegeDropdown(true)}
-                          className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
-                        />
-                         {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
-                            {isSearchingColleges && (
-                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
-                            )}
-                            {!isSearchingColleges && collegesList
-                              .map(item => (
-                                <button
-                                  key={item.id}
-                                  type="button"
-                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
-                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
-                                >
-                                  <span>🏢 {item.name}</span>
-                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
-                                </button>
-                              ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                              <button
-                                type="button"
-                                onClick={() => handleCreateCollege(collegeSearchQuery)}
-                                disabled={isCreatingCollege}
-                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
-                              >
-                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Can't find your college? It will be added automatically.</p>
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                    <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
-                      <select
-                        value={branch}
-                        onChange={e => setBranch(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="" disabled>Select</option>
-                        {INDIAN_COLLEGE_BRANCHES.map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-
-                    <div className="relative">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
-                      <select 
-                        value={year}
-                        onChange={e => setYear(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
-                      >
-                        <option value="" disabled>Select</option>
-                        {["2024", "2025", "2026", "2027", "2028", "2029", "2030"].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Editable: Event Categories */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                  <Target className="w-4 h-4 text-amber-500" />
-                </div>
-                <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
-              </div>
-              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
-                {selectedGoals.length}{!isAdmin && "/6"}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
-              {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
-            </p>
-
-            <div className="flex flex-wrap gap-2.5">
-              {categoriesList.map((goal) => {
-                const isSelected = selectedGoals.includes(goal);
-                const count = categoryCounts[goal] || 0;
-                return (
-                  <button
-                    key={goal}
-                    type="button"
-                    onClick={() => toggleGoal(goal)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center gap-2 border ${
-                      isSelected 
-                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-md shadow-black/10" 
-                        : !isAdmin && selectedGoals.length >= 6
-                        ? "bg-white text-slate-300 border-transparent cursor-not-allowed"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {goal}
-                    {count > 0 && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full ml-1 font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-[#5835E5]/10 text-[#5835E5]'}`}>
-                        {count}
-                      </span>
-                    )}
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Danger Zone (DPDP Compliance) */}
-          <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-              </div>
-                            <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
-            </div>
-            <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
-              Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
-            </p>
-            <div className="ml-11">
-              <button 
-                type="button"
-                onClick={async () => {
-                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
-                    const supabase = createClient();
-                    
-                    // Call the secure RPC function to delete the user
-                    const { error } = await supabase.rpc('delete_user');
-                    
-                    if (error) {
-                      toast.error("Failed to delete account. Please try again.");
-                      console.error("Delete user error:", error);
-                      return;
-                    }
-
-                    // Sign out and redirect
-                    await supabase.auth.signOut();
-                    toast.success("Your account has been permanently deleted.");
-                    router.push("/login");
-                  }
-                }}
-                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
-              >
-                Delete My Account
-              </button>
-            </div>
-          </div>
-          {/* Fixed Save Button */}
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="w-full bg-brand-primary text-white hover:bg-white hover:text-brand-primary border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
-            >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Save className="w-5 h-5" /> Save Profile
-                </>
-              )}
-            </button>
-          </div>
-
-        </form>
-      </div>
-    </main>
-    );
-  }
-</file>
-
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { PostHogProvider } from "./providers";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
-
-import { headers } from "next/headers";
-
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const headersList = await headers();
-  const nonce = headersList.get("x-nonce") || undefined;
-
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
-            {`
-              (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-            `}
-          </Script>
-        )}
-
-        {/* Google Analytics GA4 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
-            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
-      </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        <PostHogProvider>
-          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
-          <div className="flex-1 w-full flex flex-col">
-            {children}
-          </div>
-          
-          <Footer /> {/* Render the Footer globally */}
-        </PostHogProvider>
-        
-        <Toaster />
-        <Analytics />
-      </body>
-    </html>
-  );
-}
-</file>
-
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
-    </div>
   );
 }
 </file>
@@ -13225,6 +12262,990 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 }
 </file>
 
+<file path="src/app/login/page.tsx">
+"use client";
+
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import { toast } from "sonner";
+
+export default function LoginPage() {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(false);
+  const [hasConsented, setHasConsented] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [isResetLoading, setIsResetLoading] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+
+ const handleLogin = async (provider: 'google' | 'github') => {
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    setIsLoading(provider);
+    await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+  };
+
+   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!hasConsented) {
+      toast.error("Please agree to the Data Collection Policy to continue.");
+      return;
+    }
+    if (isLockedOut) {
+      toast.error("Too many failed attempts. Please wait before trying again.");
+      return;
+    }
+
+    setIsLoading('email');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error, data } = isSignUp
+      ? await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } })
+      : await supabase.auth.signInWithPassword({ email, password });
+
+    // Supabase returns an empty identities array (not an error) when the email already has an unconfirmed account
+    if (isSignUp && !error && data?.user?.identities?.length === 0) {
+      setIsLoading(null);
+      toast.error("You've already signed up with this email. Check your inbox for the latest confirmation link — resubmitting invalidates older links.");
+      return;
+    }
+
+    if (error) {
+      const newAttempts = attempts + 1;
+      setAttempts(newAttempts);
+      
+      if (newAttempts >= 3) {
+        // Calculate exponential cooldown: 30s, 60s, 120s, etc.
+        const penaltyMultiplier = Math.pow(2, newAttempts - 3);
+        const cooldownMs = 30000 * penaltyMultiplier;
+        
+        toast.error(`Too many failed attempts. Please wait ${cooldownMs / 1000} seconds before trying again.`);
+        setIsLockedOut(true);
+        
+        setTimeout(() => {
+          setIsLockedOut(false);
+          // We don't reset attempts here, so the next failure triggers a longer cooldown
+        }, cooldownMs);
+      } else {
+        toast.error(
+          error.message === "Email not confirmed"
+            ? "Please confirm your email first — check your inbox for the verification link."
+            : (isSignUp ? error.message : "Invalid email or password.")
+        );
+      }
+      setIsLoading(null);
+    } else if (isSignUp) {
+      setIsLoading(null);
+      toast.success("Account created! Check your email to confirm, then sign in.");
+      setIsSignUp(false);
+    } else {
+      setAttempts(0); // Reset attempts on success
+      router.push("/");
+      router.refresh();
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
+      {/* THE PERFECT 2:1 SPLIT LAYOUT
+        - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
+        - Mobile: auto height, vertical stack
+      */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:items-stretch"
+      >
+        
+        {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
+        <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
+          {/* Aesthetic Background Glows */}
+          <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-white/10 blur-[80px]" />
+          <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-black/10 blur-[60px]" />
+
+          {/* Top Logo */}
+          <div className="relative z-10 w-16 h-16">
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+          </div>
+
+          {/* Center Pitch */}
+          <div className="relative z-10 mt-auto mb-16">
+            <h1 className="text-4xl lg:text-5xl font-black text-white leading-[1.1] tracking-tight mb-6">
+              Stop Searching.<br />Start Attending.
+            </h1>
+            <p className="text-white/80 text-lg font-medium max-w-[340px] leading-relaxed">
+              The ultimate stage for Gen-Z curators and seekers to discover the best events.
+            </p>
+          </div>
+
+          {/* Bottom Footer Area */}
+          <div className="relative z-10 flex items-center gap-3">
+            <div className="h-1 w-8 bg-white/30 rounded-full" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">EvenTime Engine • Secure</span>
+          </div>
+        </div>
+
+        {/* RIGHT SIDE: LOGIN FORM (Takes exactly 40% on Desktop) */}
+        <div className="w-full md:w-[40%] p-8 sm:p-12 md:p-10 lg:p-12 flex flex-col justify-center bg-white relative z-20">
+          
+          {/* Mobile Logo (Visible only on small screens) */}
+          <div className="md:hidden w-14 h-14 relative mb-8">
+            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+          </div>
+
+          <div className="mb-8">
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{isSignUp ? "Sign Up" : "Sign In"}</h2>
+            <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
+          </div>
+
+          <form onSubmit={handleEmailLogin} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
+                <input 
+                  type="email" name="email" required placeholder="name@email.com" 
+                  className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+              </div>
+            </div>
+
+           <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
+                <input 
+                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
+                  className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {isSignUp && (
+                <p className="text-[11px] text-slate-400 font-medium ml-1 mt-1">
+                  Min 6 characters, with uppercase, lowercase, a number & a symbol.
+                </p>
+              )}
+            </div>
+            <div className="flex items-start gap-3 mt-4 mb-2">
+              <input 
+                type="checkbox" 
+                id="consent" 
+                checked={hasConsented} 
+                onChange={(e) => setHasConsented(e.target.checked)} 
+                className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
+              />
+               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
+                </label>
+            </div>
+            <button 
+              type="submit" disabled={!!isLoading || isLockedOut}
+              className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
+            >
+               {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-slate-500 font-medium mt-4">
+            {isSignUp ? "Already have an account?" : "New here?"}{" "}
+             <button type="button" onClick={() => { setIsSignUp(!isSignUp); setResetMessage(null); }} className="text-brand-primary font-bold hover:underline">
+              {isSignUp ? "Sign In" : "Sign Up"}
+            </button>
+          </p>
+
+          {!isSignUp && (
+            <div className="text-right -mt-2 mb-1">
+              <button
+                type="button"
+                disabled={isResetLoading}
+                onClick={async () => {
+                  const emailInput = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
+                  if (!emailInput) {
+                    setResetMessage("Enter your email above first.");
+                    return;
+                  }
+                  setIsResetLoading(true);
+                  setResetMessage(null);
+                  await supabase.auth.resetPasswordForEmail(emailInput, {
+                    redirectTo: `${window.location.origin}/reset-password`,
+                  });
+                  setIsResetLoading(false);
+                  setResetMessage("If an account exists with this email, a reset link has been sent.");
+                }}
+                className="text-xs font-bold text-brand-primary hover:underline disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+          {!isSignUp && resetMessage && (
+            <p className="text-[11px] text-slate-500 font-medium -mt-1 mb-2 text-right">
+              {resetMessage}
+            </p>
+          )}
+
+          {/* Clean Divider */}
+          <div className="relative flex items-center justify-center my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
+            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
+          </div>
+
+          {/* Social Logins */}
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
+              GitHub
+            </button>
+          </div>
+
+        </div>
+      </motion.div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/app/profile/settings/SettingsClient.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { CITIES } from "@/lib/constants/cities";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
+import { toast } from "sonner";
+import { updateProfileSettings } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import type { ProfileRow, CollegeRow } from "@/types";
+import { categoriesList } from "@/features/create-event/constants";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { createCollegeAction } from "@/app/profile/action";
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+import { Navbar } from "@/components/layout/Navbar";
+
+
+export default function SettingsClient({ 
+  profile, 
+  categoryCounts = {},
+  cityCounts = {},
+  userEmail
+}: { 
+  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
+  categoryCounts?: Record<string, number>,
+  cityCounts?: Record<string, number>,
+  userEmail?: string
+}) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  
+  // Immutability flag: If profile is fully onboarded, lock identity/education fields.
+  const isLocked = !!profile?.is_onboarded;
+
+  // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
+  const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [username, setUsername] = useState(profile?.username || "");
+  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
+  const [userType, setUserType] = useState(() => {
+    if (!profile?.user_type) return "";
+    const ut = profile.user_type;
+    if (ut === "student") return "Student";
+    return ut.charAt(0).toUpperCase() + ut.slice(1);
+  });
+  
+  // States for Education Logic
+  const [college, setCollege] = useState(profile?.college || "");
+  const [year, setYear] = useState(profile?.graduation_year || "");
+  const [branch, setBranch] = useState(profile?.branch || "");
+
+  // College search dropdown states
+ 
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
+  const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  
+  // Align admin check with OnboardingModal exactly (checks role, type)
+   const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const result = await createCollegeAction(name);
+    if (result.data && !result.error) {
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setCollegeSearchQuery(result.data.name);
+    } else {
+      toast.error("Failed to add college. Please try again.");
+    }
+    setIsCreatingCollege(false);
+    setShowCollegeDropdown(false);
+  };
+
+  const toggleCity = (cityName: string) => {
+    if (selectedCities.includes(cityName)) {
+      setSelectedCities(selectedCities.filter(c => c !== cityName));
+    } else if (isAdmin || selectedCities.length < 3) {
+      setSelectedCities([...selectedCities, cityName]);
+    }
+  };
+
+  // State for Goals Selection
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
+
+  const toggleGoal = (goal: string) => {
+    if (selectedGoals.includes(goal)) {
+      setSelectedGoals(selectedGoals.filter(g => g !== goal));
+    } else if (isAdmin || selectedGoals.length < 6) {
+      setSelectedGoals([...selectedGoals, goal]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const formData = new FormData(e.currentTarget);
+    
+    // Inject state variables directly into FormData.
+    // This is strictly required because `disabled` inputs are normally omitted from form submissions.
+    formData.set("fullName", fullName);
+    formData.set("username", username);
+    formData.set("user_type", userType.toLowerCase());
+    formData.set("preferred_cities", JSON.stringify(selectedCities));
+    
+    if (userType === "Student" && college) formData.set("college", college);
+    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
+    else formData.delete("college");
+
+    if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
+    else formData.delete("collegeId");
+    
+        formData.delete("yearOfStudying");
+
+    
+    if (userType === "Student" && year) formData.set("graduationYear", year);
+    else formData.delete("graduationYear");
+
+    if (userType === "Student" && branch) formData.set("branch", branch);
+    else formData.delete("branch");
+    
+    formData.delete("goals");
+    formData.append("goals", JSON.stringify(selectedGoals));
+
+    const result = await updateProfileSettings(formData);
+    
+    setIsSubmitting(false);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Profile updated successfully!");
+      router.push("/profile");
+    }
+  };
+
+  // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
+  const isStudentNow = userType === "Student";
+  const missingItems: string[] = [];
+  if (!profile?.avatar_url) missingItems.push("Profile photo");
+  if (!username) missingItems.push("Username");
+  if (selectedCities.length === 0) missingItems.push("Preferred cities");
+  if (selectedGoals.length === 0) missingItems.push("Interest categories");
+  if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
+
+  return (
+    <main className="min-h-screen bg-surface-base pb-32">
+      <Navbar variant="centered" />
+      {/* Mobile-Optimized Sticky Navbar */}
+      <nav className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-8 py-4 flex items-center gap-4">
+        <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
+          <ArrowLeft className="w-5 h-5 text-slate-900" />
+        </button>
+        <div>
+          <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
+          <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
+        </div>
+      </nav>
+
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8">
+        {missingItems.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-amber-700">Still missing to reach 100%:</p>
+              <p className="text-xs text-amber-600 font-medium mt-1">{missingItems.join(" · ")}</p>
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* Section 1: Identify (Personal Info) */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-blue-500" />
+                </div>
+                <h2 className="font-bold text-lg text-slate-900">Identity</h2>
+              </div>
+              {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
+            </div>
+
+            <div className="space-y-5">
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What's your name?</label>
+                <input 
+                  type="text" 
+                  name="fullName" 
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  required
+                  disabled={isLocked}
+                  placeholder="Your Name"
+                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                />
+                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
+              </div>
+
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Public Username</label>
+                <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 font-bold z-10">@</span>
+                  <input 
+                    type="text" 
+                    name="username" 
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    disabled={isLocked}
+                    minLength={3}
+                    maxLength={12}
+                    pattern="[A-Za-z0-9]+"
+                    title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
+                    placeholder="your_handle"
+                    className="w-full bg-[#F8F9FB] border-none text-slate-900 pl-10 pr-10 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                  />
+                  {isLocked && <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />}
+                </div>
+                <p className="text-xs text-slate-400 mt-2 ml-1">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
+              </div>
+
+              {/* Editable: City Multi-Select (max 3) */}
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(loc => {
+                    const isSelected = selectedCities.includes(loc);
+                    const isDisabled = !isSelected && !isAdmin && selectedCities.length >= 3;
+                    return (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => toggleCity(loc)}
+                        disabled={isDisabled}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                          isSelected
+                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                            : isDisabled
+                            ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="relative">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">What are you</label>
+                <select 
+                  value={userType} 
+                  onChange={e => setUserType(e.target.value)} 
+                  required
+                  disabled={isLocked}
+                  className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                >
+                  <option value="" disabled>Select your role</option>
+                  {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+              </div>
+
+            </div>
+          </div>
+
+          {/* Education Context */}
+          <AnimatePresence>
+            {userType === "Student" && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }} 
+                animate={{ opacity: 1, height: "auto" }} 
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm overflow-hidden"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <h2 className="font-bold text-lg text-slate-900">Education Context</h2>
+                  </div>
+                  {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
+                </div>
+
+                <div className="space-y-5">
+                  {/* College Search Dropdown */}
+                  <div className="relative" data-college-dropdown>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">College Name</label>
+                    {isLocked ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={college}
+                          disabled
+                          className="w-full bg-slate-100 border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                        />
+                        <Lock className="absolute right-4 top-3.5 w-4 h-4 text-slate-400" />
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Type to search your college"
+                          value={collegeSearchQuery}
+                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
+                          onFocus={() => setShowCollegeDropdown(true)}
+                          className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none"
+                        />
+                         {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                            {isSearchingColleges && (
+                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                            )}
+                            {!isSearchingColleges && collegesList
+                              .map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
+                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
+                                >
+                                  <span>🏢 {item.name}</span>
+                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
+                                </button>
+                              ))}
+                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateCollege(collegeSearchQuery)}
+                                disabled={isCreatingCollege}
+                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
+                              >
+                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Can't find your college? It will be added automatically.</p>
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Branch</label>
+                      <select
+                        value={branch}
+                        onChange={e => setBranch(e.target.value)}
+                        required={userType === "Student"}
+                        disabled={isLocked}
+                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="" disabled>Select</option>
+                        {INDIAN_COLLEGE_BRANCHES.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+                    </div>
+
+                    <div className="relative">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Yr of Graduation</label>
+                      <select 
+                        value={year}
+                        onChange={e => setYear(e.target.value)}
+                        required={userType === "Student"}
+                        disabled={isLocked}
+                        className="w-full bg-[#F8F9FB] border-none text-slate-900 px-4 py-3.5 rounded-xl text-[15px] font-medium focus:ring-2 focus:ring-brand/20 transition-all outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed disabled:bg-slate-100"
+                      >
+                        <option value="" disabled>Select</option>
+                        {["2024", "2025", "2026", "2027", "2028", "2029", "2030"].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Editable: Event Categories */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                  <Target className="w-4 h-4 text-amber-500" />
+                </div>
+                <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
+              </div>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                {selectedGoals.length}{!isAdmin && "/6"}
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
+              {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
+            </p>
+
+            <div className="flex flex-wrap gap-2.5">
+              {categoriesList.map((goal) => {
+                const isSelected = selectedGoals.includes(goal);
+                const count = categoryCounts[goal] || 0;
+                return (
+                  <button
+                    key={goal}
+                    type="button"
+                    onClick={() => toggleGoal(goal)}
+                    className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 flex items-center gap-2 border ${
+                      isSelected 
+                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F] shadow-md shadow-black/10" 
+                        : !isAdmin && selectedGoals.length >= 6
+                        ? "bg-white text-slate-300 border-transparent cursor-not-allowed"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {goal}
+                    {count > 0 && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full ml-1 font-black ${isSelected ? 'bg-white/20 text-white' : 'bg-[#5835E5]/10 text-[#5835E5]'}`}>
+                        {count}
+                      </span>
+                    )}
+                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Danger Zone (DPDP Compliance) */}
+          <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+              </div>
+                            <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
+            </div>
+            <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
+              Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
+            </p>
+            <div className="ml-11">
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
+                    const supabase = createClient();
+                    
+                    // Call the secure RPC function to delete the user
+                    const { error } = await supabase.rpc('delete_user');
+                    
+                    if (error) {
+                      toast.error("Failed to delete account. Please try again.");
+                      console.error("Delete user error:", error);
+                      return;
+                    }
+
+                    // Sign out and redirect
+                    await supabase.auth.signOut();
+                    toast.success("Your account has been permanently deleted.");
+                    router.push("/login");
+                  }
+                }}
+                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
+              >
+                Delete My Account
+              </button>
+            </div>
+          </div>
+          {/* Fixed Save Button */}
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-100 z-40 md:relative md:bg-transparent md:border-none md:p-0 md:backdrop-blur-none">
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full bg-brand-primary text-white hover:bg-white hover:text-brand-primary border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
+            >
+              {isSubmitting ? (
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5" /> Save Profile
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </main>
+    );
+  }
+</file>
+
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { PostHogProvider } from "./providers";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+
+import { headers } from "next/headers";
+
+// 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || undefined;
+
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {/* Forcing the browser to load Switzer directly */}
+        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
+        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+        
+        {/* Microsoft Clarity */}
+        {process.env.NEXT_PUBLIC_CLARITY_ID && (
+          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
+            {`
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
+            `}
+          </Script>
+        )}
+
+        {/* Google Analytics GA4 */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
+            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        <PostHogProvider>
+          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
+          <div className="flex-1 w-full flex flex-col">
+            {children}
+          </div>
+          
+          <Footer /> {/* Render the Footer globally */}
+        </PostHogProvider>
+        
+        <Toaster />
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+</file>
+
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/components/layout/Navbar.tsx">
 "use client";
 
@@ -13376,14 +13397,19 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   }, [supabase]);
 
   useEffect(() => {
-    supabase
+    let query = supabase
       .from("events")
       .select("date_string")
-      .eq("status", "approved")
-      .then(({ data }) => {
-        if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
-      });
-  }, [supabase]);
+      .eq("status", "approved");
+
+    if (profileDetails?.preferred_cities && profileDetails.preferred_cities.length > 0) {
+      query = query.in("city", profileDetails.preferred_cities);
+    }
+
+    query.then(({ data }) => {
+      if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
+    });
+  }, [supabase, profileDetails]);
 
   useEffect(() => {
     const hasQuery = searchQuery.trim().length > 0;
@@ -13911,6 +13937,15 @@ export function HomePageClient(props: HomePageClientProps) {
     fetchUserAndProfile();
   }, []);
 
+  // City match: online events always pass (no city restriction on them).
+  // If user hasn't picked any preferred_cities yet, treat every city as a match.
+  // Moved out of the effect below so the date-filter block further down can use it too.
+  const preferredCities = profile?.preferred_cities || [];
+  const cityMatch = (e: Partial<EventRow>) =>
+    e.is_virtual ||
+    preferredCities.length === 0 ||
+    (e.city ? preferredCities.includes(e.city) : false);
+
   // NEW: Organize the Buffet into Personalized Plates
   useEffect(() => {
     let nonCampusEvents = liveAllEvents || [];
@@ -13935,14 +13970,6 @@ export function HomePageClient(props: HomePageClientProps) {
       };
       fetchCollegeEvents();
     }
-
-    // City match: online events always pass (no city restriction on them).
-    // If user hasn't picked any preferred_cities yet, treat every city as a match.
-    const preferredCities = profile?.preferred_cities || [];
-    const cityMatch = (e: Partial<EventRow>) =>
-      e.is_virtual ||
-      preferredCities.length === 0 ||
-      (e.city ? preferredCities.includes(e.city) : false);
 
     // For You = preferred category AND preferred city (or online)
     // Around You = preferred city (or online), MINUS whatever is already in For You
@@ -13998,6 +14025,7 @@ export function HomePageClient(props: HomePageClientProps) {
       
       if (date) {
         if (e.date_string !== date) match = false;
+        if (!location && !cityMatch(e)) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
         if (bothCategoryAndLocationPicked) {
