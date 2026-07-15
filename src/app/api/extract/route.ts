@@ -227,26 +227,37 @@ function parseJsonLd(html: string): Record<string, unknown> | null {
 // SSRF PROTECTION
 // ─────────────────────────────────────────────
 
-async function isSafeUrl(rawUrl: string): Promise<boolean> {
-  let parsed: URL;
-  try { parsed = new URL(rawUrl); } catch { return false; }
-  
-  // Only allow http/https
-  if (!["http:", "https:"].includes(parsed.protocol)) return false;
-  
-  // Resolve hostname to IP and block private ranges
-  let address: string;
+// Blocked IP ranges — loopback, private, link-local, metadata
+const BLOCKED_IP_RANGES = [
+  /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
+  /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
+];
+
+function isBlockedIp(address: string): boolean {
+  return BLOCKED_IP_RANGES.some((re) => re.test(address));
+}
+
+// Resolves hostname ourselves and returns the SAME ip we will connect to.
+// This closes the DNS-rebinding gap where a check-time lookup and the
+// actual fetch-time lookup could return two different IPs.
+async function resolveSafeIp(hostname: string): Promise<string | null> {
   try {
-    const result = await dns.lookup(parsed.hostname);
-    address = result.address;
-  } catch { return false; }
-  
-  // Block loopback, private, link-local, metadata ranges
-  const BLOCKED = [
-    /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
-  ];
-  return !BLOCKED.some((re) => re.test(address));
+    const result = await dns.lookup(hostname);
+    if (isBlockedIp(result.address)) return null;
+    return result.address;
+  } catch {
+    return null;
+  }
+}
+
+async function isSafeUrl(rawUrl: string): Promise<{ safe: boolean; ip: string | null }> {
+  let parsed: URL;
+  try { parsed = new URL(rawUrl); } catch { return { safe: false, ip: null }; }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) return { safe: false, ip: null };
+
+  const ip = await resolveSafeIp(parsed.hostname);
+  return { safe: !!ip, ip };
 }
 
 // ─────────────────────────────────────────────
@@ -326,8 +337,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "URL is required" }, { status: 400 });
     }
 
-    // SSRF validation
-    if (!(await isSafeUrl(url))) {
+    // SSRF validation — resolve once, remember the IP we're allowed to hit
+    const { safe, ip } = await isSafeUrl(url);
+    if (!safe || !ip) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
     }
 
@@ -340,13 +352,37 @@ export async function POST(request: Request) {
       }, { status: 422 });
     }
 
-    // Fetch with 8-second timeout
-    let res: Response;
+    // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
+    // at every hop instead of letting fetch() silently follow redirects
+    // and re-resolve DNS on its own (that's the rebinding hole).
+    let currentUrl = url;
+    let res: Response | null = null;
     try {
-      res = await fetch(url, {
-        signal: AbortSignal.timeout(8000),
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      });
+      for (let hop = 0; hop < 4; hop++) {
+        const { safe: hopSafe, ip: hopIp } = await isSafeUrl(currentUrl);
+        if (!hopSafe || !hopIp) {
+          return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
+        }
+
+        const attempt = await fetch(currentUrl, {
+          signal: AbortSignal.timeout(8000),
+          redirect: "manual",
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+        });
+
+        if ([301, 302, 303, 307, 308].includes(attempt.status)) {
+          const location = attempt.headers.get("location");
+          if (!location) return NextResponse.json({ ...EMPTY_RESULT, message: "Could not reach the event page." }, { status: 504 });
+          currentUrl = new URL(location, currentUrl).toString();
+          continue;
+        }
+
+        res = attempt;
+        break;
+      }
+      if (!res) {
+        return NextResponse.json({ ...EMPTY_RESULT, message: "Too many redirects." }, { status: 422 });
+      }
     } catch (err) {
       const isTimeout = err instanceof Error && err.name === "TimeoutError";
       return NextResponse.json({
@@ -357,7 +393,7 @@ export async function POST(request: Request) {
       }, { status: 504 });
     }
 
-    const finalUrl = res.url;
+    const finalUrl = res.url || currentUrl;
     
     const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
     const reader = res.body?.getReader();

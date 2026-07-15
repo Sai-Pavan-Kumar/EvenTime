@@ -95,8 +95,8 @@ export default async function AdminReportsPage() {
                   <form action={handlePunish} className="w-[200px]">
                     <input type="hidden" name="reportId" value={report.id} />
                     <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
-                      Punish (-150 ET)
-                    </button>
+                    Punish (-25 ET)
+                  </button>
                   </form>
                 </div>
               </div>

@@ -2340,26 +2340,37 @@ function parseJsonLd(html: string): Record<string, unknown> | null {
 // SSRF PROTECTION
 // ─────────────────────────────────────────────
 
-async function isSafeUrl(rawUrl: string): Promise<boolean> {
-  let parsed: URL;
-  try { parsed = new URL(rawUrl); } catch { return false; }
-  
-  // Only allow http/https
-  if (!["http:", "https:"].includes(parsed.protocol)) return false;
-  
-  // Resolve hostname to IP and block private ranges
-  let address: string;
+// Blocked IP ranges — loopback, private, link-local, metadata
+const BLOCKED_IP_RANGES = [
+  /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
+  /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
+];
+
+function isBlockedIp(address: string): boolean {
+  return BLOCKED_IP_RANGES.some((re) => re.test(address));
+}
+
+// Resolves hostname ourselves and returns the SAME ip we will connect to.
+// This closes the DNS-rebinding gap where a check-time lookup and the
+// actual fetch-time lookup could return two different IPs.
+async function resolveSafeIp(hostname: string): Promise<string | null> {
   try {
-    const result = await dns.lookup(parsed.hostname);
-    address = result.address;
-  } catch { return false; }
-  
-  // Block loopback, private, link-local, metadata ranges
-  const BLOCKED = [
-    /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
-    /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
-  ];
-  return !BLOCKED.some((re) => re.test(address));
+    const result = await dns.lookup(hostname);
+    if (isBlockedIp(result.address)) return null;
+    return result.address;
+  } catch {
+    return null;
+  }
+}
+
+async function isSafeUrl(rawUrl: string): Promise<{ safe: boolean; ip: string | null }> {
+  let parsed: URL;
+  try { parsed = new URL(rawUrl); } catch { return { safe: false, ip: null }; }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) return { safe: false, ip: null };
+
+  const ip = await resolveSafeIp(parsed.hostname);
+  return { safe: !!ip, ip };
 }
 
 // ─────────────────────────────────────────────
@@ -2439,8 +2450,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "URL is required" }, { status: 400 });
     }
 
-    // SSRF validation
-    if (!(await isSafeUrl(url))) {
+    // SSRF validation — resolve once, remember the IP we're allowed to hit
+    const { safe, ip } = await isSafeUrl(url);
+    if (!safe || !ip) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
     }
 
@@ -2453,13 +2465,37 @@ export async function POST(request: Request) {
       }, { status: 422 });
     }
 
-    // Fetch with 8-second timeout
-    let res: Response;
+    // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
+    // at every hop instead of letting fetch() silently follow redirects
+    // and re-resolve DNS on its own (that's the rebinding hole).
+    let currentUrl = url;
+    let res: Response | null = null;
     try {
-      res = await fetch(url, {
-        signal: AbortSignal.timeout(8000),
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
-      });
+      for (let hop = 0; hop < 4; hop++) {
+        const { safe: hopSafe, ip: hopIp } = await isSafeUrl(currentUrl);
+        if (!hopSafe || !hopIp) {
+          return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
+        }
+
+        const attempt = await fetch(currentUrl, {
+          signal: AbortSignal.timeout(8000),
+          redirect: "manual",
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+        });
+
+        if ([301, 302, 303, 307, 308].includes(attempt.status)) {
+          const location = attempt.headers.get("location");
+          if (!location) return NextResponse.json({ ...EMPTY_RESULT, message: "Could not reach the event page." }, { status: 504 });
+          currentUrl = new URL(location, currentUrl).toString();
+          continue;
+        }
+
+        res = attempt;
+        break;
+      }
+      if (!res) {
+        return NextResponse.json({ ...EMPTY_RESULT, message: "Too many redirects." }, { status: 422 });
+      }
     } catch (err) {
       const isTimeout = err instanceof Error && err.name === "TimeoutError";
       return NextResponse.json({
@@ -2470,7 +2506,7 @@ export async function POST(request: Request) {
       }, { status: 504 });
     }
 
-    const finalUrl = res.url;
+    const finalUrl = res.url || currentUrl;
     
     const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
     const reader = res.body?.getReader();
@@ -3279,8 +3315,8 @@ export default async function AdminReportsPage() {
                   <form action={handlePunish} className="w-[200px]">
                     <input type="hidden" name="reportId" value={report.id} />
                     <button type="submit" className="w-full bg-[#EF4444] text-white font-['Outfit'] text-[15px] font-bold py-3.5 rounded-full hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200 shadow-[0_4px_16px_rgba(239,68,68,0.3)]">
-                      Punish (-150 ET)
-                    </button>
+                    Punish (-25 ET)
+                  </button>
                   </form>
                 </div>
               </div>
@@ -7901,7 +7937,11 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
-    
+
+    if (!error) {
+      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
+    }
+
     if (error) {
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
@@ -8153,10 +8193,10 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
               <button 
                 onClick={handleSave} 
-                disabled={categories.length === 0}
+                disabled={categories.length === 0 || isSaving}
                 className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
-                Complete Profile
+                {isSaving ? "Saving..." : "Complete Profile"}
               </button>
             </motion.div>
           )}
@@ -10335,6 +10375,144 @@ export default function GlobalError({
 }
 </file>
 
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { PostHogProvider } from "./providers";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+
+import { headers } from "next/headers";
+
+// 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
+
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || undefined;
+
+  return (
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {/* Forcing the browser to load Switzer directly */}
+        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
+        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+        
+        {/* Microsoft Clarity */}
+        {process.env.NEXT_PUBLIC_CLARITY_ID && (
+          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
+            {`
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
+            `}
+          </Script>
+        )}
+
+        {/* Google Analytics GA4 */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
+            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        
+        <PostHogProvider>
+          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
+          <div className="flex-1 w-full flex flex-col">
+            {children}
+          </div>
+          
+          <Footer /> {/* Render the Footer globally */}
+        </PostHogProvider>
+        
+        <Toaster />
+        <Analytics />
+      </body>
+    </html>
+  );
+}
+</file>
+
 <file path="src/features/create-event/hooks/useEventSubmit.ts">
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10949,8 +11127,22 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
     try {
       if (!previousState) {
-        const { error } = await supabase.from("interested_events").insert({ event_id: safeId, user_id: currentUser.id }).select();
+        // insert with ignoreDuplicates so re-adding after removing does NOT
+        // silently create a second row or re-trigger the score award
+        const { data: inserted, error } = await supabase
+          .from("interested_events")
+          .upsert(
+            { event_id: safeId, user_id: currentUser.id },
+            { onConflict: "event_id,user_id", ignoreDuplicates: true }
+          )
+          .select();
         if (error) throw new Error(error.message || JSON.stringify(error));
+
+        // Only award +10 if a NEW row was actually created just now.
+        // If it was a duplicate (already interested before), inserted is empty.
+        if (safeCreatorId && inserted && inserted.length > 0) {
+          await supabase.rpc("increment_et_score", { user_id: safeCreatorId, delta: 10 });
+        }
       } else {
         const { error } = await supabase.from("interested_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
         if (error) throw new Error(error.message || JSON.stringify(error));
@@ -11883,144 +12075,6 @@ export default function ProfilePage() {
     <Suspense fallback={<main className="min-h-screen bg-surface-base animate-pulse" />}>
       <ProfileContent />
     </Suspense>
-  );
-}
-</file>
-
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { PostHogProvider } from "./providers";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
-
-import { headers } from "next/headers";
-
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const headersList = await headers();
-  const nonce = headersList.get("x-nonce") || undefined;
-
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
-            {`
-              (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-            `}
-          </Script>
-        )}
-
-        {/* Google Analytics GA4 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
-            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
-      </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        
-        <PostHogProvider>
-          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
-          <div className="flex-1 w-full flex flex-col">
-            {children}
-          </div>
-          
-          <Footer /> {/* Render the Footer globally */}
-        </PostHogProvider>
-        
-        <Toaster />
-        <Analytics />
-      </body>
-    </html>
   );
 }
 </file>
@@ -13176,8 +13230,6 @@ export default function SettingsClient({
                     {count > 0 && (
                       <span className="ml-1 opacity-60">({count})</span>
                     )}
-                    )}
-                    {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
                   </button>
                 );
               })}

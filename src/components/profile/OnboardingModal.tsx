@@ -143,7 +143,11 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
-    
+
+    if (!error) {
+      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
+    }
+
     if (error) {
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
@@ -395,10 +399,10 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
               <button 
                 onClick={handleSave} 
-                disabled={categories.length === 0}
+                disabled={categories.length === 0 || isSaving}
                 className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
               >
-                Complete Profile
+                {isSaving ? "Saving..." : "Complete Profile"}
               </button>
             </motion.div>
           )}

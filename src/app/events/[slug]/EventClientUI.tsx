@@ -139,8 +139,22 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
 
     try {
       if (!previousState) {
-        const { error } = await supabase.from("interested_events").insert({ event_id: safeId, user_id: currentUser.id }).select();
+        // insert with ignoreDuplicates so re-adding after removing does NOT
+        // silently create a second row or re-trigger the score award
+        const { data: inserted, error } = await supabase
+          .from("interested_events")
+          .upsert(
+            { event_id: safeId, user_id: currentUser.id },
+            { onConflict: "event_id,user_id", ignoreDuplicates: true }
+          )
+          .select();
         if (error) throw new Error(error.message || JSON.stringify(error));
+
+        // Only award +10 if a NEW row was actually created just now.
+        // If it was a duplicate (already interested before), inserted is empty.
+        if (safeCreatorId && inserted && inserted.length > 0) {
+          await supabase.rpc("increment_et_score", { user_id: safeCreatorId, delta: 10 });
+        }
       } else {
         const { error } = await supabase.from("interested_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
         if (error) throw new Error(error.message || JSON.stringify(error));
