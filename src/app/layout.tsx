@@ -8,9 +8,9 @@ import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
 import { Footer } from "@/components/layout/Footer";
 import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
-
 import { headers } from "next/headers";
 
 // 1. Load Outfit font for your headings
@@ -131,6 +131,7 @@ export default async function RootLayout({
         
         <Toaster />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
