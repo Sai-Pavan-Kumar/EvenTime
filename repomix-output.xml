@@ -1596,6 +1596,70 @@ export function createAdminClient() {
 }
 </file>
 
+<file path="src/lib/supabase/client.ts">
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/types/database';
+
+// SAFEGUARD: Fix iOS Safari Private Browsing crash (SecurityError on localStorage)
+if (typeof window !== 'undefined') {
+  try {
+    window.localStorage.getItem('test');
+  } catch (error) {
+    console.warn('localStorage is blocked by iOS/Safari. Injecting memory fallback.');
+    const memoryStorage = {
+      getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null
+    };
+    try {
+      Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
+      Object.defineProperty(window, 'sessionStorage', { value: memoryStorage, writable: true });
+    } catch (e) {}
+  }
+
+  // SAFEGUARD: Fix iOS WebSocket insecure operation crash
+  try {
+    const OriginalWebSocket = window.WebSocket;
+    if (OriginalWebSocket) {
+      window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
+        try {
+          return new OriginalWebSocket(url, protocols);
+        } catch (e) {
+          console.warn("WebSocket blocked by iOS/Safari:", e);
+          return { // Return dummy closed WebSocket to prevent app crash
+            close: () => {}, send: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => true,
+            readyState: 3, CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, url: url?.toString() || ""
+          } as unknown as WebSocket;
+        }
+      } as any;
+      window.WebSocket.prototype = OriginalWebSocket.prototype;
+      Object.assign(window.WebSocket, OriginalWebSocket);
+    }
+  } catch (e) {}
+}
+
+// Shared instance to ensure all components listen to the exact same auth state
+let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | undefined;
+
+// This creates a secure connection to Supabase from the browser with a 30-day session expiry configuration
+export function createClient() {
+  if (supabaseClient) return supabaseClient;
+
+  supabaseClient = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookieOptions: {
+        maxAge: 2592000, // Explicitly configuration for 30 days in seconds
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        // Note: HttpOnly is omitted here intentionally. It must be enforced on the server-side client.
+      }
+    }
+  );
+
+  return supabaseClient;
+}
+</file>
+
 <file path="src/lib/supabase/server.ts">
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
@@ -4537,70 +4601,6 @@ export function CreateEventFormLazy(props: ExtendedFormProps) {
 }
 </file>
 
-<file path="src/lib/supabase/client.ts">
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database';
-
-// SAFEGUARD: Fix iOS Safari Private Browsing crash (SecurityError on localStorage)
-if (typeof window !== 'undefined') {
-  try {
-    window.localStorage.getItem('test');
-  } catch (error) {
-    console.warn('localStorage is blocked by iOS/Safari. Injecting memory fallback.');
-    const memoryStorage = {
-      getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null
-    };
-    try {
-      Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
-      Object.defineProperty(window, 'sessionStorage', { value: memoryStorage, writable: true });
-    } catch (e) {}
-  }
-
-  // SAFEGUARD: Fix iOS WebSocket insecure operation crash
-  try {
-    const OriginalWebSocket = window.WebSocket;
-    if (OriginalWebSocket) {
-      window.WebSocket = function(url: string | URL, protocols?: string | string[]) {
-        try {
-          return new OriginalWebSocket(url, protocols);
-        } catch (e) {
-          console.warn("WebSocket blocked by iOS/Safari:", e);
-          return { // Return dummy closed WebSocket to prevent app crash
-            close: () => {}, send: () => {}, addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => true,
-            readyState: 3, CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, url: url?.toString() || ""
-          } as unknown as WebSocket;
-        }
-      } as any;
-      window.WebSocket.prototype = OriginalWebSocket.prototype;
-      Object.assign(window.WebSocket, OriginalWebSocket);
-    }
-  } catch (e) {}
-}
-
-// Shared instance to ensure all components listen to the exact same auth state
-let supabaseClient: ReturnType<typeof createBrowserClient<Database>> | undefined;
-
-// This creates a secure connection to Supabase from the browser with a 30-day session expiry configuration
-export function createClient() {
-  if (supabaseClient) return supabaseClient;
-
-  supabaseClient = createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookieOptions: {
-        maxAge: 2592000, // Explicitly configuration for 30 days in seconds
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        // Note: HttpOnly is omitted here intentionally. It must be enforced on the server-side client.
-      }
-    }
-  );
-
-  return supabaseClient;
-}
-</file>
-
 <file path="src/app/api/extract/route.ts">
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
@@ -7444,225 +7444,6 @@ export default async function CategoryPage({
 }
 </file>
 
-<file path="src/app/events/[slug]/page.tsx">
-import { Metadata } from "next";
-import { createClient as createServerClient } from "@/lib/supabase/server";
-import EventClientUI from "./EventClientUI";
-
-// Helper function to check if the slug is a valid UUID
-const isValidUUID = (id: string) => {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-};
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-  
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select("title, category, date_string, description, status");
-    
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: event } = await query.maybeSingle();
-
-  if (!event || event.status !== "approved") return { title: "Event Not Found" };
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
-  const ogUrl = new URL(`${baseUrl}/api/og`);
-
-  ogUrl.searchParams.set("title", event.title);
-  ogUrl.searchParams.set("category", event.category);
-  ogUrl.searchParams.set("date", event.date_string || "TBA");
-
-  return {
-    title: `${event.title} | EvenTime`,
-    description: event.description || `Join this ${event.category} event on EvenTime!`,
-    alternates: {
-      canonical: `${baseUrl}/events/${slug}`,
-    },
-    openGraph: {
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      url: `${baseUrl}/events/${slug}`,
-      type: "website",
-      images: [
-        {
-          url: ogUrl.toString(),
-          width: 1200,
-          height: 630,
-          alt: event.title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      images: [ogUrl.toString()],
-    },
-  };
-}
-
-export default async function EventPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
-  const supabase = await createServerClient();
-
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
-
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select(EVENT_DETAIL_FIELDS);
-
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: finalEvent } = await query.maybeSingle();
-
-  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
-  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
-  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
-
-  if (!finalEvent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
-        Event not found.
-      </div>
-    );
-  }
-
-  // Ensure pending/rejected events are only visible to the creator or an admin
-  if (finalEvent.status !== "approved") {
-    const { data: { user } } = await supabase.auth.getUser();
-    const isCreator = user?.id === finalEvent.creator_id;
-    
-    let isAdmin = false;
-    if (user && !isCreator) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      isAdmin = profile?.role === "admin";
-    }
-
-    if (!isCreator && !isAdmin) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
-          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
-          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
-        </div>
-      );
-    }
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
-  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Event",
-    name: finalEvent.title,
-    description: finalEvent.description,
-    startDate: finalEvent.date_string ? `${finalEvent.date_string}T${to24Hour(finalEvent.start_time) || "00:00:00"}` : undefined,
-    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}T${to24Hour(finalEvent.end_time) || "00:00:00"}` : undefined,
-    eventAttendanceMode: finalEvent.is_virtual 
-      ? "https://schema.org/OnlineEventAttendanceMode" 
-      : "https://schema.org/OfflineEventAttendanceMode",
-    eventStatus: "https://schema.org/EventScheduled",
-    location: finalEvent.is_virtual
-      ? {
-          "@type": "VirtualLocation",
-          url: finalEvent.registration_link || finalEvent.website || eventUrl,
-        }
-      : {
-          "@type": "Place",
-          name: finalEvent.location || "TBA",
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: finalEvent.city || "TBA",
-          },
-        },
-    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
-    offers: {
-      "@type": "Offer",
-      url: finalEvent.registration_link || eventUrl,
-      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
-      priceCurrency: "INR", 
-      availability: "https://schema.org/InStock"
-    },
-    organizer: {
-      "@type": "Organization",
-      name: finalEvent.organizer_name || "EvenTime",
-    }
-  };
-
-  // NEW: Fetch Similar Events based on the same category
-  let similarEvents: any[] = [];
-  if (finalEvent.category) {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_DETAIL_FIELDS)
-      .eq("category", finalEvent.category)
-      .eq("status", "approved")
-      .gte("date_string", todayStr) // NEW: Removes past events!
-      .neq("id", finalEvent.id)
-      .order("created_at", { ascending: false })
-      .limit(6); // Increased limit to 6 so slider looks good
-    
-    if (data) {
-    similarEvents = data;
-    }
-  }
-
- // Fetch up to 3 interested user avatars for social proof
-  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
-  {
-    const { data: interestedRows } = await supabase
-      .from("interested_events")
-      .select("profiles(avatar_url, username)")
-      .eq("event_id", finalEvent.id)
-      .limit(3);
-
-    if (interestedRows && interestedRows.length > 0) {
-      interestedAvatars = interestedRows
-        .map((r: any) => r.profiles as any)
-        .filter(Boolean);
-    }
-  }
-
-  // Pass the data cleanly to the client UI
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
-    </>
-  );
-}
-</file>
-
 <file path="src/lib/home/CityGrid.tsx">
 "use client";
 
@@ -7902,6 +7683,235 @@ export const getCityConfig = (city: string) => {
     coverImage: `/cities/covers/${key}.webp`
   };
 };
+</file>
+
+<file path="src/app/events/[slug]/page.tsx">
+import { Metadata } from "next";
+import { createClient as createServerClient } from "@/lib/supabase/server";
+import EventClientUI from "./EventClientUI";
+
+// Helper function to check if the slug is a valid UUID
+const isValidUUID = (id: string) => {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+  
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select("title, category, date_string, description, status");
+    
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: event } = await query.maybeSingle();
+
+  if (!event || event.status !== "approved") return { title: "Event Not Found" };
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const ogUrl = new URL(`${baseUrl}/api/og`);
+
+  ogUrl.searchParams.set("title", event.title);
+  ogUrl.searchParams.set("category", event.category);
+  ogUrl.searchParams.set("date", event.date_string || "TBA");
+
+  return {
+    title: `${event.title} | EvenTime`,
+    description: event.description || `Join this ${event.category} event on EvenTime!`,
+    alternates: {
+      canonical: `${baseUrl}/events/${slug}`,
+    },
+    openGraph: {
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      url: `${baseUrl}/events/${slug}`,
+      type: "website",
+      images: [
+        {
+          url: ogUrl.toString(),
+          width: 1200,
+          height: 630,
+          alt: event.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: event.title,
+      description: event.description || `Join this ${event.category} event on EvenTime!`,
+      images: [ogUrl.toString()],
+    },
+  };
+}
+function to24Hour(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  let [, h, m, ampm] = match;
+  let hour = parseInt(h, 10);
+  if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${m}:00`;
+}
+
+export default async function EventPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const supabase = await createServerClient();
+
+ const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+
+  const isUUID = isValidUUID(slug);
+
+  // Dynamically build the query based on what the slug actually is
+  let query = supabase
+    .from("events")
+    .select(EVENT_DETAIL_FIELDS);
+
+  if (isUUID) {
+    query = query.eq("id", slug);
+  } else {
+    query = query.eq("slug", slug);
+  }
+
+  const { data: finalEvent } = await query.maybeSingle();
+
+  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
+  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
+  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
+
+  if (!finalEvent) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
+        Event not found.
+      </div>
+    );
+  }
+
+  // Ensure pending/rejected events are only visible to the creator or an admin
+  if (finalEvent.status !== "approved") {
+    const { data: { user } } = await supabase.auth.getUser();
+    const isCreator = user?.id === finalEvent.creator_id;
+    
+    let isAdmin = false;
+    if (user && !isCreator) {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+      isAdmin = profile?.role === "admin";
+    }
+
+    if (!isCreator && !isAdmin) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
+          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
+          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
+        </div>
+      );
+    }
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: finalEvent.title,
+    description: finalEvent.description,
+    startDate: finalEvent.date_string ? `${finalEvent.date_string}T${to24Hour(finalEvent.start_time) || "00:00:00"}` : undefined,
+    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}T${to24Hour(finalEvent.end_time) || "00:00:00"}` : undefined,
+    eventAttendanceMode: finalEvent.is_virtual 
+      ? "https://schema.org/OnlineEventAttendanceMode" 
+      : "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: "https://schema.org/EventScheduled",
+    location: finalEvent.is_virtual
+      ? {
+          "@type": "VirtualLocation",
+          url: finalEvent.registration_link || finalEvent.website || eventUrl,
+        }
+      : {
+          "@type": "Place",
+          name: finalEvent.location || "TBA",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: finalEvent.city || "TBA",
+          },
+        },
+    image: [finalEvent.poster_url || finalEvent.banner_url || `${baseUrl}/api/og?title=${encodeURIComponent(finalEvent.title)}`].filter(Boolean),
+    offers: {
+      "@type": "Offer",
+      url: finalEvent.registration_link || eventUrl,
+      price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
+      priceCurrency: "INR", 
+      availability: "https://schema.org/InStock"
+    },
+    organizer: {
+      "@type": "Organization",
+      name: finalEvent.organizer_name || "EvenTime",
+    }
+  };
+
+  // NEW: Fetch Similar Events based on the same category
+  let similarEvents: any[] = [];
+  if (finalEvent.category) {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const { data } = await supabase
+      .from("events")
+      .select(EVENT_DETAIL_FIELDS)
+      .eq("category", finalEvent.category)
+      .eq("status", "approved")
+      .gte("date_string", todayStr) // NEW: Removes past events!
+      .neq("id", finalEvent.id)
+      .order("created_at", { ascending: false })
+      .limit(6); // Increased limit to 6 so slider looks good
+    
+    if (data) {
+    similarEvents = data;
+    }
+  }
+
+ // Fetch up to 3 interested user avatars for social proof
+  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
+  {
+    const { data: interestedRows } = await supabase
+      .from("interested_events")
+      .select("profiles(avatar_url, username)")
+      .eq("event_id", finalEvent.id)
+      .limit(3);
+
+    if (interestedRows && interestedRows.length > 0) {
+      interestedAvatars = interestedRows
+        .map((r: any) => r.profiles as any)
+        .filter(Boolean);
+    }
+  }
+
+  // Pass the data cleanly to the client UI
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+    </>
+  );
+}
 </file>
 
 <file path="src/app/cities/[city]/page.tsx">
@@ -8816,6 +8826,71 @@ export default async function LeaderboardPage() {
 }
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -8953,433 +9028,6 @@ export default async function RootLayout({
         <SpeedInsights />
       </body>
     </html>
-  );
-}
-</file>
-
-<file path="src/components/profile/OnboardingModal.tsx">
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, X, ArrowLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
-import { createCollegeAction } from "@/app/profile/action"; // NEW: Import Server Action
-import { CITIES } from "@/lib/constants/cities";
-import { toast } from "sonner"; // NEW: Added toast import
-import { categoriesList } from "@/features/create-event/constants";
-import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { DelayedPrompt } from "./DelayedActionModal"; // NEW: Clean extracted component
-import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
-
-export interface OnboardingProps {
-  user: AuthUser | null;
-  profile: Partial<ProfileRow> | null;
-}
-
-export function OnboardingModal({ user, profile }: OnboardingProps) {
-  const [step, setStep] = useState(1);
-  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
-
-  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-
-  const toggleCity = (cityName: string) => {
-    if (cities.includes(cityName)) {
-      setCities(cities.filter(c => c !== cityName));
-    } else if (isAdmin || cities.length < 3) {
-      setCities([...cities, cityName]);
-    }
-  };
-  const [college, setCollege] = useState("");
-  const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
-  const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
-  const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
-  const [role, setRole] = useState("");
-  const [year, setYear] = useState("");
-  const [yearSearchQuery, setYearSearchQuery] = useState("");
-  const [showYearDropdown, setShowYearDropdown] = useState(false);
-  const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
-  const [branch, setBranch] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [username, setUsername] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
-    
-  // NEW: State to control manual appearance from banner
-  // Signed-in but not-onboarded users get the modal right away (forced).
-  // Guests still go through DelayedPrompt's soft, dismissible teaser.
-  const [isModalOpen, setIsModalOpen] = useState(!!user); 
-  
-  const router = useRouter();
-  const supabase = createClient();
-  // Use the new shared hook for college search
-  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(searchQuery, !user || profile?.is_onboarded === true);
-
-  // NEW: Click outside handler to close all dropdowns
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowDropdown(false);
-      setShowYearDropdown(false);
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
-
- 
-
-  // Hide everything if already onboarded
-  if (profile?.is_onboarded) return null;
-
-  // If modal is not manually opened yet, show the new isolated clean popup
-  if (!isModalOpen) {
-    return <DelayedPrompt user={user} profile={profile} onOpen={() => setIsModalOpen(true)} />;
-  }
-
-  // NEW: Notion-style Create College Function via Server Action
-  const handleCreateCollege = async (newCollegeName: string) => {
-    setIsCreatingCollege(true);
-    
-    // Call the secure server action instead of hitting the DB directly
-    const result = await createCollegeAction(newCollegeName);
-
-    if (result.data && !result.error) {
-      // Cast to CollegeRow in case your type requires specific fields returning from action
-      setCollegesList(prev => [...prev, result.data as CollegeRow]); 
-      setCollege(result.data.name);
-      setCollegeId(result.data.id);
-      setSearchQuery(result.data.name);
-    } else {
-      console.error("Failed to add college:", result.error);
-    }
-    
-    setIsCreatingCollege(false);
-    setShowDropdown(false);
-  };
-
-  const handleSave = async () => {
-    // Guest user try chesthe login page ki pampiddam
-    if (!user) {
-      toast.error("Please sign in to complete your profile!");
-      router.push("/login"); // Note: Change "/login" if your auth route is different
-      return;
-    }
-
-    const finalUsername = username.trim().toLowerCase();
-    if (!finalUsername) {
-      toast.error("Username is required!");
-      return;
-    }
-
-    setIsSaving(true);
-
-    // Check if username is unique
-    const { data: existingUser } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", finalUsername)
-      .neq("id", user.id)
-      .maybeSingle();
-
-    if (existingUser) {
-      toast.error("This username is already taken. Please try another one.");
-      setIsSaving(false);
-      return;
-    }
-    
-    const updatePayload = {
-      preferred_cities: cities,
-      college: role === "Student" ? college : null,
-      college_id: role === "Student" ? collegeId : null,
-      graduation_year: role === "Student" ? year : null,
-      branch: role === "Student" ? branch : null,
-      user_type: role === "Student" ? 'student' : role.toLowerCase(),
-      goals: categories.slice(0, 6),
-      is_onboarded: true,
-      username: finalUsername,
-    };
-
-
-    // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
-    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
-
-    if (!error) {
-      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
-    }
-
-    if (error) {
-      toast.error("Failed to save. Please try again.");
-      setIsSaving(false);
-      return;
-    }
-    
-    // Immediately navigate — the animation IS the feedback
-    router.refresh();
-    // This keeps the loading spinner visible until the page fully reloads and unmounts the modal!
-  };
-
-  return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
-      {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
-      <div className="absolute inset-0 bg-slate-900/60" />
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden p-8"
-      >
-        <AnimatePresence mode="wait">
-          
-          {/* STEP 1: The Welcome */}
-          {step === 1 && !isSaving && (
-            <motion.div key="step1" exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
-              <div>
-                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
-                <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
-              </div>
-              <button 
-                onClick={() => setStep(2)}
-                className="w-full bg-text-primary hover:bg-black text-white py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                Let's setup <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {/* STEP 2: The Details */}
-          {step === 2 && !isSaving && (
-            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-              <h2 className="text-xl font-heading font-extrabold text-text-primary">Tell us about yourself</h2>
-              
-              <div className="space-y-4">
-                {/* 0. Username */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      placeholder="e.g. johndoe"
-                      value={username}
-                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
-                      minLength={3}
-                      maxLength={12}
-                      pattern="[a-z0-9]+"
-                      title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
-                      className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                    />
-                </div>
-
-                {/* 1. Location Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span></label>
-                  {cities.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {cities.map(c => (
-                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
-                          {c}
-                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {/* ADDED: max-h-48 overflow-y-auto no-scrollbar to make it scrollable on mobile */}
-                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
-                    {CITIES.map(loc => {
-                      const isSelected = cities.includes(loc);
-                      const isDisabled = !isSelected && !isAdmin && cities.length >= 3;
-                      return (
-                        <button
-                          key={loc}
-                          type="button"
-                          onClick={() => toggleCity(loc)}
-                          disabled={isDisabled}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                            isSelected
-                              ? "bg-text-primary text-white border-text-primary"
-                              : isDisabled
-                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
-                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
-                          }`}
-                        >
-                          {loc}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 2. Role Selector */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What are you?</label>
-                  <select 
-                    value={role} 
-                    onChange={e => setRole(e.target.value)}
-                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
-                  >
-                    <option value="" disabled>Select Role</option>
-                    {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Conditional College, Year (Only if Student) */}
-                <AnimatePresence>
-                  {role === "Student" && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
-                      
-                      <p className="text-xs text-text-secondary font-medium -mt-1">Add your college — and we&apos;ll surface what&apos;s happening on your own campus first.</p>
-
-                      {/* COLLEGE SELECTOR */}
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <input 
-                          type="text" 
-                          placeholder="Search & Select Your College" 
-                          value={searchQuery} 
-                          onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
-                          onFocus={() => setShowDropdown(true)}
-                          className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                        />
-                        {showDropdown && searchQuery.trim().length > 0 && (
-                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                            {isSearchingColleges && (
-                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
-                            )}
-                            {!isSearchingColleges && collegesList.map(item => (
-                                <button key={item.id} type="button" onClick={() => { setCollege(item.name); setCollegeId(item.id); setSearchQuery(item.name); setShowDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
-                                  🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
-                                </button>
-                              ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
-                              <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                {isCreatingCollege && <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-
-                        {/* BRANCH SELECTOR */}
-                        <div className="relative">
-                          <select
-                            value={branch}
-                            onChange={e => setBranch(e.target.value)}
-                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium appearance-none"
-                          >
-                            <option value="" disabled>Branch</option>
-                            {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                          </select>
-                        </div>
-
-                        {/* YEAR SELECTOR */}
-                          <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          <input 
-                            type="text" 
-                            placeholder="Year (e.g. 2026)" 
-                            value={yearSearchQuery} 
-                            onChange={e => { setYearSearchQuery(e.target.value); setShowYearDropdown(true); }}
-                            onFocus={() => setShowYearDropdown(true)}
-                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
-                          />
-                          {showYearDropdown && yearSearchQuery.trim().length > 0 && (
-                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
-                              {yearList.filter(item => item.includes(yearSearchQuery)).map(item => (
-                                <button key={item} type="button" onClick={() => { setYear(item); setYearSearchQuery(item); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
-                                  {item}
-                                </button>
-                              ))}
-                              {!yearList.some(item => item === yearSearchQuery.trim()) && (
-                                <button type="button" onClick={() => { setYearList(prev => [...prev, yearSearchQuery]); setYear(yearSearchQuery); setYearSearchQuery(yearSearchQuery); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                  + Add "{yearSearchQuery}"
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <button 
-                onClick={() => setStep(3)} 
-                disabled={!username.trim() || cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch))}
-                className="w-full bg-text-primary hover:bg-black disabled:bg-slate-100 disabled:text-slate-400 text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4 flex items-center justify-center gap-2"
-              >
-                Next Step <ArrowRight className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {/* STEP 3: Categories Selection */}
-          {step === 3 && !isSaving && (
-            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setStep(2)}
-                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                </button>
-                <h2 className="text-xl font-heading font-extrabold text-text-primary">Your Interests</h2>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="space-y-3 pt-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">
-                    What categories do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : `(picked ${categories.length}/6)`}</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto no-scrollbar">
-                    {categoriesList.map(opt => {
-                      const isSelected = categories.includes(opt);
-                      const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
-                      return (
-                        <button
-                          key={opt} type="button"
-                          disabled={isDisabled}
-                          onClick={() => {
-                            if (isSelected) setCategories(categories.filter(i => i !== opt));
-                            else if (isAdmin || categories.length < 6) setCategories([...categories, opt]);
-                          }}
-                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={handleSave} 
-                disabled={categories.length === 0 || isSaving}
-                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
-              >
-                {isSaving ? "Saving..." : "Complete Profile"}
-              </button>
-            </motion.div>
-          )}
-
-          {/* LOADING STATE: The Magic Animation */}
-          {isSaving && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 flex flex-col items-center justify-center space-y-4">
-              <div className="w-12 h-12 border-4 border-surface-base border-t-brand-primary rounded-full animate-spin" />
-              <p className="font-heading font-bold text-lg text-text-primary animate-pulse">
-                Gathering events to match your preferences...
-              </p>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
-      </motion.div>
-    </div>
   );
 }
 </file>
@@ -10300,6 +9948,519 @@ export const Constants = {
 } as const
 </file>
 
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  experimental: {
+    cacheLife: {
+      events: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+      leaderboard: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+    },
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "https://us.i.posthog.com/decide",
+      },
+    ];
+  },
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
+</file>
+
+<file path="src/components/profile/OnboardingModal.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, CheckCircle2, X, ArrowLeft } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import type { AuthUser, ProfileRow, CollegeRow } from "@/types";
+import { createCollegeAction } from "@/app/profile/action"; // NEW: Import Server Action
+import { CITIES } from "@/lib/constants/cities";
+import { toast } from "sonner"; // NEW: Added toast import
+import { categoriesList } from "@/features/create-event/constants";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { DelayedPrompt } from "./DelayedActionModal"; // NEW: Clean extracted component
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+
+export interface OnboardingProps {
+  user: AuthUser | null;
+  profile: Partial<ProfileRow> | null;
+}
+
+export function OnboardingModal({ user, profile }: OnboardingProps) {
+  const [step, setStep] = useState(1);
+  const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
+
+  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+
+  const toggleCity = (cityName: string) => {
+    if (cities.includes(cityName)) {
+      setCities(cities.filter(c => c !== cityName));
+    } else if (isAdmin || cities.length < 3) {
+      setCities([...cities, cityName]);
+    }
+  };
+  const [college, setCollege] = useState("");
+  const [collegeId, setCollegeId] = useState<string | null>(null); // NEW: Safe database storage state pointer
+  const [searchQuery, setSearchQuery] = useState(""); // NEW: Handles input display dynamically
+  const [showDropdown, setShowDropdown] = useState(false); // NEW: Controls clean panel presentation states
+  const [role, setRole] = useState("");
+  const [year, setYear] = useState("");
+  const [yearSearchQuery, setYearSearchQuery] = useState("");
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
+  const [yearList, setYearList] = useState(["2023", "2024", "2025", "2026", "2027", "2028", "2029", "2030"]);
+  const [branch, setBranch] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [username, setUsername] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingCollege, setIsCreatingCollege] = useState(false); // NEW: Notion-style loader
+    
+  // NEW: State to control manual appearance from banner
+  // Signed-in but not-onboarded users get the modal right away (forced).
+  // Guests still go through DelayedPrompt's soft, dismissible teaser.
+  const [isModalOpen, setIsModalOpen] = useState(!!user); 
+  
+  const router = useRouter();
+  const supabase = createClient();
+  // Use the new shared hook for college search
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(searchQuery, !user || profile?.is_onboarded === true);
+
+  // NEW: Click outside handler to close all dropdowns
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+      setShowYearDropdown(false);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+ 
+
+  // Hide everything if already onboarded
+  if (profile?.is_onboarded) return null;
+
+  // If modal is not manually opened yet, show the new isolated clean popup
+  if (!isModalOpen) {
+    return <DelayedPrompt user={user} profile={profile} onOpen={() => setIsModalOpen(true)} />;
+  }
+
+  // NEW: Notion-style Create College Function via Server Action
+  const handleCreateCollege = async (newCollegeName: string) => {
+    setIsCreatingCollege(true);
+    
+    // Call the secure server action instead of hitting the DB directly
+    const result = await createCollegeAction(newCollegeName);
+
+    if (result.data && !result.error) {
+      // Cast to CollegeRow in case your type requires specific fields returning from action
+      setCollegesList(prev => [...prev, result.data as CollegeRow]); 
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setSearchQuery(result.data.name);
+    } else {
+      console.error("Failed to add college:", result.error);
+    }
+    
+    setIsCreatingCollege(false);
+    setShowDropdown(false);
+  };
+
+  const handleSave = async () => {
+    // Guest user try chesthe login page ki pampiddam
+    if (!user) {
+      toast.error("Please sign in to complete your profile!");
+      router.push("/login"); // Note: Change "/login" if your auth route is different
+      return;
+    }
+
+    const finalUsername = username.trim().toLowerCase();
+    if (!finalUsername) {
+      toast.error("Username is required!");
+      return;
+    }
+
+    setIsSaving(true);
+
+    // Check if username is unique
+    const { data: existingUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", finalUsername)
+      .neq("id", user.id)
+      .maybeSingle();
+
+    if (existingUser) {
+      toast.error("This username is already taken. Please try another one.");
+      setIsSaving(false);
+      return;
+    }
+    
+    const updatePayload = {
+      preferred_cities: cities,
+      college: role === "Student" ? college : null,
+      college_id: role === "Student" ? collegeId : null,
+      graduation_year: role === "Student" ? year : null,
+      branch: role === "Student" ? branch : null,
+      user_type: role === "Student" ? 'student' : role.toLowerCase(),
+      goals: categories.slice(0, 6),
+      is_onboarded: true,
+      username: finalUsername,
+    };
+
+
+    // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
+    const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
+
+    if (!error) {
+      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
+    }
+
+    if (error) {
+      toast.error("Failed to save. Please try again.");
+      setIsSaving(false);
+      return;
+    }
+    window.location.reload();
+  };
+
+  return (
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+      {/* Modal Overlay — no close-on-click: onboarding is mandatory, not dismissible */}
+      <div className="absolute inset-0 bg-slate-900/60" />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="relative w-full max-w-lg bg-white rounded-[32px] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden p-8"
+      >
+        <AnimatePresence mode="wait">
+          
+          {/* STEP 1: The Welcome */}
+          {step === 1 && !isSaving && (
+            <motion.div key="step1" exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
+              <div>
+                <h2 className="text-2xl font-heading font-extrabold text-text-primary">Almost there.</h2>
+                <p className="text-text-secondary mt-2 font-medium">One profile, and we&apos;ll filter out everything that doesn&apos;t matter to you.</p>
+              </div>
+              <button 
+                onClick={() => setStep(2)}
+                className="w-full bg-text-primary hover:bg-black text-white py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                Let's setup <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* STEP 2: The Details */}
+          {step === 2 && !isSaving && (
+            <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <h2 className="text-xl font-heading font-extrabold text-text-primary">Tell us about yourself</h2>
+              
+              <div className="space-y-4">
+                {/* 0. Username */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      placeholder="e.g. johndoe"
+                      value={username}
+                      onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                      minLength={3}
+                      maxLength={12}
+                      pattern="[a-z0-9]+"
+                      title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
+                      className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                    />
+                </div>
+
+                {/* 1. Location Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Which location's events do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span></label>
+                  {cities.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {cities.map(c => (
+                        <span key={c} className="inline-flex items-center gap-1.5 bg-text-primary text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                          {c}
+                          <button type="button" onClick={() => toggleCity(c)} className="hover:text-red-300 transition-colors">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* ADDED: max-h-48 overflow-y-auto no-scrollbar to make it scrollable on mobile */}
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto no-scrollbar">
+                    {CITIES.map(loc => {
+                      const isSelected = cities.includes(loc);
+                      const isDisabled = !isSelected && !isAdmin && cities.length >= 3;
+                      return (
+                        <button
+                          key={loc}
+                          type="button"
+                          onClick={() => toggleCity(loc)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                            isSelected
+                              ? "bg-text-primary text-white border-text-primary"
+                              : isDisabled
+                              ? "bg-surface-base text-slate-300 border-transparent cursor-not-allowed"
+                              : "bg-surface-base text-slate-600 border-transparent hover:bg-slate-200"
+                          }`}
+                        >
+                          {loc}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Role Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">What are you?</label>
+                  <select 
+                    value={role} 
+                    onChange={e => setRole(e.target.value)}
+                    className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium"
+                  >
+                    <option value="" disabled>Select Role</option>
+                    {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Conditional College, Year (Only if Student) */}
+                <AnimatePresence>
+                  {role === "Student" && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-4 overflow-visible">
+                      
+                      <p className="text-xs text-text-secondary font-medium -mt-1">Add your college — and we&apos;ll surface what&apos;s happening on your own campus first.</p>
+
+                      {/* COLLEGE SELECTOR */}
+                      <div className="relative" onClick={(e) => e.stopPropagation()}>
+                        <input 
+                          type="text" 
+                          placeholder="Search & Select Your College" 
+                          value={searchQuery} 
+                          onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
+                          onFocus={() => setShowDropdown(true)}
+                          className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                        />
+                        {showDropdown && searchQuery.trim().length > 0 && (
+                          <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
+                            {isSearchingColleges && (
+                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                            )}
+                            {!isSearchingColleges && collegesList.map(item => (
+                                <button key={item.id} type="button" onClick={() => { setCollege(item.name); setCollegeId(item.id); setSearchQuery(item.name); setShowDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
+                                  🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
+                                </button>
+                              ))}
+                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
+                              <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                                {isCreatingCollege && <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+
+                        {/* BRANCH SELECTOR */}
+                        <div className="relative">
+                          <select
+                            value={branch}
+                            onChange={e => setBranch(e.target.value)}
+                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium appearance-none"
+                          >
+                            <option value="" disabled>Branch</option>
+                            {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+
+                        {/* YEAR SELECTOR */}
+                          <div className="relative" onClick={(e) => e.stopPropagation()}>
+                          <input 
+                            type="text" 
+                            placeholder="Year (e.g. 2026)" 
+                            value={yearSearchQuery} 
+                            onChange={e => { setYearSearchQuery(e.target.value); setShowYearDropdown(true); }}
+                            onFocus={() => setShowYearDropdown(true)}
+                            className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
+                          />
+                          {showYearDropdown && yearSearchQuery.trim().length > 0 && (
+                            <div className="absolute left-0 right-0 mt-2 max-h-40 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 no-scrollbar flex flex-col">
+                              {yearList.filter(item => item.includes(yearSearchQuery)).map(item => (
+                                <button key={item} type="button" onClick={() => { setYear(item); setYearSearchQuery(item); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-brand-primary/5 hover:text-brand-primary transition-colors border-b border-slate-50 last:border-none">
+                                  {item}
+                                </button>
+                              ))}
+                              {!yearList.some(item => item === yearSearchQuery.trim()) && (
+                                <button type="button" onClick={() => { setYearList(prev => [...prev, yearSearchQuery]); setYear(yearSearchQuery); setYearSearchQuery(yearSearchQuery); setShowYearDropdown(false); }} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
+                                  + Add "{yearSearchQuery}"
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <button 
+                onClick={() => setStep(3)} 
+                disabled={!username.trim() || cities.length === 0 || !role || (role === "Student" && (!college || !year || !branch))}
+                className="w-full bg-text-primary hover:bg-black disabled:bg-slate-100 disabled:text-slate-400 text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4 flex items-center justify-center gap-2"
+              >
+                Next Step <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* STEP 3: Categories Selection */}
+          {step === 3 && !isSaving && (
+            <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setStep(2)}
+                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <h2 className="text-xl font-heading font-extrabold text-text-primary">Your Interests</h2>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="space-y-3 pt-2">
+                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+                    What categories do you want to see? <span className="text-text-secondary font-normal normal-case">{isAdmin ? "(pick as many as you want)" : `(picked ${categories.length}/6)`}</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto no-scrollbar">
+                    {categoriesList.map(opt => {
+                      const isSelected = categories.includes(opt);
+                      const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
+                      return (
+                        <button
+                          key={opt} type="button"
+                          disabled={isDisabled}
+                          onClick={() => {
+                            if (isSelected) setCategories(categories.filter(i => i !== opt));
+                            else if (isAdmin || categories.length < 6) setCategories([...categories, opt]);
+                          }}
+                          className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleSave} 
+                disabled={categories.length === 0 || isSaving}
+                className="w-full bg-brand-primary disabled:bg-[#E5E5EA] disabled:text-text-secondary text-white py-4 rounded-full font-bold transition-all active:scale-95 mt-4"
+              >
+                {isSaving ? "Saving..." : "Complete Profile"}
+              </button>
+            </motion.div>
+          )}
+
+          {/* LOADING STATE: The Magic Animation */}
+          {isSaving && (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-12 flex flex-col items-center justify-center space-y-4">
+              <div className="w-12 h-12 border-4 border-surface-base border-t-brand-primary rounded-full animate-spin" />
+              <p className="font-heading font-bold text-lg text-text-primary animate-pulse">
+                Gathering events to match your preferences...
+              </p>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/proxy.ts">
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
@@ -10401,160 +10562,6 @@ export const config = {
     },
   ],
 };
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: false,
-  aggressiveFrontEndNavCaching: false,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  experimental: {
-    cacheLife: {
-      events: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
-      leaderboard: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
-    },
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-      {
-        source: "/ingest/decide",
-        destination: "https://us.i.posthog.com/decide",
-      },
-    ];
-  },
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
-</file>
-
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
 </file>
 
 <file path="src/app/[username]/page.tsx">
@@ -12662,6 +12669,7 @@ export default function LoginPage() {
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [hasConsented, setHasConsented] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [resetMessage, setResetMessage] = useState<string | null>(null);
   const [isResetLoading, setIsResetLoading] = useState(false);
@@ -12795,6 +12803,30 @@ export default function LoginPage() {
             <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
           </div>
 
+          {/* Social Logins — now the primary path */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-[#1D1D1F] hover:bg-black text-white py-4 rounded-2xl font-bold text-[14px] transition-all active:scale-95 shadow-xl shadow-slate-200">
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
+              Google
+            </button>
+            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-[#1D1D1F] hover:bg-black text-white py-4 rounded-2xl font-bold text-[14px] transition-all active:scale-95 shadow-xl shadow-slate-200">
+              GitHub
+            </button>
+          </div>
+
+          {/* Collapsed email option */}
+          {!showEmailForm && (
+            <button
+              type="button"
+              onClick={() => setShowEmailForm(true)}
+              className="w-full text-center text-xs font-bold text-slate-400 hover:text-brand-primary transition-colors mb-2"
+            >
+              or continue with email
+            </button>
+          )}
+
+          {showEmailForm && (
+          <>
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
@@ -12849,6 +12881,7 @@ export default function LoginPage() {
                {isLoading === 'email' ? <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <>{isSignUp ? "Create Account" : "Login"} <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
+          
 
           <p className="text-center text-xs text-slate-500 font-medium mt-4">
             {isSignUp ? "Already have an account?" : "New here?"}{" "}
@@ -12887,26 +12920,10 @@ export default function LoginPage() {
               {resetMessage}
             </p>
           )}
+          </>
+          )}
 
-          {/* Clean Divider */}
-          <div className="relative flex items-center justify-center my-8">
-            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-100"></div></div>
-            <span className="relative bg-white px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Or Social</span>
           </div>
-
-          {/* Social Logins */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm">
-              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
-              Google
-            </button>
-            <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-white border border-slate-200 py-3.5 rounded-2xl font-bold text-[13px] hover:bg-slate-50 transition-all active:scale-95 shadow-sm text-slate-900">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" /><path d="M9 18c-4.51 2-5-2-7-2" /></svg>
-              GitHub
-            </button>
-          </div>
-
-        </div>
       </motion.div>
     </main>
   );
