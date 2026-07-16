@@ -95,7 +95,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8">
+    <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
       {/* THE PERFECT 2:1 SPLIT LAYOUT
         - Desktop: max-width 1040px, fixed height 600px (Prevents vertical stretching)
         - Mobile: auto height, vertical stack

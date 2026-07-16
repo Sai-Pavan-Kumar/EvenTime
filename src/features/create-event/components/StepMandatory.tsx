@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
 import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
-import { categoriesList, audienceOptions, hours, mins, ampms } from "../constants";
+import { categoriesList, hours, mins, ampms } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
 import { useEffect, useState } from "react";
@@ -127,8 +127,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         />
       </div>
 
-      {/* CATEGORY & AUDIENCE */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* CATEGORY */}
+      <div className="grid grid-cols-1 gap-6">
         <div className="space-y-3">
           <label className="block text-sm font-semibold text-slate-700">Category <span className="text-red-500">*</span></label>
           <select value={data.category} onChange={e => updateData({ category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none">
@@ -136,19 +136,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        {!isCollegeCategory && (
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-slate-700">Who is it for? <span className="text-red-500">*</span></label>
-              <select 
-                value={data.selectedAudience[0] || ""}
-                onChange={(e) => updateData({ selectedAudience: [e.target.value] })}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
-              >
-                <option value="" disabled>Select audience</option>
-                {audienceOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
-            </div>
-          )}
           </div>
 
           {/* COLLEGE FIELDS (DYNAMIC) */}

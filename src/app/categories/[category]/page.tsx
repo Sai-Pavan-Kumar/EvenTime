@@ -39,11 +39,17 @@ export default async function CategoryPage({
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { auth: { persistSession: false } }
       );
+      const today = new Date();
+      const sixMonthsAgo = new Date(today);
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
       const { data } = await supabaseAnon
         .from("events")
         .select(CATEGORY_FIELDS)
         .eq("status", "approved")
         .ilike("category", decodedCategory)
+        .gte("date_string", sixMonthsAgoStr)
         .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
         .order("date_string", { ascending: true })
         .limit(50);

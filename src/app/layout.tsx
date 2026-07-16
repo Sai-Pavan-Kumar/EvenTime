@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
 import { Footer } from "@/components/layout/Footer";
+import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
 
@@ -117,6 +118,7 @@ export default async function RootLayout({
           shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
         />
         <LaunchScreen /> {/* Added LaunchScreen component here */}
+        <DevToolsGuard />
         
         <PostHogProvider>
           {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}

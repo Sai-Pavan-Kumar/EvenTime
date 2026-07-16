@@ -242,10 +242,8 @@ export function HomePageClient(props: HomePageClientProps) {
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
       
       {/* Onboarding check: don't show until auth finishes checking */}
-      {!isAuthLoading && user && !profile?.is_onboarded && (
-        <OnboardingModal user={user} profile={profile} />
+      {!isAuthLoading && !profile?.is_onboarded && (<OnboardingModal user={user} profile={profile} />
       )}
-
       <div className="flex flex-col">
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
         {view !== "cities" && (
@@ -281,7 +279,25 @@ export function HomePageClient(props: HomePageClientProps) {
             </div>
           ) : (
             <>
-            <div className="space-y-6">
+            <div className="space-y-6 pt-2">
+              {user && (
+                <p className="text-sm font-semibold text-slate-400 -mb-2 truncate">
+                  {(() => {
+                    const h = new Date().getHours();
+                    const name = profile?.username || "there";
+                    if (h >= 6 && h < 9) return `Morning, ${name}.`;
+                    if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
+                    if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
+                    if (h >= 14 && h < 17) return `Lunch break, ${name}.`;
+                    if (h >= 17 && h < 18) return `Snack time, ${name}.`;
+                    if (h >= 18 && h < 20) return `Evening, ${name}.`;
+                    if (h >= 20 && h < 23) return `Dinner time, ${name}.`;
+                    if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
+                    if (h >= 0 && h < 4) return `Still up, ${name}?`;
+                    return `Up early, ${name}?`;
+                  })()}
+                </p>
+              )}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">

@@ -4,7 +4,7 @@ import { useState, useEffect, SetStateAction } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, audienceOptions, teamOptions, hours, mins, ampms } from "./constants";
+import { CATEGORY_TEMPLATES, categoriesList, teamOptions, hours, mins, ampms } from "./constants";
 function toLocalDateString(d: Date) { 
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -97,7 +97,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       category: eventData.category,
       organizer_name: eventData.organizer,
       description: eventData.description,
-      target_audience: eventData.selectedAudience,
+      target_audience: isCollegeCategory ? eventData.selectedAudience : ["Everyone"],
       start_time: (eventData.selectedHour && eventData.selectedMin) ? `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}` : null,
       end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
       end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
@@ -124,7 +124,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }, isEditing, initialData?.id);
   };
 
-  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedAudience.length > 0 && eventData.selectedDate && (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city));
+  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedDate && (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city));
 
   return (
     <div className="max-w-3xl mx-auto w-full">

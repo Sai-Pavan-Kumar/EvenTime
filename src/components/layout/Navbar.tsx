@@ -171,10 +171,15 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     }
     setIsSearchingMobile(true);
     const timer = setTimeout(() => {
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
       let query = supabase
         .from("events")
         .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
-        .eq("status", "approved");
+        .eq("status", "approved")
+        .gte("date_string", sixMonthsAgoStr);
       if (hasQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
       }
@@ -230,6 +235,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
   };
 
   const handleLogout = async () => {
+    if (!window.confirm("Are you sure you want to sign out?")) return;
     await supabase.auth.signOut();
     router.refresh();
   };

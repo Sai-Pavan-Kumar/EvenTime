@@ -55,30 +55,51 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   }
 
   // Fix: Running the remaining dependent queries in parallel using Promise.all
+   const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
    const [
+    { count: totalEventCount },
+    { data: allTimeSavesData },
     { data: events },
     { data: appSettings }
   ] = await Promise.all([
-    // 1. Fetch Curator's Approved Events (oldest first)
+    // 1a. True lifetime count — never filtered by date
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", curator.id)
+      .eq("status", "approved"),
+
+    // 1a2. Lifetime saves — never filtered by date
+    supabase
+      .from("events")
+      .select("saved_events(count)")
+      .eq("creator_id", curator.id)
+      .eq("status", "approved"),
+
+    // 1b. Fetch Curator's Approved Events from the last 6 months only (for display)
     supabase
       .from("events")
       .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
       .eq("creator_id", curator.id)
       .eq("status", "approved")
+      .gte("date_string", sixMonthsAgoStr)
       .order("created_at", { ascending: true }),
 
     // 2. Check if leaderboard / ET Score is enabled platform-wide
     supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
   ]);
   // Dynamic ga events anni thirigi saves count ni sum chesthundi
-  const impactSaves = events?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
+  const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
   const etScore = curator.et_score || 100;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 
   // NEW: Dynamic Profile Tiers Logic
-  const eventCount = events?.length || 0;
+  const eventCount = totalEventCount || 0;
   let strokeColor = "#6C47FF"; // Default Purple
   let isGold = false;
 
@@ -148,7 +169,9 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
             <CuratorEventsTabs events={events} />
           ) : (
             <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
-              <p className="text-text-secondary font-bold uppercase tracking-widest text-xs">No active events posted</p>
+              <p className="text-text-secondary font-bold uppercase tracking-widest text-xs">
+                {eventCount > 0 ? "No events in the last 6 months" : "No active events posted"}
+              </p>
             </div>
           )}
         </div>

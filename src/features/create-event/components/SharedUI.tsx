@@ -33,6 +33,13 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
   const today = new Date();
   const [viewYear, setViewYear] = useState(selectedDate?.getFullYear() || today.getFullYear());
   const [viewMonth, setViewMonth] = useState(selectedDate?.getMonth() || today.getMonth());
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewYear(selectedDate.getFullYear());
+      setViewMonth(selectedDate.getMonth());
+    }
+  }, [selectedDate]);
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };

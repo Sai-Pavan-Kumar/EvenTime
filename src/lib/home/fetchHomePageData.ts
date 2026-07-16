@@ -25,10 +25,15 @@ export async function fetchHomePageData() {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
       let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
       
+       const sixMonthsAgo = new Date(todayIST);
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
        const { data: rawAllEvents } = await supabaseAnon
         .from("events")
         .select(PUBLIC_EVENT_FIELDS)
         .eq("status", "approved")
+        .gte("date_string", sixMonthsAgoStr)
         .or(visibilityFilter)
         .order("is_featured", { ascending: false })
         .order("created_at", { ascending: false })
