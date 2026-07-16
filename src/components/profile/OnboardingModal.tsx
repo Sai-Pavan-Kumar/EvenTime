@@ -153,10 +153,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       setIsSaving(false);
       return;
     }
-    
-    // Immediately navigate — the animation IS the feedback
-    router.refresh();
-    // This keeps the loading spinner visible until the page fully reloads and unmounts the modal!
+    window.location.reload();
   };
 
   return (
