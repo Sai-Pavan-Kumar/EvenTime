@@ -90,7 +90,7 @@ export function HomePageClient(props: HomePageClientProps) {
         setUser(currentUser);
         const { data } = await supabase
           .from("profiles")
-          .select("is_onboarded, goals, user_type, college_id, preferred_cities")
+          .select("is_onboarded, goals, user_type, college_id, preferred_cities, username")
           .eq("id", currentUser.id)
           .single();
         if (data) {
@@ -240,6 +240,27 @@ export function HomePageClient(props: HomePageClientProps) {
   return (
     <main className="min-h-screen bg-surface-base">
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
+
+      {user && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4">
+          <p className="text-sm font-semibold text-slate-400 truncate">
+            {(() => {
+              const h = new Date().getHours();
+              const name = profile?.username || "there";
+              if (h >= 6 && h < 9) return `Morning, ${name}.`;
+              if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
+              if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
+              if (h >= 14 && h < 17) return `Lunch break, ${name}.`;
+              if (h >= 17 && h < 18) return `Snack time, ${name}.`;
+              if (h >= 18 && h < 20) return `Evening, ${name}.`;
+              if (h >= 20 && h < 23) return `Dinner time, ${name}.`;
+              if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
+              if (h >= 0 && h < 4) return `Still up, ${name}?`;
+              return `Up early, ${name}?`;
+            })()}
+          </p>
+        </div>
+      )}
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && !profile?.is_onboarded && (<OnboardingModal user={user} profile={profile} />
@@ -280,24 +301,6 @@ export function HomePageClient(props: HomePageClientProps) {
           ) : (
             <>
             <div className="space-y-6 pt-2">
-              {user && (
-                <p className="text-sm font-semibold text-slate-400 -mb-2 truncate">
-                  {(() => {
-                    const h = new Date().getHours();
-                    const name = profile?.username || "there";
-                    if (h >= 6 && h < 9) return `Morning, ${name}.`;
-                    if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
-                    if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
-                    if (h >= 14 && h < 17) return `Lunch break, ${name}.`;
-                    if (h >= 17 && h < 18) return `Snack time, ${name}.`;
-                    if (h >= 18 && h < 20) return `Evening, ${name}.`;
-                    if (h >= 20 && h < 23) return `Dinner time, ${name}.`;
-                    if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
-                    if (h >= 0 && h < 4) return `Still up, ${name}?`;
-                    return `Up early, ${name}?`;
-                  })()}
-                </p>
-              )}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">

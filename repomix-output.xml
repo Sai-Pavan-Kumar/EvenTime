@@ -813,78 +813,6 @@ export default function EventLoading() {
 }
 </file>
 
-<file path="src/components/layout/DevToolsGuard.tsx">
-"use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-
-let adminCache: boolean | null = null; // remembers the answer for this browser tab session
-
-export function DevToolsGuard() {
-  const [isAdmin, setIsAdmin] = useState(adminCache ?? false);
-  const [checked, setChecked] = useState(adminCache !== null);
-
-  useEffect(() => {
-    if (adminCache !== null) return; // already know the answer, skip the network call entirely
-
-    const supabase = createClient();
-    let mounted = true;
-
-    const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        adminCache = false;
-        if (mounted) setChecked(true);
-        return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, user_type")
-        .eq("id", user.id)
-        .single();
-      const result = profile?.role === "admin" || profile?.user_type === "admin";
-      adminCache = result;
-      if (mounted) {
-        setIsAdmin(result);
-        setChecked(true);
-      }
-    };
-    checkAdmin();
-
-    return () => { mounted = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!checked || isAdmin) return;
-
-    const blockRightClick = (e: MouseEvent) => e.preventDefault();
-
-    const blockKeys = (e: KeyboardEvent) => {
-      const key = e.key.toUpperCase();
-      if (
-        key === "F12" ||
-        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(key)) ||
-        (e.metaKey && e.altKey && ["I", "J", "C"].includes(key)) ||
-        (e.ctrlKey && key === "U")
-      ) {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener("contextmenu", blockRightClick);
-    document.addEventListener("keydown", blockKeys);
-
-    return () => {
-      document.removeEventListener("contextmenu", blockRightClick);
-      document.removeEventListener("keydown", blockKeys);
-    };
-  }, [checked, isAdmin]);
-
-  return null;
-}
-</file>
-
 <file path="src/components/layout/FeedbackModal.tsx">
 "use client";
 
@@ -4384,6 +4312,78 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 </file>
 
+<file path="src/components/layout/DevToolsGuard.tsx">
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+let adminCache: boolean | null = null; // remembers the answer for this browser tab session
+
+export function DevToolsGuard() {
+  const [isAdmin, setIsAdmin] = useState(adminCache ?? false);
+  const [checked, setChecked] = useState(adminCache !== null);
+
+  useEffect(() => {
+    if (adminCache !== null) return; // already know the answer, skip the network call entirely
+
+    const supabase = createClient();
+    let mounted = true;
+
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        adminCache = false;
+        if (mounted) setChecked(true);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, user_type")
+        .eq("id", user.id)
+        .single();
+      const result = profile?.role === "admin" || profile?.user_type === "admin";
+      adminCache = result;
+      if (mounted) {
+        setIsAdmin(result);
+        setChecked(true);
+      }
+    };
+    checkAdmin();
+
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!checked || isAdmin) return;
+
+    const blockRightClick = (e: MouseEvent) => e.preventDefault();
+
+    const blockKeys = (e: KeyboardEvent) => {
+      const key = e.key.toUpperCase();
+      if (
+        key === "F12" ||
+        (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(key)) ||
+        (e.metaKey && e.altKey && ["I", "J", "C"].includes(key)) ||
+        (e.ctrlKey && key === "U")
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener("contextmenu", blockRightClick);
+    document.addEventListener("keydown", blockKeys);
+
+    return () => {
+      document.removeEventListener("contextmenu", blockRightClick);
+      document.removeEventListener("keydown", blockKeys);
+    };
+  }, [checked, isAdmin]);
+
+  return null;
+}
+</file>
+
 <file path="src/components/leaderboard/ScoreInfoButton.tsx">
 "use client";
 
@@ -4467,35 +4467,6 @@ export function DeleteEventForm({
         <Trash2 className="w-4 h-4" />
       </button>
     </form>
-  );
-}
-</file>
-
-<file path="src/components/profile/MobileSignOutButton.tsx">
-"use client";
-
-import { LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
-
-export function MobileSignOutButton() {
-  const router = useRouter();
-  
-  const handleSignOut = async () => {
-    if (!window.confirm("Are you sure you want to sign out?")) return;
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
-  };
-
-  return (
-    <button 
-      onClick={handleSignOut} 
-      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-red-500 hover:bg-red-50 hover:text-red-600 transition-all w-full text-left"
-    >
-      <LogOut className="w-4 h-4" /> Sign Out
-    </button>
   );
 }
 </file>
@@ -5947,6 +5918,35 @@ export function CalendarStrip({ eventDates = [], onDateSelect }: { eventDates?: 
 }
 </file>
 
+<file path="src/components/profile/MobileSignOutButton.tsx">
+"use client";
+
+import { LogOut } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+
+export function MobileSignOutButton() {
+  const router = useRouter();
+  
+  const handleSignOut = async () => {
+    if (!window.confirm("Are you sure you want to sign out?")) return;
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
+
+  return (
+    <button 
+      onClick={handleSignOut} 
+      className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-red-500 hover:bg-red-50 hover:text-red-600 transition-all w-full text-left"
+    >
+      <LogOut className="w-4 h-4" /> Sign Out
+    </button>
+  );
+}
+</file>
+
 <file path="src/components/shared/LoadMoreGrid.tsx">
 "use client";
 
@@ -6002,161 +6002,6 @@ export function LoadMoreGrid({
             Load More
             <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
           </button>
-        </div>
-      )}
-    </div>
-  );
-}
-</file>
-
-<file path="src/features/create-event/components/SharedUI.tsx">
-"use client";
-
-import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, CheckCircle, AlertTriangle } from "lucide-react";
-import { FieldStatus, GeoResult } from "../types";
-
-export function DrumColumn({ items, defaultIndex = 0, onSelect }: { items: string[]; defaultIndex?: number; onSelect: (val: string) => void; }) {
-  const colRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (colRef.current) colRef.current.scrollTop = defaultIndex * 44; }, []);
-  const handleScroll = () => {
-    if (!colRef.current) return;
-    const idx = Math.round(colRef.current.scrollTop / 44);
-    if (items[idx]) onSelect(items[idx]);
-  };
-  return (
-    <div ref={colRef} onScroll={handleScroll} className="h-[180px] overflow-y-scroll" style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" }}>
-      <div style={{ height: 68, flexShrink: 0 }} />
-      {items.map((val, i) => (
-        <div key={val} style={{ scrollSnapAlign: "center" }} className="h-[44px] flex items-center justify-center text-sm font-medium text-slate-400 cursor-pointer select-none" onClick={() => { if (colRef.current) colRef.current.scrollTop = i * 44; onSelect(val); }}>
-          {val}
-        </div>
-      ))}
-      <div style={{ height: 68, flexShrink: 0 }} />
-    </div>
-  );
-}
-
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | undefined; onSelect: (d: Date) => void; }) {
-  const today = new Date();
-  const [viewYear, setViewYear] = useState(selectedDate?.getFullYear() || today.getFullYear());
-  const [viewMonth, setViewMonth] = useState(selectedDate?.getMonth() || today.getMonth());
-
-  useEffect(() => {
-    if (selectedDate) {
-      setViewYear(selectedDate.getFullYear());
-      setViewMonth(selectedDate.getMonth());
-    }
-  }, [selectedDate]);
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
-  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
-  const isSelected = (d: number) => selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === viewMonth && selectedDate.getFullYear() === viewYear;
-  const isToday = (d: number) => d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
-  const isPast = (d: number) => new Date(viewYear, viewMonth, d) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  
-  return (
-    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-        <span className="text-base font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
-        <div className="flex gap-1">
-          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">‹</button>
-          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">›</button>
-        </div>
-      </div>
-      <div className="px-4 py-3">
-        <div className="grid grid-cols-7 mb-1">
-          {DAY_NAMES.map(d => <div key={d} className="text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide py-1">{d}</div>)}
-        </div>
-        <div className="grid grid-cols-7 gap-[2px]">
-          {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
-          {Array.from({ length: daysInMonth }).map((_, i) => {
-            const d = i + 1; const past = isPast(d); const selected = isSelected(d); const todayCell = isToday(d);
-            return (
-              <button key={d} type="button" disabled={past} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", past ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !past ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function LocationSearch({ value, onChange }: { value: string; onChange: (val: string, lat?: number, lon?: number) => void; }) {
-  const [query, setQuery] = useState(value);
-  const [results, setResults] = useState<GeoResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setShowDropdown(false); };
-    document.addEventListener("mousedown", handler); return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  useEffect(() => {
-    if (query.trim().length < 3) { setResults([]); setShowDropdown(false); return; }
-    const timeout = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`, { headers: { "Accept-Language": "en" } });
-        const data: GeoResult[] = await res.json(); setResults(data); setShowDropdown(data.length > 0);
-      } catch { setResults([]); } finally { setIsLoading(false); }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [query]);
-
-  const handleSelect = (result: GeoResult) => {
-    const parts = [result.address.city || result.address.town || result.address.village, result.address.state, result.address.country].filter(Boolean);
-    const shortName = parts.join(", ") || result.display_name.split(",").slice(0, 3).join(",");
-    setQuery(shortName);
-    onChange(shortName, parseFloat(result.lat), parseFloat(result.lon));
-    setShowDropdown(false); setResults([]);
-  };
-
-  return (
-    <div ref={wrapperRef} className="relative">
-      <div className="relative">
-        <input type="text" placeholder="Search city or venue..." value={query} onChange={e => { setQuery(e.target.value); onChange(e.target.value); }} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pr-10 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all placeholder:text-slate-400" />
-        {isLoading ? <Search className="absolute right-4 top-4 w-4 h-4 text-slate-400 animate-spin" /> : <MapPin className="absolute right-4 top-4 w-4 h-4 text-slate-400" />}
-      </div>
-      <AnimatePresence>
-        {showDropdown && results.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-            {results.map((r, i) => {
-              const parts = [r.address.city || r.address.town || r.address.village, r.address.state, r.address.country].filter(Boolean);
-              const label = parts.join(", ") || r.display_name.split(",").slice(0, 3).join(",");
-              return (
-                <button key={i} type="button" onClick={() => handleSelect(r)} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-primary/5 transition-colors text-left border-b border-slate-100 last:border-0">
-                  <MapPin className="w-4 h-4 text-brand-primary mt-0.5 shrink-0" />
-                  <div><div className="text-sm font-semibold text-slate-800 truncate">{label}</div></div>
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-export function ConfidenceField({ status, children }: { status: FieldStatus; children: React.ReactNode }) {
-  return (
-    <div className={`relative transition-all rounded-xl ${status === "success" ? "ring-2 ring-green-400/40" : status === "warning" ? "ring-2 ring-amber-400/40" : ""}`}>
-      {children}
-      {status === "success" && (
-        <div className="absolute top-3 right-3 z-10 pointer-events-none">
-          <CheckCircle className="w-4 h-4 text-green-500" />
-        </div>
-      )}
-      {status === "warning" && (
-        <div className="absolute top-3 right-3 z-10 pointer-events-none">
-          <AlertTriangle className="w-4 h-4 text-amber-500" />
         </div>
       )}
     </div>
@@ -6419,128 +6264,6 @@ export async function generateHMAC(data: string): Promise<string> {
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   
   return hashHex;
-}
-</file>
-
-<file path="src/app/categories/[category]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { EventGrid } from "@/lib/home/EventGrid";
-import { unstable_cache } from "next/cache";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}): Promise<Metadata> {
-  const { category } = await params;
-  // Convert URL friendly "hackathons-and-events" back to "hackathons and events"
-  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
-
-  return {
-    title: `${decodedCategory} Events | EvenTime`,
-    description: `Discover the best ${decodedCategory} events, meetups, and workshops on EvenTime.`,
-  };
-}
-
-export default async function CategoryPage({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}) {
-  const { category } = await params;
-  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
-
-  // CACHED: public events for this category (same for every anonymous/non-student visitor)
-  const getCachedPublicCategoryEvents = unstable_cache(
-    async () => {
-      const supabaseAnon = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      );
-      const today = new Date();
-      const sixMonthsAgo = new Date(today);
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
-
-      const { data } = await supabaseAnon
-        .from("events")
-        .select(CATEGORY_FIELDS)
-        .eq("status", "approved")
-        .ilike("category", decodedCategory)
-        .gte("date_string", sixMonthsAgoStr)
-        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
-        .order("date_string", { ascending: true })
-        .limit(50);
-      return data || [];
-    },
-    [`category_events_${decodedCategory.toLowerCase()}`],
-    { tags: ["events"], revalidate: 600 } // 10 minutes
-  );
-
-  // Auth check + cached public fetch run at the same time
-  const [{ data: { user } }, publicEvents] = await Promise.all([
-    supabase.auth.getUser(),
-    getCachedPublicCategoryEvents(),
-  ]);
-
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  // Tiny, uncached, bounded-to-1-user query for their own extra visible events
-  let personalEvents: any[] = [];
-  if (user) {
-    let extraFilter = `creator_id.eq.${user.id}`;
-    if (profile?.user_type === "student" && profile?.college_id) {
-      extraFilter += `,college_id.eq.${profile.college_id}`;
-    }
-    const { data } = await supabase
-      .from("events")
-      .select(CATEGORY_FIELDS)
-      .eq("status", "approved")
-      .ilike("category", decodedCategory)
-      .or(extraFilter)
-      .order("date_string", { ascending: true })
-      .limit(50);
-    personalEvents = data || [];
-  }
-
-  const eventMap = new Map();
-  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
-  const events = Array.from(eventMap.values());
-
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="mb-10">
-          <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
-            {decodedCategory} Events
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">
-            Discover and join the best {decodedCategory.toLowerCase()} events.
-          </p>
-        </div>
-
-        {events && events.length > 0 ? (
-          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No events found in this category</p>
-          </div>
-        )}
-      </div>
-    </main>
-  );
 }
 </file>
 
@@ -6957,6 +6680,161 @@ export function Footer() {
 }
 </file>
 
+<file path="src/features/create-event/components/SharedUI.tsx">
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, MapPin, CheckCircle, AlertTriangle } from "lucide-react";
+import { FieldStatus, GeoResult } from "../types";
+
+export function DrumColumn({ items, defaultIndex = 0, onSelect }: { items: string[]; defaultIndex?: number; onSelect: (val: string) => void; }) {
+  const colRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (colRef.current) colRef.current.scrollTop = defaultIndex * 44; }, []);
+  const handleScroll = () => {
+    if (!colRef.current) return;
+    const idx = Math.round(colRef.current.scrollTop / 44);
+    if (items[idx]) onSelect(items[idx]);
+  };
+  return (
+    <div ref={colRef} onScroll={handleScroll} className="h-[180px] overflow-y-scroll" style={{ scrollSnapType: "y mandatory", scrollbarWidth: "none" }}>
+      <div style={{ height: 68, flexShrink: 0 }} />
+      {items.map((val, i) => (
+        <div key={val} style={{ scrollSnapAlign: "center" }} className="h-[44px] flex items-center justify-center text-sm font-medium text-slate-400 cursor-pointer select-none" onClick={() => { if (colRef.current) colRef.current.scrollTop = i * 44; onSelect(val); }}>
+          {val}
+        </div>
+      ))}
+      <div style={{ height: 68, flexShrink: 0 }} />
+    </div>
+  );
+}
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | undefined; onSelect: (d: Date) => void; }) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(selectedDate?.getFullYear() || today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selectedDate?.getMonth() || today.getMonth());
+
+  useEffect(() => {
+    if (selectedDate) {
+      setViewYear(selectedDate.getFullYear());
+      setViewMonth(selectedDate.getMonth());
+    }
+  }, [selectedDate]);
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
+  const isSelected = (d: number) => selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === viewMonth && selectedDate.getFullYear() === viewYear;
+  const isToday = (d: number) => d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+  const isPast = (d: number) => new Date(viewYear, viewMonth, d) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
+        <span className="text-base font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
+        <div className="flex gap-1">
+          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">‹</button>
+          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">›</button>
+        </div>
+      </div>
+      <div className="px-4 py-3">
+        <div className="grid grid-cols-7 mb-1">
+          {DAY_NAMES.map(d => <div key={d} className="text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide py-1">{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-[2px]">
+          {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const d = i + 1; const past = isPast(d); const selected = isSelected(d); const todayCell = isToday(d);
+            return (
+              <button key={d} type="button" disabled={past} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", past ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !past ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function LocationSearch({ value, onChange }: { value: string; onChange: (val: string, lat?: number, lon?: number) => void; }) {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState<GeoResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setShowDropdown(false); };
+    document.addEventListener("mousedown", handler); return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (query.trim().length < 3) { setResults([]); setShowDropdown(false); return; }
+    const timeout = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`, { headers: { "Accept-Language": "en" } });
+        const data: GeoResult[] = await res.json(); setResults(data); setShowDropdown(data.length > 0);
+      } catch { setResults([]); } finally { setIsLoading(false); }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [query]);
+
+  const handleSelect = (result: GeoResult) => {
+    const parts = [result.address.city || result.address.town || result.address.village, result.address.state, result.address.country].filter(Boolean);
+    const shortName = parts.join(", ") || result.display_name.split(",").slice(0, 3).join(",");
+    setQuery(shortName);
+    onChange(shortName, parseFloat(result.lat), parseFloat(result.lon));
+    setShowDropdown(false); setResults([]);
+  };
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div className="relative">
+        <input type="text" placeholder="Search city or venue..." value={query} onChange={e => { setQuery(e.target.value); onChange(e.target.value); }} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pr-10 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all placeholder:text-slate-400" />
+        {isLoading ? <Search className="absolute right-4 top-4 w-4 h-4 text-slate-400 animate-spin" /> : <MapPin className="absolute right-4 top-4 w-4 h-4 text-slate-400" />}
+      </div>
+      <AnimatePresence>
+        {showDropdown && results.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+            {results.map((r, i) => {
+              const parts = [r.address.city || r.address.town || r.address.village, r.address.state, r.address.country].filter(Boolean);
+              const label = parts.join(", ") || r.display_name.split(",").slice(0, 3).join(",");
+              return (
+                <button key={i} type="button" onClick={() => handleSelect(r)} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-primary/5 transition-colors text-left border-b border-slate-100 last:border-0">
+                  <MapPin className="w-4 h-4 text-brand-primary mt-0.5 shrink-0" />
+                  <div><div className="text-sm font-semibold text-slate-800 truncate">{label}</div></div>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export function ConfidenceField({ status, children }: { status: FieldStatus; children: React.ReactNode }) {
+  return (
+    <div className={`relative transition-all rounded-xl ${status === "success" ? "ring-2 ring-green-400/40" : status === "warning" ? "ring-2 ring-amber-400/40" : ""}`}>
+      {children}
+      {status === "success" && (
+        <div className="absolute top-3 right-3 z-10 pointer-events-none">
+          <CheckCircle className="w-4 h-4 text-green-500" />
+        </div>
+      )}
+      {status === "warning" && (
+        <div className="absolute top-3 right-3 z-10 pointer-events-none">
+          <AlertTriangle className="w-4 h-4 text-amber-500" />
+        </div>
+      )}
+    </div>
+  );
+}
+</file>
+
 <file path="src/features/create-event/components/StepMedia.tsx">
 "use client";
 
@@ -7123,58 +7001,125 @@ export function StepMedia(props: StepMediaProps) {
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "eventime",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "context": "npx code-to-text . -o project_context.txt",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
-    "@aws-sdk/s3-request-presigner": "^3.1045.0",
-    "@base-ui/react": "^1.4.1",
-    "@ducanh2912/next-pwa": "^10.2.9",
-    "@phosphor-icons/react": "^2.1.10",
-    "@sentry/nextjs": "^10.63.0",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.105.4",
-    "@vercel/analytics": "^2.0.1",
-    "browser-image-compression": "^2.0.2",
-    "cheerio": "^1.2.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
-    "framer-motion": "^12.38.0",
-    "lucide-react": "^1.14.0",
-    "next": "16.2.6",
-    "nextjs-toploader": "^3.9.17",
-    "posthog-js": "^1.399.2",
-    "react": "19.2.6",
-    "react-day-picker": "^10.0.0",
-    "react-dom": "^19.2.6",
-    "react-easy-crop": "^5.5.7",
-    "shadcn": "^4.7.0",
-    "sonner": "^2.0.7",
-    "tailwind-merge": "^3.6.0",
-    "tw-animate-css": "^1.4.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^25",
-    "@types/nprogress": "^0.2.3",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9.21.0",
-    "eslint-config-next": "16.2.6",
-    "tailwindcss": "^4",
-    "typescript": "^6"
+<file path="src/app/categories/[category]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { EventGrid } from "@/lib/home/EventGrid";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}): Promise<Metadata> {
+  const { category } = await params;
+  // Convert URL friendly "hackathons-and-events" back to "hackathons and events"
+  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+
+  return {
+    title: `${decodedCategory} Events | EvenTime`,
+    description: `Discover the best ${decodedCategory} events, meetups, and workshops on EvenTime.`,
+  };
+}
+
+export default async function CategoryPage({
+  params,
+}: {
+  params: Promise<{ category: string }>;
+}) {
+  const { category } = await params;
+  const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
+
+  // CACHED: public events for this category (same for every anonymous/non-student visitor)
+  const getCachedPublicCategoryEvents = unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const today = new Date();
+      const sixMonthsAgo = new Date(today);
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+      const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
+      const { data } = await supabaseAnon
+        .from("events")
+        .select(CATEGORY_FIELDS)
+        .eq("status", "approved")
+        .ilike("category", decodedCategory)
+        .gte("date_string", sixMonthsAgoStr)
+        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
+        .order("date_string", { ascending: true })
+        .limit(50);
+      return data || [];
+    },
+    [`category_events_${decodedCategory.toLowerCase()}`],
+    { tags: ["events"], revalidate: 600 } // 10 minutes
+  );
+
+  // Auth check + cached public fetch run at the same time
+  const [{ data: { user } }, publicEvents] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublicCategoryEvents(),
+  ]);
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
   }
+
+  // Tiny, uncached, bounded-to-1-user query for their own extra visible events
+  let personalEvents: any[] = [];
+  if (user) {
+    let extraFilter = `creator_id.eq.${user.id}`;
+    if (profile?.user_type === "student" && profile?.college_id) {
+      extraFilter += `,college_id.eq.${profile.college_id}`;
+    }
+    const { data } = await supabase
+      .from("events")
+      .select(CATEGORY_FIELDS)
+      .eq("status", "approved")
+      .ilike("category", decodedCategory)
+      .or(extraFilter)
+      .order("date_string", { ascending: true })
+      .limit(50);
+    personalEvents = data || [];
+  }
+
+  const eventMap = new Map();
+  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
+  const events = Array.from(eventMap.values());
+
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-10">
+          <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
+            {decodedCategory} Events
+          </h1>
+          <p className="text-slate-500 font-medium mt-2">
+            Discover and join the best {decodedCategory.toLowerCase()} events.
+          </p>
+        </div>
+
+        {events && events.length > 0 ? (
+          <EventGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 text-center bg-white rounded-[32px] border border-dashed border-slate-200">
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No events found in this category</p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
 }
 </file>
 
@@ -7876,6 +7821,62 @@ export const getCityConfig = (city: string) => {
     coverImage: `/cities/covers/${key}.webp`
   };
 };
+</file>
+
+<file path="package.json">
+{
+  "name": "eventime",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "context": "npx code-to-text . -o project_context.txt",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
+    "@base-ui/react": "^1.4.1",
+    "@ducanh2912/next-pwa": "^10.2.9",
+    "@phosphor-icons/react": "^2.1.10",
+    "@sentry/nextjs": "^10.63.0",
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.105.4",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
+    "browser-image-compression": "^2.0.2",
+    "cheerio": "^1.2.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.14.0",
+    "next": "16.2.6",
+    "nextjs-toploader": "^3.9.17",
+    "posthog-js": "^1.399.2",
+    "react": "19.2.6",
+    "react-day-picker": "^10.0.0",
+    "react-dom": "^19.2.6",
+    "react-easy-crop": "^5.5.7",
+    "shadcn": "^4.7.0",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^25",
+    "@types/nprogress": "^0.2.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9.21.0",
+    "eslint-config-next": "16.2.6",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}
 </file>
 
 <file path="src/app/cities/[city]/page.tsx">
@@ -8786,146 +8787,6 @@ export default async function LeaderboardPage() {
         )}
       </div>
     </main>
-  );
-}
-</file>
-
-<file path="src/app/layout.tsx">
-import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
-import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { PostHogProvider } from "./providers";
-import { Toaster } from "sonner";
-import { cn } from "@/lib/utils";
-import LaunchScreen from "@/components/layout/LaunchScreen";
-import { Footer } from "@/components/layout/Footer";
-import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
-import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
-
-import { headers } from "next/headers";
-
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-});
-
-// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
-export const metadata: Metadata = {
-  title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "EvenTime",
-  },
-  openGraph: {
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
-    siteName: "EvenTime",
-    images: [
-      {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
-        width: 1200,
-        height: 630,
-        alt: "EvenTime Platform",
-      },
-    ],
-    locale: "en_IN",
-    type: "website",
-  },
-   twitter: {
-    card: "summary_large_image",
-    title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-  },
-  verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
-  },
-};
-
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const headersList = await headers();
-  const nonce = headersList.get("x-nonce") || undefined;
-
-  return (
-    <html 
-      lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
-      data-scroll-behavior="smooth"
-    >
-      <head>
-        {/* Forcing the browser to load Switzer directly */}
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
-        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
-            {`
-              (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-            `}
-          </Script>
-        )}
-
-        {/* Google Analytics GA4 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
-            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
-      </head>
-      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
-        <NextTopLoader 
-          color="#6C47FF"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={false}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
-        />
-        <LaunchScreen /> {/* Added LaunchScreen component here */}
-        <DevToolsGuard />
-        
-        <PostHogProvider>
-          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
-          <div className="flex-1 w-full flex flex-col">
-            {children}
-          </div>
-          
-          <Footer /> {/* Render the Footer globally */}
-        </PostHogProvider>
-        
-        <Toaster />
-        <Analytics />
-      </body>
-    </html>
   );
 }
 </file>
@@ -10376,6 +10237,71 @@ export const config = {
 };
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/[username]/page.tsx">
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -10560,67 +10486,143 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
 }
 </file>
 
-<file path="src/app/error.tsx">
-"use client";
+<file path="src/app/layout.tsx">
+import type { Metadata } from "next";
+import { Outfit } from "next/font/google";
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { PostHogProvider } from "./providers";
+import { Toaster } from "sonner";
+import { cn } from "@/lib/utils";
+import LaunchScreen from "@/components/layout/LaunchScreen";
+import { Footer } from "@/components/layout/Footer";
+import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import NextTopLoader from "nextjs-toploader";
+import Script from "next/script";
+import { headers } from "next/headers";
 
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
+// 1. Load Outfit font for your headings
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
+});
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
+// 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
+export const metadata: Metadata = {
+  title: "EvenTime | Discover Tech, Startup & Career Events",
+  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "EvenTime",
+  },
+  openGraph: {
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    siteName: "EvenTime",
+    images: [
+      {
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        width: 1200,
+        height: 630,
+        alt: "EvenTime Platform",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+   twitter: {
+    card: "summary_large_image",
+    title: "EvenTime | Discover Tech, Startup & Career Events",
+    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  },
+  verification: {
+    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+  },
+};
+
+export default async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const headersList = await headers();
+  const nonce = headersList.get("x-nonce") || undefined;
 
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+    <html 
+      lang="en" 
+      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
+      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      data-scroll-behavior="smooth"
+    >
+      <head>
+        {/* Forcing the browser to load Switzer directly */}
+        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
+        <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
         
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
+        {/* Microsoft Clarity */}
+        {process.env.NEXT_PUBLIC_CLARITY_ID && (
+          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
+            {`
+              (function(c,l,a,r,i,t,y){
+                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
+            `}
+          </Script>
+        )}
+
+        {/* Google Analytics GA4 */}
+        {process.env.NEXT_PUBLIC_GA_ID && (
+          <>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
+            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
+              `}
+            </Script>
+          </>
+        )}
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
+        <NextTopLoader 
+          color="#6C47FF"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={true}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
+        />
+        <LaunchScreen /> {/* Added LaunchScreen component here */}
+        <DevToolsGuard />
         
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
+        <PostHogProvider>
+          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
+          <div className="flex-1 w-full flex flex-col">
+            {children}
+          </div>
           
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
+          <Footer /> {/* Render the Footer globally */}
+        </PostHogProvider>
+        
+        <Toaster />
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }
 </file>
@@ -12886,6 +12888,522 @@ export default function LoginPage() {
 }
 </file>
 
+<file path="src/app/profile/settings/SettingsClient.tsx">
+"use client";
+
+import { useState, useEffect } from "react";
+import { CITIES } from "@/lib/constants/cities";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
+import { toast } from "sonner";
+import { updateProfileSettings } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import type { ProfileRow, CollegeRow } from "@/types";
+import { categoriesList } from "@/features/create-event/constants";
+import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
+import { createCollegeAction } from "@/app/profile/action";
+import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+import { Navbar } from "@/components/layout/Navbar";
+
+
+export default function SettingsClient({ 
+  profile, 
+  categoryCounts = {},
+  cityCounts = {},
+  userEmail
+}: { 
+  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
+  categoryCounts?: Record<string, number>,
+  cityCounts?: Record<string, number>,
+  userEmail?: string
+}) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  
+  // Immutability flag: If profile is fully onboarded, lock identity/education fields.
+  const isLocked = !!profile?.is_onboarded;
+
+  // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
+  const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [username, setUsername] = useState(profile?.username || "");
+  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
+  const [userType, setUserType] = useState(() => {
+    if (!profile?.user_type) return "";
+    const ut = profile.user_type;
+    if (ut === "student") return "Student";
+    return ut.charAt(0).toUpperCase() + ut.slice(1);
+  });
+  
+  // States for Education Logic
+  const [college, setCollege] = useState(profile?.college || "");
+  const [year, setYear] = useState(profile?.graduation_year || "");
+  const [branch, setBranch] = useState(profile?.branch || "");
+
+  // College search dropdown states
+ 
+  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
+  const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+ const [isCreatingCollege, setIsCreatingCollege] = useState(false);
+
+  
+  // Align admin check with OnboardingModal exactly (checks role, type)
+   const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
+  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCreateCollege = async (name: string) => {
+    setIsCreatingCollege(true);
+    const result = await createCollegeAction(name);
+    if (result.data && !result.error) {
+      setCollegesList(prev => [...prev, result.data as CollegeRow]);
+      setCollege(result.data.name);
+      setCollegeId(result.data.id);
+      setCollegeSearchQuery(result.data.name);
+    } else {
+      toast.error("Failed to add college. Please try again.");
+    }
+    setIsCreatingCollege(false);
+    setShowCollegeDropdown(false);
+  };
+
+  const toggleCity = (cityName: string) => {
+    if (selectedCities.includes(cityName)) {
+      setSelectedCities(selectedCities.filter(c => c !== cityName));
+    } else if (isAdmin || selectedCities.length < 3) {
+      setSelectedCities([...selectedCities, cityName]);
+    }
+  };
+
+  // State for Goals Selection
+  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
+
+  const toggleGoal = (goal: string) => {
+    if (selectedGoals.includes(goal)) {
+      setSelectedGoals(selectedGoals.filter(g => g !== goal));
+    } else if (isAdmin || selectedGoals.length < 6) {
+      setSelectedGoals([...selectedGoals, goal]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const formData = new FormData(e.currentTarget);
+    
+    // Inject state variables directly into FormData.
+    // This is strictly required because `disabled` inputs are normally omitted from form submissions.
+    formData.set("fullName", fullName);
+    formData.set("username", username);
+    formData.set("user_type", userType.toLowerCase());
+    formData.set("preferred_cities", JSON.stringify(selectedCities));
+    
+    if (userType === "Student" && college) formData.set("college", college);
+    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
+    else formData.delete("college");
+
+    if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
+    else formData.delete("collegeId");
+    
+        formData.delete("yearOfStudying");
+
+    
+    if (userType === "Student" && year) formData.set("graduationYear", year);
+    else formData.delete("graduationYear");
+
+    if (userType === "Student" && branch) formData.set("branch", branch);
+    else formData.delete("branch");
+    
+    formData.delete("goals");
+    formData.append("goals", JSON.stringify(selectedGoals));
+
+    const result = await updateProfileSettings(formData);
+    
+    setIsSubmitting(false);
+
+    if (result.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Profile updated successfully!");
+      router.push("/profile");
+    }
+  };
+
+  // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
+  const isStudentNow = userType === "Student";
+  const missingItems: string[] = [];
+  if (!profile?.avatar_url) missingItems.push("Profile photo");
+  if (!username) missingItems.push("Username");
+  if (selectedCities.length === 0) missingItems.push("Preferred cities");
+  if (selectedGoals.length === 0) missingItems.push("Interest categories");
+  if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
+
+  return (
+    <main className="min-h-screen bg-surface-base pb-8">
+      <Navbar />
+
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-6">
+        <div className="bg-white rounded-t-[24px] border border-b-0 border-slate-100 shadow-sm sticky top-0 z-40 px-6 py-4 flex items-center gap-4">
+          <button type="button" onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
+            <ArrowLeft className="w-5 h-5 text-slate-900" />
+          </button>
+          <div>
+            <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
+            <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
+          </div>
+        </div>
+        <div className="bg-white rounded-b-[24px] border border-t-0 border-slate-100 shadow-sm px-6 pt-2 pb-6 -mt-px">
+        {missingItems.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
+            <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-amber-700">Still missing to reach 100%:</p>
+              <p className="text-xs text-amber-600 font-medium mt-1">{missingItems.join(" · ")}</p>
+            </div>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          
+          {/* Section 1: Identify (Personal Info) */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-blue-500" />
+                </div>
+                <h2 className="font-bold text-lg text-slate-900">Identity</h2>
+              </div>
+              {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
+            </div>
+
+            <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What's your name?</label>
+                <input 
+                  type="text" 
+                  name="fullName" 
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  required
+                  disabled={isLocked}
+                  placeholder="Your Name"
+                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                />
+                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
+              </div>
+
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Public Username</label>
+                <div className="relative flex items-center">
+                  <span className="text-slate-400 font-bold mr-1">@</span>
+                  <input 
+                    type="text" 
+                    name="username" 
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                    disabled={isLocked}
+                    minLength={3}
+                    maxLength={12}
+                    pattern="[A-Za-z0-9]+"
+                    title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
+                    placeholder="your_handle"
+                    className="w-full bg-transparent border-none text-slate-900 p-0 pr-8 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                  {isLocked && <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
+                </div>
+                <p className="text-xs text-slate-400 mt-1.5">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
+              </div>
+
+              {/* Editable: City Multi-Select (max 3) */}
+              <div className="px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                  Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CITIES.map(loc => {
+                    const isSelected = selectedCities.includes(loc);
+                    const isDisabled = !isSelected && !isAdmin && selectedCities.length >= 3;
+                    return (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => toggleCity(loc)}
+                        disabled={isDisabled}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                          isSelected
+                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                            : isDisabled
+                            ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed"
+                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                        }`}
+                      >
+                        {loc}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What are you</label>
+                <select 
+                  value={userType} 
+                  onChange={e => setUserType(e.target.value)} 
+                  required
+                  disabled={isLocked}
+                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <option value="" disabled>Select your role</option>
+                  {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+              </div>
+            </div>
+          </div>
+
+          {/* Education Context */}
+          <AnimatePresence>
+            {userType === "Student" && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }} 
+                animate={{ opacity: 1, height: "auto" }} 
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm overflow-hidden"
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <h2 className="font-bold text-lg text-slate-900">Education Context</h2>
+                  </div>
+                  {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
+                </div>
+
+                <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
+                  {/* College Search Dropdown */}
+                  <div className="relative px-4 py-3.5 bg-[#F8F9FB]" data-college-dropdown>
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">College Name</label>
+                    {isLocked ? (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={college}
+                          disabled
+                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
+                        />
+                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Type to search your college"
+                          value={collegeSearchQuery}
+                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
+                          onFocus={() => setShowCollegeDropdown(true)}
+                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none"
+                        />
+                         {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
+                          <div className="absolute left-4 right-4 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
+                            {isSearchingColleges && (
+                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                            )}
+                            {!isSearchingColleges && collegesList
+                              .map(item => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
+                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
+                                >
+                                  <span>🏢 {item.name}</span>
+                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
+                                </button>
+                              ))}
+                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateCollege(collegeSearchQuery)}
+                                disabled={isCreatingCollege}
+                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
+                              >
+                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
+                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1.5">Can't find your college? It will be added automatically.</p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Branch</label>
+                      <select
+                        value={branch}
+                        onChange={e => setBranch(e.target.value)}
+                        required={userType === "Student"}
+                        disabled={isLocked}
+                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <option value="" disabled>Select</option>
+                        {INDIAN_COLLEGE_BRANCHES.map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+                    </div>
+
+                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Yr of Graduation</label>
+                      <select 
+                        value={year}
+                        onChange={e => setYear(e.target.value)}
+                        required={userType === "Student"}
+                        disabled={isLocked}
+                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
+                      >
+                        <option value="" disabled>Select</option>
+                        {["2024", "2025", "2026", "2027", "2028", "2029", "2030"].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Editable: Event Categories */}
+          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                  <Target className="w-4 h-4 text-amber-500" />
+                </div>
+                <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
+              </div>
+              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                {selectedGoals.length}{!isAdmin && "/6"}
+              </span>
+            </div>
+            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
+              {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
+            </p>
+
+            <div className="flex flex-wrap gap-2">
+              {categoriesList.map((goal) => {
+                const isSelected = selectedGoals.includes(goal);
+                const count = categoryCounts[goal] || 0;
+                const isDisabled = !isSelected && !isAdmin && selectedGoals.length >= 6;
+                return (
+                  <button
+                    key={goal}
+                    type="button"
+                    onClick={() => toggleGoal(goal)}
+                    disabled={isDisabled}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                      isSelected
+                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
+                        : isDisabled
+                        ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
+                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {goal}
+                    {count > 0 && (
+                      <span className="ml-1 opacity-60">({count})</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Danger Zone (DPDP Compliance) */}
+          <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+              </div>
+                            <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
+            </div>
+            <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
+              Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
+            </p>
+            <div className="ml-11">
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
+                    const supabase = createClient();
+                    
+                    // Call the secure RPC function to delete the user
+                    const { error } = await supabase.rpc('delete_user');
+                    
+                    if (error) {
+                      toast.error("Failed to delete account. Please try again.");
+                      console.error("Delete user error:", error);
+                      return;
+                    }
+
+                    // Sign out and redirect
+                    await supabase.auth.signOut();
+                    toast.success("Your account has been permanently deleted.");
+                    router.push("/login");
+                  }
+                }}
+                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
+              >
+                Delete My Account
+              </button>
+            </div>
+          </div>
+          {/* Fixed Save Button */}
+          <div className="relative bg-transparent border-none p-0">
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full bg-brand-primary text-white hover:bg-white hover:text-brand-primary border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
+            >
+              {isSubmitting ? (
+                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5" /> Save Profile
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+      </div>
+      </div>
+    </main>
+    );
+  }
+</file>
+
 <file path="src/components/layout/Navbar.tsx">
 "use client";
 
@@ -13475,522 +13993,6 @@ export function Navbar({ variant = 'default', categoryChips, locationChips, plat
 }
 </file>
 
-<file path="src/app/profile/settings/SettingsClient.tsx">
-"use client";
-
-import { useState, useEffect } from "react";
-import { CITIES } from "@/lib/constants/cities";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
-import { toast } from "sonner";
-import { updateProfileSettings } from "./actions";
-import { createClient } from "@/lib/supabase/client";
-import type { ProfileRow, CollegeRow } from "@/types";
-import { categoriesList } from "@/features/create-event/constants";
-import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { createCollegeAction } from "@/app/profile/action";
-import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
-import { Navbar } from "@/components/layout/Navbar";
-
-
-export default function SettingsClient({ 
-  profile, 
-  categoryCounts = {},
-  cityCounts = {},
-  userEmail
-}: { 
-  profile: Partial<ProfileRow> & { preferred_cities?: string[] | null }, 
-  categoryCounts?: Record<string, number>,
-  cityCounts?: Record<string, number>,
-  userEmail?: string
-}) {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  
-  // Immutability flag: If profile is fully onboarded, lock identity/education fields.
-  const isLocked = !!profile?.is_onboarded;
-
-  // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
-  const [fullName, setFullName] = useState(profile?.full_name || "");
-  const [username, setUsername] = useState(profile?.username || "");
-  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
-  const [userType, setUserType] = useState(() => {
-    if (!profile?.user_type) return "";
-    const ut = profile.user_type;
-    if (ut === "student") return "Student";
-    return ut.charAt(0).toUpperCase() + ut.slice(1);
-  });
-  
-  // States for Education Logic
-  const [college, setCollege] = useState(profile?.college || "");
-  const [year, setYear] = useState(profile?.graduation_year || "");
-  const [branch, setBranch] = useState(profile?.branch || "");
-
-  // College search dropdown states
- 
-  const [collegeSearchQuery, setCollegeSearchQuery] = useState(profile?.college || "");
-  const [collegeId, setCollegeId] = useState<string | null>(profile?.college_id || null);
-  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
- const [isCreatingCollege, setIsCreatingCollege] = useState(false);
-
-  
-  // Align admin check with OnboardingModal exactly (checks role, type)
-   const isAdmin = profile?.user_type === 'admin' ||  profile?.role === 'admin';
-  const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-college-dropdown]")) setShowCollegeDropdown(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleCreateCollege = async (name: string) => {
-    setIsCreatingCollege(true);
-    const result = await createCollegeAction(name);
-    if (result.data && !result.error) {
-      setCollegesList(prev => [...prev, result.data as CollegeRow]);
-      setCollege(result.data.name);
-      setCollegeId(result.data.id);
-      setCollegeSearchQuery(result.data.name);
-    } else {
-      toast.error("Failed to add college. Please try again.");
-    }
-    setIsCreatingCollege(false);
-    setShowCollegeDropdown(false);
-  };
-
-  const toggleCity = (cityName: string) => {
-    if (selectedCities.includes(cityName)) {
-      setSelectedCities(selectedCities.filter(c => c !== cityName));
-    } else if (isAdmin || selectedCities.length < 3) {
-      setSelectedCities([...selectedCities, cityName]);
-    }
-  };
-
-  // State for Goals Selection
-  const [selectedGoals, setSelectedGoals] = useState<string[]>(profile?.goals || []);
-
-  const toggleGoal = (goal: string) => {
-    if (selectedGoals.includes(goal)) {
-      setSelectedGoals(selectedGoals.filter(g => g !== goal));
-    } else if (isAdmin || selectedGoals.length < 6) {
-      setSelectedGoals([...selectedGoals, goal]);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    
-    const formData = new FormData(e.currentTarget);
-    
-    // Inject state variables directly into FormData.
-    // This is strictly required because `disabled` inputs are normally omitted from form submissions.
-    formData.set("fullName", fullName);
-    formData.set("username", username);
-    formData.set("user_type", userType.toLowerCase());
-    formData.set("preferred_cities", JSON.stringify(selectedCities));
-    
-    if (userType === "Student" && college) formData.set("college", college);
-    else if (userType === "Student" && collegeSearchQuery) formData.set("college", collegeSearchQuery);
-    else formData.delete("college");
-
-    if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
-    else formData.delete("collegeId");
-    
-        formData.delete("yearOfStudying");
-
-    
-    if (userType === "Student" && year) formData.set("graduationYear", year);
-    else formData.delete("graduationYear");
-
-    if (userType === "Student" && branch) formData.set("branch", branch);
-    else formData.delete("branch");
-    
-    formData.delete("goals");
-    formData.append("goals", JSON.stringify(selectedGoals));
-
-    const result = await updateProfileSettings(formData);
-    
-    setIsSubmitting(false);
-
-    if (result.error) {
-      toast.error(result.error);
-    } else {
-      toast.success("Profile updated successfully!");
-      router.push("/profile");
-    }
-  };
-
-  // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
-  const isStudentNow = userType === "Student";
-  const missingItems: string[] = [];
-  if (!profile?.avatar_url) missingItems.push("Profile photo");
-  if (!username) missingItems.push("Username");
-  if (selectedCities.length === 0) missingItems.push("Preferred cities");
-  if (selectedGoals.length === 0) missingItems.push("Interest categories");
-  if (isStudentNow && (!college || !year || !branch)) missingItems.push("College, graduation year & branch");
-
-  return (
-    <main className="min-h-screen bg-surface-base pb-8">
-      <Navbar />
-
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-6">
-        <div className="bg-white rounded-t-[24px] border border-b-0 border-slate-100 shadow-sm sticky top-0 z-40 px-6 py-4 flex items-center gap-4">
-          <button type="button" onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
-            <ArrowLeft className="w-5 h-5 text-slate-900" />
-          </button>
-          <div>
-            <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
-            <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-b-[24px] border border-t-0 border-slate-100 shadow-sm px-6 pt-2 pb-6 -mt-px">
-        {missingItems.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 flex items-start gap-3">
-            <Lock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-bold text-amber-700">Still missing to reach 100%:</p>
-              <p className="text-xs text-amber-600 font-medium mt-1">{missingItems.join(" · ")}</p>
-            </div>
-          </div>
-        )}
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* Section 1: Identify (Personal Info) */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                  <User className="w-4 h-4 text-blue-500" />
-                </div>
-                <h2 className="font-bold text-lg text-slate-900">Identity</h2>
-              </div>
-              {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
-            </div>
-
-            <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
-              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What's your name?</label>
-                <input 
-                  type="text" 
-                  name="fullName" 
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value)}
-                  required
-                  disabled={isLocked}
-                  placeholder="Your Name"
-                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-                />
-                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400" />}
-              </div>
-
-              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Public Username</label>
-                <div className="relative flex items-center">
-                  <span className="text-slate-400 font-bold mr-1">@</span>
-                  <input 
-                    type="text" 
-                    name="username" 
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    required
-                    disabled={isLocked}
-                    minLength={3}
-                    maxLength={12}
-                    pattern="[A-Za-z0-9]+"
-                    title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
-                    placeholder="your_handle"
-                    className="w-full bg-transparent border-none text-slate-900 p-0 pr-8 text-[15px] font-medium focus:ring-0 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-                  />
-                  {isLocked && <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />}
-                </div>
-                <p className="text-xs text-slate-400 mt-1.5">This will be your public storefront link. Max 12 chars (letters and numbers only).</p>
-              </div>
-
-              {/* Editable: City Multi-Select (max 3) */}
-              <div className="px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  Event Cities <span className="text-slate-300 font-normal normal-case">{isAdmin ? "(pick as many as you want)" : "(pick up to 3)"}</span>
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {CITIES.map(loc => {
-                    const isSelected = selectedCities.includes(loc);
-                    const isDisabled = !isSelected && !isAdmin && selectedCities.length >= 3;
-                    return (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => toggleCity(loc)}
-                        disabled={isDisabled}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                          isSelected
-                            ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
-                            : isDisabled
-                            ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed"
-                            : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                        }`}
-                      >
-                        {loc}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What are you</label>
-                <select 
-                  value={userType} 
-                  onChange={e => setUserType(e.target.value)} 
-                  required
-                  disabled={isLocked}
-                  className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  <option value="" disabled>Select your role</option>
-                  {["Founder", "Investor", "Student", "Recent Graduate", "Professional", "Prefer not to say"].map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-              </div>
-            </div>
-          </div>
-
-          {/* Education Context */}
-          <AnimatePresence>
-            {userType === "Student" && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }} 
-                animate={{ opacity: 1, height: "auto" }} 
-                exit={{ opacity: 0, height: 0 }}
-                className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm overflow-hidden"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <h2 className="font-bold text-lg text-slate-900">Education Context</h2>
-                  </div>
-                  {isLocked && <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md flex items-center gap-1"><Lock className="w-3 h-3" /> Locked</span>}
-                </div>
-
-                <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
-                  {/* College Search Dropdown */}
-                  <div className="relative px-4 py-3.5 bg-[#F8F9FB]" data-college-dropdown>
-                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">College Name</label>
-                    {isLocked ? (
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={college}
-                          disabled
-                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium outline-none opacity-60 cursor-not-allowed"
-                        />
-                        <Lock className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      </div>
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          placeholder="Type to search your college"
-                          value={collegeSearchQuery}
-                          onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
-                          onFocus={() => setShowCollegeDropdown(true)}
-                          className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none"
-                        />
-                         {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                          <div className="absolute left-4 right-4 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col">
-                            {isSearchingColleges && (
-                              <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
-                            )}
-                            {!isSearchingColleges && collegesList
-                              .map(item => (
-                                <button
-                                  key={item.id}
-                                  type="button"
-                                  onClick={() => { setCollege(item.name); setCollegeId(item.id); setCollegeSearchQuery(item.name); setShowCollegeDropdown(false); }}
-                                  className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-slate-50 last:border-none flex items-center justify-between"
-                                >
-                                  <span>🏢 {item.name}</span>
-                                  {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
-                                </button>
-                              ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                              <button
-                                type="button"
-                                onClick={() => handleCreateCollege(collegeSearchQuery)}
-                                disabled={isCreatingCollege}
-                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
-                              >
-                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
-                              </button>
-                            )}
-                          </div>
-                        )}
-                        <p className="text-[10px] text-slate-400 mt-1.5">Can't find your college? It will be added automatically.</p>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100">
-                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Branch</label>
-                      <select
-                        value={branch}
-                        onChange={e => setBranch(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        <option value="" disabled>Select</option>
-                        {INDIAN_COLLEGE_BRANCHES.map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-
-                    <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Yr of Graduation</label>
-                      <select 
-                        value={year}
-                        onChange={e => setYear(e.target.value)}
-                        required={userType === "Student"}
-                        disabled={isLocked}
-                        className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none appearance-none disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        <option value="" disabled>Select</option>
-                        {["2024", "2025", "2026", "2027", "2028", "2029", "2030"].map(y => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
-                      {isLocked && <Lock className="absolute right-4 top-9 w-4 h-4 text-slate-400 pointer-events-none" />}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Editable: Event Categories */}
-          <div className="bg-white rounded-3x1 border border-slate-100 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
-                  <Target className="w-4 h-4 text-amber-500" />
-                </div>
-                <h2 className="font-bold text-lg text-slate-900">Event Categories</h2>
-              </div>
-              <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
-                {selectedGoals.length}{!isAdmin && "/6"}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 font-medium mb-6 ml-11">
-              {isAdmin ? "Select as many categories as you want (Admin)." : "Select up to 6 categories you are interested in."}
-            </p>
-
-            <div className="flex flex-wrap gap-2">
-              {categoriesList.map((goal) => {
-                const isSelected = selectedGoals.includes(goal);
-                const count = categoryCounts[goal] || 0;
-                const isDisabled = !isSelected && !isAdmin && selectedGoals.length >= 6;
-                return (
-                  <button
-                    key={goal}
-                    type="button"
-                    onClick={() => toggleGoal(goal)}
-                    disabled={isDisabled}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                      isSelected
-                        ? "bg-[#1D1D1F] text-white border-[#1D1D1F]"
-                        : isDisabled
-                        ? "bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed"
-                        : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
-                    }`}
-                  >
-                    {goal}
-                    {count > 0 && (
-                      <span className="ml-1 opacity-60">({count})</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Danger Zone (DPDP Compliance) */}
-          <div className="bg-red-50 rounded-3xl border border-red-100 p-6 shadow-sm mt-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-              </div>
-                            <h2 className="font-bold text-lg text-red-900">Danger Zone</h2>
-            </div>
-            <p className="text-sm text-red-800/70 font-medium mb-6 ml-11">
-              Permanently delete your account and all associated data. This action is irreversible and complies with your Right to Erasure under the DPDP Act.
-            </p>
-            <div className="ml-11">
-              <button 
-                type="button"
-                onClick={async () => {
-                  if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
-                    const supabase = createClient();
-                    
-                    // Call the secure RPC function to delete the user
-                    const { error } = await supabase.rpc('delete_user');
-                    
-                    if (error) {
-                      toast.error("Failed to delete account. Please try again.");
-                      console.error("Delete user error:", error);
-                      return;
-                    }
-
-                    // Sign out and redirect
-                    await supabase.auth.signOut();
-                    toast.success("Your account has been permanently deleted.");
-                    router.push("/login");
-                  }
-                }}
-                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
-              >
-                Delete My Account
-              </button>
-            </div>
-          </div>
-          {/* Fixed Save Button */}
-          <div className="relative bg-transparent border-none p-0">
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              className="w-full bg-brand-primary text-white hover:bg-white hover:text-brand-primary border-2 border-transparent hover:border-[#6C47FF] px-6 py-4 rounded-xl font-bold text-[15px] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70 shadow-lg shadow-[#6C47FF]/25"
-            >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Save className="w-5 h-5" /> Save Profile
-                </>
-              )}
-            </button>
-          </div>
-
-        </form>
-      </div>
-      </div>
-    </main>
-    );
-  }
-</file>
-
 <file path="src/lib/home/HomePageClient.tsx">
 "use client"
 import { useRef, useEffect, useState, useMemo, Suspense } from "react";
@@ -14084,7 +14086,7 @@ export function HomePageClient(props: HomePageClientProps) {
         setUser(currentUser);
         const { data } = await supabase
           .from("profiles")
-          .select("is_onboarded, goals, user_type, college_id, preferred_cities")
+          .select("is_onboarded, goals, user_type, college_id, preferred_cities, username")
           .eq("id", currentUser.id)
           .single();
         if (data) {
