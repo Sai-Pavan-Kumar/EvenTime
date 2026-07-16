@@ -67,6 +67,16 @@ export async function generateMetadata({
     },
   };
 }
+function to24Hour(time: string | null | undefined): string | null {
+  if (!time) return null;
+  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return null;
+  let [, h, m, ampm] = match;
+  let hour = parseInt(h, 10);
+  if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
+  if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
+  return `${String(hour).padStart(2, "0")}:${m}:00`;
+}
 
 export default async function EventPage({
   params,
@@ -135,8 +145,8 @@ export default async function EventPage({
     "@type": "Event",
     name: finalEvent.title,
     description: finalEvent.description,
-    startDate: finalEvent.date_string ? `${finalEvent.date_string}${finalEvent.start_time ? `T${finalEvent.start_time}` : ""}` : undefined,
-    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}${finalEvent.end_time ? `T${finalEvent.end_time}` : ""}` : undefined,
+    startDate: finalEvent.date_string ? `${finalEvent.date_string}T${to24Hour(finalEvent.start_time) || "00:00:00"}` : undefined,
+    endDate: finalEvent.end_date_string ? `${finalEvent.end_date_string}T${to24Hour(finalEvent.end_time) || "00:00:00"}` : undefined,
     eventAttendanceMode: finalEvent.is_virtual 
       ? "https://schema.org/OnlineEventAttendanceMode" 
       : "https://schema.org/OfflineEventAttendanceMode",
