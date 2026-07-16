@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
   },
   verification: {
-    google: "hx3YHWYDGc-OJVUDE7Ck0bEuk-ZcYeybIQkjqq1OIxI",
+    google: "M2Cu6l_l0OOEs5qm6PRROSH2Pm5QGRlDj-RNYaRUKDM",
   },
 };
 

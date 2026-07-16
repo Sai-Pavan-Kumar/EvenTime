@@ -35,6 +35,16 @@ export async function approveEventAction(formData: FormData) {
     return { error: "Event not found." };
   }
 
+  const { data: statusCheck } = await adminClient
+    .from("events")
+    .select("status")
+    .eq("id", eventId)
+    .single();
+
+  if (statusCheck?.status === "approved") {
+    return { success: true, note: "Already approved." };
+  }
+
   const { error: eventError } = await adminClient
     .from("events")
     .update({ status: "approved" })
@@ -123,7 +133,20 @@ export async function punishCuratorAction(formData: FormData) {
 
   if (!report?.curator_id || !report?.event_id) return { error: "Report not found." };
 
+  // Guard: if ANY report on this event was already resolved before, the penalty
+  // (if applicable) was already applied — don't apply it a second time.
+  const { count: alreadyResolvedCount } = await supabase
+    .from("event_reports")
+    .select("id", { count: "exact", head: true })
+    .eq("event_id", report.event_id)
+    .eq("status", "resolved");
+
   await supabase.from("event_reports").update({ status: "resolved" }).eq("id", reportId);
+
+  if ((alreadyResolvedCount ?? 0) > 0) {
+    revalidatePath("/et98");
+    return { success: true, note: "Marked resolved. Penalty already applied earlier for this event." };
+  }
 
   // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
   // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
