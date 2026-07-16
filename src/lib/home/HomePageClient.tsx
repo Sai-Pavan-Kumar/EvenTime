@@ -250,10 +250,11 @@ export function HomePageClient(props: HomePageClientProps) {
               if (h >= 6 && h < 9) return `Morning, ${name}.`;
               if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
               if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
-              if (h >= 14 && h < 17) return `Lunch break, ${name}.`;
+              if (h >= 14 && h < 17) return `Lunch done, ${name}?.`;
               if (h >= 17 && h < 18) return `Snack time, ${name}.`;
               if (h >= 18 && h < 20) return `Evening, ${name}.`;
-              if (h >= 20 && h < 23) return `Dinner time, ${name}.`;
+              if (h >= 20 && h < 22) return `Dinner time, ${name}.`;
+              if (h >= 22 && h < 23) return `Dinner done yet, ${name}?.`;
               if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
               if (h >= 0 && h < 4) return `Still up, ${name}?`;
               return `Up early, ${name}?`;
