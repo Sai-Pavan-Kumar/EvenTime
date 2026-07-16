@@ -20,7 +20,8 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
           alt="EvenTime Hero Background" 
           fill
           priority
-          unoptimized={true}
+          quality={75}
+          sizes="100vw"
           // object-right-bottom ensures the stage (which is on the right) and the bottom edge are perfectly visible
           className="object-cover object-right-bottom"
         />
@@ -46,7 +47,8 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
             alt="EvenTime Hero Background" 
             fill
             priority
-            unoptimized={true}
+            quality={75}
+            sizes="100vw"
             className="object-contain object-bottom"
           />
         </div>
