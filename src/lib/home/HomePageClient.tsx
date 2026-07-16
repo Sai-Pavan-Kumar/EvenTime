@@ -242,7 +242,7 @@ export function HomePageClient(props: HomePageClientProps) {
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
 
       {user && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-1.5 pb-0 text-center">
           <p className="text-sm font-semibold text-slate-400 truncate">
             {(() => {
               const h = new Date().getHours();
