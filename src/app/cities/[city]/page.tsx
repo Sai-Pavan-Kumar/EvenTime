@@ -108,7 +108,7 @@ export default async function CityPage({
             <img 
               src={cityConfig.coverImage} 
               alt={decodedCity} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-bottom"
             />
           </div>
         </div>
