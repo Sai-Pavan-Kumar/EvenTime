@@ -104,6 +104,45 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
     if (recent && recent.length > 0) {
       return { error: "Please wait a minute before submitting again." };
     }
+  } else {
+    // Anonymous users have no user_id — rate limit by IP using the
+    // same rate_limits table the /api/extract route already uses.
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    const clientIp = headersList.get("x-forwarded-for")?.split(",")[0].trim() || headersList.get("x-real-ip") || "unknown-ip";
+
+    const { data: rlData } = await supabase
+      .from("rate_limits")
+      .select("request_count, reset_at")
+      .eq("ip_address", clientIp)
+      .eq("endpoint", "/profile/feedback")
+      .single();
+
+    const now = new Date();
+
+    if (rlData && new Date(rlData.reset_at) > now) {
+      if (rlData.request_count >= 3) {
+        return { error: "Please wait a minute before submitting again." };
+      }
+      await supabase
+        .from("rate_limits")
+        .update({ request_count: rlData.request_count + 1 })
+        .eq("ip_address", clientIp)
+        .eq("endpoint", "/profile/feedback");
+    } else {
+      const resetAt = new Date(now.getTime() + 60000);
+      if (rlData) {
+        await supabase
+          .from("rate_limits")
+          .update({ request_count: 1, reset_at: resetAt.toISOString() })
+          .eq("ip_address", clientIp)
+          .eq("endpoint", "/profile/feedback");
+      } else {
+        await supabase
+          .from("rate_limits")
+          .insert({ ip_address: clientIp, endpoint: "/profile/feedback", request_count: 1, reset_at: resetAt.toISOString() });
+      }
+    }
   }
   
   const { error } = await supabase

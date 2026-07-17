@@ -35,11 +35,21 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       if (data.session?.user) {
-        await supabase.from("profiles").upsert({
-          id: data.session.user.id,
-          full_name: data.session.user.user_metadata?.full_name || "",
-          avatar_url: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || ""
-        }, { onConflict: "id" });
+        const userId = data.session.user.id;
+
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await supabase.from("profiles").upsert({
+            id: userId,
+            full_name: data.session.user.user_metadata?.full_name || "",
+            avatar_url: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || ""
+          }, { onConflict: "id" });
+        }
       }
       return response;
     }

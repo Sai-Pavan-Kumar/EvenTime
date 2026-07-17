@@ -155,8 +155,6 @@ src/
         route.tsx
       revalidate/
         route.ts
-      sentry-example-api/
-        route.ts
       upload/
         presign/
           route.ts
@@ -611,7 +609,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const secret = request.headers.get('x-webhook-secret');
-    if (process.env.SUPABASE_WEBHOOK_SECRET && secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
+    if (!process.env.SUPABASE_WEBHOOK_SECRET || secret !== process.env.SUPABASE_WEBHOOK_SECRET) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
@@ -621,26 +619,6 @@ export async function POST(request: Request) {
   } catch (err) {
     return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
   }
-}
-</file>
-
-<file path="src/app/api/sentry-example-api/route.ts">
-import * as Sentry from "@sentry/nextjs";
-export const dynamic = "force-dynamic";
-
-class SentryExampleAPIError extends Error {
-  constructor(message: string | undefined) {
-    super(message);
-    this.name = "SentryExampleAPIError";
-  }
-}
-
-// A faulty API route to test Sentry's error monitoring
-export function GET() {
-  Sentry.logger.info("Sentry example API called");
-  throw new SentryExampleAPIError(
-    "This error is raised on the backend called by the example page.",
-  );
 }
 </file>
 
@@ -682,11 +660,21 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       if (data.session?.user) {
-        await supabase.from("profiles").upsert({
-          id: data.session.user.id,
-          full_name: data.session.user.user_metadata?.full_name || "",
-          avatar_url: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || ""
-        }, { onConflict: "id" });
+        const userId = data.session.user.id;
+
+        const { data: existingProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (!existingProfile) {
+          await supabase.from("profiles").upsert({
+            id: userId,
+            full_name: data.session.user.user_metadata?.full_name || "",
+            avatar_url: data.session.user.user_metadata?.avatar_url || data.session.user.user_metadata?.picture || ""
+          }, { onConflict: "id" });
+        }
       }
       return response;
     }
@@ -5681,6 +5669,45 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
     if (recent && recent.length > 0) {
       return { error: "Please wait a minute before submitting again." };
     }
+  } else {
+    // Anonymous users have no user_id — rate limit by IP using the
+    // same rate_limits table the /api/extract route already uses.
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    const clientIp = headersList.get("x-forwarded-for")?.split(",")[0].trim() || headersList.get("x-real-ip") || "unknown-ip";
+
+    const { data: rlData } = await supabase
+      .from("rate_limits")
+      .select("request_count, reset_at")
+      .eq("ip_address", clientIp)
+      .eq("endpoint", "/profile/feedback")
+      .single();
+
+    const now = new Date();
+
+    if (rlData && new Date(rlData.reset_at) > now) {
+      if (rlData.request_count >= 3) {
+        return { error: "Please wait a minute before submitting again." };
+      }
+      await supabase
+        .from("rate_limits")
+        .update({ request_count: rlData.request_count + 1 })
+        .eq("ip_address", clientIp)
+        .eq("endpoint", "/profile/feedback");
+    } else {
+      const resetAt = new Date(now.getTime() + 60000);
+      if (rlData) {
+        await supabase
+          .from("rate_limits")
+          .update({ request_count: 1, reset_at: resetAt.toISOString() })
+          .eq("ip_address", clientIp)
+          .eq("endpoint", "/profile/feedback");
+      } else {
+        await supabase
+          .from("rate_limits")
+          .insert({ ip_address: clientIp, endpoint: "/profile/feedback", request_count: 1, reset_at: resetAt.toISOString() });
+      }
+    }
   }
   
   const { error } = await supabase
@@ -7914,6 +7941,112 @@ export default async function EventPage({
 }
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404_state3.webp" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/cities/[city]/page.tsx">
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -8826,71 +8959,6 @@ export default async function LeaderboardPage() {
 }
 </file>
 
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -9238,47 +9306,6 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
       <circle cx="11" cy="11" r="8" />
       <path d="m21 21-4.3-4.3" />
     </svg>
-  );
-}
-</file>
-
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404_state3.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
-      </div>
-    </div>
   );
 }
 </file>
@@ -11051,6 +11078,66 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 }
 </file>
 
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/fetchHomePageData.ts">
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
@@ -11999,66 +12086,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 }
 </file>
 
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/events/[slug]/EventClientUI.tsx">
 "use client";
 
@@ -12803,6 +12830,20 @@ export default function LoginPage() {
             <p className="text-slate-500 text-sm font-medium">{isSignUp ? "Create your curator account." : "Access your curator dashboard."}</p>
           </div>
 
+          {/* Consent — must show BEFORE social buttons, since handleLogin checks hasConsented */}
+          <div className="flex items-start gap-3 mb-4">
+            <input
+              type="checkbox"
+              id="consent-social"
+              checked={hasConsented}
+              onChange={(e) => setHasConsented(e.target.checked)}
+              className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
+            />
+            <label htmlFor="consent-social" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
+              I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
+            </label>
+          </div>
+
           {/* Social Logins — now the primary path */}
           <div className="grid grid-cols-2 gap-3 mb-6">
             <button onClick={() => handleLogin('google')} className="flex items-center justify-center gap-2.5 bg-[#1D1D1F] hover:bg-black text-white py-4 rounded-2xl font-bold text-[14px] transition-all active:scale-95 shadow-xl shadow-slate-200">
@@ -12810,6 +12851,7 @@ export default function LoginPage() {
               Google
             </button>
             <button onClick={() => handleLogin('github')} className="flex items-center justify-center gap-2.5 bg-[#1D1D1F] hover:bg-black text-white py-4 rounded-2xl font-bold text-[14px] transition-all active:scale-95 shadow-xl shadow-slate-200">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" /></svg>
               GitHub
             </button>
           </div>
@@ -12862,18 +12904,7 @@ export default function LoginPage() {
                 </p>
               )}
             </div>
-            <div className="flex items-start gap-3 mt-4 mb-2">
-              <input 
-                type="checkbox" 
-                id="consent" 
-                checked={hasConsented} 
-                onChange={(e) => setHasConsented(e.target.checked)} 
-                className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
-              />
-               <label htmlFor="consent" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-                  I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
-                </label>
-            </div>
+            
             <button 
               type="submit" disabled={!!isLoading || isLockedOut}
               className="w-full bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white py-3.5 sm:py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-slate-200 mt-2 text-sm"
