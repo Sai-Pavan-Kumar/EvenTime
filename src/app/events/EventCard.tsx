@@ -3,6 +3,7 @@
   import Image from "next/image";
   import Link from "next/link";
   import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { toast } from "sonner";
   import { useState, useEffect } from "react";
   import { createClient } from "@/lib/supabase/client";
   import { format, differenceInCalendarDays } from "date-fns";
@@ -94,10 +95,11 @@
         }
       } catch (err) {
         console.error("Failed to save event:", err);
+        toast.error("Couldn't save. Please try again.");
       }
       if (onSaveToggle) {        await onSaveToggle(id);
       }
-      
+      toast.success(newState ? "Saved to your list!" : "Removed from saved.");
       setIsSaving(false);
     };
 

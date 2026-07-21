@@ -108,6 +108,7 @@ export function useEventSubmit() {
         if (isAdmin) await revalidateEventsCacheAction();
       }
       
+      toast.success(isEditing ? "Event updated!" : "Event submitted! It'll go live once approved.");
       router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
     } catch (err: any) {
       console.error("[useEventSubmit] Error:", err);

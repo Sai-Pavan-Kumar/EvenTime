@@ -6043,68 +6043,6 @@ export function MobileSignOutButton() {
 }
 </file>
 
-<file path="src/components/shared/LoadMoreGrid.tsx">
-"use client";
-
-import { useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { EventCard } from "@/app/events/EventCard";
-
-const PAGE_SIZE = 8;
-
-export function LoadMoreGrid({
-  events,
-  gridClass,
-  hideOrganizer = false,
-  hidePastBadge = false,
-}: {
-  events: any[];
-  gridClass: string;
-  hideOrganizer?: boolean;
-  hidePastBadge?: boolean;
-}) {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const visibleEvents = events.slice(0, visibleCount);
-
-  return (
-    <div className="space-y-8">
-      <div className={gridClass}>
-        {visibleEvents.map((event: any) => (
-          <EventCard
-            key={event.id}
-            id={event.id}
-            slug={event.slug || event.id}
-            title={event.title || "Untitled Event"}
-            category={event.category || "General"}
-            date={event.date_string || "TBA"}
-            city={event.location || event.city || "Online"}
-            imageUrl={event.poster_url || "/window.svg"}
-            organizerName={event.organizer_name || "Organizer"}
-            organizerUsername={event.profiles?.username}
-            isFree={event.is_free ?? false}
-            audience={event.target_audience ?? []}
-            hideOrganizer={hideOrganizer}
-            hidePastBadge={hidePastBadge}
-          />
-        ))}
-      </div>
-
-      {events.length > visibleCount && (
-        <div className="flex justify-center pt-4">
-          <button
-            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-            className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
-          >
-            Load More
-            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-</file>
-
 <file path="src/features/create-event/components/StepFeatured.tsx">
 "use client";
 
@@ -6178,88 +6116,6 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
         {isEditing ? "Update Event" : (data.isTrustedDomain ? "Publish Instantly" : "Submit for Approval")} <CheckCircle2 className="w-4 h-4" />        </button>
       </div>
     </motion.div>
-  );
-}
-</file>
-
-<file path="src/lib/home/EventGrid.tsx">
-"use client";
-
-import { EventCard } from "@/app/events/EventCard";
-import { AnimatePresence } from "framer-motion";
-import type { EventRow, ProfileRow } from "@/types";
-import { getMatchLabel } from "@/lib/events/match";
-import type { User } from "@supabase/supabase-js";
-
-export interface EventGridProps {
-  events: (Partial<EventRow> & { matchReason?: string })[];
-  profile?: Partial<ProfileRow> | null;
-  user?: User | null;
-  isFeatured?: boolean;
-  defaultMatchLabel?: string;
-  useMatchLogic?: boolean;
-  gridClass?: string;
-  defaultImage?: string;
-  isPastDateView?: boolean;
-}
-
-export function EventGrid({
-  events,
-  profile,
-  user,
-  isFeatured = false,
-  defaultMatchLabel,
-  useMatchLogic = false,
-  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
-  defaultImage = "",
-  isPastDateView = false,
-}: EventGridProps) {
-
-  // Applying horizontal scrolling strip conditionally based on isFeatured status
-  const finalGridClass = isFeatured 
-    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
-    : gridClass;
-
-  return (
-    <div className={finalGridClass}>
-      <AnimatePresence>
-        {events.map((event, index) => {
-          const matchReason = useMatchLogic
-          ? getMatchLabel(event as Partial<EventRow>, profile || null)
-          : event.matchReason || defaultMatchLabel;
-
-        return (
-          <EventCard
-            key={event.id}
-            id={event.id as string}
-            slug={event.slug || (event.id as string)}
-            title={event.title!}
-            category={event.category!}
-            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.is_virtual ? "Online" : (event.location || event.city!)}
-            imageUrl={event.poster_url || defaultImage}
-           organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
-           organizerUsername={(event as any).profiles?.username}
-            isFree={event.is_free!}
-            isFeatured={event.is_featured || isFeatured}
-            matchLabel={matchReason}
-            audience={event.target_audience!}
-            collegeName={
-              event.college_id && profile?.college_id === event.college_id 
-                ? null 
-                : (event as any).colleges?.name
-            }
-            interestedCount={0}
-            isGuest={!user}
-            layout={true}
-            isPastDateView={isPastDateView}
-            userRole={profile?.role as string | undefined}
-            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
-          />
-        );
-      })}
-      </AnimatePresence>
-    </div>
   );
 }
 </file>
@@ -6764,6 +6620,71 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
 }
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/components/layout/LaunchScreen.tsx">
 "use client";
 
@@ -7000,6 +6921,68 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
       )}
     </AnimatePresence>,
     document.body
+  );
+}
+</file>
+
+<file path="src/components/shared/LoadMoreGrid.tsx">
+"use client";
+
+import { useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { EventCard } from "@/app/events/EventCard";
+
+const PAGE_SIZE = 8;
+
+export function LoadMoreGrid({
+  events,
+  gridClass,
+  hideOrganizer = false,
+  hidePastBadge = false,
+}: {
+  events: any[];
+  gridClass: string;
+  hideOrganizer?: boolean;
+  hidePastBadge?: boolean;
+}) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visibleEvents = events.slice(0, visibleCount);
+
+  return (
+    <div className="space-y-8">
+      <div className={gridClass}>
+        {visibleEvents.map((event: any) => (
+          <EventCard
+            key={event.id}
+            id={event.id}
+            slug={event.slug || event.id}
+            title={event.title || "Untitled Event"}
+            category={event.category || "General"}
+            date={event.date_string || "TBA"}
+            city={event.is_virtual ? "Online" : (event.location || event.city || "Online")}
+            imageUrl={event.poster_url || "/window.svg"}
+            organizerName={event.organizer_name || "Organizer"}
+            organizerUsername={event.profiles?.username}
+            isFree={event.is_free ?? false}
+            audience={event.target_audience ?? []}
+            hideOrganizer={hideOrganizer}
+            hidePastBadge={hidePastBadge}
+          />
+        ))}
+      </div>
+
+      {events.length > visibleCount && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+            className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
+          >
+            Load More
+            <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 </file>
@@ -7325,6 +7308,129 @@ export function StepMedia(props: StepMediaProps) {
 }
 </file>
 
+<file path="src/lib/home/EventGrid.tsx">
+"use client";
+
+import { EventCard } from "@/app/events/EventCard";
+import { AnimatePresence } from "framer-motion";
+import type { EventRow, ProfileRow } from "@/types";
+import { getMatchLabel } from "@/lib/events/match";
+import type { User } from "@supabase/supabase-js";
+
+export interface EventGridProps {
+  events: (Partial<EventRow> & { matchReason?: string })[];
+  profile?: Partial<ProfileRow> | null;
+  user?: User | null;
+  isFeatured?: boolean;
+  defaultMatchLabel?: string;
+  useMatchLogic?: boolean;
+  gridClass?: string;
+  defaultImage?: string;
+  isPastDateView?: boolean;
+}
+
+export function EventGrid({
+  events,
+  profile,
+  user,
+  isFeatured = false,
+  defaultMatchLabel,
+  useMatchLogic = false,
+  gridClass = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6",
+  defaultImage = "",
+  isPastDateView = false,
+}: EventGridProps) {
+
+  // Applying horizontal scrolling strip conditionally based on isFeatured status
+  const finalGridClass = isFeatured 
+    ? (gridClass === "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" ? "flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory" : gridClass)
+    : gridClass;
+
+  return (
+    <div className={finalGridClass}>
+      <AnimatePresence>
+        {events.map((event, index) => {
+          const matchReason = useMatchLogic
+          ? getMatchLabel(event as Partial<EventRow>, profile || null)
+          : event.matchReason || defaultMatchLabel;
+
+        return (
+          <EventCard
+            key={event.id}
+            id={event.id as string}
+            slug={event.slug || (event.id as string)}
+            title={event.title!}
+            category={event.category!}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            city={event.is_virtual ? "Online" : (event.location || event.city!)}
+            imageUrl={event.poster_url || defaultImage}
+           organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
+           organizerUsername={(event as any).profiles?.username}
+            isFree={event.is_free!}
+            isFeatured={event.is_featured || isFeatured}
+            matchLabel={matchReason}
+            audience={event.target_audience!}
+            collegeName={
+              event.college_id && profile?.college_id === event.college_id 
+                ? null 
+                : (event as any).colleges?.name
+            }
+            interestedCount={0}
+            isGuest={!user}
+            layout={true}
+            isPastDateView={isPastDateView}
+            userRole={profile?.role as string | undefined}
+            priority={index < 4} // LIGHTSPEED: First 4 events load instantly
+          />
+        );
+      })}
+      </AnimatePresence>
+    </div>
+  );
+}
+</file>
+
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404_state3.webp" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="package.json">
 {
   "name": "eventime",
@@ -7503,71 +7609,6 @@ export default async function CategoryPage({
 }
 </file>
 
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/lib/home/CityGrid.tsx">
 "use client";
 
@@ -7658,41 +7699,60 @@ export function CityGrid({ events }: CityGridProps) {
 }
 </file>
 
-<file path="src/lib/home/not-found.tsx">
+<file path="src/lib/home/EmptyState.tsx">
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
 
-export default function NotFound() {
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
         
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
           <Image 
-            src="/illustrations/404_state3.webp" 
-            alt="404 Not Found Illustration" 
+            src={imageSrc} 
+            alt={title} 
             fill 
-            className="object-contain"
-            priority 
+            className="object-contain" 
+            priority
           />
         </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
         
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
         </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -8392,293 +8452,6 @@ export default async function NewEventPage() {
   }
 </file>
 
-<file path="src/app/leaderboard/page.tsx">
-import { Navbar } from "@/components/layout/Navbar";
-import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
-import Link from "next/link";
-import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
-import { redirect } from "next/navigation";
-import { generateHMAC } from "@/lib/hmac";
-import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
-import { unstable_cache } from "next/cache";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-export const revalidate = 600;
-
-async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
-  const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;
-  const sig = await generateHMAC(query);
-  return `/api/og/leaderboard?${query}&sig=${sig}`;
-}
-
-const getTierInfo = (score: number) => {
-  if (score >= 901) return { name: "Elite Legend", bg: "bg-amber-100", text: "text-amber-600", border: "border-amber-400" };
-  if (score >= 501) return { name: "Expert Curator", bg: "bg-purple-100", text: "text-purple-600", border: "border-purple-400" };
-  if (score >= 201) return { name: "Rising Star", bg: "bg-blue-100", text: "text-blue-600", border: "border-blue-400" };
-  return { name: "Rookie", bg: "bg-slate-100", text: "text-slate-600", border: "border-slate-300" };
-};
-
-export default async function LeaderboardPage() {
-  const supabase = await createClient();
-
-  const { data: settings } = await supabase
-    .from("app_settings")
-    .select("leaderboard_enabled")
-    .eq("id", 1)
-    .maybeSingle();
-
-  if (settings && settings.leaderboard_enabled === false) {
-    redirect("/");
-  }
-
-  const getCachedLeaders = unstable_cache(
-    async () => {
-      const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
-        .split(",")
-        .map((e) => e.trim())
-        .filter(Boolean);
-
-      const supabaseAnon = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      );
-
-      const { data: excludedProfiles } = EXCLUDED_EMAILS.length
-        ? await supabaseAnon.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
-        : { data: [] };
-
-      const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
-
-      const { data: leadersRaw } = await supabaseAnon
-        .from("leaderboard_view")
-        .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
-        .order("et_score", { ascending: false })
-        .limit(55);
-
-      return (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
-    },
-    ['leaderboard_cache'],
-    { tags: ['leaderboard'], revalidate: 600 } // Cache for 10 minutes
-  );
-
-  const leaders = await getCachedLeaders();
-
-  const topThree = leaders?.slice(0, 3) || [];
-  const restOfLeaders = leaders?.slice(3) || [];
-
-  const topThreeUrls = [
-    topThree[0] ? await getSignedOgUrl(topThree[0].full_name || 'Curator', topThree[0].et_score || 0, 1, topThree[0].avatar_url || '') : '',
-    topThree[1] ? await getSignedOgUrl(topThree[1].full_name || 'Curator', topThree[1].et_score || 0, 2, topThree[1].avatar_url || '') : '',
-    topThree[2] ? await getSignedOgUrl(topThree[2].full_name || 'Curator', topThree[2].et_score || 0, 3, topThree[2].avatar_url || '') : ''
-  ];
-
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center mb-16 space-y-4">
-          <div className="flex items-center justify-center gap-3">
-            <div className="relative shrink-0 w-12 h-12 rounded-[16px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-lg shadow-amber-500/20 flex items-center justify-center rotate-3">
-              <Crown className="w-6 h-6 text-amber-500 drop-shadow-md" />
-            </div>
-            <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
-              Top Curators
-            </h1>
-          </div>
-          <p className="text-text-secondary font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2 flex-wrap">
-            Ranked by trust, impact, and consistency. 
-            <ScoreInfoButton />
-          </p>
-        </div>
-
-        {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
-        {topThree.length > 0 ? (
-          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
-            {/* Ambient Celebratory Glow */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
-
-            {/* RANK 2 */}
-            <div className="flex flex-col items-center justify-self-end w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700">
-              {topThree[1] && (
-                <>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
-                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={96} height={96} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Medal className="w-3 h-3" /> #2
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-brand-primary transition-colors">
-                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  <a href={topThreeUrls[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-slate-300/60 drop-shadow-sm">2</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* RANK 1 (ALWAYS ABSOLUTE CENTER) */}
-            <div className="flex flex-col items-center justify-self-center w-full max-w-[180px] z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
-              {topThree[0] && (
-                <>
-                  {/* Subtle Winner Glow */}
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-400/30 blur-2xl rounded-full -z-10" />
-                  <Crown className="w-8 h-8 text-amber-500 mb-2 drop-shadow-md" />
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
-                      <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
-                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={144} height={144} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" /> #1
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
-                    <h3 className="font-heading font-extrabold text-text-primary text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
-                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
-                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
-                  </div>
-                  <a href={topThreeUrls[0]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
-                    <Share2 className="w-3.5 h-3.5" /> Share Victory
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
-                    <span className="text-5xl md:text-6xl font-black text-amber-400/50 drop-shadow-sm">1</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* RANK 3 */}
-            <div className="flex flex-col items-center justify-self-start w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700 delay-300">
-              {topThree[2] && (
-                <>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
-                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={96} height={96} className="object-cover" />
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Award className="w-3 h-3" /> #3
-                    </div>
-                  </Link>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-brand-primary transition-colors">
-                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  <a href={topThreeUrls[2]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-16 md:h-20 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
-                  </div>
-                </>
-              )}
-            </div>  
-          </div>
-        ) : (
-          /* EMPTY STATE - NO CURATORS YET */
-          <div className="flex flex-col items-center justify-center bg-white rounded-[40px] p-10 md:p-16 border border-slate-200 shadow-xl shadow-slate-200/40 max-w-2xl mx-auto relative overflow-hidden mb-20">
-             <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-amber-400/10 rounded-full blur-3xl animate-pulse" />
-             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-             
-             <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
-               <img
-                 src="/throne-empty.webp"
-                 alt="Empty throne"
-                 className="w-48 h-48 object-contain mb-4"
-               />
-               <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
-                 The Throne is Empty
-               </h3>
-               <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-                 There are currently no events posted on the platform. Be the first to start curating and claim the #1 spot on the leaderboard.
-               </p>
-               <Link href="/events/new" className="bg-[#1D1D1F] hover:bg-black text-white px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
-                 Start Curating <ArrowRight className="w-4 h-4" />
-               </Link>
-             </div>
-          </div>
-        )}
-
-        {/* LIST VIEW FOR RANKS 4+ */}
-        {restOfLeaders.length > 0 && (
-          <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
-            <div className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-widest">
-              <div className="w-12 text-center">Rank</div>
-              <div>Curator</div>
-              <div className="w-32 text-right pr-4">ET Score</div>
-            </div>
-            
-            <div className="divide-y divide-slate-100">
-              {restOfLeaders.map((user, index) => {
-                const rank = index + 4;
-                const tier = getTierInfo(user.et_score || 0);
-
-                return (
-                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-surface-base transition-colors">
-                    <div className="w-12 text-center font-heading font-bold text-lg text-slate-400">
-                      #{rank}
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <Link href={`/${user.username || user.user_id}`} className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-white hover:opacity-80 transition-opacity">
-                        <Image src={user.avatar_url || "/window.svg"} alt={user.full_name || "Curator"} width={48} height={48} className="object-cover" />
-                      </Link>
-                      <div>
-                        <Link href={`/${user.username || user.user_id}`} className="hover:underline decoration-[#6C47FF]">
-                          <h4 className="font-bold text-text-primary text-sm md:text-base hover:text-brand-primary transition-colors">{user.full_name}</h4>
-                        </Link>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${tier.bg} ${tier.text} ${tier.border} border`}>
-                            {tier.name}
-                          </span>
-                          <span className="text-xs text-slate-500 hidden sm:inline-block">• {user.events_posted} Events • {user.impact_saves} Saves</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="w-32 text-right pr-4">
-                      <span className="font-heading font-black text-text-primary text-xl">{user.et_score}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
-</file>
-
 <file path="src/app/layout.tsx">
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
@@ -8816,66 +8589,6 @@ export default async function RootLayout({
         <SpeedInsights />
       </body>
     </html>
-  );
-}
-</file>
-
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
-    </div>
   );
 }
 </file>
@@ -10175,6 +9888,580 @@ export default async function CityPage({
 }
 </file>
 
+<file path="src/app/leaderboard/page.tsx">
+import { Navbar } from "@/components/layout/Navbar";
+import { createClient } from "@/lib/supabase/server";
+import Image from "next/image";
+import Link from "next/link";
+import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
+import { redirect } from "next/navigation";
+import { generateHMAC } from "@/lib/hmac";
+import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export const revalidate = 600;
+
+async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
+  const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;
+  const sig = await generateHMAC(query);
+  return `/api/og/leaderboard?${query}&sig=${sig}`;
+}
+
+const getTierInfo = (score: number) => {
+  if (score >= 901) return { name: "Elite Legend", bg: "bg-amber-100", text: "text-amber-600", border: "border-amber-400" };
+  if (score >= 501) return { name: "Expert Curator", bg: "bg-purple-100", text: "text-purple-600", border: "border-purple-400" };
+  if (score >= 201) return { name: "Rising Star", bg: "bg-blue-100", text: "text-blue-600", border: "border-blue-400" };
+  return { name: "Rookie", bg: "bg-slate-100", text: "text-slate-600", border: "border-slate-300" };
+};
+
+export default async function LeaderboardPage() {
+  const supabase = await createClient();
+
+  const { data: settings } = await supabase
+    .from("app_settings")
+    .select("leaderboard_enabled")
+    .eq("id", 1)
+    .maybeSingle();
+
+  if (settings && settings.leaderboard_enabled === false) {
+    redirect("/");
+  }
+
+  const getCachedLeaders = unstable_cache(
+    async () => {
+      const EXCLUDED_EMAILS = (process.env.LEADERBOARD_EXCLUDED_EMAILS || "")
+        .split(",")
+        .map((e) => e.trim())
+        .filter(Boolean);
+
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+
+      const { data: excludedProfiles } = EXCLUDED_EMAILS.length
+        ? await supabaseAnon.from("profiles").select("id").in("email", EXCLUDED_EMAILS)
+        : { data: [] };
+
+      const excludedIds = new Set((excludedProfiles || []).map((p) => p.id));
+
+      const { data: leadersRaw } = await supabaseAnon
+        .from("leaderboard_view")
+        .select("user_id, full_name, username, avatar_url, college, et_score, events_posted, impact_saves")
+        .order("et_score", { ascending: false })
+        .limit(55);
+
+      return (leadersRaw || []).filter((l) => l.user_id && !excludedIds.has(l.user_id)).slice(0, 50);
+    },
+    ['leaderboard_cache'],
+    { tags: ['leaderboard'], revalidate: 600 } // Cache for 10 minutes
+  );
+
+  const leaders = await getCachedLeaders();
+
+  const topThree = leaders?.slice(0, 3) || [];
+  const restOfLeaders = leaders?.slice(3) || [];
+
+  const topThreeUrls = [
+    topThree[0] ? await getSignedOgUrl(topThree[0].full_name || 'Curator', topThree[0].et_score || 0, 1, topThree[0].avatar_url || '') : '',
+    topThree[1] ? await getSignedOgUrl(topThree[1].full_name || 'Curator', topThree[1].et_score || 0, 2, topThree[1].avatar_url || '') : '',
+    topThree[2] ? await getSignedOgUrl(topThree[2].full_name || 'Curator', topThree[2].et_score || 0, 3, topThree[2].avatar_url || '') : ''
+  ];
+
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-16 space-y-4">
+          <div className="flex items-center justify-center gap-3">
+            <div className="relative shrink-0 w-12 h-12 rounded-[16px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-lg shadow-amber-500/20 flex items-center justify-center rotate-3">
+              <Crown className="w-6 h-6 text-amber-500 drop-shadow-md" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
+              Top Curators
+            </h1>
+          </div>
+          <p className="text-text-secondary font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2 flex-wrap">
+            Ranked by trust, impact, and consistency. 
+            <ScoreInfoButton />
+          </p>
+        </div>
+
+        {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
+        {topThree.length > 0 ? (
+          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
+            {/* Ambient Celebratory Glow */}
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
+
+            {/* RANK 2 */}
+            <div className="flex flex-col items-center justify-self-end w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700">
+              {topThree[1] && (
+                <>
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
+                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
+                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={96} height={96} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                      <Medal className="w-3 h-3" /> #2
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-brand-primary transition-colors">
+                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
+                    <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
+                  </div>
+                  <a href={topThreeUrls[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                    <Share2 className="w-3 h-3" /> Share
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                    <span className="text-4xl md:text-5xl font-black text-slate-300/60 drop-shadow-sm">2</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* RANK 1 (ALWAYS ABSOLUTE CENTER) */}
+            <div className="flex flex-col items-center justify-self-center w-full max-w-[180px] z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
+              {topThree[0] && (
+                <>
+                  {/* Subtle Winner Glow */}
+                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-400/30 blur-2xl rounded-full -z-10" />
+                  <Crown className="w-8 h-8 text-amber-500 mb-2 drop-shadow-md" />
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
+                      <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
+                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={144} height={144} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
+                      <Trophy className="w-3.5 h-3.5" /> #1
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
+                    <h3 className="font-heading font-extrabold text-text-primary text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
+                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
+                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
+                  </div>
+                  <a href={topThreeUrls[0]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
+                    <Share2 className="w-3.5 h-3.5" /> Share Victory
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
+                    <span className="text-5xl md:text-6xl font-black text-amber-400/50 drop-shadow-sm">1</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* RANK 3 */}
+            <div className="flex flex-col items-center justify-self-start w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700 delay-300">
+              {topThree[2] && (
+                <>
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
+                      <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
+                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={96} height={96} className="object-cover" />
+                      </div>
+                    </div>
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                      <Award className="w-3 h-3" /> #3
+                    </div>
+                  </Link>
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-brand-primary transition-colors">
+                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
+                  </Link>
+                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
+                    <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
+                  </div>
+                  <a href={topThreeUrls[2]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
+                    <Share2 className="w-3 h-3" /> Share
+                  </a>
+                  {/* Podium Block */}
+                  <div className="w-full h-16 md:h-20 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                    <span className="text-4xl md:text-5xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
+                  </div>
+                </>
+              )}
+            </div>  
+          </div>
+        ) : (
+          /* EMPTY STATE - NO CURATORS YET */
+          <div className="flex flex-col items-center justify-center bg-white rounded-[40px] p-10 md:p-16 border border-slate-200 shadow-xl shadow-slate-200/40 max-w-2xl mx-auto relative overflow-hidden mb-20">
+             <div className="absolute top-[-50%] left-[-10%] w-96 h-96 bg-amber-400/10 rounded-full blur-3xl animate-pulse" />
+             <div className="absolute bottom-[-50%] right-[-10%] w-96 h-96 bg-brand-primary/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+             
+             <div className="relative z-10 flex flex-col items-center text-center animate-in zoom-in-95 fade-in duration-1000">
+               <img
+                 src="/throne-empty.webp"
+                 alt="Empty throne"
+                 className="w-48 h-48 object-contain mb-4"
+               />
+               <h3 className="text-3xl font-black text-slate-900 font-heading mb-3 tracking-tight">
+                 The Throne is Empty
+               </h3>
+               <p className="text-slate-500 font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+                 There are currently no events posted on the platform. Be the first to start curating and claim the #1 spot on the leaderboard.
+               </p>
+               <Link href="/events/new" className="bg-[#1D1D1F] hover:bg-black text-white px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center gap-2 shadow-xl shadow-black/10">
+                 Start Curating <ArrowRight className="w-4 h-4" />
+               </Link>
+             </div>
+          </div>
+        )}
+
+        {/* LIST VIEW FOR RANKS 4+ */}
+        {restOfLeaders.length > 0 && (
+          <div className="bg-white rounded-[32px] border border-slate-200 overflow-hidden shadow-sm">
+            <div className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 border-b border-slate-100 bg-slate-50/50 text-xs font-bold text-slate-400 uppercase tracking-widest">
+              <div className="w-12 text-center">Rank</div>
+              <div>Curator</div>
+              <div className="w-32 text-right pr-4">ET Score</div>
+            </div>
+            
+            <div className="divide-y divide-slate-100">
+              {restOfLeaders.map((user, index) => {
+                const rank = index + 4;
+                const tier = getTierInfo(user.et_score || 0);
+
+                return (
+                  <div key={user.user_id} className="grid grid-cols-[auto_1fr_auto] gap-4 p-4 items-center hover:bg-surface-base transition-colors">
+                    <div className="w-12 text-center font-heading font-bold text-lg text-slate-400">
+                      #{rank}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      <Link href={`/${user.username || user.user_id}`} className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-white hover:opacity-80 transition-opacity">
+                        <Image src={user.avatar_url || "/window.svg"} alt={user.full_name || "Curator"} width={48} height={48} className="object-cover" />
+                      </Link>
+                      <div>
+                        <Link href={`/${user.username || user.user_id}`} className="hover:underline decoration-[#6C47FF]">
+                          <h4 className="font-bold text-text-primary text-sm md:text-base hover:text-brand-primary transition-colors">{user.full_name}</h4>
+                        </Link>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${tier.bg} ${tier.text} ${tier.border} border`}>
+                            {tier.name}
+                          </span>
+                          <span className="text-xs text-slate-500 hidden sm:inline-block">• {user.events_posted} Events • {user.impact_saves} Saves</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="w-32 text-right pr-4">
+                      <span className="font-heading font-black text-text-primary text-xl">{user.et_score}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
+<file path="src/proxy.ts">
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
+
+export async function proxy(request: NextRequest) {
+ const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
+   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
+    img-src 'self' blob: data: https: http:;
+    font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms;
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  `;
+  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  let response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
+        },
+      },
+    }
+  );
+
+  // Use getUser() for high-security checks
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // NEW: Global Authentication Check Strategy
+  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
+  response.cookies.set({
+    name: 'client_auth',
+    value: user ? 'true' : 'false',
+    path: '/',
+    httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
+
+  // 1. If user IS logged in and tries to go to login page, send to profile
+  if (user && request.nextUrl.pathname === '/login') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
+
+  const isProtected =
+    request.nextUrl.pathname.startsWith('/events/new') ||
+    request.nextUrl.pathname.endsWith('/edit') ||
+    request.nextUrl.pathname.startsWith('/profile') ||
+    request.nextUrl.pathname.startsWith('/et98');
+
+  if (!user && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    {
+      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+      missing: [
+        { type: 'header', key: 'next-router-prefetch' },
+        { type: 'header', key: 'purpose', value: 'prefetch' },
+      ],
+    },
+  ],
+};
+</file>
+
+<file path="src/app/[username]/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
+import Image from "next/image";
+import type { ProfileRow } from "@/types";
+
+export const dynamic = "force-dynamic";
+
+type ExtendedProfileRow = Partial<ProfileRow> & {
+  preferred_cities?: string[] | null;
+  user_type?: string | null;
+  graduation_year?: string | null;
+};
+const calculateCompletion = (prof: ExtendedProfileRow | null) => {
+  if (!prof) return 0;
+  let score = 0;
+  if (prof.username) score += 25;
+  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
+  if (prof.goals && prof.goals.length > 0) score += 25;
+  const isStudent = prof.user_type === "student";
+  if (!isStudent) {
+    score += 25;
+  } else if (prof.graduation_year) {
+    score += 25;
+  }
+  return score;
+};
+
+export default async function CuratorPage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const supabase = await createClient();
+
+  // NEW: Get current logged-in user to handle follow logic
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
+  // AFTER - one query (Checks username or ID in a single round trip)
+  const decodedUsername = decodeURIComponent(username);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_REGEX.test(decodedUsername);
+
+  const { data: curator } = await supabase
+    .from("profiles")
+    .select(PROFILE_FIELDS)
+    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
+    .maybeSingle();
+
+  if (!curator) {
+    return (
+      <div className="min-h-screen bg-surface-base">
+        <Navbar />
+        <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
+      </div>
+    );
+  }
+
+  // Fix: Running the remaining dependent queries in parallel using Promise.all
+   const sixMonthsAgo = new Date();
+  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+  const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
+
+   const [
+    { count: totalEventCount },
+    { data: allTimeSavesData },
+    { data: events },
+    { data: appSettings }
+  ] = await Promise.all([
+    // 1a. True lifetime count — never filtered by date
+    supabase
+      .from("events")
+      .select("id", { count: "exact", head: true })
+      .eq("creator_id", curator.id)
+      .eq("status", "approved"),
+
+    // 1a2. Lifetime saves — never filtered by date
+    supabase
+      .from("events")
+      .select("saved_events(count)")
+      .eq("creator_id", curator.id)
+      .eq("status", "approved"),
+
+    // 1b. Fetch Curator's Approved Events from the last 6 months only (for display)
+    supabase
+      .from("events")
+      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
+      .eq("creator_id", curator.id)
+      .eq("status", "approved")
+      .gte("date_string", sixMonthsAgoStr)
+      .order("created_at", { ascending: true }),
+
+    // 2. Check if leaderboard / ET Score is enabled platform-wide
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+  ]);
+  // Dynamic ga events anni thirigi saves count ni sum chesthundi
+  const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
+  const etScore = curator.et_score || 100;
+  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const avatarUrl = curator.avatar_url || "/window.svg";
+  const completionPercentage = calculateCompletion(curator);
+
+  // NEW: Dynamic Profile Tiers Logic
+  const eventCount = totalEventCount || 0;
+  let strokeColor = "#6C47FF"; // Default Purple
+  let isGold = false;
+
+  if (eventCount >= 69) {
+    strokeColor = "url(#goldGradient)";
+    isGold = true;
+  } else if (eventCount >= 30) {
+    strokeColor = "#C0C0C0"; // Silver
+  } else if (eventCount >= 10) {
+    strokeColor = "#CD7F32"; // Bronze
+  }
+
+  return (
+    <main className="min-h-screen bg-surface-base">
+      <Navbar />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
+          <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 144 144">
+              {isGold && (
+                <defs>
+                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FDE047" />
+                    <stop offset="50%" stopColor="#F59E0B" />
+                    <stop offset="100%" stopColor="#D97706" />
+                  </linearGradient>
+                </defs>
+              )}
+              <circle cx="72" cy="72" r="68" fill="none" stroke="#F5F5F7" strokeWidth="4" />
+              <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
+            </svg>
+            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
+              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
+            </div>
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
+            <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
+            <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
+            
+            <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
+              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</span>
+                <span className="text-xl font-black text-slate-900">{eventCount}</span>
+              </div>
+              
+              {appSettings?.leaderboard_enabled && (
+                <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
+                  <span className="text-xl font-black text-slate-900">{impactSaves}</span>
+                </div>
+              )}
+              {leaderboardEnabled && (
+                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
+                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
+                  <span className="text-xl font-black text-amber-600">{etScore}</span>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
+          {events && events.length > 0 ? (
+            <CuratorEventsTabs events={events} />
+          ) : (
+            <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
+              <p className="text-text-secondary font-bold uppercase tracking-widest text-xs">
+                {eventCount > 0 ? "No events in the last 6 months" : "No active events posted"}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -10596,293 +10883,6 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
         </AnimatePresence>
       </motion.div>
     </div>
-  );
-}
-</file>
-
-<file path="src/proxy.ts">
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
-
-export async function proxy(request: NextRequest) {
- const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
-    img-src 'self' blob: data: https: http:;
-    font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
-    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  `;
-  const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
-
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
-  requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-  let response = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-  response.headers.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value, ...options, ...COOKIE_OPTIONS });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-          response.cookies.set({ name, value: "", ...options, ...COOKIE_OPTIONS });
-        },
-      },
-    }
-  );
-
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  const isProtected =
-    request.nextUrl.pathname.startsWith('/events/new') ||
-    request.nextUrl.pathname.endsWith('/edit') ||
-    request.nextUrl.pathname.startsWith('/profile') ||
-    request.nextUrl.pathname.startsWith('/et98');
-
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return response;
-}
-
-export const config = {
-  matcher: [
-    {
-      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
-  ],
-};
-</file>
-
-<file path="src/app/[username]/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
-import Image from "next/image";
-import type { ProfileRow } from "@/types";
-
-export const dynamic = "force-dynamic";
-
-type ExtendedProfileRow = Partial<ProfileRow> & {
-  preferred_cities?: string[] | null;
-  user_type?: string | null;
-  graduation_year?: string | null;
-};
-const calculateCompletion = (prof: ExtendedProfileRow | null) => {
-  if (!prof) return 0;
-  let score = 0;
-  if (prof.username) score += 25;
-  if (prof.preferred_cities && prof.preferred_cities.length > 0) score += 25;
-  if (prof.goals && prof.goals.length > 0) score += 25;
-  const isStudent = prof.user_type === "student";
-  if (!isStudent) {
-    score += 25;
-  } else if (prof.graduation_year) {
-    score += 25;
-  }
-  return score;
-};
-
-export default async function CuratorPage({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = await params;
-  const supabase = await createClient();
-
-  // NEW: Get current logged-in user to handle follow logic
-  const { data: { user: currentUser } } = await supabase.auth.getUser();
-
-  const PROFILE_FIELDS = "id, full_name, username, college, avatar_url, et_score, goals, preferred_cities, user_type, graduation_year";
-  // AFTER - one query (Checks username or ID in a single round trip)
-  const decodedUsername = decodeURIComponent(username);
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  const isUuid = UUID_REGEX.test(decodedUsername);
-
-  const { data: curator } = await supabase
-    .from("profiles")
-    .select(PROFILE_FIELDS)
-    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
-    .maybeSingle();
-
-  if (!curator) {
-    return (
-      <div className="min-h-screen bg-surface-base">
-        <Navbar />
-        <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
-      </div>
-    );
-  }
-
-  // Fix: Running the remaining dependent queries in parallel using Promise.all
-   const sixMonthsAgo = new Date();
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
-
-   const [
-    { count: totalEventCount },
-    { data: allTimeSavesData },
-    { data: events },
-    { data: appSettings }
-  ] = await Promise.all([
-    // 1a. True lifetime count — never filtered by date
-    supabase
-      .from("events")
-      .select("id", { count: "exact", head: true })
-      .eq("creator_id", curator.id)
-      .eq("status", "approved"),
-
-    // 1a2. Lifetime saves — never filtered by date
-    supabase
-      .from("events")
-      .select("saved_events(count)")
-      .eq("creator_id", curator.id)
-      .eq("status", "approved"),
-
-    // 1b. Fetch Curator's Approved Events from the last 6 months only (for display)
-    supabase
-      .from("events")
-      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
-      .eq("creator_id", curator.id)
-      .eq("status", "approved")
-      .gte("date_string", sixMonthsAgoStr)
-      .order("created_at", { ascending: true }),
-
-    // 2. Check if leaderboard / ET Score is enabled platform-wide
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
-  ]);
-  // Dynamic ga events anni thirigi saves count ni sum chesthundi
-  const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
-  const etScore = curator.et_score || 100;
-  const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const avatarUrl = curator.avatar_url || "/window.svg";
-  const completionPercentage = calculateCompletion(curator);
-
-  // NEW: Dynamic Profile Tiers Logic
-  const eventCount = totalEventCount || 0;
-  let strokeColor = "#6C47FF"; // Default Purple
-  let isGold = false;
-
-  if (eventCount >= 69) {
-    strokeColor = "url(#goldGradient)";
-    isGold = true;
-  } else if (eventCount >= 30) {
-    strokeColor = "#C0C0C0"; // Silver
-  } else if (eventCount >= 10) {
-    strokeColor = "#CD7F32"; // Bronze
-  }
-
-  return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-        <div className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8">
-          <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
-            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 144 144">
-              {isGold && (
-                <defs>
-                  <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#FDE047" />
-                    <stop offset="50%" stopColor="#F59E0B" />
-                    <stop offset="100%" stopColor="#D97706" />
-                  </linearGradient>
-                </defs>
-              )}
-              <circle cx="72" cy="72" r="68" fill="none" stroke="#F5F5F7" strokeWidth="4" />
-              <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
-            </svg>
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
-              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
-            </div>
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
-            <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
-            <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
-            
-            <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
-              <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Events</span>
-                <span className="text-xl font-black text-slate-900">{eventCount}</span>
-              </div>
-              
-              {appSettings?.leaderboard_enabled && (
-                <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Saves</span>
-                  <span className="text-xl font-black text-slate-900">{impactSaves}</span>
-                </div>
-              )}
-              {leaderboardEnabled && (
-                <div className="bg-amber-50 border border-amber-100 px-5 py-3 rounded-2xl flex flex-col min-w-[120px]">
-                  <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">ET Score</span>
-                  <span className="text-xl font-black text-amber-600">{etScore}</span>
-                </div>
-              )}
-
-            </div>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <h2 className="text-2xl font-heading font-black text-slate-900">Events by {curator.full_name}</h2>
-          {events && events.length > 0 ? (
-            <CuratorEventsTabs events={events} />
-          ) : (
-            <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
-              <p className="text-text-secondary font-bold uppercase tracking-widest text-xs">
-                {eventCount > 0 ? "No events in the last 6 months" : "No active events posted"}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </main>
   );
 }
 </file>
