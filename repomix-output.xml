@@ -5669,46 +5669,67 @@ export default function TermsOfServicePage() {
 }
 </file>
 
-<file path="src/app/providers.tsx">
+<file path="src/app/error.tsx">
 "use client";
 
-import posthog from "posthog-js";
-import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { useEffect } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
 
-function PostHogPageview() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   useEffect(() => {
-    if (pathname) {
-      let url = window.origin + pathname;
-      if (searchParams?.toString()) {
-        url += `?${searchParams.toString()}`;
-      }
-      posthog.capture("$pageview", { $current_url: url });
-    }
-  }, [pathname, searchParams]);
-
-  return null;
-}
-
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  useEffect(() => {
-    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-      api_host: "/ingest",
-      ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-      person_profiles: "identified_only", // don't create profiles for anonymous guests until they sign in — keeps free tier usage lower
-      capture_pageview: false, // we manually track pageviews below (needed for Next.js App Router client-side navigation)
-    });
-  }, []);
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
 
   return (
-    <PHProvider client={posthog}>
-      <PostHogPageview />
-      {children}
-    </PHProvider>
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 }
 </file>
@@ -6256,6 +6277,47 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
 }
 </file>
 
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404_state3.webp" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/hmac.ts">
 // Edge-compatible HMAC using Web Crypto API
 export async function generateHMAC(data: string): Promise<string> {
@@ -6620,67 +6682,73 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
 }
 </file>
 
-<file path="src/app/error.tsx">
+<file path="src/app/providers.tsx">
 "use client";
 
+import posthog from "posthog-js";
+import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
+import { usePathname, useSearchParams } from "next/navigation";
+import NProgress from "nprogress";
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+function RouteProgressBar() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Any link click anywhere in the app starts the bar instantly
   useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
+    const handleClick = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement)?.closest("a");
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || href.startsWith("http") || href.startsWith("#") || link.target === "_blank") return;
+      NProgress.start();
+    };
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
+  // Once the new page's content is actually here, stop the bar
+  useEffect(() => {
+    NProgress.done();
+  }, [pathname, searchParams]);
+
+  return null;
+}
+
+function PostHogPageview() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (pathname) {
+      let url = window.origin + pathname;
+      if (searchParams?.toString()) {
+        url += `?${searchParams.toString()}`;
+      }
+      posthog.capture("$pageview", { $current_url: url });
+    }
+  }, [pathname, searchParams]);
+
+  return null;
+}
+
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
+      api_host: "/ingest",
+      ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      person_profiles: "identified_only", // don't create profiles for anonymous guests until they sign in — keeps free tier usage lower
+      capture_pageview: false, // we manually track pageviews below (needed for Next.js App Router client-side navigation)
+    });
+  }, []);
 
   return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
+    <PHProvider client={posthog}>
+      <PostHogPageview />
+      <RouteProgressBar />
+      {children}
+    </PHProvider>
   );
 }
 </file>
@@ -7390,47 +7458,6 @@ export function EventGrid({
 }
 </file>
 
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404_state3.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="package.json">
 {
   "name": "eventime",
@@ -7759,6 +7786,95 @@ export function EmptyState({
 }
 </file>
 
+<file path="next.config.ts">
+import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
+  reloadOnOnline: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
+const nextConfig: NextConfig = {
+  transpilePackages: ['leaflet', 'react-leaflet'],
+   turbopack: {},
+  experimental: {
+    cacheLife: {
+      events: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+      leaderboard: {
+        stale: 600,
+        revalidate: 600,
+        expire: 3600,
+      },
+    },
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: "/ingest/:path*",
+        destination: "https://us.i.posthog.com/:path*",
+      },
+      {
+        source: "/ingest/decide",
+        destination: "https://us.i.posthog.com/decide",
+      },
+    ];
+  },
+  images: {
+     formats: ["image/avif", "image/webp"],
+     remotePatterns: [
+       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+     ],
+     deviceSizes: [375, 640, 750, 828, 1080, 1200],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/static/(.*)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          
+        ],
+      },
+    ]
+  }
+};
+
+// NEW: Export the configuration wrapped with PWA
+export default withPWA(nextConfig);
+</file>
+
 <file path="src/app/events/[slug]/page.tsx">
 import { Metadata } from "next";
 import { cache } from "react";
@@ -8000,456 +8116,6 @@ export default async function NewEventPage() {
     </main>
   );
 }
-</file>
-
-<file path="src/app/events/EventCard.tsx">
-"use client";
-
-  import Image from "next/image";
-  import Link from "next/link";
-  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
-  import { useState, useEffect } from "react";
-  import { createClient } from "@/lib/supabase/client";
-  import { format, differenceInCalendarDays } from "date-fns";
-  import { motion, AnimatePresence } from "framer-motion";
-  import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
-
-  interface EventCardProps {
-    id: string;   // MUST be the exact UUID from database
-    slug: string; // NEW: MUST be the slug for URLs
-    title: string;
-    category: string;
-    date: string;
-    city: string;
-    imageUrl: string;
-    organizerName: string;
-    organizerUsername?: string; // NEW: links to curator's public page
-    hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
-    hidePastBadge?: boolean; // NEW: hide the "Past Event" badge (used inside a dedicated Archive tab)
-    isFree: boolean;
-    isFeatured?: boolean;
-    matchLabel?: string;
-    audience?: string[]; 
-    interestedCount?: number; // NEW: Dedicated count for interested people
-    isSaved?: boolean;
-    isGuest?: boolean; // NEW: Global auth check
-    onSaveToggle?: (id: string) => Promise<void>;
-    layout?: boolean;
-    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
-    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
-    collegeName?: string; // NEW: college that hosts the event
-    priority?: boolean; // NEW: For LCP image optimization
-  }
-
-  export function EventCard({
-    id,
-    slug, // NEW
-    title,
-    category,
-    date,
-    city,
-    imageUrl,
-    organizerName,
-    organizerUsername,
-    hideOrganizer = false,
-    hidePastBadge = false,
-    isFree,
-    isFeatured = false,
-    matchLabel,
-    audience,
-    interestedCount, 
-    isSaved = false,
-    isGuest = false, // NEW
-    onSaveToggle,
-    layout,
-    isPastDateView = false,
-    userRole,
-    collegeName,
-    priority = false,
-  }: EventCardProps) {
-    const [savedState, setSavedState] = useState(isSaved);
-    const [isSaving, setIsSaving] = useState(false);
-    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
-    const [copied, setCopied] = useState(false);
-    const [isVisible, setIsVisible] = useState(true);
-
-    const handleSave = async (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent navigating to the event page
-      
-      // NEW: Authentication Check
-      if (isGuest) {
-        setShowAuthModal(true);
-        return;
-      }
-      
-        setIsSaving(true);
-      const newState = !savedState;
-      setSavedState(newState); // optimistic update
-      
-      try {
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to save event:", err);
-      }
-      if (onSaveToggle) {        await onSaveToggle(id);
-      }
-      
-      setIsSaving(false);
-    };
-
-    const getFormattedDate = (dateString: string) => {
-      const parsedDate = parseEventDateString(dateString);
-      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
-        const monthDay = format(parsedDate, "MMM d");
-        const parts = dateString.split(" · ");
-        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
-        return `${monthDay}${time}`;
-      }
-      return dateString;
-    };
-
-    // --- THE FOMO STATUS LOGIC ---
-    let statusLabel = null;
-    let statusColor = "";
-    let diffDays: number | null = null;
-    let isPastTime = false;
-    
-    const eventDate = parseEventDateString(date);
-    if (eventDate) {
-      const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
-
-      if (diffDays < 0 || isPastTime) {
-        statusLabel = "Past Event";
-        statusColor = "bg-slate-800 text-white border border-slate-700";
-      }  
-    }
-
-    useEffect(() => {
-      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
-      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
-      if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
-        if (checkDate) {
-          const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
-          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
-          
-          // Fix: We no longer check `pastTime` to hide the card.
-          // This ensures same-day past events stay visible (with a "Past Event" badge),
-          // keeping the UI counts perfectly synchronized with the server counts.
-          if (pastDate) {
-            setIsVisible(false);
-          }
-        }
-      }
-    }, [date, layout, isPastDateView, userRole]);
-    
-    // --- NEW: TEMPLATE ENGINE LOGIC ---
-    // Added a fallback to prevent crashes if the category is not found
-    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.webp', dateColor: '#6C47FF' };
-    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
-    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
-    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
-
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
-
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const shareData = {
-        title: title,
-        text: `${title} on ${date} in ${city}\nPosted on EvenTime 🎉`,
-        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch (err) { console.error("Share failed", err); }
-      } else {
-        // Fallback
-        await navigator.clipboard.writeText(shareData.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
-    };
-
-    const cardVariantClass = isFeatured 
-      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
-
-    return (
-      <>
-        <AnimatePresence>
-          {isVisible && (
-            <motion.div 
-              layout={layout}
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
-              animate={{}}
-              transition={{ duration: 0.3 }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
-            >
-
-              
-              {/* --- IMAGE LAYER --- */}
-              <div 
-                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
-              >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
-                  <Image 
-                    src={finalImageSrc}
-                    alt={title} 
-                    fill 
-                    unoptimized={true}
-                    priority={priority}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
-                  />
-                  
-                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
-                    {finalImageSrc.includes('default.webp') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
-                        <span 
-                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
-                          style={{ 
-                            fontSize: 'clamp(10px, 5vw, 20px)', 
-                            lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
-                            color: config.dateColor,
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {category}
-                        </span>
-                      </div>
-                    )}              
-                    </Link>
-
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
-                  <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    {shortDateOverlay}
-                  </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
-                  >
-                    EvenTime
-                  </span>
-                </div>
-
-                {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
-                  {statusLabel && !(hidePastBadge && statusLabel === "Past Event") && (
-                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
-                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
-                      {statusLabel}
-                    </span>
-                  )}
-
-                  {matchLabel && (
-                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
-                      ⭐ {matchLabel}
-                    </span>
-                  )}
-
-                   {isFeatured && !matchLabel && (
-                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
-                      Featured
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
-                  <h3 
-                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "'Outfit', sans-serif",
-                      textTransform: 'capitalize' 
-                    }}
-                  >
-                    {title.toLowerCase()}
-                  </h3>
-                </Link>
-
-                <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
-                >
-                  {!hideOrganizer && <>Curated by {organizerUsername ? (
-                    <Link
-                      href={`/${organizerUsername}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:text-brand-primary hover:underline transition-colors"
-                    >
-                      {organizerName}
-                    </Link>
-                  ) : (
-                    organizerName
-                  )}</>}
-                  {!isFree && (
-                    <>
-                      <span className="text-slate-300">|</span>
-                      <div className="relative flex items-center justify-center w-5 h-5">
-                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
-                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
-                          <IndianRupee className="w-2.5 h-2.5 text-white" />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {city && (
-                <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                {collegeName ? (
-               <span className="truncate">{collegeName}, {city}</span>
-              ) : (
-             <Link
-            href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-           onClick={(e) => e.stopPropagation()}
-           className="truncate hover:text-brand-primary hover:underline transition-colors"
-      >
-        {city}
-      </Link>
-    )}
-  </div>
-)}
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
-                  </span>
-                  {interestedCount && interestedCount > 0 ? (
-                    <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
-                      </span>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
-                >
-                  <Bookmark
-                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
-                    style={{ fill: savedState ? 'currentColor' : 'none' }}
-                  />
-                </button>
-                <button 
-                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
-                >
-                  {copied
-                    ? <Check className="w-4 h-4 text-emerald-500" />
-                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
-                  }
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-          {/* NEW: Auth Modal Overlay */}
-          {showAuthModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
-              <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
-                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
-                  <Bookmark className="w-6 h-6 text-slate-700" />
-                </div>
-                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
-                <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
-                    Cancel
-                  </button>
-                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
-                    Sign In
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-      </>
-    );
-  }
 </file>
 
 <file path="src/app/layout.tsx">
@@ -9653,95 +9319,6 @@ export const Constants = {
 } as const
 </file>
 
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-import withPWAInit from "@ducanh2912/next-pwa";
-
-const withPWA = withPWAInit({
-  dest: "public",
-  cacheOnFrontEndNav: false,
-  aggressiveFrontEndNavCaching: false,
-  reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development",
-});
-
-// See: https://nextjs.org/docs/app/building-your-application/configuring/content-security
-const nextConfig: NextConfig = {
-  transpilePackages: ['leaflet', 'react-leaflet'],
-   turbopack: {},
-  experimental: {
-    cacheLife: {
-      events: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
-      leaderboard: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
-    },
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
-      },
-      {
-        source: "/ingest/decide",
-        destination: "https://us.i.posthog.com/decide",
-      },
-    ];
-  },
-  images: {
-     formats: ["image/avif", "image/webp"],
-     remotePatterns: [
-       { protocol: 'https', hostname: 'cdn.sbhub.in', pathname: '/**' },
-       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
-       { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
-     ],
-     deviceSizes: [375, 640, 750, 828, 1080, 1200],
-  },
-  async headers() {
-    return [
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf)$)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
-      {
-        source: "/(.*)",
-        headers: [
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
-          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-          
-        ],
-      },
-    ]
-  }
-};
-
-// NEW: Export the configuration wrapped with PWA
-export default withPWA(nextConfig);
-</file>
-
 <file path="src/app/cities/[city]/page.tsx">
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -9886,6 +9463,458 @@ export default async function CityPage({
     </main>
   );
 }
+</file>
+
+<file path="src/app/events/EventCard.tsx">
+"use client";
+
+  import Image from "next/image";
+  import Link from "next/link";
+  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { toast } from "sonner";
+  import { useState, useEffect } from "react";
+  import { createClient } from "@/lib/supabase/client";
+  import { format, differenceInCalendarDays } from "date-fns";
+  import { motion, AnimatePresence } from "framer-motion";
+  import { getCategoryConfig } from "@/lib/category-config";
+  import { parseEventDateString } from "@/lib/utils/date";
+
+  interface EventCardProps {
+    id: string;   // MUST be the exact UUID from database
+    slug: string; // NEW: MUST be the slug for URLs
+    title: string;
+    category: string;
+    date: string;
+    city: string;
+    imageUrl: string;
+    organizerName: string;
+    organizerUsername?: string; // NEW: links to curator's public page
+    hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
+    hidePastBadge?: boolean; // NEW: hide the "Past Event" badge (used inside a dedicated Archive tab)
+    isFree: boolean;
+    isFeatured?: boolean;
+    matchLabel?: string;
+    audience?: string[]; 
+    interestedCount?: number; // NEW: Dedicated count for interested people
+    isSaved?: boolean;
+    isGuest?: boolean; // NEW: Global auth check
+    onSaveToggle?: (id: string) => Promise<void>;
+    layout?: boolean;
+    isPastDateView?: boolean; // NEW: true when user selected a past date in calendar
+    userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
+    collegeName?: string; // NEW: college that hosts the event
+    priority?: boolean; // NEW: For LCP image optimization
+  }
+
+  export function EventCard({
+    id,
+    slug, // NEW
+    title,
+    category,
+    date,
+    city,
+    imageUrl,
+    organizerName,
+    organizerUsername,
+    hideOrganizer = false,
+    hidePastBadge = false,
+    isFree,
+    isFeatured = false,
+    matchLabel,
+    audience,
+    interestedCount, 
+    isSaved = false,
+    isGuest = false, // NEW
+    onSaveToggle,
+    layout,
+    isPastDateView = false,
+    userRole,
+    collegeName,
+    priority = false,
+  }: EventCardProps) {
+    const [savedState, setSavedState] = useState(isSaved);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
+    const [copied, setCopied] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    const handleSave = async (e: React.MouseEvent) => {
+      e.preventDefault(); // Prevent navigating to the event page
+      
+      // NEW: Authentication Check
+      if (isGuest) {
+        setShowAuthModal(true);
+        return;
+      }
+      
+        setIsSaving(true);
+      const newState = !savedState;
+      setSavedState(newState); // optimistic update
+      
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (newState) {
+            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to save event:", err);
+        toast.error("Couldn't save. Please try again.");
+      }
+      if (onSaveToggle) {        await onSaveToggle(id);
+      }
+      toast.success(newState ? "Saved to your list!" : "Removed from saved.");
+      setIsSaving(false);
+    };
+
+    const getFormattedDate = (dateString: string) => {
+      const parsedDate = parseEventDateString(dateString);
+      if (parsedDate && (dateString.includes("T") || dateString.includes(" · "))) {
+        const monthDay = format(parsedDate, "MMM d");
+        const parts = dateString.split(" · ");
+        const time = parts.length > 1 ? ` • ${parts[1]}` : "";
+        return `${monthDay}${time}`;
+      }
+      return dateString;
+    };
+
+    // --- THE FOMO STATUS LOGIC ---
+    let statusLabel = null;
+    let statusColor = "";
+    let diffDays: number | null = null;
+    let isPastTime = false;
+    
+    const eventDate = parseEventDateString(date);
+    if (eventDate) {
+      const today = new Date();
+      const exactEventDate = new Date(eventDate);
+      
+      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
+      const parts = date.split(" · ");
+      if (parts.length > 1) {
+        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hours = parseInt(match[1], 10);
+          const minutes = parseInt(match[2], 10);
+          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+          exactEventDate.setHours(hours, minutes, 0, 0);
+        } else {
+          exactEventDate.setHours(23, 59, 59, 999);
+        }
+      } else {
+        // If no time is specified, assume it lasts until the end of the day
+        exactEventDate.setHours(23, 59, 59, 999);
+      }
+
+      diffDays = differenceInCalendarDays(eventDate, today);
+      isPastTime = today.getTime() > exactEventDate.getTime();
+
+      if (diffDays < 0 || isPastTime) {
+        statusLabel = "Past Event";
+        statusColor = "bg-slate-800 text-white border border-slate-700";
+      }  
+    }
+
+    useEffect(() => {
+      // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
+      const isTrustedRole = userRole === 'admin' || userRole === 'curator';
+      if (layout && !isPastDateView && !isTrustedRole) {
+        const checkDate = parseEventDateString(date);
+        if (checkDate) {
+          const today = new Date();
+          const exactCheckDate = new Date(checkDate);
+          
+          // Apply the exact time logic inside the auto-hide effect as well
+          const parts = date.split(" · ");
+          if (parts.length > 1) {
+            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+              let hours = parseInt(match[1], 10);
+              const minutes = parseInt(match[2], 10);
+              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+              exactCheckDate.setHours(hours, minutes, 0, 0);
+            } else {
+              exactCheckDate.setHours(23, 59, 59, 999);
+            }
+          } else {
+            exactCheckDate.setHours(23, 59, 59, 999);
+          }
+
+          const pastDate = differenceInCalendarDays(checkDate, today) < 0;
+          
+          // Fix: We no longer check `pastTime` to hide the card.
+          // This ensures same-day past events stay visible (with a "Past Event" badge),
+          // keeping the UI counts perfectly synchronized with the server counts.
+          if (pastDate) {
+            setIsVisible(false);
+          }
+        }
+      }
+    }, [date, layout, isPastDateView, userRole]);
+    
+    // --- NEW: TEMPLATE ENGINE LOGIC ---
+    // Added a fallback to prevent crashes if the category is not found
+    const config = getCategoryConfig(category) || { backgroundImage: '/card-backgrounds/default.webp', dateColor: '#6C47FF' };
+    // Only use uploaded image if it's featured AND an actual image was uploaded (not a placeholder)
+    const isCustomUpload = imageUrl && imageUrl.startsWith('http');
+    const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
+
+    // Format short date (e.g., "22 MAY") for the overlay
+    const shortDateOverlay = (() => {
+      const parsedDate = parseEventDateString(date);
+      if (parsedDate) {
+        return format(parsedDate, "d MMM").toUpperCase();
+      }
+      return "SOON";
+    })();
+
+    const handleShare = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const shareData = {
+        title: title,
+        text: `${title} on ${date} in ${city}\nPosted on EvenTime 🎉`,
+        url: `${window.location.origin}/events/${slug}`, // Updated to use slug
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+        } catch (err) { console.error("Share failed", err); }
+      } else {
+        // Fallback
+        await navigator.clipboard.writeText(shareData.url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    };
+
+    const cardVariantClass = isFeatured 
+      ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
+      : "w-full aspect-square";
+
+    return (
+      <>
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div 
+              layout={layout}
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+              animate={{}}
+              transition={{ duration: 0.3 }}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+            >
+
+              
+              {/* --- IMAGE LAYER --- */}
+              <div 
+                className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
+              >
+                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                  <Image 
+                    src={finalImageSrc}
+                    alt={title} 
+                    fill 
+                    unoptimized={true}
+                    priority={priority}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                  />
+                  
+                    {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
+                    {finalImageSrc.includes('default.webp') && (
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                        <span 
+                          className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
+                          style={{ 
+                            fontSize: 'clamp(10px, 5vw, 20px)', 
+                            lineHeight: 1.2, 
+                            fontFamily: "'Outfit', sans-serif",
+                            color: config.dateColor,
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {category}
+                        </span>
+                      </div>
+                    )}              
+                    </Link>
+
+                {/* Date top-left  */}
+                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                  <span
+                    className="font-semibold uppercase tracking-wider"
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    {shortDateOverlay}
+                  </span>
+                  <span
+                    className="font-semibold uppercase tracking-widest text-right"
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                  >
+                    EvenTime
+                  </span>
+                </div>
+
+                {/* Badges Overlay (FOMO & Status) — below the top row */}
+                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                  {statusLabel && !(hidePastBadge && statusLabel === "Past Event") && (
+                    <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
+                      {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}
+                      {statusLabel}
+                    </span>
+                  )}
+
+                  {matchLabel && (
+                    <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md flex items-center gap-1 backdrop-blur-md">
+                      ⭐ {matchLabel}
+                    </span>
+                  )}
+
+                   {isFeatured && !matchLabel && (
+                    <span className="bg-linear-to-r from-amber-400 to-amber-600 text-white text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest shadow-md shadow-amber-500/30 flex items-center gap-1 backdrop-blur-md">
+                      Featured
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
+              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                  <h3 
+                    className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
+                    style={{ 
+                      fontFamily: "'Outfit', sans-serif",
+                      textTransform: 'capitalize' 
+                    }}
+                  >
+                    {title.toLowerCase()}
+                  </h3>
+                </Link>
+
+                <div 
+                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                >
+                  {!hideOrganizer && <>Curated by {organizerUsername ? (
+                    <Link
+                      href={`/${organizerUsername}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:text-brand-primary hover:underline transition-colors"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    organizerName
+                  )}</>}
+                  {!isFree && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div className="relative flex items-center justify-center w-5 h-5">
+                        <div className="absolute inset-0 bg-emerald-500 rounded-full" />
+                        <div className="relative flex items-center justify-center w-4 h-4 bg-emerald-500 rounded-full">
+                          <IndianRupee className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {city && (
+                <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                {collegeName ? (
+               <span className="truncate">{collegeName}, {city}</span>
+              ) : (
+             <Link
+            href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+           onClick={(e) => e.stopPropagation()}
+           className="truncate hover:text-brand-primary hover:underline transition-colors"
+      >
+        {city}
+      </Link>
+    )}
+  </div>
+)}
+
+                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                  </span>
+                  {interestedCount && interestedCount > 0 ? (
+                    <>
+                      <span className="text-slate-300 shrink-0">|</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        <Users className="w-3.5 h-3.5 text-slate-400" />
+                        {interestedCount}
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+
+              {/* Save + Share — bottom-right of the main white card container */}
+              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleSave(e); }}
+                  disabled={isSaving}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                >
+                  <Bookmark
+                    className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"
+                    style={{ fill: savedState ? 'currentColor' : 'none' }}
+                  />
+                </button>
+                <button 
+                  onClick={(e) => { e.preventDefault(); handleShare(e); }}
+                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                >
+                  {copied
+                    ? <Check className="w-4 h-4 text-emerald-500" />
+                    : <Share2 className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900" />
+                  }
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+          {/* NEW: Auth Modal Overlay */}
+          {showAuthModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
+              <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
+                <button onClick={() => setShowAuthModal(false)} className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-[#E8E5FF] hover:text-brand-primary rounded-full transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="w-14 h-14 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
+                  <Bookmark className="w-6 h-6 text-slate-700" />
+                </div>
+                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Save Events</h3>
+                <p className="text-[15px] text-slate-500 mt-2 mb-6 font-medium">Please sign in to save this event to your profile.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-slate-50 text-slate-900 font-bold py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+                    Cancel
+                  </button>
+                  <Link href="/login" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+                    Sign In
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+      </>
+    );
+  }
 </file>
 
 <file path="src/app/leaderboard/page.tsx">
@@ -10884,130 +10913,6 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       </motion.div>
     </div>
   );
-}
-</file>
-
-<file path="src/features/create-event/hooks/useEventSubmit.ts">
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import type { TablesInsert } from "@/types/database";
-import { toast } from "sonner";
-import { revalidateEventsCacheAction } from "@/app/et98/revalidateEventsAction";
-type SubmitPayload = TablesInsert<"events"> & {
-  imageFile?: File | null;
-  previewUrl?: string | null;
-};
-
-export function useEventSubmit() {
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const supabase = createClient();
-
-  const generateSlug = (eventTitle: string, eventLocation: string, eventDate: Date | undefined): string => {
-    const slugTitle = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-    const city = eventLocation? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""): "online";
-    const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
-    const month = eventDate ? monthNames[eventDate.getMonth()] : "";
-    const year = eventDate ? eventDate.getFullYear().toString() : "";
-    const randomSuffix = crypto.randomUUID().split("-")[0].substring(0, 4);
-    return [slugTitle, city, month, year, randomSuffix].filter(Boolean).join("-");
-  };
-
-  const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
-    setIsSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please login to submit an event.");
-      setIsSubmitting(false);
-      return;
-    }
-
-    try {
-      let finalPosterUrl = payloadData.previewUrl; // Fallback to existing
-      
-      if (payloadData.imageFile) {
-        const { default: imageCompression } = await import("browser-image-compression");
-        const compressedPoster = await imageCompression(payloadData.imageFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
-        const posterPresign = await fetch("/api/upload/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: `events/poster_${Date.now()}.webp`, contentType: "image/webp", fileSize: compressedPoster.size }) });
-        const { uploadUrl: posterUploadUrl, publicUrl: posterPublicUrl } = await posterPresign.json();
-        await fetch(posterUploadUrl, { method: "PUT", headers: { "Content-Type": "image/webp" }, body: compressedPoster });
-        finalPosterUrl = posterPublicUrl;
-      }
-
-      const eventCity = payloadData.is_virtual ? "online" : payloadData.location;
-      
-      // FIX: Add fallbacks to handle potential null or undefined values from DB types
-      const uniqueSlug = generateSlug(
-        payloadData.title || "", 
-        eventCity || "", 
-        payloadData.date_string ? new Date(payloadData.date_string) : undefined
-      );
-
-      // Destructure only UI fields, let is_featured go into the database payload
-      const { imageFile, previewUrl, ...dbPayload } = payloadData;
-      const finalPayload = { ...dbPayload };
-       // FIX: Convert empty strings to null for link fields to prevent Postgres CHECK constraint failures
-      if (finalPayload.registration_link === "") finalPayload.registration_link = null;
-      if (finalPayload.website === "") finalPayload.website = null;
-
-      if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
-
-      // 1. Fetch profile data from your database (MOVED TO TOP LEVEL SCOPE)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, username, user_type, role")
-        .eq("id", user.id)
-        .single();
-
-      // NEW: Auto-fetch and assign curator name if organizer_name is empty
-      if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
-        // 2. Extract name from Supabase/Google Auth metadata
-        // Google usually stores this under 'name' or 'full_name'
-        const authName = user.user_metadata?.full_name || user.user_metadata?.name;
-
-        // 3. Fallback logic: Profile Name -> Google Name -> Profile Username -> Default
-        finalPayload.organizer_name = 
-          profile?.full_name || 
-          authName || 
-          profile?.username || 
-          "Event Curator";
-      }
-
-      if (isEditing && eventId) {
-        const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
-        
-        if (error) throw error; // ← check error FIRST
-        
-        // Only runs if update succeeded:
-        await supabase.from("event_reports")
-          .update({ status: "resolved" })
-          .eq("event_id", eventId)
-          .eq("status", "pending");
-          
-      } else {
-                // Check database role ONLY
-        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-      const { error } = await supabase.from("events").insert([{
-          ...finalPayload, 
-          slug: uniqueSlug, 
-          creator_id: user.id,
-        status: isAdmin ? "approved" : (finalPayload.status || "pending") 
-        }]);
-        if (error) throw error;
-        if (isAdmin) await revalidateEventsCacheAction();
-      }
-      
-      router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
-    } catch (err: any) {
-      console.error("[useEventSubmit] Error:", err);
-      toast.error(err?.message || "Submission failed. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return { isSubmitting, submitEvent };
 }
 </file>
 
@@ -12135,6 +12040,131 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           </div>
         </motion.div>
   );
+}
+</file>
+
+<file path="src/features/create-event/hooks/useEventSubmit.ts">
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { TablesInsert } from "@/types/database";
+import { toast } from "sonner";
+import { revalidateEventsCacheAction } from "@/app/et98/revalidateEventsAction";
+type SubmitPayload = TablesInsert<"events"> & {
+  imageFile?: File | null;
+  previewUrl?: string | null;
+};
+
+export function useEventSubmit() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabase = createClient();
+
+  const generateSlug = (eventTitle: string, eventLocation: string, eventDate: Date | undefined): string => {
+    const slugTitle = eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const city = eventLocation? eventLocation.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""): "online";
+    const monthNames = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+    const month = eventDate ? monthNames[eventDate.getMonth()] : "";
+    const year = eventDate ? eventDate.getFullYear().toString() : "";
+    const randomSuffix = crypto.randomUUID().split("-")[0].substring(0, 4);
+    return [slugTitle, city, month, year, randomSuffix].filter(Boolean).join("-");
+  };
+
+  const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
+    setIsSubmitting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error("Please login to submit an event.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      let finalPosterUrl = payloadData.previewUrl; // Fallback to existing
+      
+      if (payloadData.imageFile) {
+        const { default: imageCompression } = await import("browser-image-compression");
+        const compressedPoster = await imageCompression(payloadData.imageFile, { maxSizeMB: 0.3, maxWidthOrHeight: 1200, useWebWorker: true, fileType: "image/webp" });
+        const posterPresign = await fetch("/api/upload/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileName: `events/poster_${Date.now()}.webp`, contentType: "image/webp", fileSize: compressedPoster.size }) });
+        const { uploadUrl: posterUploadUrl, publicUrl: posterPublicUrl } = await posterPresign.json();
+        await fetch(posterUploadUrl, { method: "PUT", headers: { "Content-Type": "image/webp" }, body: compressedPoster });
+        finalPosterUrl = posterPublicUrl;
+      }
+
+      const eventCity = payloadData.is_virtual ? "online" : payloadData.location;
+      
+      // FIX: Add fallbacks to handle potential null or undefined values from DB types
+      const uniqueSlug = generateSlug(
+        payloadData.title || "", 
+        eventCity || "", 
+        payloadData.date_string ? new Date(payloadData.date_string) : undefined
+      );
+
+      // Destructure only UI fields, let is_featured go into the database payload
+      const { imageFile, previewUrl, ...dbPayload } = payloadData;
+      const finalPayload = { ...dbPayload };
+       // FIX: Convert empty strings to null for link fields to prevent Postgres CHECK constraint failures
+      if (finalPayload.registration_link === "") finalPayload.registration_link = null;
+      if (finalPayload.website === "") finalPayload.website = null;
+
+      if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
+
+      // 1. Fetch profile data from your database (MOVED TO TOP LEVEL SCOPE)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, username, user_type, role")
+        .eq("id", user.id)
+        .single();
+
+      // NEW: Auto-fetch and assign curator name if organizer_name is empty
+      if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
+        // 2. Extract name from Supabase/Google Auth metadata
+        // Google usually stores this under 'name' or 'full_name'
+        const authName = user.user_metadata?.full_name || user.user_metadata?.name;
+
+        // 3. Fallback logic: Profile Name -> Google Name -> Profile Username -> Default
+        finalPayload.organizer_name = 
+          profile?.full_name || 
+          authName || 
+          profile?.username || 
+          "Event Curator";
+      }
+
+      if (isEditing && eventId) {
+        const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
+        
+        if (error) throw error; // ← check error FIRST
+        
+        // Only runs if update succeeded:
+        await supabase.from("event_reports")
+          .update({ status: "resolved" })
+          .eq("event_id", eventId)
+          .eq("status", "pending");
+          
+      } else {
+                // Check database role ONLY
+        const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+      const { error } = await supabase.from("events").insert([{
+          ...finalPayload, 
+          slug: uniqueSlug, 
+          creator_id: user.id,
+        status: isAdmin ? "approved" : (finalPayload.status || "pending") 
+        }]);
+        if (error) throw error;
+        if (isAdmin) await revalidateEventsCacheAction();
+      }
+      
+      toast.success(isEditing ? "Event updated!" : "Event submitted! It'll go live once approved.");
+      router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
+    } catch (err: any) {
+      console.error("[useEventSubmit] Error:", err);
+      toast.error(err?.message || "Submission failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { isSubmitting, submitEvent };
 }
 </file>
 

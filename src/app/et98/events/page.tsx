@@ -4,9 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Trash2, CheckCircle, XCircle, ImageIcon, Save } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/permissions";
-import { deleteEventAction, updateEventDetailsAction } from "../actions";
-import { DeleteConfirmButton } from "./DeleteConfirmButton";
-import { StatusSelect } from "./StatusSelect";
+import { EventRowActions } from "./EventRowActions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,16 +37,6 @@ export default async function AdminEventsPage(props: PageProps) {
 
   if (error) {
     console.error("Error fetching events:", error.message || JSON.stringify(error));
-  }
-
-  async function handleUpdate(formData: FormData) {
-    "use server";
-    await updateEventDetailsAction(formData);
-  }
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
   }
 
   return (
@@ -101,9 +89,6 @@ export default async function AdminEventsPage(props: PageProps) {
                     
                     {/* Event Image & Title */}
                     <td className="px-8 py-6">
-                      <form id={`update-${event.id}`} action={handleUpdate}>
-                        <input type="hidden" name="eventId" value={event.id} />
-                      </form>
                       <div className="flex items-center gap-5">
                         <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
                           {event.poster_url ? (
@@ -128,34 +113,14 @@ export default async function AdminEventsPage(props: PageProps) {
                       </span>
                     </td>
 
-                    {/* Category (Editable) */}
-                    <td className="px-8 py-6">
-                      <input 
-                        type="text" 
-                        name="category" 
-                        defaultValue={event.category || ""} 
-                        form={`update-${event.id}`} 
-                        placeholder="Category"
-                        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
-                      />
-                    </td>
-
-                    {/* Status (Editable) */}
-                    <td className="px-8 py-6">
-                      <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-8 py-6">
-                      <div className="flex items-center justify-end gap-3">
-                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
-                          <CheckCircle className="w-5 h-5" />
-                        </button>
-
-                        <form action={handleDelete}>
-                          <input type="hidden" name="eventId" value={event.id} />
-                          <DeleteConfirmButton />
-                        </form>
+                    {/* Category, Status & Actions */}
+                    <td className="px-8 py-6" colSpan={3}>
+                      <div className="flex items-center gap-4">
+                        <EventRowActions
+                          eventId={event.id}
+                          initialCategory={event.category || ""}
+                          initialStatus={event.status || "pending"}
+                        />
                       </div>
                     </td>
                   </tr>
