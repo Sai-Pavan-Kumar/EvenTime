@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { cache } from "react";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import EventClientUI from "./EventClientUI";
 
@@ -7,28 +8,27 @@ const isValidUUID = (id: string) => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
+const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+
+// Cached so generateMetadata + the page component share ONE DB call instead of two
+const getEvent = cache(async (slug: string) => {
+  const supabase = await createServerClient();
+  const isUUID = isValidUUID(slug);
+
+  let query = supabase.from("events").select(EVENT_DETAIL_FIELDS);
+  query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
+
+  const { data } = await query.maybeSingle();
+  return data;
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createServerClient();
-  
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select("title, category, date_string, description, status");
-    
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: event } = await query.maybeSingle();
+  const event = await getEvent(slug);
 
   if (!event || event.status !== "approved") return { title: "Event Not Found" };
 
@@ -86,22 +86,7 @@ export default async function EventPage({
   const { slug } = await params;
   const supabase = await createServerClient();
 
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
-
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select(EVENT_DETAIL_FIELDS);
-
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: finalEvent } = await query.maybeSingle();
+  const finalEvent = await getEvent(slug);
 
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
   const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;

@@ -9,7 +9,7 @@ import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-export const revalidate = 0;
+export const revalidate = 600;
 
 async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
   const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;

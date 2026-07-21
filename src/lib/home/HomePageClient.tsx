@@ -380,7 +380,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             title={event.title!}
                             category={event.category!}
                             date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-                            city={event.location || event.city!}
+                            city={event.is_virtual ? "Online" : (event.location || event.city!)}
                             imageUrl={event.poster_url || ""}
                             organizerName={event.organizer_name!}
                             organizerUsername={(event as any).profiles?.username}

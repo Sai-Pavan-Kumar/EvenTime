@@ -6236,7 +6236,7 @@ export function EventGrid({
             title={event.title!}
             category={event.category!}
             date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.location || event.city!}
+            city={event.is_virtual ? "Online" : (event.location || event.city!)}
             imageUrl={event.poster_url || defaultImage}
            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
            organizerUsername={(event as any).profiles?.username}
@@ -7503,6 +7503,71 @@ export default async function CategoryPage({
 }
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/CityGrid.tsx">
 "use client";
 
@@ -7593,8 +7658,50 @@ export function CityGrid({ events }: CityGridProps) {
 }
 </file>
 
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404_state3.webp" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/events/[slug]/page.tsx">
 import { Metadata } from "next";
+import { cache } from "react";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import EventClientUI from "./EventClientUI";
 
@@ -7603,28 +7710,27 @@ const isValidUUID = (id: string) => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
+const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+
+// Cached so generateMetadata + the page component share ONE DB call instead of two
+const getEvent = cache(async (slug: string) => {
+  const supabase = await createServerClient();
+  const isUUID = isValidUUID(slug);
+
+  let query = supabase.from("events").select(EVENT_DETAIL_FIELDS);
+  query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
+
+  const { data } = await query.maybeSingle();
+  return data;
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createServerClient();
-  
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select("title, category, date_string, description, status");
-    
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: event } = await query.maybeSingle();
+  const event = await getEvent(slug);
 
   if (!event || event.status !== "approved") return { title: "Event Not Found" };
 
@@ -7682,22 +7788,7 @@ export default async function EventPage({
   const { slug } = await params;
   const supabase = await createServerClient();
 
- const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
-
-  const isUUID = isValidUUID(slug);
-
-  // Dynamically build the query based on what the slug actually is
-  let query = supabase
-    .from("events")
-    .select(EVENT_DETAIL_FIELDS);
-
-  if (isUUID) {
-    query = query.eq("id", slug);
-  } else {
-    query = query.eq("slug", slug);
-  }
-
-  const { data: finalEvent } = await query.maybeSingle();
+  const finalEvent = await getEvent(slug);
 
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
   const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
@@ -7818,413 +7909,6 @@ export default async function EventPage({
       />
       <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
     </>
-  );
-}
-</file>
-
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404_state3.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/city-config.ts">
-export const CITY_CONFIG: Record<string, {
-  backgroundImage: string;
-  accentColor: string;
-}> = {
-  'hyderabad': {
-    backgroundImage: '/cities/hyderabad4.webp',
-    accentColor: '#6C47FF',
-  },
-   'bengaluru': {
-    backgroundImage: '/cities/bengaluru1.webp', 
-    accentColor: '#0EA5E9',
-  },
-  'mumbai': {
-    backgroundImage: '/cities/mumbai1.webp',
-    accentColor: '#F59E0B',
-  },
-  'new-delhi': {
-    backgroundImage: '/cities/new-delhi1.webp', 
-    accentColor: '#EF4444',
-  },
-  'chennai': {
-    backgroundImage: '/cities/chennai1.webp',
-    accentColor: '#10B981',
-  },
-  'pune': {
-    backgroundImage: '/cities/pune1.webp',
-    accentColor: '#8B5CF6',
-  },
-  'anantapur': {
-    backgroundImage: '/cities/anantapur1.webp',
-    accentColor: '#10B981',
-  },
-  'kolkata': {
-    backgroundImage: '/cities/kolkata1.webp',
-    accentColor: '#F97316',
-  },
-  'jaipur': {
-    backgroundImage: '/cities/jaipur1.webp',
-    accentColor: '#EC4899',
-  },
-  'ahmedabad': {
-    backgroundImage: '/cities/ahmedabad1.webp',
-    accentColor: '#14B8A6',
-  },
-  'kochi': {
-    backgroundImage: '/cities/kochi1.webp',
-    accentColor: '#22C55E',
-  },
-  'visakhapatnam': {
-    backgroundImage: '/cities/visakhapatnam1.webp', 
-    accentColor: '#6366F1',
-  },
-  'coimbatore': {
-    backgroundImage: '/cities/coimbatore1.webp',
-    accentColor: '#A855F7',
-  },
-  'nizamabad': {
-    backgroundImage: '/cities/nizamabad1.webp',
-    accentColor: '#6C47FF',
-  },
-  'online': {
-    backgroundImage: '/cities/online21.webp',
-    accentColor: '#6366F1',
-  },
-  'bhopal': {
-    backgroundImage: '/cities/bhopal1.webp', 
-    accentColor: '#3B82F6',
-  },
-  'guntur': {
-    backgroundImage: '/cities/guntur1.webp', 
-    accentColor: '#6366F1',
-  },
-  'gurugram': {
-    backgroundImage: '/cities/gurugram1.webp', 
-    accentColor: '#6366F1',
-  },
-  'indore': {
-    backgroundImage: '/cities/indore1.webp', 
-    accentColor: '#6366F1',
-  },
-  'kakinada': {
-    backgroundImage: '/cities/kakinada1.webp', 
-    accentColor: '#6366F1',
-  },
-  'kanpur': {
-    backgroundImage: '/cities/kanpur1.webp', 
-    accentColor: '#6366F1',
-  },
-  'karimnagar': {
-    backgroundImage: '/cities/karimnagar1.webp', 
-    accentColor: '#6366F1',
-  },
-  'khammam': {
-    backgroundImage: '/cities/khammam1.webp', 
-    accentColor: '#6366F1',
-  },
-  'lucknow': {
-    backgroundImage: '/cities/lucknow1.webp', 
-    accentColor: '#6366F1',
-  },
-  'mangaluru': {
-    backgroundImage: '/cities/mangaluru1.webp', 
-    accentColor: '#6366F1',
-  },
-  'mysuru': {
-    backgroundImage: '/cities/mysuru1.webp', 
-    accentColor: '#6366F1',
-  },
-  'nagpur': {
-    backgroundImage: '/cities/nagpur1.webp', 
-    accentColor: '#6366F1',
-  },
-  'noida': {
-    backgroundImage: '/cities/noida1.webp', 
-    accentColor: '#6366F1',
-  },
-  'thiruvananthapuram': {
-    backgroundImage: '/cities/thiruvananthapuram1.webp', 
-    accentColor: '#6366F1',
-  },
-  'tirupati': {
-    backgroundImage: '/cities/tirupati1.webp', 
-    accentColor: '#6366F1',
-  },
-  'vijayawada': {
-    backgroundImage: '/cities/vijayawada1.webp', 
-    accentColor: '#6366F1',
-  },
-  'warangal': {
-    backgroundImage: '/cities/warangal1.webp', 
-    accentColor: '#6366F1',
-  },
-};
-
-export const getCityConfig = (city: string) => {
-  const fallback = { 
-    backgroundImage: '/cities/default1.webp', 
-    coverImage: null as string | null, 
-    accentColor: '#6C47FF' 
-  };
-  
-  if (!city) return fallback;
-  
-  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  const config = CITY_CONFIG[key];
-  
-  if (!config) return fallback;
-  return {
-    ...config,
-    coverImage: `/cities/covers/${key}.webp`
-  };
-};
-</file>
-
-<file path="src/app/cities/[city]/page.tsx">
-import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
-import { Navbar } from "@/components/layout/Navbar";
-import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
-import { getCityConfig } from "@/lib/city-config";
-import { MapPin } from "lucide-react";
-import { unstable_cache } from "next/cache";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}): Promise<Metadata> {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-
-  return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
-  };
-}
-
-export default async function CityPage({
-  params,
-}: {
-  params: Promise<{ city: string }>;
-}) {
-  const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const supabase = await createClient();
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
-
-  // CACHED: public events for this city (same for every anonymous/non-student visitor)
-  const getCachedPublicCityEvents = unstable_cache(
-    async () => {
-      const supabaseAnon = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      );
-      const { data } = await supabaseAnon
-        .from("events")
-        .select(EVENT_FIELDS)
-        .eq("status", "approved")
-        .ilike("city", decodedCity)
-        .gte("date_string", todayStr)
-        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
-        .order("date_string", { ascending: true })
-        .limit(50);
-      return data || [];
-    },
-    [`city_events_${decodedCity.toLowerCase()}`],
-    { tags: ["events"], revalidate: 600 } // 10 minutes
-  );
-
-  // 1. Run the auth check AND the cached public events fetch at the same time —
-  // they don't depend on each other, so no reason to wait for one before starting the other.
-  const [{ data: { user } }, publicEvents] = await Promise.all([
-    supabase.auth.getUser(),
-    getCachedPublicCityEvents(),
-  ]);
-
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
-  }
-
-  // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
-  let personalEvents: any[] = [];
-  if (user) {
-    let extraFilter = `creator_id.eq.${user.id}`;
-    if (profile?.user_type === "student" && profile?.college_id) {
-      extraFilter += `,college_id.eq.${profile.college_id}`;
-    }
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_FIELDS)
-      .eq("status", "approved")
-      .ilike("city", decodedCity)
-      .gte("date_string", todayStr)
-      .or(extraFilter)
-      .order("date_string", { ascending: true })
-      .limit(50);
-    personalEvents = data || [];
-  }
-
-  // 4. Merge, de-duplicate by id
-  const eventMap = new Map();
-  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
-  const events = Array.from(eventMap.values());
-
-  const cityConfig = getCityConfig(decodedCity);
-
-  return (
-    <main className="min-h-screen bg-surface-base pb-24">
-      <Navbar />
-      
-      {/* City Cover Hero — only shown if a real cover image exists for this city */}
-      {cityConfig.coverImage && (
-        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-            <img 
-              src={cityConfig.coverImage} 
-              alt={decodedCity} 
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
-            Events happening in {decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
-        ) : (
-          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-              <MapPin className="w-6 h-6 text-slate-300" />
-            </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
-            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
-            </p>
-          </div>
-        )}
-      </div>
-    </main>
   );
 }
 </file>
@@ -8720,7 +8404,7 @@ import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-export const revalidate = 0;
+export const revalidate = 600;
 
 async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
   const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;
@@ -9136,6 +8820,66 @@ export default async function RootLayout({
 }
 </file>
 
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/LandingIntro.tsx">
 import Image from "next/image";
 import { Star, CalendarDays, Building2, TrendingUp, CheckCircle2 } from "lucide-react";
@@ -9344,6 +9088,191 @@ function SearchIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+</file>
+
+<file path="src/lib/city-config.ts">
+export const CITY_CONFIG: Record<string, {
+  backgroundImage: string;
+  coverImage: string;
+  accentColor: string;
+}> = {
+  'hyderabad': {
+    backgroundImage: '/cities/hyderabad1.webp',
+     coverImage: '/cities/covers/hyderabad4.webp',
+    accentColor: '#6C47FF',
+  },
+   'bengaluru': {
+    backgroundImage: '/cities/bengaluru1.webp', 
+    coverImage: '/cities/covers/bengaluru1.webp',
+    accentColor: '#0EA5E9',
+  },
+  'mumbai': {
+    backgroundImage: '/cities/mumbai1.webp',
+    coverImage: '/cities/covers/mumbai1.webp',
+    accentColor: '#F59E0B',
+  },
+  'new-delhi': {
+    backgroundImage: '/cities/new-delhi1.webp', 
+    coverImage: '/cities/covers/new-delhi1.webp',
+    accentColor: '#EF4444',
+  },
+  'chennai': {
+    backgroundImage: '/cities/chennai1.webp',
+    coverImage: '/cities/covers/chennai1.webp',
+    accentColor: '#10B981',
+  },
+  'pune': {
+    backgroundImage: '/cities/pune1.webp',
+    coverImage: '/cities/covers/pune1.webp',
+    accentColor: '#8B5CF6',
+  },
+  'anantapur': {
+    backgroundImage: '/cities/anantapur1.webp',
+    coverImage: '/cities/covers/anantapur1.webp',
+    accentColor: '#10B981',
+  },
+  'kolkata': {
+    backgroundImage: '/cities/kolkata1.webp',
+    coverImage: '/cities/covers/kolkata1.webp',
+    accentColor: '#F97316',
+  },
+  'jaipur': {
+    backgroundImage: '/cities/jaipur1.webp',
+    coverImage: '/cities/covers/jaipur1.webp',
+    accentColor: '#EC4899',
+  },
+  'ahmedabad': {
+    backgroundImage: '/cities/ahmedabad1.webp',
+    coverImage: '/cities/covers/ahmedabad1.webp',
+    accentColor: '#14B8A6',
+  },
+  'kochi': {
+    backgroundImage: '/cities/kochi1.webp',
+    coverImage: '/cities/covers/kochi1.webp',
+    accentColor: '#22C55E',
+  },
+  'visakhapatnam': {
+    backgroundImage: '/cities/visakhapatnam1.webp',
+    coverImage: '/cities/covers/visakhapatnam1.webp', 
+    accentColor: '#6366F1',
+  },
+  'coimbatore': {
+    backgroundImage: '/cities/coimbatore1.webp',
+    coverImage: '/cities/covers/coimbatore1.webp',
+    accentColor: '#A855F7',
+  },
+  'nizamabad': {
+    backgroundImage: '/cities/nizamabad1.webp',
+    coverImage: '/cities/covers/nizamabad1.webp',
+    accentColor: '#6C47FF',
+  },
+  'online': {
+    backgroundImage: '/cities/online1.webp',
+    coverImage: '/cities/covers/online1.webp',
+    accentColor: '#6366F1',
+  },
+  'bhopal': {
+    backgroundImage: '/cities/bhopal1.webp', 
+    coverImage: '/cities/covers/bhopal1.webp',
+    accentColor: '#3B82F6',
+  },
+  'guntur': {
+    backgroundImage: '/cities/guntur1.webp', 
+    coverImage: '/cities/covers/guntur1.webp',
+    accentColor: '#6366F1',
+  },
+  'gurugram': {
+    backgroundImage: '/cities/gurugram1.webp', 
+    coverImage: '/cities/covers/gurugram1.webp',
+    accentColor: '#6366F1',
+  },
+  'indore': {
+    backgroundImage: '/cities/indore1.webp', 
+    coverImage: '/cities/covers/indore1.webp',
+    accentColor: '#6366F1',
+  },
+  'kakinada': {
+    backgroundImage: '/cities/kakinada1.webp', 
+    coverImage: '/cities/covers/kakinada1.webp',
+    accentColor: '#6366F1',
+  },
+  'kanpur': {
+    backgroundImage: '/cities/kanpur1.webp', 
+    coverImage: '/cities/covers/kanpur1.webp',
+    accentColor: '#6366F1',
+  },
+  'karimnagar': {
+    backgroundImage: '/cities/karimnagar1.webp',
+    coverImage: '/cities/covers/karimnagar1.webp', 
+    accentColor: '#6366F1',
+  },
+  'khammam': {
+    backgroundImage: '/cities/khammam1.webp', 
+    coverImage: '/cities/covers/khammam1.webp',
+    accentColor: '#6366F1',
+  },
+  'lucknow': {
+    backgroundImage: '/cities/lucknow1.webp', 
+    coverImage: '/cities/covers/lucknow1.webp',
+    accentColor: '#6366F1',
+  },
+  'mangaluru': {
+    backgroundImage: '/cities/mangaluru1.webp',
+    coverImage: '/cities/covers/mangaluru1.webp', 
+    accentColor: '#6366F1',
+  },
+  'mysuru': {
+    backgroundImage: '/cities/mysuru1.webp', 
+    coverImage: '/cities/covers/mysuru1.webp',
+    accentColor: '#6366F1',
+  },
+  'nagpur': {
+    backgroundImage: '/cities/nagpur1.webp', 
+    coverImage: '/cities/covers/nagpur1.webp',
+    accentColor: '#6366F1',
+  },
+  'noida': {
+    backgroundImage: '/cities/noida1.webp', 
+    coverImage: '/cities/covers/noida1.webp',
+    accentColor: '#6366F1',
+  },
+  'thiruvananthapuram': {
+    backgroundImage: '/cities/thiruvananthapuram1.webp',
+    coverImage: '/cities/covers/thiruvananthapuram1.webp', 
+    accentColor: '#6366F1',
+  },
+  'tirupati': {
+    backgroundImage: '/cities/tirupati1.webp', 
+    coverImage: '/cities/covers/tirupati1.webp',
+    accentColor: '#6366F1',
+  },
+  'vijayawada': {
+    backgroundImage: '/cities/vijayawada1.webp',
+    coverImage: '/cities/covers/vijayawada1.webp', 
+    accentColor: '#6366F1',
+  },
+  'warangal': {
+    backgroundImage: '/cities/warangal1.webp', 
+    coverImage: '/cities/covers/warangal1.webp',
+    accentColor: '#6366F1',
+  },
+};
+
+export const getCityConfig = (city: string) => {
+  const fallback = { 
+    backgroundImage: '/cities/default1.webp', 
+    coverImage: '/cities/covers/default1.webp', 
+    accentColor: '#6C47FF' 
+  };
+  
+  if (!city) return fallback;
+  
+  const key = city.toLowerCase().trim().replace(/\s+/g, '-');
+  const config = CITY_CONFIG[key];
+  
+if (!config) return fallback;
+return config;
+};
 </file>
 
 <file path="src/types/database.ts">
@@ -10100,6 +10029,152 @@ const nextConfig: NextConfig = {
 export default withPWA(nextConfig);
 </file>
 
+<file path="src/app/cities/[city]/page.tsx">
+import { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { Navbar } from "@/components/layout/Navbar";
+import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
+import { getCityConfig } from "@/lib/city-config";
+import { MapPin } from "lucide-react";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}): Promise<Metadata> {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+
+  return {
+    title: `Events in ${decodedCity} | EvenTime`,
+    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+  };
+}
+
+export default async function CityPage({
+  params,
+}: {
+  params: Promise<{ city: string }>;
+}) {
+  const { city } = await params;
+  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const supabase = await createClient();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
+
+  // CACHED: public events for this city (same for every anonymous/non-student visitor)
+  const getCachedPublicCityEvents = unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const { data } = await supabaseAnon
+        .from("events")
+        .select(EVENT_FIELDS)
+        .eq("status", "approved")
+        .ilike("city", decodedCity)
+        .gte("date_string", todayStr)
+        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
+        .order("date_string", { ascending: true })
+        .limit(50);
+      return data || [];
+    },
+    [`city_events_${decodedCity.toLowerCase()}`],
+    { tags: ["events"], revalidate: 600 } // 10 minutes
+  );
+
+  // 1. Run the auth check AND the cached public events fetch at the same time —
+  // they don't depend on each other, so no reason to wait for one before starting the other.
+  const [{ data: { user } }, publicEvents] = await Promise.all([
+    supabase.auth.getUser(),
+    getCachedPublicCityEvents(),
+  ]);
+
+  let profile = null;
+  if (user) {
+    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+    profile = data;
+  }
+
+  // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
+  let personalEvents: any[] = [];
+  if (user) {
+    let extraFilter = `creator_id.eq.${user.id}`;
+    if (profile?.user_type === "student" && profile?.college_id) {
+      extraFilter += `,college_id.eq.${profile.college_id}`;
+    }
+    const { data } = await supabase
+      .from("events")
+      .select(EVENT_FIELDS)
+      .eq("status", "approved")
+      .ilike("city", decodedCity)
+      .gte("date_string", todayStr)
+      .or(extraFilter)
+      .order("date_string", { ascending: true })
+      .limit(50);
+    personalEvents = data || [];
+  }
+
+  // 4. Merge, de-duplicate by id
+  const eventMap = new Map();
+  [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
+  const events = Array.from(eventMap.values());
+
+  const cityConfig = getCityConfig(decodedCity);
+
+  return (
+    <main className="min-h-screen bg-surface-base pb-24">
+      <Navbar />
+      
+      {/* City Cover Hero — only shown if a real cover image exists for this city */}
+      {cityConfig.coverImage && (
+        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
+            <img 
+              src={cityConfig.coverImage} 
+              alt={decodedCity} 
+              className="w-full h-full object-cover object-bottom"
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
+            Events happening in {decodedCity}
+          </h2>
+          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
+            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
+          </span>
+        </div>
+
+        {events && events.length > 0 ? (
+          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
+            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+              <MapPin className="w-6 h-6 text-slate-300" />
+            </div>
+            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
+              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
+</file>
+
 <file path="src/components/profile/OnboardingModal.tsx">
 "use client";
 
@@ -10307,6 +10382,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                       title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
                       className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
                     />
+                    <p className="text-xs text-text-secondary font-medium px-1">3–12 characters, letters and numbers only.</p>
                 </div>
 
                 {/* 1. Location Selection */}
@@ -11108,66 +11184,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               />
             )}
         </AnimatePresence>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
       </div>
     </div>
   );
@@ -12576,7 +12592,7 @@ export default function EventClientUI({ event, similarEvents = [], curatorUserna
                   title={simEvent.title || "Untitled Event"}
                   category={simEvent.category || "General"}
                   date={simEvent.date_string || "TBA"}
-                  city={simEvent.location || simEvent.city || "Online"}
+                  city={simEvent.is_virtual ? "Online" : (simEvent.location || simEvent.city || "Online")}
                   imageUrl={simEvent.poster_url || "/window.svg"}
                   organizerName={simEvent.profiles?.username || simEvent.organizer_name || "Organizer"}
                   organizerUsername={simEvent.profiles?.username}
@@ -14485,7 +14501,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             title={event.title!}
                             category={event.category!}
                             date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-                            city={event.location || event.city!}
+                            city={event.is_virtual ? "Online" : (event.location || event.city!)}
                             imageUrl={event.poster_url || ""}
                             organizerName={event.organizer_name!}
                             organizerUsername={(event as any).profiles?.username}

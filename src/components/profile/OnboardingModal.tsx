@@ -204,6 +204,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                       title="Only letters and numbers are allowed. Minimum 3, maximum 12 characters."
                       className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
                     />
+                    <p className="text-xs text-text-secondary font-medium px-1">3–12 characters, letters and numbers only.</p>
                 </div>
 
                 {/* 1. Location Selection */}
