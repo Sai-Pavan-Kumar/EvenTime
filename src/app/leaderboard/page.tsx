@@ -118,15 +118,11 @@ export default async function LeaderboardPage() {
                         <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={80} height={80} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Medal className="w-3 h-3" /> #2
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border-2 border-slate-300 text-slate-600 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                      {topThree[1].et_score} <span className="text-[8px] font-bold text-slate-400">ET</span>
                     </div>
                   </Link>
-                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mt-1">{topThree[1].full_name}</h3>
-                  <p className="text-slate-400 text-[11px] font-semibold">Curator</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mt-1.5 mb-2">
-                    <span className="font-heading font-extrabold text-slate-700 text-sm">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
+                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mb-2">{topThree[1].full_name}</h3>
                 </>
               ) : (
                 <>
@@ -148,21 +144,17 @@ export default async function LeaderboardPage() {
                 <>
                   <div className="absolute top-6 left-1/2 -translate-x-1/2 w-28 h-28 bg-amber-400/30 blur-2xl rounded-full -z-10" />
                   <Crown className="w-7 h-7 text-amber-500 mb-1 drop-shadow-md" />
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-3 hover:scale-105 transition-transform">
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
                     <div className="w-24 h-24 md:w-28 md:h-28 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
                       <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
                         <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={112} height={112} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
-                      <Trophy className="w-3.5 h-3.5" /> #1
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white border-2 border-amber-400 text-amber-600 text-xs font-black px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+                      {topThree[0].et_score} <span className="text-[9px] font-bold text-amber-500/70">ET</span>
                     </div>
                   </Link>
-                  <h3 className="font-heading font-extrabold text-text-primary text-lg line-clamp-1 max-w-[140px] text-center mt-1">{topThree[0].full_name}</h3>
-                  <p className="text-amber-500/80 text-xs font-bold">Curator</p>
-                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mt-1.5 mb-2">
-                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
-                  </div>
+                  <h3 className="font-heading font-extrabold text-text-primary text-lg line-clamp-1 max-w-[140px] text-center mb-2">{topThree[0].full_name}</h3>
                   {currentUser?.id === topThree[0].user_id && (
                     <ShareMenu
                       ogImageUrl={topThreeUrls[0]}
@@ -197,15 +189,11 @@ export default async function LeaderboardPage() {
                         <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={80} height={80} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md border-2 border-white flex items-center gap-1">
-                      <Award className="w-3 h-3" /> #3
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white border-2 border-amber-700 text-amber-800 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md flex items-center gap-1">
+                      {topThree[2].et_score} <span className="text-[8px] font-bold text-amber-700/70">ET</span>
                     </div>
                   </Link>
-                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mt-1">{topThree[2].full_name}</h3>
-                  <p className="text-slate-400 text-[11px] font-semibold">Curator</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mt-1.5 mb-2">
-                    <span className="font-heading font-extrabold text-slate-700 text-sm">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
+                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mb-2">{topThree[2].full_name}</h3>
                 </>
               ) : (
                 <>
@@ -220,6 +208,9 @@ export default async function LeaderboardPage() {
                 <span className="text-3xl md:text-4xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
               </div>
             </div>
+
+            {/* Ground line — anchors all 3 podiums visually */}
+            <div className="col-span-3 h-1.5 bg-gradient-to-r from-transparent via-slate-300 to-transparent rounded-full -mt-0.5 shadow-[0_2px_8px_rgba(0,0,0,0.08)]" />
           </div>
         ) : (
           /* EMPTY STATE - NO CURATORS YET */
