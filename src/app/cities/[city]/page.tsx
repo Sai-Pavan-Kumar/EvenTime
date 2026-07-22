@@ -14,10 +14,21 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { city } = await params;
   const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
+  const title = `Events in ${decodedCity} | EvenTime`;
+  const description = `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`;
 
   return {
-    title: `Events in ${decodedCity} | EvenTime`,
-    description: `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`,
+    title,
+    description,
+    alternates: { canonical: `${baseUrl}/cities/${city}` },
+    openGraph: {
+      title,
+      description,
+      url: `${baseUrl}/cities/${city}`,
+      type: "website",
+    },
+    twitter: { card: "summary", title, description },
   };
 }
 
@@ -97,8 +108,38 @@ export default async function CityPage({
 
   const cityConfig = getCityConfig(decodedCity);
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: (events || []).slice(0, 20).map((ev, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      item: {
+        "@type": "Event",
+        name: ev.title,
+        startDate: ev.date_string || undefined,
+        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        eventStatus: "https://schema.org/EventScheduled",
+        location: {
+          "@type": "Place",
+          name: ev.location || decodedCity,
+          address: decodedCity,
+        },
+        image: ev.poster_url ? [ev.poster_url] : undefined,
+        organizer: ev.organizer_name ? { "@type": "Organization", name: ev.organizer_name } : undefined,
+        isAccessibleForFree: ev.is_free ?? undefined,
+        url: `${baseUrl}/events/${ev.slug}`,
+      },
+    })),
+  };
+
   return (
     <main className="min-h-screen bg-surface-base pb-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
       
       {/* City Cover Hero — only shown if a real cover image exists for this city */}

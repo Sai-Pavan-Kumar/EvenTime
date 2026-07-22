@@ -25,6 +25,10 @@ export const metadata: Metadata = {
   title: "EvenTime | Discover Tech, Startup & Career Events",
   description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.webp",
+    apple: "/icon-192.webp",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -33,11 +37,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
-    url: process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in",
     siteName: "EvenTime",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
         width: 1200,
         height: 630,
         alt: "EvenTime Platform",
@@ -104,6 +108,35 @@ export default async function RootLayout({
             </Script>
           </>
         )}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "EvenTime",
+              url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in",
+              logo: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/logo1.webp`,
+              sameAs: [],
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "EvenTime",
+              url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/?q={search_term_string}`,
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans pb-20 sm:pb-0">
         <NextTopLoader 

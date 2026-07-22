@@ -9,8 +9,14 @@ import { generateHMAC } from "@/lib/hmac";
 import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import type { Metadata } from "next";
 
 export const revalidate = 600;
+
+export const metadata: Metadata = {
+  title: "Top Curators Leaderboard | EvenTime",
+  description: "See the top-ranked event curators on EvenTime, ranked by trust, impact, and consistency.",
+};
 
 async function getSignedOgUrl(name: string, score: number, rank: number, image: string) {
   const query = `name=${encodeURIComponent(name)}&score=${score}&rank=${rank}&image=${encodeURIComponent(image)}`;

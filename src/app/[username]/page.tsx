@@ -3,6 +3,58 @@ import { Navbar } from "@/components/layout/Navbar";
 import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
 import Image from "next/image";
 import type { ProfileRow } from "@/types";
+import type { Metadata } from "next";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const supabase = await createClient();
+  const decodedUsername = decodeURIComponent(username);
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const isUuid = UUID_REGEX.test(decodedUsername);
+
+  const { data: curator } = await supabase
+    .from("profiles")
+    .select("id, full_name, username, avatar_url")
+    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
+    .maybeSingle();
+
+  if (!curator) return { title: "Curator Not Found | EvenTime" };
+
+  const { data: scoreRow } = await supabase
+    .from("leaderboard_view")
+    .select("et_score")
+    .eq("user_id", curator.id)
+    .maybeSingle();
+
+  const score = scoreRow?.et_score ?? 100;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
+  const ogUrl = new URL(`${baseUrl}/api/og/leaderboard`);
+  ogUrl.searchParams.set("name", curator.full_name || "Curator");
+  ogUrl.searchParams.set("score", String(score));
+  ogUrl.searchParams.set("rank", "1");
+  ogUrl.searchParams.set("image", curator.avatar_url || "");
+
+  const title = `${curator.full_name} | Curator on EvenTime`;
+  const description = `${curator.full_name} has ${score} ET Score on EvenTime. Check out their curated events.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `${baseUrl}/${curator.username || curator.id}` },
+    openGraph: {
+      title,
+      description,
+      url: `${baseUrl}/${curator.username || curator.id}`,
+      type: "profile",
+      images: [{ url: ogUrl.toString(), width: 1200, height: 630, alt: curator.full_name || "Curator" }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [ogUrl.toString()] },
+  };
+}
 
 export const dynamic = "force-dynamic";
 

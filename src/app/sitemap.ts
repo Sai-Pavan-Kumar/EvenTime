@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://et.sbhub.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
   const supabase = await createClient();
 
   // Fetch all approved events along with their category and city
@@ -51,6 +51,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
+  // 3b. Fetch curator profile URLs
+  const { data: curators } = await supabase
+    .from("leaderboard_view")
+    .select("username, user_id");
+
+  const curatorUrls = (curators || [])
+    .filter((c) => c.username)
+    .map((c) => ({
+      url: `${baseUrl}/${c.username}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    }));
+
   // 4. Return the combined sitemap array
   return [
     {
@@ -68,5 +82,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryUrls,
     ...cityUrls,
     ...eventUrls,
+    ...curatorUrls,
   ];
 }

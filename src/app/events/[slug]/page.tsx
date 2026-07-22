@@ -32,7 +32,7 @@ export async function generateMetadata({
 
   if (!event || event.status !== "approved") return { title: "Event Not Found" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://eventime.thesurfboard.in";
   const ogUrl = new URL(`${baseUrl}/api/og`);
 
   ogUrl.searchParams.set("title", event.title);
@@ -122,7 +122,7 @@ export default async function EventPage({
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://et.sbhub.in";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://eventime.thesurfboard.in";
   const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
 
   const jsonLd = {
