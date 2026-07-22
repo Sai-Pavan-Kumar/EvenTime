@@ -102,126 +102,124 @@ export default async function LeaderboardPage() {
           </p>
         </div>
 
-        {/* THE CELEBRATED PODIUM OR EMPTY STATE */}
+        {/* THE CELEBRATED PODIUM */}
         {topThree.length > 0 ? (
-          <div className={`relative items-end gap-2 md:gap-4 mb-24 px-2 min-h-[380px] md:min-h-[420px] max-w-3xl mx-auto mt-10 ${topThree.length === 1 ? "flex justify-center" : "grid grid-cols-3"}`}>
+          <div className="relative grid grid-cols-3 items-end gap-3 md:gap-6 mb-16 px-2 max-w-2xl mx-auto mt-10">
             {/* Ambient Celebratory Glow */}
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-[120%] h-[200px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[60px] -z-10 rounded-full pointer-events-none" />
 
             {/* RANK 2 */}
-            <div className="flex flex-col items-center justify-self-end w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700">
-              {topThree[1] && (
+            <div className="flex flex-col items-center justify-self-end w-full animate-in slide-in-from-bottom-8 duration-700">
+              {topThree[1] ? (
                 <>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
+                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-3 hover:scale-105 transition-transform">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-lg">
                       <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={96} height={96} className="object-cover" />
+                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={80} height={80} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-500 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md border-2 border-white flex items-center gap-1">
                       <Medal className="w-3 h-3" /> #2
                     </div>
                   </Link>
-                  <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="hover:text-brand-primary transition-colors">
-                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[1].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[1].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  {currentUser?.id === topThree[1].user_id && (
-                    <ShareMenu
-                      ogImageUrl={topThreeUrls[1]}
-                      profileUrl={`https://eventime.thesurfboard.in/${topThree[1].username || topThree[1].user_id}`}
-                      text={`I'm ranked #2 on EvenTime's Top Curators! 🏆 ${topThree[1].et_score} ET Score`}
-                      className="mb-6"
-                      small
-                      label="Share"
-                    />
-                  )}
-                  {/* Podium Block */}
-                  <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-slate-300/60 drop-shadow-sm">2</span>
+                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mt-1">{topThree[1].full_name}</h3>
+                  <p className="text-slate-400 text-[11px] font-semibold">Curator</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mt-1.5 mb-2">
+                    <span className="font-heading font-extrabold text-slate-700 text-sm">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
                   </div>
                 </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-3">
+                    <Medal className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-slate-300 text-xs font-bold mb-2">Open</p>
+                </>
               )}
+              <div className="w-full h-20 md:h-28 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-3 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                <span className="text-3xl md:text-4xl font-black text-slate-300/60 drop-shadow-sm">2</span>
+              </div>
             </div>
 
-            {/* RANK 1 (ALWAYS ABSOLUTE CENTER) */}
-            <div className="flex flex-col items-center justify-self-center w-full max-w-[180px] z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
-              {topThree[0] && (
+            {/* RANK 1 */}
+            <div className="flex flex-col items-center justify-self-center w-full z-10 animate-in slide-in-from-bottom-12 duration-1000 delay-150 relative">
+              {topThree[0] ? (
                 <>
-                  {/* Subtle Winner Glow */}
-                  <div className="absolute top-10 left-1/2 -translate-x-1/2 w-32 h-32 bg-amber-400/30 blur-2xl rounded-full -z-10" />
-                  <Crown className="w-8 h-8 text-amber-500 mb-2 drop-shadow-md" />
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-28 h-28 md:w-36 md:h-36 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
+                  <div className="absolute top-6 left-1/2 -translate-x-1/2 w-28 h-28 bg-amber-400/30 blur-2xl rounded-full -z-10" />
+                  <Crown className="w-7 h-7 text-amber-500 mb-1 drop-shadow-md" />
+                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-3 hover:scale-105 transition-transform">
+                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-full p-1.5 bg-gradient-to-b from-amber-300 via-amber-500 to-orange-500 shadow-xl shadow-amber-500/30">
                       <div className="w-full h-full rounded-full overflow-hidden border-4 border-white bg-white">
-                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={144} height={144} className="object-cover" />
+                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={112} height={112} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs font-extrabold px-3 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1">
                       <Trophy className="w-3.5 h-3.5" /> #1
                     </div>
                   </Link>
-                  <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="hover:text-amber-600 transition-colors">
-                    <h3 className="font-heading font-extrabold text-text-primary text-lg md:text-xl mt-2 line-clamp-1 max-w-[140px] text-center hover:underline">{topThree[0].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-2">{topThree[0].college || "Curator"}</p>
-                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
-                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
-                  </div>
-                  {currentUser?.id === topThree[0].user_id && (
+                  <h3 className="font-heading font-extrabold text-text-primary text-lg line-clamp-1 max-w-[140px] text-center mt-1">{topThree[0].full_name}</h3>
+                  <p className="text-amber-500/80 text-xs font-bold">Curator</p>
+                  <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mt-1.5 mb-2">
+                    <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
+                  </div>
+                  {currentUser?.id === topThree[0].user_id && (
                     <ShareMenu
                       ogImageUrl={topThreeUrls[0]}
                       profileUrl={`https://eventime.thesurfboard.in/${topThree[0].username || topThree[0].user_id}`}
                       text={`I'm ranked #1 on EvenTime's Top Curators! 🏆 ${topThree[0].et_score} ET Score`}
-                      className="mb-6"
+                      className="mb-2"
                       label="Share Victory"
                     />
                   )}
-                  {/* Podium Block */}
-                  <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
-                    <span className="text-5xl md:text-6xl font-black text-amber-400/50 drop-shadow-sm">1</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-3">
+                    <Trophy className="w-8 h-8 text-slate-300" />
                   </div>
+                  <p className="text-slate-300 text-sm font-bold mb-2">Open</p>
                 </>
               )}
+              <div className="w-full h-28 md:h-40 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-3 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />
+                <span className="text-4xl md:text-5xl font-black text-amber-400/50 drop-shadow-sm">1</span>
+              </div>
             </div>
 
             {/* RANK 3 */}
-            <div className="flex flex-col items-center justify-self-start w-full max-w-[160px] animate-in slide-in-from-bottom-8 duration-700 delay-300">
-              {topThree[2] && (
+            <div className="flex flex-col items-center justify-self-start w-full animate-in slide-in-from-bottom-8 duration-700 delay-300">
+              {topThree[2] ? (
                 <>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-4 hover:scale-105 transition-transform">
-                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
+                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-3 hover:scale-105 transition-transform">
+                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-lg">
                       <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={96} height={96} className="object-cover" />
+                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={80} height={80} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md border-2 border-white flex items-center gap-1">
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-md border-2 border-white flex items-center gap-1">
                       <Award className="w-3 h-3" /> #3
                     </div>
                   </Link>
-                  <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="hover:text-brand-primary transition-colors">
-                    <h3 className="font-bold text-text-primary text-sm md:text-base line-clamp-1 max-w-[100px] text-center hover:underline">{topThree[2].full_name}</h3>
-                  </Link>
-                  <p className="text-slate-500 text-xs font-semibold mb-1">{topThree[2].college || "Curator"}</p>
-                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
-                    <span className="font-heading font-extrabold text-slate-700">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
-                  </div>
-                  <a href={topThreeUrls[2]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
-                  {/* Podium Block */}
-                  <div className="w-full h-16 md:h-20 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
-                    <span className="text-4xl md:text-5xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
+                  <h3 className="font-bold text-text-primary text-sm line-clamp-1 max-w-[100px] text-center mt-1">{topThree[2].full_name}</h3>
+                  <p className="text-slate-400 text-[11px] font-semibold">Curator</p>
+                  <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mt-1.5 mb-2">
+                    <span className="font-heading font-extrabold text-slate-700 text-sm">{topThree[2].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
                   </div>
                 </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-3">
+                    <Award className="w-6 h-6 text-slate-300" />
+                  </div>
+                  <p className="text-slate-300 text-xs font-bold mb-2">Open</p>
+                </>
               )}
-            </div>  
+              <div className="w-full h-12 md:h-16 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-3 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
+                <span className="text-3xl md:text-4xl font-black text-[#D49A6A]/50 drop-shadow-sm">3</span>
+              </div>
+            </div>
           </div>
         ) : (
           /* EMPTY STATE - NO CURATORS YET */
