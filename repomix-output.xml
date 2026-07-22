@@ -206,6 +206,7 @@ src/
         page.tsx
       events/
         DeleteConfirmButton.tsx
+        EventRowActions.tsx
         page.tsx
         StatusSelect.tsx
       feedback/
@@ -2640,181 +2641,109 @@ export function DeleteConfirmButton() {
 }
 </file>
 
-<file path="src/app/et98/events/page.tsx">
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, Trash2, CheckCircle, XCircle, ImageIcon, Save } from "lucide-react";
-import { requireAdmin } from "@/lib/auth/permissions";
-import { deleteEventAction, updateEventDetailsAction } from "../actions";
-import { DeleteConfirmButton } from "./DeleteConfirmButton";
-import { StatusSelect } from "./StatusSelect";
+<file path="src/app/et98/events/EventRowActions.tsx">
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { CheckCircle, Trash2, Loader2 } from "lucide-react";
+import { updateEventDetailsAction, deleteEventAction } from "../actions";
 
-type PageProps = {
-  searchParams: Promise<{ filter?: string }>;
+const colorClasses = {
+  approved: "bg-emerald-50 text-emerald-600",
+  rejected: "bg-red-50 text-red-600",
+  pending: "bg-amber-50 text-amber-600",
 };
 
-export default async function AdminEventsPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const filter = searchParams.filter || "all";
+export function EventRowActions({
+  eventId,
+  initialCategory,
+  initialStatus,
+}: {
+  eventId: string;
+  initialCategory: string;
+  initialStatus: string;
+}) {
+  const [category, setCategory] = useState(initialCategory);
+  const [status, setStatus] = useState(initialStatus || "pending");
+  const [isSaving, startSaveTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const handleSave = () => {
+    startSaveTransition(async () => {
+      const fd = new FormData();
+      fd.set("eventId", eventId);
+      fd.set("category", category);
+      fd.set("status", status);
+      const result = await updateEventDetailsAction(fd);
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Event updated!");
+      }
+    });
+  };
 
-  if (!user) redirect("/login");
-
-  const isAdmin = await requireAdmin(supabase, user.id);
-  if (!isAdmin) redirect("/");
-
-  let query = supabase.from("events").select(`
-    id, slug, title, category, poster_url, status,profiles ( full_name )`).order('created_at', { ascending: false }).limit(50);
-
-  if (filter === "pending") query = query.eq("status", "pending");
-  else if (filter === "approved") query = query.eq("status", "approved");
-  else if (filter === "rejected") query = query.eq("status", "rejected");
-  else if (filter === "deleted") query = query.eq("status", "deleted");
-  else query = query.neq("status", "deleted");
-
-  const { data: events, error } = await query;
-
-  if (error) {
-    console.error("Error fetching events:", error.message || JSON.stringify(error));
-  }
-
-  async function handleUpdate(formData: FormData) {
-    "use server";
-    await updateEventDetailsAction(formData);
-  }
-
-  async function handleDelete(formData: FormData) {
-    "use server";
-    await deleteEventAction(formData);
-  }
+  const handleDelete = () => {
+    if (!window.confirm("Are you sure you want to delete this event? This cannot be undone.")) return;
+    startDeleteTransition(async () => {
+      const fd = new FormData();
+      fd.set("eventId", eventId);
+      const result = await deleteEventAction(fd);
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Event moved to trash.");
+      }
+    });
+  };
 
   return (
-    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
-      
-      {/* Header Section */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Event Management</h1>
-          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review, approve, and manage all platform events.</p>
-        </div>
+    <>
+      <input
+        type="text"
+        name="category"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        placeholder="Category"
+        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
+      />
+
+      <select
+        name="status"
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+        className={`text-xs font-bold px-2 py-1.5 rounded-md uppercase tracking-wider outline-none cursor-pointer border border-transparent focus:border-slate-300 transition-colors ${
+          colorClasses[status as keyof typeof colorClasses] || colorClasses.pending
+        }`}
+      >
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+      </select>
+
+      <div className="flex items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors disabled:opacity-60"
+          title="Save Changes"
+        >
+          {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle className="w-5 h-5" />}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="p-2 bg-white text-slate-400 hover:bg-red-50 hover:text-red-500 border border-transparent hover:border-red-100 rounded-lg transition-colors disabled:opacity-60"
+          title="Delete Event Completely"
+        >
+          {isDeleting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Trash2 className="w-5 h-5" />}
+        </button>
       </div>
-
-      {/* Filter Tabs */}
-      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
-        <Link href="/et98/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          All Events
-        </Link>
-        <Link href="/et98/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Pending
-        </Link>
-        <Link href="/et98/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Approved
-        </Link>
-        <Link href="/et98/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Rejected
-        </Link>
-        <Link href="/et98/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
-          Trash
-        </Link>
-      </div>
-
-      {/* Data Table Container */}
-      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Event Details</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Creator</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Category</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Status</th>
-                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/[0.04]">
-              {events && events.length > 0 ? (
-                events.map((event) => (
-                  <tr key={event.id} className="hover:bg-surface-base/50 transition-colors">
-                    
-                    {/* Event Image & Title */}
-                    <td className="px-8 py-6">
-                      <form id={`update-${event.id}`} action={handleUpdate}>
-                        <input type="hidden" name="eventId" value={event.id} />
-                      </form>
-                      <div className="flex items-center gap-5">
-                        <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
-                          {event.poster_url ? (
-                            <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
-                          ) : (
-                            <Image src="/window.svg" alt="Default Poster" fill sizes="88px" className="object-cover" />
-                          )}
-                        </div>
-                        <div>
-                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors group/title">
-                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-brand-primary leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
-                          </Link>
-                          <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Creator Info */}
-                    <td className="px-8 py-6">
-                      <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
-                        {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown User"}
-                      </span>
-                    </td>
-
-                    {/* Category (Editable) */}
-                    <td className="px-8 py-6">
-                      <input 
-                        type="text" 
-                        name="category" 
-                        defaultValue={event.category || ""} 
-                        form={`update-${event.id}`} 
-                        placeholder="Category"
-                        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
-                      />
-                    </td>
-
-                    {/* Status (Editable) */}
-                    <td className="px-8 py-6">
-                      <StatusSelect eventId={event.id} initialStatus={event.status || "pending"} />
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-8 py-6">
-                      <div className="flex items-center justify-end gap-3">
-                        <button type="submit" form={`update-${event.id}`} className="w-[44px] h-[44px] rounded-full bg-surface-base text-[#6B7280] flex items-center justify-center hover:bg-[#22C55E] hover:text-white transition-colors" title="Save Changes">
-                          <CheckCircle className="w-5 h-5" />
-                        </button>
-
-                        <form action={handleDelete}>
-                          <input type="hidden" name="eventId" value={event.id} />
-                          <DeleteConfirmButton />
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
-                    No events found in this category
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 </file>
@@ -4017,6 +3946,71 @@ export default function ResetPasswordPage() {
 }
 </file>
 
+<file path="src/app/error.tsx">
+"use client";
+
+import { useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { RefreshCcw, Home } from "lucide-react";
+import * as Sentry from "@sentry/nextjs";useEffect 
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  useEffect(() => {
+    console.error("Global App Error:", error);
+    Sentry.captureException(error);
+  }, [error]);
+
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/error_state3.webp" 
+            alt="Error Illustration" 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Oops, a minor glitch!
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          Something went wrong on our end. We're already on it, but the stage is still yours.
+        </p>
+        
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
+          <button
+            onClick={() => reset()}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+          >
+            <RefreshCcw className="w-4 h-4" /> Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
+          >
+            <Home className="w-4 h-4" /> Go Home
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/loading.tsx">
 // File: src/app/loading.tsx
 import { Navbar } from "@/components/layout/Navbar";
@@ -4621,6 +4615,47 @@ export const CITIES = [
 export type City = typeof CITIES[number];
 </file>
 
+<file path="src/lib/home/not-found.tsx">
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
+      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
+        
+        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
+        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
+          <Image 
+            src="/illustrations/404_state3.webp" 
+            alt="404 Not Found Illustration" 
+            fill 
+            className="object-contain"
+            priority 
+          />
+        </div>
+        
+        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
+          Lost in the crowd?
+        </h1>
+        
+        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
+          We couldn't find the page you're looking for. Let's get you back to the events that matter.
+        </p>
+        
+        <Link 
+          href="/"
+          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
+        >
+          <ArrowLeft className="w-4 h-4" /> Take me Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/app/api/extract/route.ts">
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
@@ -5082,6 +5117,150 @@ export async function POST(request: Request) {
       message: "An unexpected error occurred while extracting event data.",
     }, { status: 500 });
   }
+}
+</file>
+
+<file path="src/app/et98/events/page.tsx">
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft, Trash2, CheckCircle, XCircle, ImageIcon, Save } from "lucide-react";
+import { requireAdmin } from "@/lib/auth/permissions";
+import { EventRowActions } from "./EventRowActions";
+
+export const dynamic = "force-dynamic";
+
+type PageProps = {
+  searchParams: Promise<{ filter?: string }>;
+};
+
+export default async function AdminEventsPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const filter = searchParams.filter || "all";
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const isAdmin = await requireAdmin(supabase, user.id);
+  if (!isAdmin) redirect("/");
+
+  let query = supabase.from("events").select(`
+    id, slug, title, category, poster_url, status,profiles ( full_name )`).order('created_at', { ascending: false }).limit(50);
+
+  if (filter === "pending") query = query.eq("status", "pending");
+  else if (filter === "approved") query = query.eq("status", "approved");
+  else if (filter === "rejected") query = query.eq("status", "rejected");
+  else if (filter === "deleted") query = query.eq("status", "deleted");
+  else query = query.neq("status", "deleted");
+
+  const { data: events, error } = await query;
+
+  if (error) {
+    console.error("Error fetching events:", error.message || JSON.stringify(error));
+  }
+
+  return (
+    <div className="px-10 pb-12 max-w-[1400px] mx-auto space-y-10 pt-4">
+      
+      {/* Header Section */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-[32px] font-['Outfit'] font-bold text-[#0D0D1A] tracking-[-1px]">Event Management</h1>
+          <p className="text-[15px] text-[#555570] font-['Switzer'] mt-1">Review, approve, and manage all platform events.</p>
+        </div>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-3 mb-8 overflow-x-auto pb-2">
+        <Link href="/et98/events" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "all" ? "bg-[#0D0D1A] text-white shadow-[0_4px_16px_rgba(0,0,0,0.12)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          All Events
+        </Link>
+        <Link href="/et98/events?filter=pending" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "pending" ? "bg-[#F59E0B] text-white shadow-[0_4px_16px_rgba(245,158,11,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Pending
+        </Link>
+        <Link href="/et98/events?filter=approved" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "approved" ? "bg-[#22C55E] text-white shadow-[0_4px_16px_rgba(34,197,94,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Approved
+        </Link>
+        <Link href="/et98/events?filter=rejected" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "rejected" ? "bg-[#EF4444] text-white shadow-[0_4px_16px_rgba(239,68,68,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Rejected
+        </Link>
+        <Link href="/et98/events?filter=deleted" className={`px-6 py-3 rounded-full text-[14px] font-bold font-['Outfit'] transition-all whitespace-nowrap ${filter === "deleted" ? "bg-[#555570] text-white shadow-[0_4px_16px_rgba(0,0,0,0.2)]" : "bg-[#FFFFFF] text-[#555570] hover:bg-[#F0F0F8] hover:text-[#0D0D1A] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}>
+          Trash
+        </Link>
+      </div>
+
+      {/* Data Table Container */}
+      <div className="bg-[#FFFFFF] rounded-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-[#FFFFFF] border-b border-black/[0.04]">
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Event Details</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Creator</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Category</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280]">Status</th>
+                <th className="px-8 py-6 text-[12px] font-bold uppercase tracking-[0.2em] font-['Outfit'] text-[#6B7280] text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-black/[0.04]">
+              {events && events.length > 0 ? (
+                events.map((event) => (
+                  <tr key={event.id} className="hover:bg-surface-base/50 transition-colors">
+                    
+                    {/* Event Image & Title */}
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-5">
+                        <div className="w-[88px] h-[56px] rounded-[16px] bg-surface-base overflow-hidden shrink-0 relative">
+                          {event.poster_url ? (
+                            <Image src={event.poster_url} alt={event.title || "Event Poster"} fill sizes="88px" className="object-cover" />
+                          ) : (
+                            <Image src="/window.svg" alt="Default Poster" fill sizes="88px" className="object-cover" />
+                          )}
+                        </div>
+                        <div>
+                          <Link href={`/events/${event.slug || event.id}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-primary transition-colors group/title">
+                            <p className="font-bold text-[#0D0D1A] font-['Outfit'] text-[18px] group-hover/title:text-brand-primary leading-tight line-clamp-1 max-w-[300px]">{event.title || "Untitled Event"}</p>
+                          </Link>
+                          <p className="text-[12px] font-bold text-[#6B7280] mt-1.5 uppercase tracking-wider font-['Outfit']">ID: {event.id?.split('-')[0]}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Creator Info */}
+                    <td className="px-8 py-6">
+                      <span className="text-[15px] font-medium font-['Switzer'] text-[#555570]">
+                        {(event.profiles as { full_name?: string } | null)?.full_name || "Unknown User"}
+                      </span>
+                    </td>
+
+                    {/* Category, Status & Actions */}
+                    <td className="px-8 py-6" colSpan={3}>
+                      <div className="flex items-center gap-4">
+                        <EventRowActions
+                          eventId={event.id}
+                          initialCategory={event.category || ""}
+                          initialStatus={event.status || "pending"}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-8 py-24 text-center text-[#6B7280] font-bold uppercase tracking-widest text-[13px] font-['Outfit']">
+                    No events found in this category
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -5669,71 +5848,6 @@ export default function TermsOfServicePage() {
 }
 </file>
 
-<file path="src/app/error.tsx">
-"use client";
-
-import { useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";useEffect 
-
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error("Global App Error:", error);
-    Sentry.captureException(error);
-  }, [error]);
-
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/error_state3.webp" 
-            alt="Error Illustration" 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Oops, a minor glitch!
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          Something went wrong on our end. We're already on it, but the stage is still yours.
-        </p>
-        
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full px-8">
-          <button
-            onClick={() => reset()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-          >
-            <RefreshCcw className="w-4 h-4" /> Try Again
-          </button>
-          
-          <Link 
-            href="/"
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-8 py-4 rounded-full font-bold active:scale-95 transition-all shadow-sm"
-          >
-            <Home className="w-4 h-4" /> Go Home
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
 <file path="src/app/robots.ts">
 import { MetadataRoute } from "next";
 
@@ -6271,47 +6385,6 @@ export function HeroSection({ stats }: { stats?: PlatformStats }) {
           />
         </div>
 
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/not-found.tsx">
-import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
-
-export default function NotFound() {
-  return (
-    <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
-        
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404_state3.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
-        </div>
-        
-        <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
-          Lost in the crowd?
-        </h1>
-        
-        <p className="text-slate-500 font-medium text-base md:text-lg max-w-md mb-10 leading-relaxed">
-          We couldn't find the page you're looking for. Let's get you back to the events that matter.
-        </p>
-        
-        <Link 
-          href="/"
-          className="flex items-center justify-center gap-2 bg-black hover:bg-slate-800 text-white px-10 py-4 rounded-full font-bold active:scale-95 transition-all shadow-xl shadow-black/10"
-        >
-          <ArrowLeft className="w-4 h-4" /> Take me Home
-        </Link>
       </div>
     </div>
   );
@@ -7376,6 +7449,66 @@ export function StepMedia(props: StepMediaProps) {
 }
 </file>
 
+<file path="src/lib/home/EmptyState.tsx">
+import Link from "next/link";
+import Image from "next/image";
+
+export interface EmptyStateProps {
+  title: string;
+  message: string;
+  imageSrc?: string;
+  buttonText?: string;
+  showButton?: boolean;
+  variant?: "default" | "foryou";
+}
+
+export function EmptyState({ 
+  title, 
+  message, 
+  imageSrc = "/illustrations/empty_state3.webp", 
+  buttonText = "Host an Event", 
+  showButton = true, 
+  variant = "default" 
+}: EmptyStateProps) {
+  const isForYou = variant === "foryou";
+  
+  return (
+    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
+      {/* Background blobs for flair */}
+      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+
+      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
+        
+        {/* BIG TECH PREMIUM ILLUSTRATION */}
+        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
+          <Image 
+            src={imageSrc} 
+            alt={title} 
+            fill 
+            className="object-contain" 
+            priority
+          />
+        </div>
+
+        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
+          {title}
+        </h3>
+        
+        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
+          {message}
+        </p>
+       {showButton && (
+          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+            {buttonText}
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="src/lib/home/EventGrid.tsx">
 "use client";
 
@@ -7721,66 +7854,6 @@ export function CityGrid({ events }: CityGridProps) {
           </div>
         </Link>
       ))}
-    </div>
-  );
-}
-</file>
-
-<file path="src/lib/home/EmptyState.tsx">
-import Link from "next/link";
-import Image from "next/image";
-
-export interface EmptyStateProps {
-  title: string;
-  message: string;
-  imageSrc?: string;
-  buttonText?: string;
-  showButton?: boolean;
-  variant?: "default" | "foryou";
-}
-
-export function EmptyState({ 
-  title, 
-  message, 
-  imageSrc = "/illustrations/empty_state3.webp", 
-  buttonText = "Host an Event", 
-  showButton = true, 
-  variant = "default" 
-}: EmptyStateProps) {
-  const isForYou = variant === "foryou";
-  
-  return (
-    <div className={`flex flex-col items-center justify-center ${isForYou ? 'py-16' : 'py-20'} rounded-xl px-4 text-center bg-surface-card relative overflow-hidden w-full`}>
-      {/* Background blobs for flair */}
-      <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-warning/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-
-      <div className="relative z-10 flex flex-col items-center animate-in zoom-in-95 fade-in duration-1000">
-        
-        {/* BIG TECH PREMIUM ILLUSTRATION */}
-        <div className={`${isForYou ? 'w-64 h-48 md:w-72 md:h-56' : 'w-72 h-56 md:w-80 md:h-64'} relative mb-6`}>
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
-        </div>
-
-        <h3 className={`${isForYou ? 'text-2xl sm:text-3xl' : 'text-3xl'} font-extrabold text-text-primary font-heading mb-4 tracking-[-0.02em]`}>
-          {title}
-        </h3>
-        
-        <p className="text-text-muted font-medium max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-          {message}
-        </p>
-       {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
-        )}
-      </div>
     </div>
   );
 }

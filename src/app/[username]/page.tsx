@@ -63,7 +63,8 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     { count: totalEventCount },
     { data: allTimeSavesData },
     { data: events },
-    { data: appSettings }
+    { data: appSettings },
+    { data: leaderboardRow }
   ] = await Promise.all([
     // 1a. True lifetime count — never filtered by date
     supabase
@@ -89,12 +90,15 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
       .order("created_at", { ascending: true }),
 
     // 2. Check if leaderboard / ET Score is enabled platform-wide
-    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle()
+    supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
+
+    // 3. Live ET Score — same source the leaderboard page uses, so numbers always match
+    supabase.from("leaderboard_view").select("et_score").eq("user_id", curator.id).maybeSingle()
   ]);
   // Dynamic ga events anni thirigi saves count ni sum chesthundi
   const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
-  const etScore = curator.et_score || 100;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
+  const etScore = leaderboardRow?.et_score ?? 100;
   const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 

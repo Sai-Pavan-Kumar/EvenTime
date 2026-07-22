@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
 import { Trophy, Crown, Medal, Award, Info, ArrowRight, Share2 } from "lucide-react";
+import { ShareMenu } from "@/components/leaderboard/ShareMenu";
 import { redirect } from "next/navigation";
 import { generateHMAC } from "@/lib/hmac";
 import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
@@ -26,6 +27,8 @@ const getTierInfo = (score: number) => {
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
+
+  const { data: { user: currentUser } } = await supabase.auth.getUser();
 
   const { data: settings } = await supabase
     .from("app_settings")
@@ -126,9 +129,16 @@ export default async function LeaderboardPage() {
                   <div className="bg-white border border-slate-200 rounded-lg px-3 py-1 shadow-sm mb-3">
                     <span className="font-heading font-extrabold text-slate-700">{topThree[1].et_score}</span> <span className="text-[10px] text-slate-400">ET</span>
                   </div>
-                  <a href={topThreeUrls[1]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-colors shadow-sm z-10 mb-[-12px]">
-                    <Share2 className="w-3 h-3" /> Share
-                  </a>
+                  {currentUser?.id === topThree[1].user_id && (
+                    <ShareMenu
+                      ogImageUrl={topThreeUrls[1]}
+                      profileUrl={`https://eventime.thesurfboard.in/${topThree[1].username || topThree[1].user_id}`}
+                      text={`I'm ranked #2 on EvenTime's Top Curators! 🏆 ${topThree[1].et_score} ET Score`}
+                      className="mb-6"
+                      small
+                      label="Share"
+                    />
+                  )}
                   {/* Podium Block */}
                   <div className="w-full h-24 md:h-32 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent h-4" />
@@ -162,9 +172,15 @@ export default async function LeaderboardPage() {
                   <div className="bg-white border-2 border-amber-200 rounded-xl px-4 py-1.5 shadow-md shadow-amber-100 mb-3">
                     <span className="font-heading font-black text-amber-600 text-lg">{topThree[0].et_score}</span> <span className="text-xs font-bold text-amber-600/60">ET</span>
                   </div>
-                  <a href={topThreeUrls[0]} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-xs font-bold px-4 py-2 rounded-full transition-colors shadow-md shadow-[#0A66C2]/20 z-10 mb-[-16px]">
-                    <Share2 className="w-3.5 h-3.5" /> Share Victory
-                  </a>
+                  {currentUser?.id === topThree[0].user_id && (
+                    <ShareMenu
+                      ogImageUrl={topThreeUrls[0]}
+                      profileUrl={`https://eventime.thesurfboard.in/${topThree[0].username || topThree[0].user_id}`}
+                      text={`I'm ranked #1 on EvenTime's Top Curators! 🏆 ${topThree[0].et_score} ET Score`}
+                      className="mb-6"
+                      label="Share Victory"
+                    />
+                  )}
                   {/* Podium Block */}
                   <div className="w-full h-36 md:h-48 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-4 shadow-[0_-8px_30px_rgba(245,158,11,0.15)] relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-white/80 to-transparent h-6" />

@@ -69,6 +69,7 @@ export async function approveEventAction(formData: FormData) {
   revalidatePath("/et98");
   revalidatePath("/et98/events");
   revalidateTag("events", "events");
+  revalidateTag("leaderboard", "leaderboard");
   return { success: true };
 }
 
