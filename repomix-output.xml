@@ -165,7 +165,7 @@ public/
   icon-192.webp
   icon-512.webp
   llms.txt
-  logo1.webp
+  logo.webp
   manifest.json
   next.svg
   sb-logo.webp
@@ -5911,7 +5911,7 @@ export function Footer() {
                 {/* Brand */}
         <div className="flex flex-col items-center gap-2 lg:items-start">
           <div className="flex items-center gap-3">
-            <Image src="/logo1.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
               EvenTime
             </h3>
@@ -7039,7 +7039,7 @@ export default function LaunchScreen() {
             className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
           >
             <Image 
-              src="/logo1.webp" 
+              src="/logo.webp" 
               alt="EvenTime" 
               fill 
               sizes="(max-width: 768px) 80px, 96px"
@@ -13153,7 +13153,7 @@ export default function LoginPage() {
 
           {/* Top Logo */}
           <div className="relative z-10 w-16 h-16">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="64px" className="object-contain" priority />
           </div>
 
           {/* Center Pitch */}
@@ -13178,7 +13178,7 @@ export default function LoginPage() {
           
           {/* Mobile Logo (Visible only on small screens) */}
           <div className="md:hidden w-14 h-14 relative mb-8">
-            <Image src="/logo1.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
+            <Image src="/logo.webp" alt="EvenTime" fill sizes="56px" className="object-contain" priority />
           </div>
 
           <div className="mb-8">
@@ -14098,7 +14098,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           <div className={`${variant === 'centered' ? 'absolute left-1/2 -translate-x-1/2 flex items-center gap-2 shrink-0' : 'flex items-center gap-2 shrink-0'}`}>
             <Link href="/" className="shrink-0 flex items-center gap-2">
               <div className="w-9 h-9 relative shrink-0"> 
-                <Image src="/logo1.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
+                <Image src="/logo.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
               </div>
               <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
                 <span className="text-brand-primary">Even</span>

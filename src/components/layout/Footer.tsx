@@ -29,7 +29,7 @@ export function Footer() {
                 {/* Brand */}
         <div className="flex flex-col items-center gap-2 lg:items-start">
           <div className="flex items-center gap-3">
-            <Image src="/logo1.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
+            <Image src="/logo.webp" alt="EvenTime Logo" width={36} height={36} className="rounded-none" />
             <h3 className="text-2xl font-black text-white font-heading tracking-tight">
               EvenTime
             </h3>
