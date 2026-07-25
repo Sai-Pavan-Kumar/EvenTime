@@ -116,7 +116,7 @@ export default async function RootLayout({
               "@type": "Organization",
               name: "EvenTime",
               url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in",
-              logo: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/logo.webp`,
+              logo: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/logo1.webp`,
               sameAs: [],
             }),
           }}

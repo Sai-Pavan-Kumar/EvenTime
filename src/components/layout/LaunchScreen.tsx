@@ -51,7 +51,7 @@ export default function LaunchScreen() {
             className="w-20 h-20 md:w-24 md:h-24 relative mb-6"
           >
             <Image 
-              src="/logo.webp" 
+              src="/logo1.webp" 
               alt="EvenTime" 
               fill 
               sizes="(max-width: 768px) 80px, 96px"
