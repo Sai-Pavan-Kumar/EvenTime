@@ -81,7 +81,7 @@ export function Footer() {
           <div className="w-full h-px bg-white/10" />
           <div className="absolute flex items-center gap-2 text-sm font-bold text-white bg-[#0D0B1A] border border-white/10 px-5 py-2.5 rounded-full">
             Made with <Heart className="w-4 h-4 text-pink-500 fill-pink-500 animate-pulse" /> by
-            <Image src="/sb-logo1.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
+            <Image src="/sb-logo.webp" alt="The SurfBoard" width={24} height={24} className="rounded-sm" />
             The SurfBoard
           </div>
         </div>
