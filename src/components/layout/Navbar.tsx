@@ -356,7 +356,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
             )}
 
             <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
-              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Create Event
+              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Post Event
             </Link>
 
             <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
@@ -412,20 +412,20 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       <div className="sticky top-[64px] z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-6 sm:gap-10 overflow-x-auto">
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-slate-900">{platformStats.event_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Events</span>
+            <span className="text-sm font-black text-brand-primary">{platformStats.event_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Events</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-slate-900">{platformStats.city_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Cities</span>
+            <span className="text-sm font-black text-brand-primary">{platformStats.city_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Cities</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-slate-900">{platformStats.category_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Categories</span>
+            <span className="text-sm font-black text-brand-primary">{platformStats.category_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Categories</span>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-slate-900">{platformStats.user_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Users</span>
+            <span className="text-sm font-black text-brand-primary">{platformStats.user_count ?? 0}</span>
+            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Users</span>
           </div>
         </div>
       </div>

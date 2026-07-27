@@ -63,6 +63,30 @@ export const CATEGORY_CONFIG: Record<string, {
   dateColor: '#D946EF',
 },
 
+'alumni-event': {
+  backgroundImage: '/card-backgrounds/alumni-event.webp',
+  accentColor: '#0EA5E9',
+  dateColor: '#0EA5E9',
+},
+
+'educational-fair': {
+  backgroundImage: '/card-backgrounds/educational-fair.webp',
+  accentColor: '#2563EB',
+  dateColor: '#2563EB',
+},
+
+'expo': {
+  backgroundImage: '/card-backgrounds/expo.webp',
+  accentColor: '#06B6D4',
+  dateColor: '#06B6D4',
+},
+
+'networking-event': {
+  backgroundImage: '/card-backgrounds/networking-event.webp',
+  accentColor: '#8B5CF6',
+  dateColor: '#8B5CF6',
+},
+
 'conference': {
   backgroundImage: '/card-backgrounds/conference.webp',
   accentColor: '#6366F1',

@@ -470,9 +470,9 @@ export function HomePageClient(props: HomePageClientProps) {
                     const message = isPastDate 
                         ? "There were no events hosted on this date." 
                         : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                        : location ? `No events happening in ${location} right now. But the stage is never empty.`
-                        : category ? `No ${category}s happening right now. But the stage is never empty.` 
-                        : `We couldn't find exactly what you're looking for. But the stage is never empty.`;
+                        : location ? `No events happening in ${location} right now. Try changing your city or category filters for better matches.`
+                        : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
+                        : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
                     
                     return (
                       <div className="col-span-full">

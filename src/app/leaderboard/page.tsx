@@ -101,6 +101,7 @@ export default async function LeaderboardPage() {
             <h1 className="text-4xl md:text-5xl font-heading font-extrabold text-text-primary tracking-tight">
               Top Curators
             </h1>
+            <div className="w-12 shrink-0" aria-hidden="true" />
           </div>
           <p className="text-text-secondary font-medium text-lg max-w-xl mx-auto flex items-center justify-center gap-2 flex-wrap">
             Ranked by trust, impact, and consistency. 
