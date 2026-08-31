@@ -98,14 +98,15 @@ export function useEventSubmit() {
       } else {
                 // Check database role ONLY
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+        const finalStatus = isAdmin ? "approved" : (finalPayload.status || "pending");
       const { error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 
           creator_id: user.id,
-        status: isAdmin ? "approved" : (finalPayload.status || "pending") 
+        status: finalStatus 
         }]);
         if (error) throw error;
-        if (isAdmin) await revalidateEventsCacheAction();
+        if (finalStatus === "approved") await revalidateEventsCacheAction();
       }
       
       toast.success(isEditing ? "Event updated!" : "Event submitted! It'll go live once approved.");

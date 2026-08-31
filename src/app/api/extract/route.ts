@@ -285,50 +285,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "Unauthorized" }, { status: 401 });
     }
 
-    // Extract client IP for rate limiting
-    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
+      // Extract client IP for rate limiting
+    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
     
-    // Check DB rate limit
-    const { data: rlData } = await supabase
-      .from("rate_limits")
-      .select("request_count, reset_at")
-      .eq("ip_address", clientIp)
-      .eq("endpoint", "/api/extract")
-      .single();
+    // Atomic rate limit check (row-locked in the DB, safe under concurrent requests)
+    const { data: allowed, error: rlError } = await supabase.rpc("check_and_increment_rate_limit", {
+      p_ip_address: clientIp,
+      p_endpoint: "/api/extract",
+      p_max_requests: 5,
+      p_window_seconds: 60
+    });
 
-    const now = new Date();
-    
-    if (rlData && new Date(rlData.reset_at) > now) {
-      if (rlData.request_count >= 5) {
-        return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
-      }
-      
-      // Increment count
-      await supabase
-        .from("rate_limits")
-        .update({ request_count: rlData.request_count + 1 })
-        .eq("ip_address", clientIp)
-        .eq("endpoint", "/api/extract");
-    } else {
-      // Create new limit window
-      const resetAt = new Date(now.getTime() + 60000); // 1 min from now
-      
-      if (rlData) {
-        await supabase
-          .from("rate_limits")
-          .update({ request_count: 1, reset_at: resetAt.toISOString() })
-          .eq("ip_address", clientIp)
-          .eq("endpoint", "/api/extract");
-      } else {
-        await supabase
-          .from("rate_limits")
-          .insert({
-            ip_address: clientIp,
-            endpoint: "/api/extract",
-            request_count: 1,
-            reset_at: resetAt.toISOString()
-          });
-      }
+    if (rlError) {
+      console.error("Rate limit check failed:", rlError);
+    } else if (!allowed) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
     }
 
     // URL validation
