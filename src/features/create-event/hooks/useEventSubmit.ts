@@ -113,7 +113,12 @@ export function useEventSubmit() {
       router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
     } catch (err: any) {
       console.error("[useEventSubmit] Error:", err);
-      toast.error(err?.message || "Submission failed. Please try again.");
+      const isDuplicateLink = err?.code === "23505" && err?.message?.includes("unique_registration_link");
+      toast.error(
+        isDuplicateLink
+          ? "This event link has already been posted by someone else."
+          : (err?.message || "Submission failed. Please try again.")
+      );
     } finally {
       setIsSubmitting(false);
     }
