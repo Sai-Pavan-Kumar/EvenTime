@@ -84,6 +84,8 @@ export function useEventSubmit() {
           "Event Curator";
       }
 
+      let finalStatus: string | null = null;
+
       if (isEditing && eventId) {
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
         
@@ -98,7 +100,7 @@ export function useEventSubmit() {
       } else {
                 // Check database role ONLY
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-        const finalStatus = isAdmin ? "approved" : (finalPayload.status || "pending");
+        finalStatus = isAdmin ? "approved" : (finalPayload.status || "pending");
       const { error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 
@@ -109,7 +111,13 @@ export function useEventSubmit() {
         if (finalStatus === "approved") await revalidateEventsCacheAction();
       }
       
-      toast.success(isEditing ? "Event updated!" : "Event submitted! It'll go live once approved.");
+      toast.success(
+        isEditing
+          ? "Event updated!"
+          : finalStatus === "approved"
+          ? "Event posted! It's live now."
+          : "Event submitted! It'll go live once approved."
+      );
       router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
     } catch (err: any) {
       console.error("[useEventSubmit] Error:", err);
