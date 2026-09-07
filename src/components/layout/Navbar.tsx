@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings,SquarePlus, Building2, Home, X, Bug, CalendarDays } from "lucide-react";
+import { Search, Plus, User, LogOut, Trophy, Settings, SquarePlus, Building2, Home, X, Bug, CalendarDays, BarChart2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarStrip } from "./CalendarStrip";
 import { FilterChips } from "@/lib/home/FilterChips";
@@ -227,7 +227,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
     NProgress.start();
     startTransition(() => {
       if (searchQuery.trim()) {
-        router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+        router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
       } else {
         router.push(`/`);
       }
@@ -280,8 +280,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setShowDesktopFilters(true)}
-                  placeholder="Search hackathons, meetups..."
-                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                  placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
                 {showDesktopFilters && hasFilterChips && (
                   <div className="absolute left-0 top-full mt-2 w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-3 flex items-center flex-wrap gap-x-8 gap-y-3 z-20">
@@ -339,9 +338,13 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             
-            <button onClick={() => { NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+            <Link href="/stats" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
+              <BarChart2 className="w-4 h-4 shrink-0" /> Live Stats
+            </Link>
+
+            <Link href="/cities" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <Building2 className="w-4 h-4 shrink-0" /> Cities
-            </button>
+            </Link>
 
             {leaderboardEnabled && (
               <Link href="/leaderboard" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-amber-500 transition-colors shrink-0">
@@ -408,28 +411,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     </nav>
 
-    {platformStats && (
-      <div className="sticky top-[64px] z-30 bg-white/90 backdrop-blur-md border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-center gap-6 sm:gap-10 overflow-x-auto">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-brand-primary">{platformStats.event_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Events</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-brand-primary">{platformStats.city_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Cities</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-brand-primary">{platformStats.category_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Categories</span>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-sm font-black text-brand-primary">{platformStats.user_count ?? 0}</span>
-            <span className="text-[10px] font-bold text-slate-900 uppercase tracking-wide">Users</span>
-          </div>
-        </div>
-      </div>
-    )}
+    
 
     {showMobileSearch && (
       <div className="sm:hidden fixed inset-0 z-[100] bg-white flex flex-col pb-24"> 
@@ -444,8 +426,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hackathons, meetups..."
-              className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+              placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
             />
           </div>
           <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
@@ -492,10 +473,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
         </Link>
 
-        <button type="button" onClick={() => setShowMobileSearch(true)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-          <Search className="w-5 h-5" />
-          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>
-        </button>
+        <Link href="/search" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === "/search" ? "text-brand-primary" : "text-text-secondary hover:text-brand-primary"}`}>\n          <Search className="w-5 h-5" />\n          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>\n        </Link>
 
         <Link href="/events/new" onClick={(e) => { setShowMobileSearch(false); handleProtectedAction(e); }} className="flex flex-col items-center justify-center w-full h-full">
           <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
@@ -503,12 +481,12 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           </div>
         </Link>
 
-        <button onClick={() => { setShowMobileSearch(false); NProgress.start(); startTransition(() => router.push("/?view=cities")); }} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && searchParams.get('view') === 'cities' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
+        <Link href="/cities" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/cities' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
           <div className="w-5 h-5 flex items-center justify-center">
             <Building2 className="w-[18px] h-[18px]" />
           </div>
           <span className="text-[10px] font-bold font-['Outfit'] mt-1">Cities</span>
-        </button>
+        </Link>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">

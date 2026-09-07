@@ -8,7 +8,7 @@ const isValidUUID = (id: string) => {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 };
 
-const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username)";
+const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, registration_deadline, college_branch, college_year, college_only, branch_tags, goal_tags, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username, full_name)";
 
 // Cached so generateMetadata + the page component share ONE DB call instead of two
 const getEvent = cache(async (slug: string) => {

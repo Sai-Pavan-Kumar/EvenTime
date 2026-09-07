@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
@@ -172,10 +173,16 @@ export default async function CityPage({
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
               <MapPin className="w-6 h-6 text-slate-300" />
             </div>
-            <h3 className="text-slate-900 font-bold text-lg">No Upcoming Events</h3>
+            <h3 className="text-slate-900 font-bold text-lg font-heading">No Upcoming Events</h3>
             <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              We couldn't find any upcoming events in {decodedCity}. Check back later or explore other cities.
+              There are no upcoming events scheduled in {decodedCity} right now. Check back soon or host the first one!
             </p>
+            <Link
+              href={`/events/new?city=${encodeURIComponent(decodedCity)}`}
+              className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-[#5835e5] transition-all text-sm shadow-sm active:scale-95 flex items-center gap-2"
+            >
+              Host An Event in {decodedCity}
+            </Link>
           </div>
         )}
       </div>

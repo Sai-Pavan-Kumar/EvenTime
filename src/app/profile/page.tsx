@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy } from "lucide-react";
+import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy, BarChart2, GraduationCap, Info, MessageSquare } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { format, parseISO } from "date-fns";
@@ -85,8 +85,12 @@ function ProfileContent() {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
       if (!currentUser) {
+        memCache = null;
         router.push("/login");
         return;
+      }
+      if (memCache && memCache.user?.id !== currentUser.id) {
+        memCache = null;
       }
 
       const [
@@ -96,7 +100,7 @@ function ProfileContent() {
         { data: myReportsRaw },
         { data: appSettingsData }
       ] = await Promise.all([
-        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, goals, preferred_cities, user_type, graduation_year").eq("id", currentUser.id).maybeSingle(),
+        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year").eq("id", currentUser.id).maybeSingle(),
         supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).neq("status", "deleted").order("created_at", { ascending: false }),
         supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
         supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
@@ -172,6 +176,17 @@ function ProfileContent() {
       totalInterested += eventInterested;
     });
   }  
+  const getTierInfo = () => {
+    if (eventCount >= 69) {
+      return { label: "Gold Curator", color: "#F59E0B", bg: "#FEF3C7" };
+    }
+    if (eventCount >= 30) {
+      return { label: "Silver Curator", color: "#64748B", bg: "#F1F5F9" };
+    }
+    return { label: "Curator", color: "#6C47FF", bg: "#EDE8FF" };
+  };
+  const tier = getTierInfo();
+
   let strokeColor = "#005AE0"; 
   if (eventCount >= 69) {
     strokeColor = "#F59E0B";
@@ -219,10 +234,52 @@ function ProfileContent() {
                 <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
                   {profile?.full_name || user.user_metadata?.full_name || "Curator"}
                 </h1>
-                
-               <div className="flex items-center gap-1.5 text-slate-400 mt-1">
+
+                {profile?.username && (
+                  <p className="text-xs font-bold text-slate-400 mt-0.5">
+                    @{profile.username}
+                  </p>
+                )}
+
+                {/* Tier Pill matching mobile app */}
+                <div 
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold mt-2"
+                  style={{ backgroundColor: tier.bg, color: tier.color }}
+                >
+                  <span>{tier.label}</span>
+                  <span>•</span>
+                  <span>{etScore} ET</span>
+                </div>
+
+                {/* Academic metadata matching mobile app */}
+                {profile?.user_type === "student" && profile?.college && (
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-slate-500 font-medium mt-2.5 max-w-full px-2">
+                    <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="truncate">
+                      {profile.college} {profile.branch ? `• ${profile.branch}` : ''} {profile.graduation_year ? `('${String(profile.graduation_year).slice(-2)})` : ''}
+                    </span>
+                  </div>
+                )}
+
+                {/* Goals & Interests Chips matching mobile app */}
+                {profile?.goals && profile.goals.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3 px-2">
+                    {profile.goals.slice(0, 3).map((g: string, idx: number) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                        {g}
+                      </span>
+                    ))}
+                    {profile.goals.length > 3 && (
+                      <span className="text-slate-400 text-[10px] font-bold">
+                        +{profile.goals.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                )}
+
+               <div className="flex items-center gap-1.5 text-slate-400 mt-2.5">
                   <Mail className="w-3.5 h-3.5" />
-                  <span className="font-medium text-xs break-all px-2">{user.email}</span>
+                  <span className="font-medium text-xs break-all px-1">{user.email}</span>
                 </div>
 
                 {missingItems.length > 0 && (
@@ -294,6 +351,14 @@ function ProfileContent() {
                     <Trophy className="w-4 h-4" /> Leaderboard
                   </Link>
                 )}
+
+                <Link href="/about" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                  <Info className="w-4 h-4" /> About EvenTime
+                </Link>
+
+                <Link href="/stats" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                  <BarChart2 className="w-4 h-4" /> Live Platform Stats
+                </Link>
 
                 <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
                   <Settings className="w-4 h-4" /> Profile Settings
@@ -436,11 +501,19 @@ function ProfileContent() {
 
               {activeTab === "saved" && savedEvents.length === 0 && (
                 <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
-                  <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
+                  <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-6">
                     <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
                   </div>
-                  <h3 className="text-slate-900 font-bold text-xl">No Bookmarks Found</h3>
-                  <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Events you save while exploring will be safely organized here.</p>
+                  <h3 className="text-slate-900 font-bold text-xl">No Saved Events</h3>
+                  <p className="text-slate-500 font-medium text-sm mt-2 leading-relaxed max-w-[380px] mx-auto">
+                    Bookmark events you're interested in attending to keep track of deadlines and updates.
+                  </p>
+                  <Link
+                    href="/"
+                    className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-[#5835e5] transition-all text-sm shadow-sm active:scale-95"
+                  >
+                    Explore Events
+                  </Link>
                 </div>
               )}
 

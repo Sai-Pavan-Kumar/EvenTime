@@ -192,8 +192,7 @@ export default function LoginPage() {
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type="email" name="email" required placeholder="name@email.com" 
+                <input type="email" name="email" required placeholder="name@email.com" maxLength={100} 
                   className="w-full bg-surface-base border border-transparent rounded-2xl px-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
                 />
               </div>
@@ -203,8 +202,7 @@ export default function LoginPage() {
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-brand-primary transition-colors" />
-                <input 
-                  type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" 
+                <input type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" maxLength={100} 
                   className="w-full bg-surface-base border border-transparent rounded-2xl pl-12 pr-12 py-3.5 sm:py-4 text-sm text-slate-900 focus:bg-white focus:border-[#E5E5EA] focus:ring-4 focus:ring-[#6C47FF]/10 outline-none font-medium transition-all"
                 />
                 <button

@@ -86,28 +86,30 @@ export function useEventSubmit() {
 
       let finalStatus: string | null = null;
 
+      let insertedId: string | undefined = undefined;
+
       if (isEditing && eventId) {
+        insertedId = eventId;
         const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
         
-        if (error) throw error; // ← check error FIRST
+        if (error) throw error;
         
-        // Only runs if update succeeded:
         await supabase.from("event_reports")
           .update({ status: "resolved" })
           .eq("event_id", eventId)
           .eq("status", "pending");
           
       } else {
-                // Check database role ONLY
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
         finalStatus = isAdmin ? "approved" : (finalPayload.status || "pending");
-      const { error } = await supabase.from("events").insert([{
+        const { data: insertedRows, error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 
           creator_id: user.id,
-        status: finalStatus 
-        }]);
+          status: finalStatus 
+        }]).select("id");
         if (error) throw error;
+        insertedId = insertedRows?.[0]?.id;
         if (finalStatus === "approved") await revalidateEventsCacheAction();
       }
       
@@ -118,7 +120,21 @@ export function useEventSubmit() {
           ? "Event posted! It's live now."
           : "Event submitted! It'll go live once approved."
       );
-      router.push(isEditing ? `/profile` : `/events/${uniqueSlug}`);
+      if (isEditing) {
+        router.push("/profile");
+      }
+      return {
+        success: true,
+        id: insertedId,
+        slug: uniqueSlug,
+        status: (finalStatus || "approved") as "approved" | "pending",
+        title: finalPayload.title || "",
+        category: finalPayload.category || "",
+        dateString: finalPayload.date_string || "",
+        city: finalPayload.city || "",
+        location: finalPayload.location || "",
+        posterUrl: finalPosterUrl || null,
+      };
     } catch (err: any) {
       console.error("[useEventSubmit] Error:", err);
       const isDuplicateLink = err?.code === "23505" && err?.message?.includes("unique_registration_link");

@@ -1,67 +1,65 @@
 import { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service | EvenTime",
-  description: "Terms of service and user agreements for EvenTime.",
+  description: "Terms of Service and curator community guidelines for EvenTime.",
 };
 
 export default function TermsOfServicePage() {
   return (
     <main className="min-h-screen bg-surface-base pb-24">
       <Navbar />
-      
+
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 mb-8 transition-colors"
+        >
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </Link>
-        
+
         <div className="bg-white rounded-[32px] p-8 md:p-12 shadow-sm border border-slate-200/60">
-          <h1 className="text-4xl font-heading font-black text-slate-900 mb-4">Terms of Service</h1>
-          <p className="text-slate-500 font-medium mb-10">Last updated: June 30, 2026</p>
-          
-          <div className="space-y-8 text-slate-700 leading-relaxed">
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">1. Acceptance of Terms</h2>
-              <p>
-                By accessing and using EvenTime ("the Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">2. User Accounts</h2>
-              <p>
-                To access certain features, you must register for an account. You agree to provide accurate information and are solely responsible for maintaining the confidentiality of your account credentials. We reserve the right to suspend or terminate accounts that violate our policies.
-              </p>
-            </section>
-            
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">3. User Conduct and Content</h2>
-              <p>
-                You agree not to use the Platform for any unlawful purpose. When submitting events or content, you ensure that you have the right to share such information and that it does not infringe on any third-party rights or contain malicious intent. EvenTime reserves the right to remove any content that violates these terms.
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-brand-primary text-xs font-bold rounded-full border border-purple-200 mb-4">
+            <FileText className="w-4 h-4" />
+            <span>EvenTime Terms</span>
+          </div>
+
+          <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-2">
+            Terms of Service & Guidelines
+          </h1>
+          <p className="text-slate-400 font-medium text-sm mb-8">Last updated: June 30, 2026</p>
+
+          <div className="h-px bg-slate-100 mb-8" />
+
+          <div className="space-y-8 text-slate-700 leading-relaxed text-[15px]">
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-slate-900">1. Acceptance of Terms</h2>
+              <p className="text-slate-600">
+                By creating an account or accessing EvenTime, you agree to comply with and be bound by these Terms of Service. If you do not agree, please do not use the application.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">4. Intellectual Property</h2>
-              <p>
-                The Platform, including its original content, features, and functionality, are owned by EvenTime and are protected by international copyright, trademark, and other intellectual property laws.
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-slate-900">2. Curator Community Guidelines</h2>
+              <p className="text-slate-600">
+                EvenTime is a curated directory powered by community organizers. Curators must only post genuine, accurate, and non-misleading event listings. Spam, scams, or posting duplicate events to artificially inflate ET Scores will result in immediate moderation and score resets.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">5. Disclaimer of Warranties</h2>
-              <p>
-                EvenTime serves as a discovery platform. We do not guarantee the accuracy, quality, or safety of any events listed by third parties. Your attendance at any event is solely at your own risk.
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-slate-900">3. Content Ownership & Verification</h2>
+              <p className="text-slate-600">
+                Event posters, brand logos, and external ticket links belong to their respective organizers and creators. EvenTime does not host ticket payments directly unless specified.
               </p>
             </section>
 
-            <section>
-              <h2 className="text-xl font-bold text-slate-900 mb-3">6. Contact Information</h2>
-              <p>
-                For any questions regarding these Terms of Service, please contact us at  eventime.admin@gmail.com.
+            <section className="space-y-2">
+              <h2 className="text-lg font-bold text-slate-900">4. Account Termination</h2>
+              <p className="text-slate-600">
+                Users have the right to terminate their account and erase their data at any time from profile settings. EvenTime reserves the right to suspend accounts violating community safety standards.
               </p>
             </section>
           </div>

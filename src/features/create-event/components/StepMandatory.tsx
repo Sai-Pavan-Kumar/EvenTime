@@ -13,7 +13,7 @@ import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin  }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin, profileCollege }: any) {
   
   // SECURE ADMIN CHECK
   const isAdmin = isCurrentUserAdmin;
@@ -23,6 +23,13 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
   const [isCreatingCollege, setIsCreatingCollege] = useState(false);
   const { collegesList, setCollegesList, isSearchingColleges } = useCollegeSearch(collegeSearchQuery);
+
+  // Keep college search input in sync with data.collegeName
+  useEffect(() => {
+    if (data.collegeName && data.collegeName !== collegeSearchQuery) {
+      setCollegeSearchQuery(data.collegeName);
+    }
+  }, [data.collegeName]);
  
 
   const handleCreateCollege = async (name: string) => {
@@ -68,7 +75,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
-            type="url" value={data.regLink} onChange={e => handleLinkInput(e.target.value)}
+            type="url" value={data.regLink} maxLength={500} onChange={e => handleLinkInput(e.target.value)}
             placeholder="Paste event link (lu.ma, eventbrite, etc.)"
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
           />
@@ -113,16 +120,24 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 
       {/* BASICS */}
       <div className="space-y-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          Event Title <span className="text-red-500">*</span>
-          {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
-            <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs">
-              <AlertTriangle className="w-4 h-4" /> Unverified Domain
-            </span>
-          )}
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            Event Title <span className="text-red-500">*</span>
+            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+              <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs">
+                <AlertTriangle className="w-4 h-4" /> Unverified Domain
+              </span>
+            )}
+          </label>
+          <span className={`text-xs font-mono ${(data.title || "").length >= 100 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+            {(data.title || "").length}/100
+          </span>
+        </div>
         <input
-          type="text" value={data.title} onChange={e => updateData({ title: e.target.value })}
+          type="text"
+          value={data.title}
+          maxLength={100}
+          onChange={e => updateData({ title: e.target.value })}
           className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none focus:border-[#6C47FF]"
         />
       </div>
@@ -156,14 +171,21 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                   </button>
                 </div>
                   <div className="space-y-2 relative">
-                    <label className="block text-xs font-bold text-slate-500">Which College? <span className="text-red-500">*</span></label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-500">College / Institute Name <span className="text-red-500">*</span></label>
+                      {Boolean(profileCollege?.name && data.collegeName && data.collegeName.trim().toLowerCase() === profileCollege.name.trim().toLowerCase()) && (
+                        <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                          Prefilled from Profile
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="text"
                       value={collegeSearchQuery}
                       onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
                       onFocus={() => setShowCollegeDropdown(true)}
                       onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
-                      placeholder="Search your college..."
+                      placeholder="Search college (e.g. CBIT, IIT, BITS...)" maxLength={100}
                       className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
                     />
                      {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
@@ -225,9 +247,15 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 
           {/* DESCRIPTION */}
           <div className="space-y-3 pt-2">
-            <label className="block text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+              <span className={`text-xs font-mono ${(data.description || "").length >= 3000 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                {(data.description || "").length}/3000
+              </span>
+            </div>
             <textarea
               value={data.description}
+              maxLength={3000}
               onChange={e => updateData({ description: e.target.value })}
               placeholder="What is this event about?"
               className="w-full bg-white border border-slate-200 rounded-xl p-4 min-h-[120px] outline-none focus:border-[#6C47FF] focus:ring-4 focus:ring-[#6C47FF]/10"
@@ -287,17 +315,36 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
            </div>
 
            {!data.isOnline ? (
-             <select
-               value={data.city || ""}
-               onChange={e => updateData({ city: e.target.value, location: e.target.value })}
-               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
-             >
-               <option value="" disabled>Select City</option>
-               {CITIES.map(c => (
-                 <option key={c} value={c}>{c}</option>
-               ))}
-             </select>
-           ) : (
+              <div className="space-y-3">
+                <select
+                  value={data.city || ""}
+                  onChange={e => updateData({ city: e.target.value, location: data.location && data.location !== data.city ? data.location : e.target.value })}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
+                >
+                  <option value="" disabled>Select City</option>
+                  {CITIES.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Venue Address (Optional)</label>
+                    <span className={`text-xs font-mono ${(data.location && data.location !== data.city ? data.location : "").length >= 150 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                      {(data.location && data.location !== data.city ? data.location : "").length}/150
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={data.location && data.location !== data.city ? data.location : ""}
+                    onChange={e => updateData({ location: e.target.value.trim() ? e.target.value : data.city })}
+                    placeholder="Venue Address / Campus Landmark (Optional)"
+                    maxLength={150}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+            ) : (
              <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-bold"><Video className="w-4 h-4 text-brand-primary" /> Virtual Event</div>
            )}
            {/* FREE / PAID */}
@@ -314,7 +361,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
              {!data.isFree && (
                <div className="relative mt-3">
                  <IndianRupee className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                 <input type="number" value={data.price} onChange={e => updateData({ price: e.target.value })} placeholder="Ticket Price" className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none" />
+                 <input type="number" value={data.price} maxLength={7} max={9999999} onChange={e => updateData({ price: e.target.value.slice(0, 7) })} placeholder="Ticket Price" className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none" />
                </div>
              )}
 

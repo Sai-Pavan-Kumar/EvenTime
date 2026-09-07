@@ -16,6 +16,8 @@ import { useEventSubmit } from "./hooks/useEventSubmit";
 // New 2-Step Components
 import { StepMandatory } from "./components/StepMandatory";
 import { StepFeatured } from "./components/StepFeatured";
+import { CuratorCelebrationModal, CelebrationEventData } from "./components/CuratorCelebrationModal";
+import { toast } from "sonner";
 
 interface ExtendedFormProps extends CreateEventFormProps {
   isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
@@ -24,6 +26,10 @@ interface ExtendedFormProps extends CreateEventFormProps {
 
 export function CreateEventForm({ initialData, isEditing = false, isAdminFeatureEnabled = false, isCurrentUserAdmin = false }: ExtendedFormProps) {
   const [step, setStep] = useState(0); // 0 = Mandatory, 1 = Featured/Advanced
+  const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEventData | null>(null);
+  const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+  const DRAFT_STORAGE_KEY = "@eventime_create_event_draft_v1";
   const supabase = createClient();
 
   // Unified State Object
@@ -70,6 +76,132 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   };
 
   const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+
+  
+  // Auto-restore draft from localStorage
+  useEffect(() => {
+    if (isEditing || initialData?.title) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (raw) {
+        const draft = JSON.parse(raw);
+        if (draft && (draft.title || draft.regLink || draft.description || draft.category)) {
+          setEventData((prev) => ({
+            ...prev,
+            ...draft,
+            selectedDate: draft.selectedDate ? new Date(draft.selectedDate) : undefined,
+            endDate: draft.endDate ? new Date(draft.endDate) : undefined,
+            registrationDeadline: draft.registrationDeadline ? new Date(draft.registrationDeadline) : undefined,
+          }));
+          setHasRestoredDraft(true);
+        }
+      }
+    } catch (e) {
+      console.warn("[CreateEvent] Failed to parse draft:", e);
+    }
+  }, [isEditing, initialData]);
+
+  // Auto-save draft to localStorage (debounced)
+  useEffect(() => {
+    if (isEditing) return;
+    const hasContent = eventData.title || eventData.regLink || eventData.description || eventData.category;
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const toSave = {
+          ...eventData,
+          selectedDate: eventData.selectedDate ? eventData.selectedDate.toISOString() : undefined,
+          endDate: eventData.endDate ? eventData.endDate.toISOString() : undefined,
+          registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : undefined,
+          fieldStatus: undefined,
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(toSave));
+      } catch (e) {
+        console.warn("[CreateEvent] Failed to save draft:", e);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [eventData, isEditing]);
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      setHasRestoredDraft(false);
+      setEventData({
+        regLink: "",
+        isTrustedDomain: true,
+        title: "",
+        category: "",
+        isCreatingNewCategory: false,
+        selectedAudience: [],
+        description: "",
+        location: "",
+        city: "",
+        selectedDate: undefined,
+        fieldStatus: { title: "idle", description: "idle", location: "idle" },
+        collegeBranch: "",
+        collegeYear: "",
+        collegeOnly: false,
+        collegeId: null,
+        collegeName: "",
+        selectedHour: "",
+        selectedMin: "",
+        selectedAmPm: "AM",
+        hasEndTime: false,
+        hasEndDate: false,
+        endDate: undefined,
+        endHour: "08",
+        endMin: "00",
+        endAmPm: "PM",
+        isOnline: false,
+        isFree: true,
+        price: "",
+        isFeatured: false,
+        organizer: "",
+        prizes: "",
+        teamSize: "Solo",
+        registrationDeadline: undefined,
+        website: "",
+      });
+      toast.success("Draft cleared");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const [profileCollege, setProfileCollege] = useState<{ id: string; name: string } | null>(null);
+
+  // Auto-prefill student's registered college if creating a college event or fest
+  useEffect(() => {
+    const fetchUserProfileCollege = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("college_id, colleges(name)")
+        .eq("id", user.id)
+        .single();
+      if (data && data.college_id && (data.colleges as any)?.name) {
+        setProfileCollege({
+          id: data.college_id,
+          name: (data.colleges as any).name,
+        });
+      }
+    };
+    fetchUserProfileCollege();
+  }, []);
+
+  useEffect(() => {
+    if (!initialData && isCollegeCategory && profileCollege && !eventData.collegeName) {
+      updateData({
+        collegeName: profileCollege.name,
+        collegeId: profileCollege.id,
+      });
+    }
+  }, [isCollegeCategory, profileCollege, eventData.collegeName, initialData]);
 
   const extraction = useEventExtraction({ 
     setTitle: (v) => updateData({ title: v }), 
@@ -128,6 +260,20 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 
   return (
     <div className="max-w-3xl mx-auto w-full">
+      {hasRestoredDraft && (
+        <div className="flex items-center justify-between bg-purple-50 border border-purple-200/80 rounded-2xl px-4 py-2.5 mb-6 animate-in fade-in">
+          <span className="text-xs sm:text-sm font-semibold text-purple-900">
+            Draft restored from your last session.
+          </span>
+          <button
+            type="button"
+            onClick={clearDraft}
+            className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline ml-3"
+          >
+            Clear Draft
+          </button>
+        </div>
+      )}
       <div className="mb-10 text-center">
         <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
           {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
@@ -140,15 +286,12 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
         <AnimatePresence mode="wait">
           {step === 0 && (
-            <StepMandatory 
+            <StepMandatory profileCollege={profileCollege} 
               data={eventData} 
               updateData={updateData} 
               isCollegeCategory={isCollegeCategory}
               extraction={extraction}
-              onNext={() => {
-                if (isAdminFeatureEnabled) setStep(1);
-                else handleSubmit(); 
-              }}
+              onNext={() => setStep(1)}
               isValid={Boolean(step0Valid)}
               isSubmitting={isSubmitting && !isAdminFeatureEnabled}
               onSubmit={handleSubmit}
@@ -171,6 +314,19 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
             )}
         </AnimatePresence>
       </div>
+
+      <CuratorCelebrationModal
+        isOpen={isCelebrationOpen}
+        event={celebrationEvent}
+        onClose={() => {
+          setIsCelebrationOpen(false);
+          window.location.href = "/";
+        }}
+        onViewEvent={(slug) => {
+          setIsCelebrationOpen(false);
+          window.location.href = "/events/" + (slug || "");
+        }}
+      />
     </div>
   );
 }

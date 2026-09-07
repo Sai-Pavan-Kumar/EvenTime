@@ -192,7 +192,12 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
               <div className="space-y-4">
                 {/* 0. Username */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-text-secondary uppercase tracking-wider">Pick a username <span className="text-red-500">*</span></label>
+                    <span className={`text-[11px] font-mono ${(username || "").length >= 12 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                      {(username || "").length}/12
+                    </span>
+                  </div>
                     <input
                       type="text"
                       placeholder="e.g. johndoe"
@@ -274,8 +279,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                       <div className="relative" onClick={(e) => e.stopPropagation()}>
                         <input 
                           type="text" 
-                          placeholder="Search & Select Your College" 
-                          value={searchQuery} 
+                          placeholder="Search & Select Your College" maxLength={100} value={searchQuery} 
                           onChange={e => { setSearchQuery(e.target.value); setShowDropdown(true); }}
                           onFocus={() => setShowDropdown(true)}
                           className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"
@@ -318,8 +322,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                           <div className="relative" onClick={(e) => e.stopPropagation()}>
                           <input 
                             type="text" 
-                            placeholder="Year (e.g. 2026)" 
-                            value={yearSearchQuery} 
+                            placeholder="Year (e.g. 2026)" maxLength={4} value={yearSearchQuery} 
                             onChange={e => { setYearSearchQuery(e.target.value); setShowYearDropdown(true); }}
                             onFocus={() => setShowYearDropdown(true)}
                             className="w-full bg-surface-base border-none rounded-xl px-4 py-4 text-text-primary focus:ring-2 focus:ring-brand-primary/20 outline-none font-medium placeholder:text-text-secondary"

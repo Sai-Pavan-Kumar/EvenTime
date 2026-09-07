@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.eventime.app",
+      "sha256_cert_fingerprints": [
+        "B3:34:FD:F1:67:5C:BF:AA:C4:05:8F:FE:D4:FC:C3:65:DC:8C:C5:99:20:2C:D9:42:96:77:CE:90:E5:B2:EE:51"
+      ]
+    }
+  }
+]

@@ -199,11 +199,17 @@ export default function SettingsClient({
 
             <div className="border border-slate-100 rounded-2xl divide-y divide-slate-100 overflow-hidden">
               <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">What's your name?</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">What's your name?</label>
+                  <span className={`text-[11px] font-mono ${(fullName || "").length >= 50 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                    {(fullName || "").length}/50
+                  </span>
+                </div>
                 <input 
                   type="text" 
                   name="fullName" 
                   value={fullName}
+                  maxLength={50}
                   onChange={e => setFullName(e.target.value)}
                   required
                   disabled={isLocked}
@@ -214,7 +220,12 @@ export default function SettingsClient({
               </div>
 
               <div className="relative px-4 py-3.5 bg-[#F8F9FB]">
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5">Public Username</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Public Username</label>
+                  <span className={`text-[11px] font-mono ${(username || "").length >= 12 ? "text-red-500 font-bold" : "text-slate-400"}`}>
+                    {(username || "").length}/12
+                  </span>
+                </div>
                 <div className="relative flex items-center">
                   <span className="text-slate-400 font-bold mr-1">@</span>
                   <input 
@@ -322,8 +333,7 @@ export default function SettingsClient({
                       <>
                         <input
                           type="text"
-                          placeholder="Type to search your college"
-                          value={collegeSearchQuery}
+                          placeholder="Type to search your college" maxLength={100} value={collegeSearchQuery}
                           onChange={e => { setCollegeSearchQuery(e.target.value); setCollege(""); setShowCollegeDropdown(true); }}
                           onFocus={() => setShowCollegeDropdown(true)}
                           className="w-full bg-transparent border-none text-slate-900 p-0 text-[15px] font-medium focus:ring-0 outline-none"

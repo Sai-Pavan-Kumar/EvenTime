@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
+import { Award } from "lucide-react";
 import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
 import Image from "next/image";
 import type { ProfileRow } from "@/types";
@@ -195,6 +196,19 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
             <h1 className="text-3xl font-heading font-black text-text-primary">{curator.full_name}</h1>
             <p className="text-brand-primary font-bold mt-1">@{curator.username}</p>
             <p className="text-slate-500 font-medium mt-1">{curator.college || "Curator on EvenTime"}</p>
+            <div className="flex items-center justify-center md:justify-start gap-2 mt-2">
+              <span
+                style={{
+                  color: etScore >= 500 ? "#B45309" : etScore >= 250 ? "#475569" : "#6C47FF",
+                  backgroundColor: etScore >= 500 ? "#FEF3C7" : etScore >= 250 ? "#F1F5F9" : "#EDE8FF",
+                  borderColor: etScore >= 500 ? "#FDE68A" : etScore >= 250 ? "#E2E8F0" : "#DDD6FE",
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shrink-0"
+              >
+                <Award className="w-3.5 h-3.5" />
+                {etScore >= 500 ? "Gold Curator" : etScore >= 250 ? "Silver Curator" : `Curator • ${etScore} ET`}
+              </span>
+            </div>
             
             <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4 items-center w-full">
               <div className="bg-surface-base px-5 py-3 rounded-2xl flex flex-col">

@@ -68,7 +68,10 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           >
             <div className="p-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Feedback</h3>
+                <div>
+                    <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Share Feedback</h3>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">Direct line to the product makers</p>
+                  </div>
                 <button
                   onClick={handleClose}
                   className="p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
@@ -122,14 +125,14 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     <textarea
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      maxLength={500}
+                      maxLength={1000}
                       placeholder={type === 'feature' ? "What should we add or improve?" : "What went wrong?"}
                       className="w-full bg-surface-base border border-transparent rounded-2xl p-4 text-sm text-text-primary focus:border-[#E5E5EA] focus:bg-white focus:ring-4 focus:ring-brand-primary/10 outline-none resize-none h-32 transition-all placeholder:text-text-secondary"
                       required
                     />
                     <div className="flex justify-end mt-1 px-1">
-                      <span className={`text-[11px] font-bold font-['Outfit'] ${message.length >= 500 ? 'text-red-500' : 'text-slate-400'}`}>
-                        {message.length} / 500
+                      <span className={`text-[11px] font-bold font-['Outfit'] ${message.length >= 1000 ? 'text-red-500' : 'text-slate-400'}`}>
+                        {message.length} / 1000
                       </span>
                     </div>
                   </div>
@@ -144,7 +147,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     {isSubmitting ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
-                      "Submit"
+                      "Send Feedback"
                     )}
                   </button>
                 </form>

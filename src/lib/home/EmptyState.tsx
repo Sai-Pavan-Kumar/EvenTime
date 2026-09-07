@@ -8,6 +8,8 @@ export interface EmptyStateProps {
   buttonText?: string;
   showButton?: boolean;
   variant?: "default" | "foryou";
+  onAction?: () => void;
+  actionHref?: string;
 }
 
 export function EmptyState({ 
@@ -16,7 +18,9 @@ export function EmptyState({
   imageSrc = "/illustrations/empty_state3.webp", 
   buttonText = "Host an Event", 
   showButton = true, 
-  variant = "default" 
+  variant = "default",
+  onAction,
+  actionHref 
 }: EmptyStateProps) {
   const isForYou = variant === "foryou";
   
@@ -47,9 +51,19 @@ export function EmptyState({
           {message}
         </p>
        {showButton && (
-          <Link href="/events/new" className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
-            {buttonText}
-          </Link>
+          onAction ? (
+            <button
+              type="button"
+              onClick={onAction}
+              className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10 cursor-pointer"
+            >
+              {buttonText}
+            </button>
+          ) : (
+            <Link href={actionHref || "/events/new"} className="bg-text-primary hover:bg-black text-surface-card px-8 py-4 rounded-full font-bold transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-black/10">
+              {buttonText}
+            </Link>
+          )
         )}
       </div>
     </div>

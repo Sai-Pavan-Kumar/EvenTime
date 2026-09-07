@@ -110,7 +110,7 @@ export function LocationSearch({ value, onChange }: { value: string; onChange: (
   return (
     <div ref={wrapperRef} className="relative">
       <div className="relative">
-        <input type="text" placeholder="Search city or venue..." value={query} onChange={e => { setQuery(e.target.value); onChange(e.target.value); }} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pr-10 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all placeholder:text-slate-400" />
+        <input type="text" placeholder="Search city or venue..." maxLength={100} value={query} onChange={e => { setQuery(e.target.value); onChange(e.target.value); }} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pr-10 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all placeholder:text-slate-400" />
         {isLoading ? <Search className="absolute right-4 top-4 w-4 h-4 text-slate-400 animate-spin" /> : <MapPin className="absolute right-4 top-4 w-4 h-4 text-slate-400" />}
       </div>
       <AnimatePresence>

@@ -1,12 +1,12 @@
 "use client"
-import { useRef, useEffect, useState, useMemo, Suspense } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { CalendarDays, Search, Building2, SearchX, ArrowRight } from "lucide-react";
+import { CalendarDays, Search, Building2, SearchX, ArrowRight, X } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
@@ -29,6 +29,49 @@ export interface HomePageClientProps {
   displayToday: string;
 }
 
+
+const PROFILE_STORAGE_KEY = 'et_cached_profile';
+const CAMPUS_EVENTS_STORAGE_KEY = 'et_cached_campus_events';
+
+function getLocalProfile(): (Partial<ProfileRow> & { city?: string }) | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setLocalProfile(data: (Partial<ProfileRow> & { city?: string }) | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (data) {
+      localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(data));
+    } else {
+      localStorage.removeItem(PROFILE_STORAGE_KEY);
+      localStorage.removeItem(CAMPUS_EVENTS_STORAGE_KEY);
+    }
+  } catch {}
+}
+
+function getLocalCampusEvents(): Partial<EventRow>[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CAMPUS_EVENTS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setLocalCampusEvents(events: Partial<EventRow>[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(CAMPUS_EVENTS_STORAGE_KEY, JSON.stringify(events));
+  } catch {}
+}
+
 export function HomePageClient(props: HomePageClientProps) {
   const {
     allEvents,
@@ -49,22 +92,65 @@ export function HomePageClient(props: HomePageClientProps) {
   const date = searchParams.get('date') || undefined;
   const view = searchParams.get('view') || undefined;
 
-  // NEW: Client-side User & Profile State
+  // 0ms Cache Hydration: Read directly from browser localStorage before initial paint
+  const [profile, setProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(() => getLocalProfile());
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [isAuthLoading, setIsAuthLoading] = useState(() => !getLocalProfile());
 
   // Local copies of events
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
-  const [livePersonalizedEvents, setLivePersonalizedEvents] = useState<Partial<EventRow>[]>([]);
-  const [liveAroundYouEvents, setLiveAroundYouEvents] = useState<Partial<EventRow>[]>([]);
-  const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>([]);
+  const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>(() => getLocalCampusEvents());
 
-  // Pill toggles: Default to 'around_you' initially
-  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('around_you');
+  // Determine initial active pill synchronously on Frame 1
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>(() => {
+    const cached = getLocalProfile();
+    return (cached?.goals && cached.goals.length > 0) ? 'for_you' : 'around_you';
+  });
   
-  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);  
+  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);
+
+  // Apple-grade Campus Batch Eligibility Filter (All Events vs Eligible for Me)
+  const [campusFilterMode, setCampusFilterMode] = useState<'all' | 'eligible'>('all');
+
+  const studentBranch = (profile?.branch || '').trim().toLowerCase();
+  const studentGradYear = profile?.graduation_year ? String(profile.graduation_year).trim().toLowerCase() : '';
+
+  const isEligibleForCampusStudent = useCallback(
+    (ev: Partial<EventRow>) => {
+      if (!ev) return false;
+      if (!studentBranch && !studentGradYear) return true;
+
+      let branchMatch = true;
+      const evBranches = ev.branch_tags || (ev.college_branch ? [ev.college_branch] : []);
+      if (studentBranch && evBranches.length > 0) {
+        branchMatch = evBranches.some((b: string) => {
+          const bl = b.toLowerCase();
+          return bl === 'all' || bl === 'all branches' || bl === studentBranch;
+        });
+      }
+
+      let yearMatch = true;
+      const evYear = ev.college_year ? String(ev.college_year).trim().toLowerCase() : '';
+      if (studentGradYear && evYear) {
+        yearMatch = evYear === 'all' || evYear === 'all years' || evYear === studentGradYear;
+      }
+
+      return branchMatch && yearMatch;
+    },
+    [studentBranch, studentGradYear]
+  );
+
+  const eligibleCollegeEvents = useMemo(() => {
+    return liveCollegeEvents.filter(isEligibleForCampusStudent);
+  }, [liveCollegeEvents, isEligibleForCampusStudent]);
+
+  const displayedCollegeEvents = useMemo(() => {
+    if (campusFilterMode === 'eligible') {
+      return eligibleCollegeEvents;
+    }
+    return liveCollegeEvents;
+  }, [campusFilterMode, eligibleCollegeEvents, liveCollegeEvents]);  
 
   const isLandingPage = !user && !q && !date && !category;
   const [feedLoadStage, setFeedLoadStage] = useState(0);
@@ -81,47 +167,75 @@ export function HomePageClient(props: HomePageClientProps) {
   useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
 
-  // NEW: Fetch User & Profile directly from the browser on mount
+  // Validate and sync User & Profile in background without layout shift
   useEffect(() => {
+    let isMounted = true;
     const fetchUserAndProfile = async () => {
       const supabase = createClient();
       const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!isMounted) return;
+
       if (currentUser) {
         setUser(currentUser);
         const { data } = await supabase
           .from("profiles")
-          .select("is_onboarded, goals, user_type, college_id, preferred_cities, username")
+          .select("is_onboarded, goals, user_type, college_id, branch, graduation_year, preferred_cities, username")
           .eq("id", currentUser.id)
           .single();
+        if (!isMounted) return;
         if (data) {
-          setProfile(data as any);
-          if (data.goals && data.goals.length > 0) {
-            setActiveFeedPill('for_you'); // Switch default if they have goals
+          const freshProfile = data as any;
+          setProfile(freshProfile);
+          setLocalProfile(freshProfile);
+          if (!profile && freshProfile.goals && freshProfile.goals.length > 0) {
+            setActiveFeedPill('for_you');
           }
         }
+      } else {
+        setUser(null);
+        setProfile(null);
+        setLocalProfile(null);
       }
       setIsAuthLoading(false);
     };
     fetchUserAndProfile();
+    return () => { isMounted = false; };
   }, []);
 
-  // City match: online events always pass (no city restriction on them).
-  // If user hasn't picked any preferred_cities yet, treat every city as a match.
-  // Moved out of the effect below so the date-filter block further down can use it too.
-  const preferredCities = profile?.preferred_cities || [];
-  const cityMatch = (e: Partial<EventRow>) =>
-    e.is_virtual ||
-    preferredCities.length === 0 ||
-    (e.city ? preferredCities.includes(e.city) : false);
+  const preferredCities = useMemo(() => profile?.preferred_cities || [], [profile?.preferred_cities]);
+  const cityMatch = useCallback(
+    (e: Partial<EventRow>) =>
+      Boolean(e.is_virtual) ||
+      preferredCities.length === 0 ||
+      (e.city ? preferredCities.includes(e.city) : false),
+    [preferredCities]
+  );
 
-  // NEW: Organize the Buffet into Personalized Plates
+  const nonCampusEvents = useMemo(() => {
+    if (profile?.user_type === 'student' && profile?.college_id) {
+      return (liveAllEvents || []).filter((e) => e.college_id !== profile.college_id);
+    }
+    return liveAllEvents || [];
+  }, [liveAllEvents, profile?.user_type, profile?.college_id]);
+
+  // Synchronous, zero-lag plate computation:
+  const livePersonalizedEvents = useMemo(() => {
+    if (!profile?.goals || profile.goals.length === 0) return [];
+    const goalSet = new Set(profile.goals);
+    return nonCampusEvents.filter((e) => cityMatch(e) && !!(e.category && goalSet.has(e.category)));
+  }, [nonCampusEvents, profile?.goals, cityMatch]);
+
+  const liveAroundYouEvents = useMemo(() => {
+    if (profile?.goals && profile.goals.length > 0) {
+      const goalSet = new Set(profile.goals);
+      return nonCampusEvents.filter((e) => cityMatch(e) && !(e.category && goalSet.has(e.category)));
+    }
+    return nonCampusEvents.filter(cityMatch);
+  }, [nonCampusEvents, profile?.goals, cityMatch]);
+
+  // Background fetch for campus events if student
   useEffect(() => {
-    let nonCampusEvents = liveAllEvents || [];
-    
-    // If student, fetch their private campus events quickly in the background
-    if (user && profile?.user_type === 'student' && profile?.college_id) {
-      nonCampusEvents = (liveAllEvents || []).filter(e => e.college_id !== profile.college_id);
-      
+    if (profile?.user_type === 'student' && profile?.college_id) {
       const fetchCollegeEvents = async () => {
         const supabase = createClient();
         const todayStr = new Date().toISOString().substring(0, 10);
@@ -133,24 +247,14 @@ export function HomePageClient(props: HomePageClientProps) {
           .gte("date_string", todayStr)
           .order("created_at", { ascending: false })
           .limit(8);
-        
-        if (cEvents) setLiveCollegeEvents(cEvents as any);
+        if (cEvents) {
+          setLiveCollegeEvents(cEvents as any);
+          setLocalCampusEvents(cEvents as any);
+        }
       };
       fetchCollegeEvents();
     }
-
-    // For You = preferred category AND preferred city (or online)
-    // Around You = preferred city (or online), MINUS whatever is already in For You
-    if ((profile?.goals?.length ?? 0) > 0) {
-      const goalSet = new Set(profile!.goals);
-      const isForYouMatch = (e: Partial<EventRow>) => cityMatch(e) && !!(e.category && goalSet.has(e.category));
-      setLivePersonalizedEvents(nonCampusEvents.filter(isForYouMatch));
-      setLiveAroundYouEvents(nonCampusEvents.filter(e => cityMatch(e) && !isForYouMatch(e)));
-    } else {
-      setLiveAroundYouEvents(nonCampusEvents.filter(cityMatch));
-      setLivePersonalizedEvents([]);
-    }
-  }, [profile, user, liveAllEvents]);
+  }, [profile?.user_type, profile?.college_id]);
 
   // Smart cascading filters: options in each dropdown narrow down based on
   // the OTHER filter currently selected — computed from already-loaded
@@ -183,7 +287,7 @@ export function HomePageClient(props: HomePageClientProps) {
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
-  const showFeedPills = !!(user && profile?.is_onboarded && (hasGoals || isCollegeStudent) && noFiltersActive);
+  const showFeedPills = noFiltersActive;
 
   let filteredAllEvents = liveAllEvents || [];
 
@@ -218,7 +322,7 @@ export function HomePageClient(props: HomePageClientProps) {
    const gridSource = !noFiltersActive
     ? filteredAllEvents
     : showFeedPills
-      ? (activeFeedPill === 'campus' ? liveCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
+      ? (activeFeedPill === 'campus' ? displayedCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : liveAroundYouEvents;
 
   const isUpcoming = (e: Partial<EventRow>) => {
@@ -241,7 +345,7 @@ export function HomePageClient(props: HomePageClientProps) {
     <main className="min-h-screen bg-surface-base">
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
 
-      {user && (
+      {(user || profile) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-0 pb-0 text-center">
           <p className="text-sm font-semibold text-slate-600 truncate">
             {(() => {
@@ -270,19 +374,19 @@ export function HomePageClient(props: HomePageClientProps) {
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
         {view !== "cities" && (
           <>
-            {isAuthLoading && (
+            {isAuthLoading && !profile && (
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-8">
-                <div className="h-16 bg-slate-100 rounded-2xl animate-pulse" />
+                <div className="h-48 bg-slate-100/70 rounded-3xl animate-pulse" />
               </div>
             )}
 
-            {!isAuthLoading && !user && !q && !date && !category && !location && (
+            {!isAuthLoading && !user && !profile && !q && !date && !category && !location && (
               <div className="relative">
-                <HeroSection stats={platformStats} />
+                <HeroSection />
               </div>
             )}
 
-          {!isAuthLoading && !user && !q && !date && !category && !location && (
+          {!isAuthLoading && !user && !profile && !q && !date && !category && !location && (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
               <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
             </div>
@@ -347,6 +451,60 @@ export function HomePageClient(props: HomePageClientProps) {
                 </div>
               </div>
 
+                            {/* Active Calendar Date Banner */}
+              {date && (
+                <div className="flex items-center justify-between bg-purple-50 border border-purple-200/80 rounded-2xl px-4 py-2.5 mb-6">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
+                    <span className="text-xs sm:text-sm font-bold text-[#6C47FF]">
+                      Showing events for {new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-600 rounded-lg text-xs font-bold transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Clear
+                  </Link>
+                </div>
+              )}
+
+              {/* Campus Batch Filter Pills (All Events vs Eligible for Me) */}
+              {activeFeedPill === 'campus' && isCollegeStudent && (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-slate-100">
+                  <div className="inline-flex items-center gap-1 bg-purple-50/80 p-1 rounded-full border border-purple-100">
+                    <button
+                      type="button"
+                      onClick={() => setCampusFilterMode('all')}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        campusFilterMode === 'all'
+                          ? 'bg-[#6C47FF] text-white shadow-sm'
+                          : 'text-purple-700 hover:text-purple-900'
+                      }`}
+                    >
+                      All Events ({liveCollegeEvents.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCampusFilterMode('eligible')}
+                      className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                        campusFilterMode === 'eligible'
+                          ? 'bg-[#6C47FF] text-white shadow-sm'
+                          : 'text-purple-700 hover:text-purple-900'
+                      }`}
+                    >
+                      Eligible for Me ({eligibleCollegeEvents.length})
+                    </button>
+                  </div>
+                  {studentBranch && (
+                    <span className="text-xs font-semibold text-slate-400">
+                      Eligible for {studentBranch.toUpperCase()} {studentGradYear ? `('${studentGradYear.slice(-2)})` : ''}
+                    </span>
+                  )}
+                </div>
+              )}
+
               {(() => {
                 const upcomingFeatured = (liveFeaturedEvents || []).filter(e => {
                   const checkDate = parseEventDateString(e.date_string || "");
@@ -403,8 +561,15 @@ export function HomePageClient(props: HomePageClientProps) {
               })()}
 
               <div className="w-full">
-                {(() => {
-                  const upcomingEvents = (gridSource || []).filter(e => {
+                {isAuthLoading && !profile ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pt-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <div key={n} className="h-96 bg-slate-100/80 rounded-2xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  (() => {
+                    const upcomingEvents = (gridSource || []).filter(e => {
                     if (date) return true; // Don't filter if viewing a specific date
                     const checkDate = parseEventDateString(e.date_string || "");
                     if (!checkDate) return true;
@@ -466,13 +631,43 @@ export function HomePageClient(props: HomePageClientProps) {
                     const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
                     const isPastDate = date ? date < todayStr : false;
                     
-                    const title = isPastDate ? "No past events" : "No exact matches";
-                    const message = isPastDate 
-                        ? "There were no events hosted on this date." 
-                        : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
-                        : location ? `No events happening in ${location} right now. Try changing your city or category filters for better matches.`
-                        : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
-                        : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
+                    const isCampusBatchEmpty = activeFeedPill === 'campus' && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
+                    const isCampusEmpty = activeFeedPill === 'campus' && liveCollegeEvents.length === 0;
+                    const isForYouEmpty = activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
+                    
+                    const title = isCampusBatchEmpty
+                      ? "No Specific Batch Events"
+                      : isCampusEmpty
+                      ? "No Campus Events"
+                      : isForYouEmpty
+                      ? (liveAroundYouEvents.length > 0 ? "No Events In Your Categories" : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'Your City'))
+                      : isPastDate
+                      ? "No past events"
+                      : "No exact matches";
+
+                    const message = isCampusBatchEmpty
+                      ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
+                      : isCampusEmpty
+                      ? "There are no private events currently listed for your campus. Host one for your college!"
+                      : isForYouEmpty
+                      ? (liveAroundYouEvents.length > 0
+                        ? "Events are happening in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ", but none currently match your selected interest categories. Explore 'Around You' to discover them, or update your preferences in Profile!"
+                        : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community buzzing!")
+                      : isPastDate 
+                      ? "There were no events hosted on this date." 
+                      : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                      : location ? `No events happening in ${location} right now. Try changing your city or category filters for better matches.`
+                      : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
+                      : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
+
+                    const showBtn = isCampusBatchEmpty || isCampusEmpty || !isPastDate;
+                    const btnText = isCampusBatchEmpty 
+                      ? "Show All Campus Events" 
+                      : isCampusEmpty 
+                      ? "Host an Event" 
+                      : isForYouEmpty
+                      ? (liveAroundYouEvents.length > 0 ? "Explore Around You" : "Update Preferences")
+                      : "Be the first to host one";
                     
                     return (
                       <div className="col-span-full">
@@ -480,8 +675,10 @@ export function HomePageClient(props: HomePageClientProps) {
                           title={title}
                           message={message}
                           variant="default"
-                          showButton={!isPastDate}
-                          buttonText="Be the first to host one"
+                          showButton={showBtn}
+                          buttonText={btnText}
+                          onAction={isCampusBatchEmpty ? () => setCampusFilterMode('all') : isForYouEmpty && liveAroundYouEvents.length > 0 ? () => setActiveFeedPill('around_you') : undefined}
+                          actionHref={isCampusEmpty ? "/events/new" : isForYouEmpty && liveAroundYouEvents.length === 0 ? "/profile" : undefined}
                         />
                       
                         {clientIsFallback && clientFallbackEvents.length > 0 && (
@@ -505,7 +702,7 @@ export function HomePageClient(props: HomePageClientProps) {
                       </div>
                     );
                   }
-                })()}
+                })())}
               </div>
             </div>
             </>

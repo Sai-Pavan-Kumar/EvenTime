@@ -21,6 +21,7 @@
     imageUrl: string;
     organizerName: string;
     organizerUsername?: string; // NEW: links to curator's public page
+    creatorId?: string;
     hideOrganizer?: boolean; // NEW: hide "Curated by" line (used on the curator's own page)
     hidePastBadge?: boolean; // NEW: hide the "Past Event" badge (used inside a dedicated Archive tab)
     isFree: boolean;
@@ -48,6 +49,7 @@
     imageUrl,
     organizerName,
     organizerUsername,
+    creatorId,
     hideOrganizer = false,
     hidePastBadge = false,
     isFree,
@@ -69,6 +71,7 @@
     const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
     const [copied, setCopied] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [ownerNotice, setOwnerNotice] = useState(false);
 
     const handleSave = async (e: React.MouseEvent) => {
       e.preventDefault(); // Prevent navigating to the event page
@@ -77,6 +80,19 @@
       if (isGuest) {
         setShowAuthModal(true);
         return;
+      }
+
+      // Creator self-bookmark check (matches app)
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && creatorId && user.id === creatorId) {
+          setOwnerNotice(true);
+          setTimeout(() => setOwnerNotice(false), 2400);
+          return;
+        }
+      } catch (e) {
+        // Proceed if auth check errored
       }
       
         setIsSaving(true);
@@ -395,7 +411,12 @@
               </div>
 
               {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 z-20">
+              <div className="absolute bottom-3 right-3 flex gap-1 items-center z-20">
+                {ownerNotice && (
+                  <div className="bg-[#0F172A] text-[#F8FAFC] text-[10px] font-bold px-2 py-1 rounded-md shadow-md whitespace-nowrap pointer-events-none animate-in fade-in duration-150">
+                    Your Event
+                  </div>
+                )}
                 <button 
                   onClick={(e) => { e.preventDefault(); handleSave(e); }}
                   disabled={isSaving}

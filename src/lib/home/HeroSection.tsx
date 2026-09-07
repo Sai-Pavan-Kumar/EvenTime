@@ -2,14 +2,7 @@
 
 import Image from "next/image";
 
-interface PlatformStats {
-  event_count: number;
-  city_count: number;
-  category_count: number;
-  user_count: number;
-}
-
-export function HeroSection({ stats }: { stats?: PlatformStats }) {
+export function HeroSection() {
   return (
     <div className="relative w-full bg-white overflow-hidden">
       
