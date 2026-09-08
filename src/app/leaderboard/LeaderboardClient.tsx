@@ -240,9 +240,9 @@ export function LeaderboardClient() {
   }, [activeCohort, isStudent, selectedLeaderboardCity]);
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
+    <div className="max-w-4xl mx-auto px-4 py-6 pb-48 sm:pb-32">
       {/* Title & Header */}
-      <div className="text-center mb-10 space-y-3">
+      <div className="text-center mb-8 space-y-3">
         <div className="flex items-center justify-center gap-3">
           <div className="relative shrink-0 w-12 h-12 rounded-[16px] bg-gradient-to-b from-white to-amber-50 border border-amber-100 shadow-lg shadow-amber-500/20 flex items-center justify-center rotate-3">
             <Crown className="w-6 h-6 text-amber-500 drop-shadow-md" />
@@ -257,9 +257,9 @@ export function LeaderboardClient() {
         </p>
       </div>
 
-      {/* Role-Gated Cohort Tabs */}
-      <div className="flex justify-center mb-8">
-        <div className="inline-flex items-center bg-slate-100/90 rounded-2xl p-1.5 border border-slate-200 shadow-xs max-w-md w-full sm:w-auto">
+      {/* Role-Gated Cohort Tabs (Matching app cohortTrack) */}
+      <div className="flex justify-center mb-6">
+        <div className="inline-flex items-center bg-[#F1F5F9] rounded-[14px] p-1 border border-slate-200/70 shadow-xs max-w-md w-full sm:w-auto">
           {cohortTabs.map((tab) => {
             const isActive = tab.id === activeCohort;
             return (
@@ -267,9 +267,9 @@ export function LeaderboardClient() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveCohort(tab.id)}
-                className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all text-center ${
+                className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold font-['Switzer',sans-serif] transition-all text-center ${
                   isActive
-                    ? "bg-white text-slate-900 shadow-sm font-black"
+                    ? "bg-white text-slate-900 shadow-xs font-black"
                     : "text-slate-500 hover:text-slate-900"
                 }`}
               >
@@ -283,7 +283,7 @@ export function LeaderboardClient() {
       {/* City Selector (When City Cohort is active) */}
       {activeCohort === "city" && (
         <div className="mb-8">
-          <div className="flex items-center justify-center gap-2 overflow-x-auto py-1 px-2 no-scrollbar">
+          <div className="flex items-center sm:justify-center gap-2 overflow-x-auto py-1 px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <span className="text-xs font-bold text-slate-400 mr-1 shrink-0 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-brand-primary" /> Cities:
             </span>
@@ -364,91 +364,139 @@ export function LeaderboardClient() {
         </div>
       ) : (
         <>
-          {/* THE CELEBRATED PODIUM */}
+          {/* THE CELEBRATED PODIUM (Matching app podium structure) */}
           <div className="relative grid grid-cols-3 items-end gap-2 sm:gap-4 md:gap-6 mb-12 px-1 max-w-xl mx-auto mt-6">
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-[120%] h-[180px] bg-gradient-to-t from-amber-500/10 to-transparent blur-[50px] -z-10 rounded-full pointer-events-none" />
 
-            {/* RANK 2 */}
+            {/* RANK 2 (Silver) */}
             <div className="flex flex-col items-center justify-self-end w-full">
               {topThree[1] ? (
                 <>
                   <Link href={`/${topThree[1].username || topThree[1].user_id}`} className="relative mb-2 hover:scale-105 transition-transform">
-                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full p-1 bg-gradient-to-br from-slate-300 to-slate-400 shadow-md">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 bg-gradient-to-br from-slate-300 to-slate-400 shadow-md">
                       <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={72} height={72} className="object-cover" />
+                        <Image src={topThree[1].avatar_url || "/window.svg"} alt="Rank 2" width={64} height={64} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-white border-2 border-slate-300 text-slate-700 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                      {topThree[1].et_score} <span className="text-[8px] font-bold text-slate-400">ET</span>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-700 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap">
+                      2
                     </div>
                   </Link>
-                  <h3 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 max-w-[90px] text-center mb-1">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 max-w-[90px] text-center mb-0.5 h-4 sm:h-5">
                     {topThree[1].full_name || topThree[1].username}
                   </h3>
+                  <span className="text-[11px] font-bold text-slate-500 mb-2">
+                    {topThree[1].et_score} ET
+                  </span>
                 </>
               ) : (
-                <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-2">
-                  <Medal className="w-5 h-5 text-slate-300" />
+                <div className="flex flex-col items-center w-full opacity-40">
+                  <div className="relative mb-2">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center">
+                      <Medal className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-slate-400 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                      2
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-slate-400 text-xs sm:text-sm text-center mb-0.5 h-4 sm:h-5">
+                    Open
+                  </h3>
+                  <span className="text-[11px] font-bold text-slate-300 mb-2">
+                    -
+                  </span>
                 </div>
               )}
-              <div className="w-full h-16 sm:h-24 bg-gradient-to-t from-slate-200 to-slate-50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
-                <span className="text-2xl sm:text-3xl font-black text-slate-300">2</span>
+              <div className="w-full h-18 sm:h-24 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
+                <span className="text-2xl sm:text-3xl font-black text-slate-400">2</span>
               </div>
             </div>
 
-            {/* RANK 1 */}
+            {/* RANK 1 (Gold) */}
             <div className="flex flex-col items-center justify-self-center w-full z-10 relative">
               {topThree[0] ? (
                 <>
                   <Link href={`/${topThree[0].username || topThree[0].user_id}`} className="relative mb-2 hover:scale-105 transition-transform">
-                    <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full p-1 bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/25">
+                    <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-br from-amber-400 to-amber-600 shadow-lg shadow-amber-500/25">
                       <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={88} height={88} className="object-cover" />
+                        <Image src={topThree[0].avatar_url || "/window.svg"} alt="Rank 1" width={80} height={80} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
-                      {topThree[0].et_score} <span className="text-[8px] font-bold text-amber-100">ET</span>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-md whitespace-nowrap">
+                      1
                     </div>
                   </Link>
-                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-base line-clamp-1 max-w-[110px] text-center mb-1">
+                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-base line-clamp-1 max-w-[110px] text-center mb-0.5 h-4 sm:h-5">
                     {topThree[0].full_name || topThree[0].username}
                   </h3>
+                  <span className="text-xs font-bold text-amber-600 mb-2">
+                    {topThree[0].et_score} ET
+                  </span>
                 </>
               ) : (
-                <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-2">
-                  <Trophy className="w-6 h-6 text-slate-300" />
+                <div className="flex flex-col items-center w-full opacity-40">
+                  <div className="relative mb-2">
+                    <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-amber-50 border-2 border-dashed border-amber-300 flex items-center justify-center">
+                      <Trophy className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full whitespace-nowrap">
+                      1
+                    </div>
+                  </div>
+                  <h3 className="font-extrabold text-amber-700/60 text-xs sm:text-base text-center mb-0.5 h-4 sm:h-5">
+                    Open
+                  </h3>
+                  <span className="text-xs font-bold text-amber-400 mb-2">
+                    -
+                  </span>
                 </div>
               )}
-              <div className="w-full h-24 sm:h-32 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
-                <span className="text-3xl sm:text-4xl font-black text-amber-500/60">1</span>
+              <div className="w-full h-26 sm:h-32 bg-gradient-to-t from-amber-200 to-[#FFF7D6] rounded-t-[20px] border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
+                <span className="text-3xl sm:text-4xl font-black text-amber-600/70">1</span>
               </div>
             </div>
 
-            {/* RANK 3 */}
+            {/* RANK 3 (Bronze) */}
             <div className="flex flex-col items-center justify-self-start w-full">
               {topThree[2] ? (
                 <>
                   <Link href={`/${topThree[2].username || topThree[2].user_id}`} className="relative mb-2 hover:scale-105 transition-transform">
-                    <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full p-1 bg-gradient-to-br from-amber-700 to-amber-900 shadow-md">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full p-0.5 bg-gradient-to-br from-amber-700 to-amber-900 shadow-md">
                       <div className="w-full h-full rounded-full overflow-hidden border-2 border-white bg-white">
-                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={72} height={72} className="object-cover" />
+                        <Image src={topThree[2].avatar_url || "/window.svg"} alt="Rank 3" width={64} height={64} className="object-cover" />
                       </div>
                     </div>
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-white border-2 border-amber-700 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap">
-                      {topThree[2].et_score} <span className="text-[8px] font-bold text-amber-700/70">ET</span>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-800 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-xs whitespace-nowrap">
+                      3
                     </div>
                   </Link>
-                  <h3 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 max-w-[90px] text-center mb-1">
+                  <h3 className="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1 max-w-[90px] text-center mb-0.5 h-4 sm:h-5">
                     {topThree[2].full_name || topThree[2].username}
                   </h3>
+                  <span className="text-[11px] font-bold text-slate-500 mb-2">
+                    {topThree[2].et_score} ET
+                  </span>
                 </>
               ) : (
-                <div className="w-14 h-14 sm:w-18 sm:h-18 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center mb-2">
-                  <Award className="w-5 h-5 text-slate-300" />
+                <div className="flex flex-col items-center w-full opacity-40">
+                  <div className="relative mb-2">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-orange-50 border-2 border-dashed border-orange-300 flex items-center justify-center">
+                      <Award className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-amber-700 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                      3
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-slate-400 text-xs sm:text-sm text-center mb-0.5 h-4 sm:h-5">
+                    Open
+                  </h3>
+                  <span className="text-[11px] font-bold text-slate-300 mb-2">
+                    -
+                  </span>
                 </div>
               )}
-              <div className="w-full h-12 sm:h-18 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/50 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
-                <span className="text-2xl sm:text-3xl font-black text-[#D49A6A]/60">3</span>
+              <div className="w-full h-14 sm:h-18 bg-gradient-to-t from-[#E2B78D]/40 to-[#FCEFDA]/60 rounded-t-2xl border-t-2 border-x-2 border-white flex items-end justify-center pb-2 shadow-xs">
+                <span className="text-2xl sm:text-3xl font-black text-amber-800/50">3</span>
               </div>
             </div>
 
@@ -543,7 +591,7 @@ export function LeaderboardClient() {
 
       {/* Sticky Bottom Proximal Rival Dock (Matching mobile app gamification loop) */}
       {user && (
-        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl bg-[#0F172A] text-white rounded-2xl p-3.5 sm:p-4 shadow-2xl z-40 border border-slate-700/60 backdrop-blur-md">
+        <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px)+8px)] sm:bottom-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl bg-[#0F172A] text-white rounded-2xl p-3.5 sm:p-4 shadow-2xl z-[105] border border-slate-700/60 backdrop-blur-md">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div

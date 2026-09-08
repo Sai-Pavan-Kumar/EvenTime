@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug, Shield } from "lucide-react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { updateProfileSettings } from "./actions";
 import { createClient } from "@/lib/supabase/client";
@@ -164,14 +165,25 @@ export default function SettingsClient({
       <Navbar />
 
       <div className="max-w-2xl mx-auto px-4 md:px-6 pt-6">
-        <div className="bg-white rounded-t-[24px] border border-b-0 border-slate-100 shadow-sm sticky top-0 z-40 px-6 py-4 flex items-center gap-4">
-          <button type="button" onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
-            <ArrowLeft className="w-5 h-5 text-slate-900" />
-          </button>
-          <div>
-            <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
-            <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
+        <div className="bg-white rounded-t-[24px] border border-b-0 border-slate-100 shadow-sm sticky top-0 z-40 px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <button type="button" onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-full transition-colors shrink-0">
+              <ArrowLeft className="w-5 h-5 text-slate-900" />
+            </button>
+            <div>
+              <h1 className="font-heading font-black text-xl text-slate-900">Profile Settings</h1>
+              <p className="text-xs text-slate-500 font-medium">Update your identity and goals</p>
+            </div>
           </div>
+          {isAdmin && (
+            <Link
+              href="/et98"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-bold transition-all shrink-0 active:scale-95"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Admin Panel</span>
+            </Link>
+          )}
         </div>
         <div className="bg-white rounded-b-[24px] border border-t-0 border-slate-100 shadow-sm px-6 pt-2 pb-6 -mt-px">
         {missingItems.length > 0 && (

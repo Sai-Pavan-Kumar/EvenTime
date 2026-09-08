@@ -345,27 +345,80 @@ export function HomePageClient(props: HomePageClientProps) {
     <main className="min-h-screen bg-surface-base">
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
 
-      {(user || profile) && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-0 pb-0 text-center">
-          <p className="text-sm font-semibold text-slate-600 truncate">
+      {/* Top Stationary Greeting and Feed Segmented Tabs (Matching mobile app design) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-3 pb-1">
+        <div className="flex flex-col gap-2.5">
+          <h1 className="text-[22px] sm:text-2xl font-heading font-black text-[#0F172A] tracking-[-0.4px] truncate">
             {(() => {
               const h = new Date().getHours();
-              const name = profile?.username || "there";
+              const rawName = profile?.username?.trim() || profile?.full_name?.split(" ")[0]?.trim() || (user ? undefined : "explorer");
+              const name = rawName ? (rawName.length > 12 ? rawName.slice(0, 12) : rawName) : "there";
               if (h >= 6 && h < 9) return `Morning, ${name}.`;
               if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
               if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
-              if (h >= 14 && h < 17) return `Lunch done, ${name}?.`;
+              if (h >= 14 && h < 17) return `Lunch done, ${name}?`;
               if (h >= 17 && h < 18) return `Snack time, ${name}.`;
               if (h >= 18 && h < 20) return `Evening, ${name}.`;
               if (h >= 20 && h < 22) return `Dinner time, ${name}.`;
-              if (h >= 22 && h < 23) return `Dinner done yet, ${name}?.`;
+              if (h >= 22 && h < 23) return `Dinner done yet, ${name}?`;
               if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
               if (h >= 0 && h < 4) return `Still up, ${name}?`;
               return `Up early, ${name}?`;
             })()}
-          </p>
+          </h1>
+
+          {showFeedPills && (
+            <div className="w-full max-w-md bg-[#F1F5F9] rounded-[14px] p-[3px] flex items-center h-11 relative">
+              <button
+                type="button"
+                onClick={() => setActiveFeedPill('for_you')}
+                className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                  activeFeedPill === 'for_you'
+                    ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                <span>For You</span>
+                <span className={`text-[11px] font-semibold ${activeFeedPill === 'for_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                  ({upcomingForYouCount})
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveFeedPill('around_you')}
+                className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                  activeFeedPill === 'around_you'
+                    ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
+                    : 'text-[#64748B] hover:text-[#0F172A]'
+                }`}
+              >
+                <span>Around You</span>
+                <span className={`text-[11px] font-semibold ${activeFeedPill === 'around_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                  ({upcomingAroundYouCount})
+                </span>
+              </button>
+
+              {isCollegeStudent && (
+                <button
+                  type="button"
+                  onClick={() => setActiveFeedPill('campus')}
+                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                    activeFeedPill === 'campus'
+                      ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <span>Your Campus</span>
+                  <span className={`text-[11px] font-semibold ${activeFeedPill === 'campus' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                    ({upcomingCollegeCount})
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      )}
+      </div>
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && !profile?.is_onboarded && (<OnboardingModal user={user} profile={profile} />
@@ -394,7 +447,7 @@ export function HomePageClient(props: HomePageClientProps) {
           </>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-20 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12 w-full">
           
           {view === "cities" ? (
             <div className="space-y-6">
@@ -407,47 +460,30 @@ export function HomePageClient(props: HomePageClientProps) {
             <>
             <div className="space-y-6 pt-2">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
-                    <CalendarDays className="w-6 h-6 text-brand-primary" /> 
-                    {category && location ? `${category}s in ${location === "online" ? "Online" : location}` : "What's happening"}
-                  </h2>
-                  {branch && <p className="text-slate-500 text-sm font-medium">Showing results for branch: {branch}</p>}
-                  {location && <p className="text-slate-500 text-sm font-medium">Showing events in: {location}</p>}
-
-                  {showFeedPills && (
-                    <div className="mt-3 inline-flex items-center gap-1 bg-slate-100 rounded-full p-1">
-                      <button
-                        type="button"
-                        onClick={() => setActiveFeedPill('for_you')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'for_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
-                        }`}
-                      >
-                        For You ({upcomingForYouCount})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setActiveFeedPill('around_you')}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                          activeFeedPill === 'around_you' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
-                        }`}
-                      >
-                        Around You ({upcomingAroundYouCount})
-                      </button>
-                      {isCollegeStudent && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveFeedPill('campus')}
-                          className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${
-                            activeFeedPill === 'campus' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500'
-                          }`}
-                        >
-                          Your Campus ({upcomingCollegeCount})
-                        </button>
-                      )}
-                    </div>
-                  )}
+                <div className="w-full">
+                  <div className="flex items-center justify-between gap-4">
+                    <h2 className="text-xl sm:text-2xl font-heading font-black text-slate-900 flex items-center gap-2">
+                      <CalendarDays className="w-5 h-5 text-brand-primary" /> 
+                      {category && location 
+                        ? `${category}s in ${location === "online" ? "Online" : location}`
+                        : date
+                        ? `Events on ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`
+                        : activeFeedPill === 'for_you'
+                        ? 'For You'
+                        : activeFeedPill === 'around_you'
+                        ? 'Around You'
+                        : 'Your Campus'}
+                    </h2>
+                    <span className="text-xs sm:text-sm font-bold text-slate-400">
+                      {activeFeedPill === 'for_you' 
+                        ? `${upcomingForYouCount} events` 
+                        : activeFeedPill === 'around_you' 
+                        ? `${upcomingAroundYouCount} events` 
+                        : `${upcomingCollegeCount} events`}
+                    </span>
+                  </div>
+                  {branch && <p className="text-slate-500 text-sm font-medium mt-1">Showing results for branch: {branch}</p>}
+                  {location && <p className="text-slate-500 text-sm font-medium mt-1">Showing events in: {location}</p>}
                 </div>
               </div>
 

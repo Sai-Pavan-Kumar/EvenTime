@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy, BarChart2, GraduationCap, Info, MessageSquare } from "lucide-react";
+import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy, BarChart2, GraduationCap, Info, MessageSquare, Shield, ChevronRight } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { format, parseISO } from "date-fns";
@@ -100,7 +100,7 @@ function ProfileContent() {
         { data: myReportsRaw },
         { data: appSettingsData }
       ] = await Promise.all([
-        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year").eq("id", currentUser.id).maybeSingle(),
+        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year, role").eq("id", currentUser.id).maybeSingle(),
         supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).neq("status", "deleted").order("created_at", { ascending: false }),
         supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
         supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
@@ -363,6 +363,25 @@ function ProfileContent() {
                 <Link href="/profile/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all">
                   <Settings className="w-4 h-4" /> Profile Settings
                 </Link>
+
+                {/* Administration Console (Role Gated) */}
+                {(profile?.role === "admin" || profile?.user_type === "admin") && (
+                  <Link
+                    href="/et98"
+                    className="flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm bg-red-50/80 text-red-600 hover:bg-red-100 transition-all border border-red-100/80 group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 rounded-lg bg-red-600 flex items-center justify-center text-white shrink-0 shadow-xs">
+                        <Shield className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-bold text-slate-900 leading-tight">Admin Console</div>
+                        <div className="text-[10px] text-slate-500 font-normal">Approvals, Reports & Settings</div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  </Link>
+                )}
                 
                 {/* Mobile Only Feedback Button */}
                 <MobileFeedbackWrapper />

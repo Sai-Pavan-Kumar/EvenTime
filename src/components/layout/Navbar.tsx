@@ -337,11 +337,6 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
               </div>
 
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
-            
-            <Link href="/stats" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
-              <BarChart2 className="w-4 h-4 shrink-0" /> Live Stats
-            </Link>
-
             <Link href="/cities" className="flex items-center gap-2 text-sm font-bold font-['Outfit'] text-text-secondary hover:text-brand-primary transition-colors shrink-0">
               <Building2 className="w-4 h-4 shrink-0" /> Cities
             </Link>
@@ -466,41 +461,65 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
       </div>
     )}
 
-    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white border-t border-slate-200 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] pb-[env(safe-area-inset-bottom)] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
-      <div className="grid grid-cols-5 items-center h-16 px-6 max-w-md mx-auto w-full">
-        <Link href="/" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-          <Home className="w-5 h-5" />
-          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Home</span>
+    <div id="mobile-bottom-nav" className="sm:hidden fixed bottom-0 left-0 right-0 z-[110] bg-white/95 backdrop-blur-md border-t border-slate-100 shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.08)] pb-[calc(env(safe-area-inset-bottom,0px))] [will-change:transform] translate-z-0" style={{ transform: 'translateZ(0)' }}>
+      <div className="grid grid-cols-5 items-center h-16 px-4 max-w-md mx-auto w-full">
+        <Link 
+          href="/" 
+          onClick={() => setShowMobileSearch(false)} 
+          className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
+        >
+          <Home className="w-5 h-5" strokeWidth={pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 2.5 : 2} />
+          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Home</span>
         </Link>
 
-        <Link href="/search" className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === "/search" ? "text-brand-primary" : "text-text-secondary hover:text-brand-primary"}`}>\n          <Search className="w-5 h-5" />\n          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Search</span>\n        </Link>
+        <Link 
+          href="/search" 
+          onClick={() => setShowMobileSearch(false)}
+          className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === "/search" ? "text-brand-primary" : "text-[#94A3B8] hover:text-brand-primary"}`}
+        >
+          <Search className="w-5 h-5" strokeWidth={pathname === "/search" ? 2.5 : 2} />
+          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Search</span>
+        </Link>
 
-        <Link href="/events/new" onClick={(e) => { setShowMobileSearch(false); handleProtectedAction(e); }} className="flex flex-col items-center justify-center w-full h-full">
+        <Link 
+          href="/events/new" 
+          onClick={(e) => { setShowMobileSearch(false); handleProtectedAction(e); }} 
+          className="flex flex-col items-center justify-center w-full h-full relative group"
+        >
           <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
-            <SquarePlus className="w-6 h-6 text-white" />
+            <Plus className="w-6 h-6 text-white stroke-[2.5]" />
           </div>
+          <span className="text-[11px] font-bold font-['Switzer',sans-serif] text-brand-primary mt-0.5">Post</span>
         </Link>
 
-        <Link href="/cities" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/cities' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
+        <Link 
+          href="/cities" 
+          onClick={() => setShowMobileSearch(false)} 
+          className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/cities' && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
+        >
           <div className="w-5 h-5 flex items-center justify-center">
-            <Building2 className="w-[18px] h-[18px]" />
+            <Building2 className="w-[19px] h-[19px]" strokeWidth={pathname === '/cities' ? 2.5 : 2} />
           </div>
-          <span className="text-[10px] font-bold font-['Outfit'] mt-1">Cities</span>
+          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Cities</span>
         </Link>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center w-full h-full animate-pulse">
-            <div className="w-7 h-7 rounded-full bg-slate-200 mb-1" />
+            <div className="w-6 h-6 rounded-full bg-slate-200 mb-1" />
             <div className="w-6 h-2 bg-slate-200 rounded-full" />
           </div>
         ) : user ? (
-          <Link href="/profile?tab=menu" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-            <div className="relative w-7 h-7 flex items-center justify-center">
+          <Link 
+            href="/profile?tab=menu" 
+            onClick={() => setShowMobileSearch(false)} 
+            className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname.startsWith('/profile') && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
+          >
+            <div className="relative w-6 h-6 flex items-center justify-center">
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 28 28">
-                <circle cx="14" cy="14" r="13" fill="none" className="stroke-surface-elevated" strokeWidth="1.5" />
-                <circle cx="14" cy="14" r="13" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="81.68" strokeDashoffset={81.68 - (completionPercent / 100) * 81.68} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
+                <circle cx="14" cy="14" r="12" fill="none" className="stroke-slate-200" strokeWidth="1.5" />
+                <circle cx="14" cy="14" r="12" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="75.4" strokeDashoffset={75.4 - (completionPercent / 100) * 75.4} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
               </svg>
-              <div className={`w-5.5 h-5.5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') && !showMobileSearch ? 'border-[#6C47FF]' : 'border-white'}`}>
+              <div className={`w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') && !showMobileSearch ? 'border-[#6C47FF]' : 'border-white'}`}>
                 {avatarUrl && !imgError ? (
                   <img
                     src={avatarUrl}
@@ -510,16 +529,24 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
                     onError={() => setImgError(true)}
                   />
                 ) : (
-                  <User className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black text-slate-700">
+                    {((profileDetails?.username || user.email || 'U')[0]).toUpperCase()}
+                  </span>
                 )}
               </div>
             </div>
-            <span className="text-[10px] font-bold font-['Outfit'] mt-1">Profile</span>
+            <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">
+              {user ? 'You' : 'Profile'}
+            </span>
           </Link>
         ) : (
-          <Link href="/login" onClick={() => setShowMobileSearch(false)} className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-brand-primary' : 'text-text-secondary hover:text-brand-primary'}`}>
-            <User className="w-5 h-5" />
-            <span className="text-[10px] font-bold font-['Outfit'] mt-1">Sign In</span>
+          <Link 
+            href="/login" 
+            onClick={() => setShowMobileSearch(false)} 
+            className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
+          >
+            <User className="w-5 h-5" strokeWidth={pathname === '/login' ? 2.5 : 2} />
+            <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Sign In</span>
           </Link>
         )}
       </div>
