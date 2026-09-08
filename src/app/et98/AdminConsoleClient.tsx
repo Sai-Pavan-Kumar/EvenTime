@@ -735,9 +735,7 @@ export default function AdminConsoleClient({
                         </div>
 
                         <Link
-                          href={`/events/${item.slug || item.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={`/events/${item.slug || item.id}?from=admin`}
                           className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-[#6C47FF] hover:bg-[#EDE8FF] transition-colors shrink-0"
                           title="Preview Event"
                         >
@@ -857,9 +855,7 @@ export default function AdminConsoleClient({
                         </div>
 
                         <Link
-                          href={`/events/${item.slug || item.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                          href={`/events/${item.slug || item.id}?from=admin`}
                           className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-[#6C47FF] hover:bg-[#EDE8FF] transition-colors shrink-0"
                           title="Preview Event"
                         >
@@ -1103,8 +1099,7 @@ export default function AdminConsoleClient({
                     </div>
 
                     <Link
-                      href={item.event_id ? `/events/${item.events?.slug || item.event_id}` : "#"}
-                      target="_blank"
+                      href={item.event_id ? `/events/${item.events?.slug || item.event_id}?from=admin` : "#"}
                       className="block text-base font-bold font-['Outfit'] text-slate-900 hover:text-[#6C47FF] transition-colors"
                     >
                       {item.events?.title || "Unknown Event"} →

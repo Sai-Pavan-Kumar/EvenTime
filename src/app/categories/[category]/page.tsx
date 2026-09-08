@@ -1,9 +1,11 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventGrid } from "@/lib/home/EventGrid";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { categoriesList } from "@/features/create-event/constants";
 
 export async function generateMetadata({
   params,
@@ -13,10 +15,19 @@ export async function generateMetadata({
   const { category } = await params;
   // Convert URL friendly "hackathons-and-events" back to "hackathons and events"
   const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+  const normalized = decodedCategory.trim().toLowerCase();
+  const matchedCategory = categoriesList.find((c) => c.toLowerCase() === normalized);
+
+  if (!matchedCategory) {
+    return {
+      title: "Category Not Found | EvenTime",
+      description: "The requested category could not be found in the EvenTime directory.",
+    };
+  }
 
   return {
-    title: `${decodedCategory} Events | EvenTime`,
-    description: `Discover the best ${decodedCategory} events, meetups, and workshops on EvenTime.`,
+    title: `${matchedCategory} Events | EvenTime`,
+    description: `Discover the best ${matchedCategory.toLowerCase()} events, meetups, and workshops on EvenTime.`,
   };
 }
 
@@ -27,6 +38,13 @@ export default async function CategoryPage({
 }) {
   const { category } = await params;
   const decodedCategory = decodeURIComponent(category).replace(/-/g, ' ');
+  const normalized = decodedCategory.trim().toLowerCase();
+  const matchedCategory = categoriesList.find((c) => c.toLowerCase() === normalized);
+
+  if (!matchedCategory) {
+    notFound();
+  }
+
   const supabase = await createClient();
 
   const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
@@ -48,14 +66,14 @@ export default async function CategoryPage({
         .from("events")
         .select(CATEGORY_FIELDS)
         .eq("status", "approved")
-        .ilike("category", decodedCategory)
+        .ilike("category", matchedCategory)
         .gte("date_string", sixMonthsAgoStr)
         .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
         .order("date_string", { ascending: true })
         .limit(50);
       return data || [];
     },
-    [`category_events_${decodedCategory.toLowerCase()}`],
+    [`category_events_${matchedCategory.toLowerCase()}`],
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
@@ -82,7 +100,7 @@ export default async function CategoryPage({
       .from("events")
       .select(CATEGORY_FIELDS)
       .eq("status", "approved")
-      .ilike("category", decodedCategory)
+      .ilike("category", matchedCategory)
       .or(extraFilter)
       .order("date_string", { ascending: true })
       .limit(50);
@@ -99,10 +117,10 @@ export default async function CategoryPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-10">
           <h1 className="text-4xl font-heading font-black text-slate-900 capitalize">
-            {decodedCategory} Events
+            {matchedCategory} Events
           </h1>
           <p className="text-slate-500 font-medium mt-2">
-            Discover and join the best {decodedCategory.toLowerCase()} events.
+            Discover and join the best {matchedCategory.toLowerCase()} events.
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -57,6 +57,19 @@ export default function EventClientUI({
   collegeName = null,
 }: EventUIProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
+
+  const handleBackNavigation = () => {
+    if (fromParam === "admin") {
+      router.push("/et98");
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/");
+    }
+  };
+
   const supabase = createClient();
 
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -397,9 +410,9 @@ export default function EventClientUI({
         {/* Top Header Bar with Bookmark, Share, Report, Edit */}
         <div className="flex justify-between items-center w-full">
           <button
-            onClick={() => router.push("/")}
+            onClick={handleBackNavigation}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-900"
-            aria-label="Go back to Home"
+            aria-label="Go back"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -845,25 +858,27 @@ export default function EventClientUI({
                 </div>
               )}
 
-              {/* Add to Calendar */}
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">📅</span>
+              {/* Add to Calendar (Upcoming only) */}
+              {!isPastEvent && googleCalendarUrl && (
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                    <span className="text-base">📅</span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                      Add to Calendar
+                    </p>
+                    <a
+                      href={googleCalendarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[14px] font-bold text-brand-primary hover:underline"
+                    >
+                      Add to Google Calendar &rarr;
+                    </a>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
-                    Add to Calendar
-                  </p>
-                  <a
-                    href={googleCalendarUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[14px] font-bold text-brand-primary hover:underline"
-                  >
-                    Add to Google Calendar &rarr;
-                  </a>
-                </div>
-              </div>
+              )}
 
               {/* Interested community avatars */}
               {localInterestCount > 0 && (

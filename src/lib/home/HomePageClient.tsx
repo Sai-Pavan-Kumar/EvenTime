@@ -300,10 +300,8 @@ export function HomePageClient(props: HomePageClientProps) {
         if (!location && !cityMatch(e)) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
-        if (bothCategoryAndLocationPicked) {
-          if (category && e.category !== category) match = false;
-          if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
-        }
+        if (category && e.category !== category) match = false;
+        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
       }
 
       if (q) {

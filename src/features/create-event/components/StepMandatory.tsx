@@ -71,7 +71,16 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       
       {/* LINK INPUT */}
       <div className="space-y-2">
-        <label className="block text-sm font-semibold text-slate-700">Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}</label>
+        <div className="flex items-center justify-between">
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}
+          </label>
+          {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+            <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs font-bold">
+              <AlertTriangle className="w-3.5 h-3.5" /> Unverified Domain
+            </span>
+          )}
+        </div>
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
@@ -123,11 +132,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         <div className="flex items-center justify-between">
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             Event Title <span className="text-red-500">*</span>
-            {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
-              <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs">
-                <AlertTriangle className="w-4 h-4" /> Unverified Domain
-              </span>
-            )}
           </label>
           <span className={`text-xs font-mono ${(data.title || "").length >= 100 ? "text-red-500 font-bold" : "text-slate-400"}`}>
             {(data.title || "").length}/100
@@ -361,7 +365,19 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
              {!data.isFree && (
                <div className="relative mt-3">
                  <IndianRupee className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                 <input type="number" value={data.price} maxLength={7} max={9999999} onChange={e => updateData({ price: e.target.value.slice(0, 7) })} placeholder="Ticket Price" className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none" />
+                 <input
+                   type="number"
+                   min={0}
+                   value={data.price}
+                   maxLength={7}
+                   max={9999999}
+                   onChange={e => {
+                     const val = e.target.value.replace(/[^0-9]/g, "").slice(0, 7);
+                     updateData({ price: val });
+                   }}
+                   placeholder="Ticket Price"
+                   className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 outline-none"
+                 />
                </div>
              )}
 
@@ -386,9 +402,6 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>
             )}
-            {/* Note: extraction hook gives trustWarning based on admin status automatically now, so we don't need additional logic if the hook is updated. But to be extra safe, if you want it completely hidden for admin, replace the above condition with:
-              {!extraction.isTrusted && data.regLink && !extraction.isExtracting && extraction.trustWarning !== "" && ( 
-            */}
             
            {/* isAdminFeatureEnabled OFF will block the next step */}
            {isAdmin && isAdminFeatureEnabled && data.isFeatured ? (

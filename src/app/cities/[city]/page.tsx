@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/components/layout/Navbar";
 import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
 import { getCityConfig } from "@/lib/city-config";
+import { CITIES } from "@/lib/constants/cities";
 import { MapPin } from "lucide-react";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
@@ -15,9 +17,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { city } = await params;
   const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const normalized = decodedCity.trim().toLowerCase();
+  const matchedCity = CITIES.find((c) => c.toLowerCase() === normalized);
+  if (!matchedCity && !getCityConfig(city)) {
+    return { title: "City Not Found | EvenTime" };
+  }
+
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
-  const title = `Events in ${decodedCity} | EvenTime`;
-  const description = `Discover the best events, hackathons, and meetups in ${decodedCity} on EvenTime.`;
+  const title = `Events in ${matchedCity || decodedCity} | EvenTime`;
+  const description = `Discover the best events, hackathons, and meetups in ${matchedCity || decodedCity} on EvenTime.`;
 
   return {
     title,
@@ -40,6 +48,12 @@ export default async function CityPage({
 }) {
   const { city } = await params;
   const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
+  const normalized = decodedCity.trim().toLowerCase();
+  const matchedCity = CITIES.find((c) => c.toLowerCase() === normalized);
+  if (!matchedCity && !getCityConfig(city)) {
+    notFound();
+  }
+
   const supabase = await createClient();
 
   const today = new Date();
@@ -59,19 +73,18 @@ export default async function CityPage({
         .from("events")
         .select(EVENT_FIELDS)
         .eq("status", "approved")
-        .ilike("city", decodedCity)
+        .ilike("city", matchedCity || decodedCity)
         .gte("date_string", todayStr)
         .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
         .order("date_string", { ascending: true })
         .limit(50);
       return data || [];
     },
-    [`city_events_${decodedCity.toLowerCase()}`],
+    [`city_events_${(matchedCity || decodedCity).toLowerCase()}`],
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
-  // 1. Run the auth check AND the cached public events fetch at the same time —
-  // they don't depend on each other, so no reason to wait for one before starting the other.
+  // 1. Run the auth check AND the cached public events fetch at the same time
   const [{ data: { user } }, publicEvents] = await Promise.all([
     supabase.auth.getUser(),
     getCachedPublicCityEvents(),
@@ -83,7 +96,7 @@ export default async function CityPage({
     profile = data;
   }
 
-  // 3. UNCACHED but tiny: only this user's own extra visible events (their college-only ones, or their own pending/creator events) — bounded to 1 user, cheap regardless of traffic
+  // 3. UNCACHED but tiny: only this user's own extra visible events
   let personalEvents: any[] = [];
   if (user) {
     let extraFilter = `creator_id.eq.${user.id}`;
@@ -94,7 +107,7 @@ export default async function CityPage({
       .from("events")
       .select(EVENT_FIELDS)
       .eq("status", "approved")
-      .ilike("city", decodedCity)
+      .ilike("city", matchedCity || decodedCity)
       .gte("date_string", todayStr)
       .or(extraFilter)
       .order("date_string", { ascending: true })
@@ -159,7 +172,7 @@ export default async function CityPage({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
-            Events happening in {decodedCity}
+            Events happening in {matchedCity || decodedCity}
           </h2>
           <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
             {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
@@ -175,13 +188,13 @@ export default async function CityPage({
             </div>
             <h3 className="text-slate-900 font-bold text-lg font-heading">No Upcoming Events</h3>
             <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              There are no upcoming events scheduled in {decodedCity} right now. Check back soon or host the first one!
+              There are no upcoming events scheduled in {matchedCity || decodedCity} right now. Check back soon or host the first one!
             </p>
             <Link
-              href={`/events/new?city=${encodeURIComponent(decodedCity)}`}
+              href={`/events/new?city=${encodeURIComponent(matchedCity || decodedCity)}`}
               className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-[#5835e5] transition-all text-sm shadow-sm active:scale-95 flex items-center gap-2"
             >
-              Host An Event in {decodedCity}
+              Host An Event in {matchedCity || decodedCity}
             </Link>
           </div>
         )}

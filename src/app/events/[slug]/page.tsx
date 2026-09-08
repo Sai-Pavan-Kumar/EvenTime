@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import EventClientUI from "./EventClientUI";
 
@@ -205,7 +205,9 @@ export default async function EventPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+      <Suspense fallback={null}>
+        <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+      </Suspense>
     </>
   );
 }
