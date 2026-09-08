@@ -42,8 +42,20 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
   }, [selectedDate]);
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
-  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
+  const maxYear = today.getFullYear() + 2;
+  const isMinMonth = viewYear <= today.getFullYear() && viewMonth <= today.getMonth();
+  const isMaxMonth = viewYear >= maxYear && viewMonth >= today.getMonth();
+
+  const prevMonth = () => {
+    if (isMinMonth) return;
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (isMaxMonth) return;
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
   const isSelected = (d: number) => selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === viewMonth && selectedDate.getFullYear() === viewYear;
   const isToday = (d: number) => d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
   const isPast = (d: number) => new Date(viewYear, viewMonth, d) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -53,8 +65,8 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
         <span className="text-base font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
         <div className="flex gap-1">
-          <button type="button" onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">‹</button>
-          <button type="button" onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors">›</button>
+          <button type="button" disabled={isMinMonth} onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">‹</button>
+          <button type="button" disabled={isMaxMonth} onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">›</button>
         </div>
       </div>
       <div className="px-4 py-3">

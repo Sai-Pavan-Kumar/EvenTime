@@ -37,6 +37,7 @@
     userRole?: string; // NEW: 'admin' | 'curator' | 'student' | undefined
     collegeName?: string; // NEW: college that hosts the event
     priority?: boolean; // NEW: For LCP image optimization
+    from?: string; // Source context (e.g. 'curator' or 'admin')
   }
 
   export function EventCard({
@@ -65,6 +66,7 @@
     userRole,
     collegeName,
     priority = false,
+    from,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
     const [isSaving, setIsSaving] = useState(false);
@@ -72,6 +74,24 @@
     const [copied, setCopied] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [ownerNotice, setOwnerNotice] = useState(false);
+
+    const eventHref = from ? `/events/${slug}?from=${from}` : `/events/${slug}`;
+
+    // Sync savedState with prop and localStorage
+    useEffect(() => {
+      setSavedState(isSaved);
+      if (!isSaved && id) {
+        try {
+          const cached = localStorage.getItem("eventime_saved_ids");
+          if (cached) {
+            const ids: string[] = JSON.parse(cached);
+            if (ids.includes(id)) {
+              setSavedState(true);
+            }
+          }
+        } catch {}
+      }
+    }, [isSaved, id]);
 
     const handleSave = async (e: React.MouseEvent) => {
       e.preventDefault(); // Prevent navigating to the event page
@@ -95,25 +115,38 @@
         // Proceed if auth check errored
       }
       
-        setIsSaving(true);
+      setIsSaving(true);
       const newState = !savedState;
       setSavedState(newState); // optimistic update
+
+      // Sync with localStorage
+      try {
+        const cached = localStorage.getItem("eventime_saved_ids");
+        let idList: string[] = cached ? JSON.parse(cached) : [];
+        if (newState) {
+          if (!idList.includes(id)) idList.push(id);
+        } else {
+          idList = idList.filter((x) => x !== id);
+        }
+        localStorage.setItem("eventime_saved_ids", JSON.stringify(idList));
+      } catch {}
       
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // ALWAYS delete existing rows for this event/user first to prevent duplicates in DB
+          await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
           if (newState) {
             await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
-          } else {
-            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
           }
         }
       } catch (err) {
         console.error("Failed to save event:", err);
         toast.error("Couldn't save. Please try again.");
       }
-      if (onSaveToggle) {        await onSaveToggle(id);
+      if (onSaveToggle) {
+        await onSaveToggle(id);
       }
       toast.success(newState ? "Saved to your list!" : "Removed from saved.");
       setIsSaving(false);
@@ -265,7 +298,7 @@
               <div 
                 className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0"
               >
-                <Link href={`/events/${slug}`} className="absolute inset-0 z-0">
+                <Link href={eventHref} className="absolute inset-0 z-0">
                   <Image 
                     src={finalImageSrc}
                     alt={title} 
@@ -336,7 +369,7 @@
 
               {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
               <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
-                <Link href={`/events/${slug}`} className="block transition-opacity hover:opacity-80">
+                <Link href={eventHref} className="block transition-opacity hover:opacity-80">
                   <h3 
                     className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
                     style={{ 

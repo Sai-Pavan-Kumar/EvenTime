@@ -11,11 +11,13 @@ export function LoadMoreGrid({
   gridClass,
   hideOrganizer = false,
   hidePastBadge = false,
+  from,
 }: {
   events: any[];
   gridClass: string;
   hideOrganizer?: boolean;
   hidePastBadge?: boolean;
+  from?: string;
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const visibleEvents = events.slice(0, visibleCount);
@@ -39,6 +41,7 @@ export function LoadMoreGrid({
             audience={event.target_audience ?? []}
             hideOrganizer={hideOrganizer}
             hidePastBadge={hidePastBadge}
+            from={from}
           />
         ))}
       </div>

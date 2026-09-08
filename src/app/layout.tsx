@@ -11,7 +11,6 @@ import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
-import { headers } from "next/headers";
 
 // 1. Load Outfit font for your headings
 const outfit = Outfit({
@@ -60,14 +59,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const headersList = await headers();
-  const nonce = headersList.get("x-nonce") || undefined;
-
   return (
     <html 
       lang="en" 
@@ -83,7 +79,7 @@ export default async function RootLayout({
         
         {/* Microsoft Clarity */}
         {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload" nonce={nonce}>
+          <Script id="microsoft-clarity" strategy="lazyOnload">
             {`
               (function(c,l,a,r,i,t,y){
                   c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -97,8 +93,8 @@ export default async function RootLayout({
         {/* Google Analytics GA4 */}
         {process.env.NEXT_PUBLIC_GA_ID && (
           <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" nonce={nonce} />
-            <Script id="google-analytics" strategy="lazyOnload" nonce={nonce}>
+            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" />
+            <Script id="google-analytics" strategy="lazyOnload">
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}

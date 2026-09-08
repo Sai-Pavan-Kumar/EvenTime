@@ -1,7 +1,11 @@
 import { Metadata } from "next";
 import { cache, Suspense } from "react";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import EventClientUI from "./EventClientUI";
+
+export const revalidate = 3600;
 
 // Helper function to check if the slug is a valid UUID
 const isValidUUID = (id: string) => {
@@ -10,17 +14,85 @@ const isValidUUID = (id: string) => {
 
 const EVENT_DETAIL_FIELDS = "id, slug, title, category, date_string, start_time, end_date_string, end_time, location, city, is_virtual, poster_url, banner_url, organizer_name, description, registration_link, is_free, price, prizes, team_size, registration_deadline, college_branch, college_year, college_only, branch_tags, goal_tags, website, target_audience, creator_id, status, college_id, colleges(name), interested_events(count),profiles(username, full_name)";
 
-// Cached so generateMetadata + the page component share ONE DB call instead of two
+// CACHED: Static/Public event fetcher using anon client (zero cookie dependencies, blazing fast)
+const getCachedPublicEvent = (slug: string) =>
+  unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const isUUID = isValidUUID(slug);
+      let query = supabaseAnon.from("events").select(EVENT_DETAIL_FIELDS);
+      query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
+      const { data } = await query.maybeSingle();
+      return data;
+    },
+    ["event_detail", slug],
+    { tags: ["events", `event_${slug}`], revalidate: 3600 }
+  )();
+
+// Fallback for draft/pending events visible only to curator/admin
 const getEvent = cache(async (slug: string) => {
-  const supabase = await createServerClient();
-  const isUUID = isValidUUID(slug);
-
-  let query = supabase.from("events").select(EVENT_DETAIL_FIELDS);
-  query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
-
-  const { data } = await query.maybeSingle();
-  return data;
+  const cached = await getCachedPublicEvent(slug);
+  if (cached && cached.status === "approved") {
+    return cached;
+  }
+  try {
+    const supabase = await createServerClient();
+    const isUUID = isValidUUID(slug);
+    let query = supabase.from("events").select(EVENT_DETAIL_FIELDS);
+    query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
+    const { data } = await query.maybeSingle();
+    return data;
+  } catch {
+    return cached;
+  }
 });
+
+const getCachedSimilarEvents = (category: string, currentId: string) =>
+  unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const todayStr = new Date().toISOString().split("T")[0];
+      const { data } = await supabaseAnon
+        .from("events")
+        .select(EVENT_DETAIL_FIELDS)
+        .eq("category", category)
+        .eq("status", "approved")
+        .gte("date_string", todayStr)
+        .neq("id", currentId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      return data || [];
+    },
+    ["similar_events", category, currentId],
+    { tags: ["events"], revalidate: 3600 }
+  )();
+
+const getCachedInterestedAvatars = (eventId: string) =>
+  unstable_cache(
+    async () => {
+      const supabaseAnon = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false } }
+      );
+      const { data: interestedRows } = await supabaseAnon
+        .from("interested_events")
+        .select("profiles(avatar_url, username)")
+        .eq("event_id", eventId)
+        .limit(3);
+      return (interestedRows || []).map((r: any) => r.profiles).filter(Boolean);
+    },
+    ["interested_avatars", eventId],
+    { tags: ["events"], revalidate: 300 }
+  )();
 
 export async function generateMetadata({
   params,
@@ -163,40 +235,12 @@ export default async function EventPage({
     }
   };
 
-  // NEW: Fetch Similar Events based on the same category
-  let similarEvents: any[] = [];
-  if (finalEvent.category) {
-    const todayStr = new Date().toISOString().split("T")[0];
-    const { data } = await supabase
-      .from("events")
-      .select(EVENT_DETAIL_FIELDS)
-      .eq("category", finalEvent.category)
-      .eq("status", "approved")
-      .gte("date_string", todayStr) // NEW: Removes past events!
-      .neq("id", finalEvent.id)
-      .order("created_at", { ascending: false })
-      .limit(6); // Increased limit to 6 so slider looks good
-    
-    if (data) {
-    similarEvents = data;
-    }
-  }
+  // Cached Similar Events & Social Proof Avatars (0ms roundtrips)
+  const similarEvents = finalEvent.category
+    ? await getCachedSimilarEvents(finalEvent.category, finalEvent.id)
+    : [];
 
- // Fetch up to 3 interested user avatars for social proof
-  let interestedAvatars: { avatar_url: string | null; username: string | null }[] = [];
-  {
-    const { data: interestedRows } = await supabase
-      .from("interested_events")
-      .select("profiles(avatar_url, username)")
-      .eq("event_id", finalEvent.id)
-      .limit(3);
-
-    if (interestedRows && interestedRows.length > 0) {
-      interestedAvatars = interestedRows
-        .map((r: any) => r.profiles as any)
-        .filter(Boolean);
-    }
-  }
+  const interestedAvatars = await getCachedInterestedAvatars(finalEvent.id);
 
   // Pass the data cleanly to the client UI
   return (

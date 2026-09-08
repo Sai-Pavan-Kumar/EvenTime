@@ -3,10 +3,10 @@
 import { motion } from "framer-motion";
 import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
 import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
-import { categoriesList, hours, mins, ampms } from "../constants";
+import { categoriesList, hours, mins, ampms, COLLEGE_YEAR_OPTIONS } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
@@ -29,8 +29,27 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
     if (data.collegeName && data.collegeName !== collegeSearchQuery) {
       setCollegeSearchQuery(data.collegeName);
     }
-  }, [data.collegeName]);
- 
+  }, [data.collegeName, collegeSearchQuery]);
+
+  // Searchable branch state
+  const [branchSearchQuery, setBranchSearchQuery] = useState(data.collegeBranch || "");
+  const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+
+  useEffect(() => {
+    if (data.collegeBranch && data.collegeBranch !== branchSearchQuery && !showBranchDropdown) {
+      setBranchSearchQuery(data.collegeBranch);
+    } else if (!data.collegeBranch && !showBranchDropdown) {
+      setBranchSearchQuery("");
+    }
+  }, [data.collegeBranch, showBranchDropdown]);
+
+  const filteredBranches = useMemo(() => {
+    const q = branchSearchQuery.trim().toLowerCase();
+    if (!q || q === (data.collegeBranch || "").toLowerCase().trim()) {
+      return INDIAN_COLLEGE_BRANCHES;
+    }
+    return INDIAN_COLLEGE_BRANCHES.filter(b => b.toLowerCase().includes(q));
+  }, [branchSearchQuery, data.collegeBranch]);
 
   const handleCreateCollege = async (name: string) => {
     setIsCreatingCollege(true);
@@ -229,19 +248,93 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                       </div>
                     )}
                   </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2 relative">
                     <label className="block text-xs font-bold text-slate-500">Branch</label>
-                    <select value={data.collegeBranch} onChange={e => updateData({ collegeBranch: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
-                      <option value="">All Branches</option>
-                      {INDIAN_COLLEGE_BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={branchSearchQuery}
+                        onChange={e => {
+                          setBranchSearchQuery(e.target.value);
+                          setShowBranchDropdown(true);
+                        }}
+                        onFocus={() => setShowBranchDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 200)}
+                        placeholder="Search branch (e.g. CSE, ECE)..."
+                        className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF] pr-8"
+                      />
+                      {data.collegeBranch ? (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            updateData({ collegeBranch: "" });
+                            setBranchSearchQuery("");
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                          title="Clear branch"
+                        >
+                          ✕
+                        </button>
+                      ) : (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-300 text-xs pointer-events-none">▼</span>
+                      )}
+                    </div>
+                    {showBranchDropdown && (
+                      <div
+                        className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col no-scrollbar"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            updateData({ collegeBranch: "" });
+                            setBranchSearchQuery("");
+                            setShowBranchDropdown(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors border-b border-slate-50 ${
+                            !data.collegeBranch ? "bg-brand-primary/10 text-brand-primary font-bold" : "text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          All Branches
+                        </button>
+                        {filteredBranches.map(b => {
+                          const isSelected = data.collegeBranch === b;
+                          return (
+                            <button
+                              key={b}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                updateData({ collegeBranch: b });
+                                setBranchSearchQuery(b);
+                                setShowBranchDropdown(false);
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-sm transition-colors border-b border-slate-50 last:border-none flex items-center justify-between ${
+                                isSelected ? "bg-brand-primary/10 text-brand-primary font-bold" : "text-slate-700 hover:bg-slate-50 font-medium"
+                              }`}
+                            >
+                              <span>{b}</span>
+                              {isSelected && <span className="text-brand-primary font-bold ml-2">✓</span>}
+                            </button>
+                          );
+                        })}
+                        {filteredBranches.length === 0 && (
+                          <div className="px-4 py-3 text-xs text-slate-400 font-medium">No branch matching "{branchSearchQuery}"</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <label className="block text-xs font-bold text-slate-500">Year</label>
-                    <select value={data.collegeYear} onChange={e => updateData({ collegeYear: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]">
-                      <option value="">All Years</option>
-                      {["1st Year", "2nd Year", "3rd Year", "4th Year", "All Years"].map(y => <option key={y} value={y}>{y}</option>)}
+                    <label className="block text-xs font-bold text-slate-500">Graduation Year</label>
+                    <select
+                      value={data.collegeYear || "All Years"}
+                      onChange={e => updateData({ collegeYear: e.target.value === "All Years" ? "" : e.target.value })}
+                      className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
+                    >
+                      {COLLEGE_YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </div>
                 </div>
@@ -311,11 +404,30 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         </div>
         
         <div className="space-y-4">
-           <div className="flex justify-between items-center">
+           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
              <label className="text-sm font-semibold text-slate-700">Event Location <span className="text-red-500">*</span></label>
-             <button type="button" onClick={() => updateData({ isOnline: !data.isOnline })} className={`text-xs font-bold px-3 py-1.5 rounded-full ${data.isOnline ? "bg-[#1D1D1F] text-white" : "bg-white text-slate-600 border"}`}>
-               {data.isOnline ? "Virtual Event" : "Switch to Virtual"}
-             </button>
+             <div className="inline-flex p-1 bg-slate-100 rounded-xl gap-1">
+               <button
+                 type="button"
+                 onClick={() => updateData({ isOnline: false })}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                   !data.isOnline ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                 }`}
+               >
+                 <MapPin className="w-3.5 h-3.5 text-brand-primary" />
+                 In-Person
+               </button>
+               <button
+                 type="button"
+                 onClick={() => updateData({ isOnline: true })}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                   data.isOnline ? "bg-[#1D1D1F] text-white shadow-sm" : "text-slate-500 hover:text-slate-700"
+                 }`}
+               >
+                 <Video className="w-3.5 h-3.5" />
+                 Virtual / Online
+               </button>
+             </div>
            </div>
 
            {!data.isOnline ? (

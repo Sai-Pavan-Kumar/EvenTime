@@ -31,6 +31,8 @@ export async function deleteEventAction(formData: FormData) {
   revalidateTag("events", "events");
   revalidatePath("/", "layout");
   revalidatePath("/cities/[city]", "page");
+  revalidatePath("/categories/[category]", "page");
+  revalidatePath("/profile");
 
   redirect("/profile");
 }

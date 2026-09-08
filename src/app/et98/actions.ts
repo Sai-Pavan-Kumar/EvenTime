@@ -196,6 +196,8 @@ export async function deleteEventAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/et98");
   revalidatePath("/et98/events");
+  revalidatePath("/cities/[city]", "page");
+  revalidatePath("/categories/[category]", "page");
   revalidateTag("events", "events");
   return { success: true };
 }

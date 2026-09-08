@@ -50,38 +50,46 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Use getUser() for high-security checks
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // NEW: Global Authentication Check Strategy
-  // Expose a non-HttpOnly cookie so the client can instantly check auth status without an API call.
-  response.cookies.set({
-    name: 'client_auth',
-    value: user ? 'true' : 'false',
-    path: '/',
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
-
-  // 1. If user IS logged in and tries to go to login page, send to profile
-  if (user && request.nextUrl.pathname === '/login') {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
   const isProtected =
     request.nextUrl.pathname.startsWith('/events/new') ||
     request.nextUrl.pathname.endsWith('/edit') ||
     request.nextUrl.pathname.startsWith('/profile') ||
     request.nextUrl.pathname.startsWith('/et98');
 
-  if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
+  const isLoginRoute = request.nextUrl.pathname === '/login';
+
+  // PERFORMANCE BOOST: Only query Supabase Auth for routes that actually require authorization
+  if (isProtected || isLoginRoute) {
+    const hasAuthCookie = request.cookies.getAll().some(c => c.name.includes('-auth-token'));
+    let user = null;
+
+    if (hasAuthCookie) {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    }
+
+    // Expose client_auth cookie for instant client-side auth checks
+    response.cookies.set({
+      name: 'client_auth',
+      value: user ? 'true' : 'false',
+      path: '/',
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    if (user && isLoginRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/profile';
+      return NextResponse.redirect(url);
+    }
+
+    if (!user && isProtected) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('next', request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

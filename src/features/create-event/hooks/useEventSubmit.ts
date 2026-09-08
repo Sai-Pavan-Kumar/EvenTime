@@ -45,7 +45,7 @@ export function useEventSubmit() {
         finalPosterUrl = posterPublicUrl;
       }
 
-      const eventCity = payloadData.is_virtual ? "online" : payloadData.location;
+      const eventCity = payloadData.is_virtual ? "online" : (payloadData.city || payloadData.location || "online");
       
       // FIX: Add fallbacks to handle potential null or undefined values from DB types
       const uniqueSlug = generateSlug(

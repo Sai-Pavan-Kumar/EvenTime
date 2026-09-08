@@ -121,6 +121,11 @@ function ProfileContent() {
       setMyReports(myReportsRaw as ReportWithEventSlug[]);
       setAppSettings(appSettingsData);
 
+      try {
+        const savedIds = formattedSavedEvents.map((ev: any) => ev.id).filter(Boolean);
+        localStorage.setItem("eventime_saved_ids", JSON.stringify(savedIds));
+      } catch {}
+
       // Save to memory cache for instant loads next time
       memCache = {
         user: currentUser,

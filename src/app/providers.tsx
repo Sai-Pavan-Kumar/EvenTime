@@ -2,7 +2,7 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider as PHProvider } from "posthog-js/react";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import NProgress from "nprogress";
 
@@ -60,8 +60,12 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PHProvider client={posthog}>
-      <PostHogPageview />
-      <RouteProgressBar />
+      <Suspense fallback={null}>
+        <PostHogPageview />
+      </Suspense>
+      <Suspense fallback={null}>
+        <RouteProgressBar />
+      </Suspense>
       {children}
     </PHProvider>
   );

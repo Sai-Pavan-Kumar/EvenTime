@@ -31,6 +31,10 @@ export async function generateMetadata({
   };
 }
 
+import { cookies } from "next/headers";
+
+export const revalidate = 600;
+
 export default async function CategoryPage({
   params,
 }: {
@@ -44,8 +48,6 @@ export default async function CategoryPage({
   if (!matchedCategory) {
     notFound();
   }
-
-  const supabase = await createClient();
 
   const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
 
@@ -77,26 +79,34 @@ export default async function CategoryPage({
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
-  // Auth check + cached public fetch run at the same time
-  const [{ data: { user } }, publicEvents] = await Promise.all([
-    supabase.auth.getUser(),
-    getCachedPublicCategoryEvents(),
-  ]);
+  // Fast check: Only query Supabase auth if session cookie is present
+  const cookieStore = await cookies();
+  const hasAuthCookie = cookieStore.getAll().some(c => c.name.includes("-auth-token"));
 
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
+  let user = null;
+  let profile: { user_type: string | null; college_id: string | null } | null = null;
+  let supabaseServer = null;
+
+  if (hasAuthCookie) {
+    supabaseServer = await createClient();
+    const { data: authData } = await supabaseServer.auth.getUser();
+    user = authData.user;
+    if (user) {
+      const { data: prof } = await supabaseServer.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+      profile = prof;
+    }
   }
+
+  const publicEvents = await getCachedPublicCategoryEvents();
 
   // Tiny, uncached, bounded-to-1-user query for their own extra visible events
   let personalEvents: any[] = [];
-  if (user) {
+  if (user && supabaseServer) {
     let extraFilter = `creator_id.eq.${user.id}`;
     if (profile?.user_type === "student" && profile?.college_id) {
       extraFilter += `,college_id.eq.${profile.college_id}`;
     }
-    const { data } = await supabase
+    const { data } = await supabaseServer
       .from("events")
       .select(CATEGORY_FIELDS)
       .eq("status", "approved")

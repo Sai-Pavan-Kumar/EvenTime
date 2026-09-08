@@ -42,14 +42,14 @@ export function CuratorEventsTabs({ events }: { events: any[] }) {
 
       {tab === "live" ? (
         liveEvents.length > 0 ? (
-          <LoadMoreGrid events={liveEvents} gridClass={gridClass} hideOrganizer />
+          <LoadMoreGrid events={liveEvents} gridClass={gridClass} hideOrganizer from="curator" />
         ) : (
           <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
             <div><p className="text-slate-900 font-bold text-base">No Upcoming Events</p><p className="text-slate-500 font-medium text-xs mt-1">This curator hasn't scheduled any upcoming events yet. Check out their past archive!</p></div>
           </div>
         )
       ) : archiveEvents.length > 0 ? (
-        <LoadMoreGrid events={archiveEvents} gridClass={gridClass} hideOrganizer hidePastBadge />
+        <LoadMoreGrid events={archiveEvents} gridClass={gridClass} hideOrganizer hidePastBadge from="curator" />
       ) : (
         <div className="py-20 text-center bg-white rounded-3xl border border-dashed border-[#E5E5EA]">
           <div><p className="text-slate-900 font-bold text-base">No Past Events</p><p className="text-slate-500 font-medium text-xs mt-1">No archived events found for this curator.</p></div>

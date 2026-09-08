@@ -23,7 +23,7 @@ import { categoriesList } from "@/features/create-event/constants";
 import { parseEventDateString } from "@/lib/utils/date";
 import type { EventRow, ProfileRow } from "@/types";
 
-export function SearchClient() {
+export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<EventRow>[] } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,10 +53,10 @@ export function SearchClient() {
   const dateDropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Data states
-  const [allEvents, setAllEvents] = useState<Partial<EventRow>[]>([]);
+  // Data states — initialized with server-cached buffet (0 direct DB calls)
+  const [allEvents, setAllEvents] = useState<Partial<EventRow>[]>(initialEvents);
   const [profile, setProfile] = useState<Partial<ProfileRow> | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialEvents.length === 0);
 
   // Helper date generators matching app
   const getTodayStr = () => {
@@ -121,7 +121,7 @@ export function SearchClient() {
     }
   }, [supabase]);
 
-  // Fetch current user profile
+  // Fetch current user profile (personal preferences)
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -134,9 +134,11 @@ export function SearchClient() {
         if (prof) setProfile(prof);
       }
     };
-    fetchEvents();
+    if (initialEvents.length === 0) {
+      fetchEvents();
+    }
     fetchUser();
-  }, [supabase, fetchEvents]);
+  }, [supabase, fetchEvents, initialEvents.length]);
 
   // Sync state changes to browser URL seamlessly (without page unmount)
   useEffect(() => {
@@ -295,7 +297,14 @@ export function SearchClient() {
         {/* Search Bar Container */}
         <div className="max-w-3xl mx-auto mb-6">
           <div className="relative flex items-center bg-white rounded-2xl border border-slate-200/80 shadow-sm transition-all focus-within:ring-4 focus-within:ring-brand-primary/10 focus-within:border-brand-primary">
-            <Search className="w-5 h-5 text-slate-400 ml-4 shrink-0" />
+            <button
+              type="button"
+              onClick={() => searchInputRef.current?.focus()}
+              className="p-0 ml-4 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0 text-slate-400 hover:text-brand-primary transition-colors"
+              aria-label="Focus search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
             <input
               ref={searchInputRef}
               type="text"

@@ -84,3 +84,15 @@ export const teamOptions = ["Solo", "Teams of 2-4", "Teams of 4+", "Both Solo & 
 export const hours = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
 export const mins = ["00", "15", "30", "45"];
 export const ampms = ["AM", "PM"];
+export const COLLEGE_YEAR_OPTIONS = [
+  "All Years",
+  "2024",
+  "2025",
+  "2026",
+  "2027",
+  "2028",
+  "2029",
+  "2030",
+  "2031",
+  "2032",
+] as const;

@@ -41,6 +41,10 @@ export async function generateMetadata({
   };
 }
 
+import { cookies } from "next/headers";
+
+export const revalidate = 600;
+
 export default async function CityPage({
   params,
 }: {
@@ -53,8 +57,6 @@ export default async function CityPage({
   if (!matchedCity && !getCityConfig(city)) {
     notFound();
   }
-
-  const supabase = await createClient();
 
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
@@ -84,17 +86,25 @@ export default async function CityPage({
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
-  // 1. Run the auth check AND the cached public events fetch at the same time
-  const [{ data: { user } }, publicEvents] = await Promise.all([
-    supabase.auth.getUser(),
-    getCachedPublicCityEvents(),
-  ]);
+  // Fast check: Only query Supabase auth if session cookie is present
+  const cookieStore = await cookies();
+  const hasAuthCookie = cookieStore.getAll().some(c => c.name.includes("-auth-token"));
 
-  let profile = null;
-  if (user) {
-    const { data } = await supabase.from("profiles").select("user_type, college_id").eq("id", user.id).single();
-    profile = data;
+  let user = null;
+  let profile: { user_type: string | null; college_id: string | null } | null = null;
+  let supabaseServer = null;
+
+  if (hasAuthCookie) {
+    supabaseServer = await createClient();
+    const { data: authData } = await supabaseServer.auth.getUser();
+    user = authData.user;
+    if (user) {
+      const { data: prof } = await supabaseServer.from("profiles").select("user_type, college_id").eq("id", user.id).single();
+      profile = prof;
+    }
   }
+
+  const publicEvents = await getCachedPublicCityEvents();
 
   // 3. UNCACHED but tiny: only this user's own extra visible events
   let personalEvents: any[] = [];
@@ -103,7 +113,7 @@ export default async function CityPage({
     if (profile?.user_type === "student" && profile?.college_id) {
       extraFilter += `,college_id.eq.${profile.college_id}`;
     }
-    const { data } = await supabase
+    const { data } = await supabaseServer!
       .from("events")
       .select(EVENT_FIELDS)
       .eq("status", "approved")

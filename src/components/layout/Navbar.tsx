@@ -282,7 +282,13 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
           {variant !== 'centered' && (
             <>
               <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                <button
+                  type="submit"
+                  aria-label="Search"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer text-text-secondary hover:text-brand-primary transition-colors flex items-center justify-center"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
                 <input
                   type="text"
                   value={searchQuery}

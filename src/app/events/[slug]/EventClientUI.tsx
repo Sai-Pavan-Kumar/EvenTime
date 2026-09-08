@@ -29,8 +29,10 @@ import {
   GraduationCap,
   Building,
   MessageCircle,
+  UserCheck,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { parseEventDateString } from "@/lib/utils/date";
 import { submitReportAction } from "../report-actions";
 import { getCategoryConfig } from "@/lib/category-config";
 import { EventCard } from "@/app/events/EventCard";
@@ -63,6 +65,14 @@ export default function EventClientUI({
   const handleBackNavigation = () => {
     if (fromParam === "admin") {
       router.push("/et98");
+    } else if (fromParam === "curator") {
+      if (typeof window !== "undefined" && window.history.length > 1) {
+        router.back();
+      } else if (curatorUsername) {
+        router.push(`/${curatorUsername}`);
+      } else {
+        router.push("/");
+      }
     } else if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
     } else {
@@ -100,7 +110,9 @@ export default function EventClientUI({
   const safeTitle = event.title ?? "Event Details";
   const safeCategory = event.category ?? "General";
   const safeOrganizer = curatorUsername || event.organizer_name || "EvenTime Community";
-  const safeRegistrationLink = event.registration_link ?? "#";
+  const rawRegistrationLink = (event.registration_link || (event as any).website || (event as any).external_link || "").trim();
+  const hasRegistrationLink = Boolean(rawRegistrationLink && rawRegistrationLink !== "#");
+  const safeRegistrationLink = hasRegistrationLink ? rawRegistrationLink : "#";
   const safeId = event.id ?? "";
   const safeCreatorId = event.creator_id ?? "";
 
@@ -136,7 +148,14 @@ export default function EventClientUI({
   }, [event.start_time, event.end_time]);
 
   const eventUrl = typeof window !== "undefined" ? window.location.href : "";
-  const isPastEvent = event.date_string ? new Date(event.date_string) < new Date(new Date().setHours(0, 0, 0, 0)) : false;
+  const isPastEvent = useMemo(() => {
+    if (!event.date_string) return false;
+    const parsed = parseEventDateString(event.date_string);
+    if (!parsed) return false;
+    const endOfDay = new Date(parsed);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay.getTime() < Date.now();
+  }, [event.date_string]);
   const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDateRange)}&organizer=${encodeURIComponent(safeOrganizer)}`;
 
   const venueLocation = useMemo(() => {
@@ -183,13 +202,21 @@ export default function EventClientUI({
         }
 
         if (safeId) {
-          const [{ data: savedRow }, { data: interestRow }, { data: reportRow }] = await Promise.all([
+          try {
+            const cached = localStorage.getItem("eventime_saved_ids");
+            if (cached) {
+              const ids: string[] = JSON.parse(cached);
+              if (ids.includes(safeId)) setIsSaved(true);
+            }
+          } catch {}
+
+          const [{ data: savedRows }, { data: interestRow }, { data: reportRow }] = await Promise.all([
             supabase
               .from("saved_events")
               .select("id")
               .eq("event_id", safeId)
               .eq("user_id", user.id)
-              .maybeSingle(),
+              .limit(1),
             supabase
               .from("interested_events")
               .select("id")
@@ -205,7 +232,7 @@ export default function EventClientUI({
               .maybeSingle(),
           ]);
 
-          if (savedRow) setIsSaved(true);
+          if (savedRows && savedRows.length > 0) setIsSaved(true);
           if (interestRow) setIsInterested(true);
           if (reportRow) setIsReportedByMe(true);
         }
@@ -264,8 +291,22 @@ export default function EventClientUI({
     setIsSaved(nextState);
     setIsSaving(true);
 
+    // Sync localStorage
+    try {
+      const cached = localStorage.getItem("eventime_saved_ids");
+      let idList: string[] = cached ? JSON.parse(cached) : [];
+      if (nextState) {
+        if (!idList.includes(safeId)) idList.push(safeId);
+      } else {
+        idList = idList.filter((x) => x !== safeId);
+      }
+      localStorage.setItem("eventime_saved_ids", JSON.stringify(idList));
+    } catch {}
+
     try {
       if (nextState) {
+        // Delete any existing rows first to prevent duplicates in DB
+        await supabase.from("saved_events").delete().eq("event_id", safeId).eq("user_id", currentUser.id);
         const { error } = await supabase.from("saved_events").insert({
           event_id: safeId,
           user_id: currentUser.id,
@@ -568,6 +609,8 @@ export default function EventClientUI({
                       <p className="text-xs text-slate-500 font-medium">
                         {isOwner
                           ? "You are the creator of this event"
+                          : isPastEvent
+                          ? "This event has already concluded"
                           : isInterested
                           ? "You are marked as interested · Click to remove"
                           : "Click to show you're interested"}
@@ -576,16 +619,18 @@ export default function EventClientUI({
                   </div>
                   <button
                     onClick={handleInterestedClick}
-                    disabled={isLoadingInterest || isCuratorOrAdmin}
+                    disabled={isLoadingInterest || isCuratorOrAdmin || isPastEvent}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-                      isOwner
+                      isPastEvent
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                        : isOwner
                         ? "bg-slate-100 text-slate-400 cursor-default"
                         : isInterested
                         ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
                         : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
                     }`}
                   >
-                    {isOwner ? "Host" : isInterested ? "✓ Interested" : "I'm Interested"}
+                    {isPastEvent ? "Event Concluded" : isOwner ? "Host" : isInterested ? "✓ Interested" : "I'm Interested"}
                   </button>
                 </div>
               </div>
@@ -594,7 +639,7 @@ export default function EventClientUI({
             {/* Desktop Action Buttons */}
             <div className="hidden md:flex gap-4">
               {!isPastEvent ? (
-                event.registration_link ? (
+                hasRegistrationLink ? (
                   <Link
                     href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
                     target="_blank"
@@ -615,26 +660,13 @@ export default function EventClientUI({
                 </div>
               )}
 
-              {currentUser?.id === safeCreatorId ? (
+              {currentUser?.id === safeCreatorId && (
                 <Link
                   href={`/events/${event.slug || safeId}/edit`}
-                  className="flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100"
+                  className="px-8 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100"
                 >
                   Edit Event
                 </Link>
-              ) : (
-                <button
-                  onClick={handleBookmarkToggle}
-                  disabled={isSaving}
-                  className={`flex-1 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 border ${
-                    isSaved
-                      ? "bg-brand-primary text-white border-brand-primary hover:bg-[#5835e5]"
-                      : "bg-slate-50 text-slate-900 border-slate-200 hover:bg-slate-100"
-                  }`}
-                >
-                  <Bookmark className={`w-4 h-4 ${isSaved ? "fill-white" : ""}`} />
-                  {isSaved ? "Saved" : "Save Event"}
-                </button>
               )}
             </div>
 
@@ -671,7 +703,7 @@ export default function EventClientUI({
               {/* Curated by with profile link */}
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                  <span className="text-base">✍️</span>
+                  <UserCheck className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
@@ -808,8 +840,8 @@ export default function EventClientUI({
                 </div>
               )}
 
-              {/* Team Size */}
-              {event.team_size && (
+              {/* Team Size (Featured Events Only) */}
+              {event.is_featured && event.team_size && (
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
                     <Users className="w-5 h-5 text-slate-400" />
@@ -862,7 +894,7 @@ export default function EventClientUI({
               {!isPastEvent && googleCalendarUrl && (
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                    <span className="text-base">📅</span>
+                    <CalendarDays className="w-5 h-5 text-slate-400" />
                   </div>
                   <div className="flex-1">
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
@@ -982,35 +1014,20 @@ export default function EventClientUI({
 
       {/* Mobile Sticky Bottom Action Bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-4 flex items-center gap-3 shadow-lg">
-        <button
-          onClick={handleBookmarkToggle}
-          disabled={isSaving}
-          className={`p-3 rounded-xl border transition-all ${
-            isOwner
-              ? "bg-slate-100 text-slate-400 border-slate-200 opacity-70"
-              : isSaved
-              ? "bg-brand-primary text-white border-brand-primary"
-              : "bg-slate-50 text-slate-700 border-slate-200"
-          }`}
-          title="Save Event"
-        >
-          <Bookmark className={`w-5 h-5 ${isSaved && !isOwner ? "fill-white" : ""}`} />
-        </button>
-
         {!isPastEvent ? (
-          event.registration_link ? (
+          hasRegistrationLink ? (
             <Link
               href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 bg-brand-primary text-white py-3 px-4 rounded-xl font-bold text-center text-sm hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm"
             >
-              Register <ExternalLink className="w-4 h-4" />
+              Register for Event <ExternalLink className="w-4 h-4" />
             </Link>
           ) : (
             <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-3 px-4 rounded-xl font-bold text-center text-xs flex items-center justify-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              Walk-in Event
+              Walk-in Event (No Registration Needed)
             </div>
           )
         ) : (

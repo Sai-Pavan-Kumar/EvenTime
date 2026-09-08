@@ -27,11 +27,11 @@ export default async function LeaderboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-surface-base">
-      <Navbar />
-      <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="w-8 h-8 border-3 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-surface-base" />}>
+      <main className="min-h-screen bg-surface-base">
+        <Navbar />
         <LeaderboardClient />
-      </Suspense>
-    </main>
+      </main>
+    </Suspense>
   );
 }

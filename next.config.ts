@@ -13,18 +13,16 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   transpilePackages: ['leaflet', 'react-leaflet'],
    turbopack: {},
-  experimental: {
-    cacheLife: {
-      events: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
-      leaderboard: {
-        stale: 600,
-        revalidate: 600,
-        expire: 3600,
-      },
+  cacheLife: {
+    events: {
+      stale: 600,
+      revalidate: 600,
+      expire: 3600,
+    },
+    leaderboard: {
+      stale: 600,
+      revalidate: 600,
+      expire: 3600,
     },
   },
   async rewrites() {
@@ -60,12 +58,6 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Content-Type", value: "application/json" },
           { key: "Access-Control-Allow-Origin", value: "*" },
-        ],
-      },
-      {
-        source: "/_next/static/(.*)",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {
