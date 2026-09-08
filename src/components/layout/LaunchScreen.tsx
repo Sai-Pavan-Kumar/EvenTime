@@ -5,32 +5,25 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 export default function LaunchScreen() {
-  const [show, setShow] = useState(true); 
+  const [show, setShow] = useState(false); 
 
   useEffect(() => {
-    // 1. Check if the user has already seen the splash screen in this session
-    let hasSeenSplash = false;
     try {
-      hasSeenSplash = !!localStorage.getItem("hasSeenSplash");
-    } catch (e) {
-      console.warn("localStorage is blocked by browser settings");
-    }
-    
-    if (hasSeenSplash) {
-      setShow(false);
-      return;
-    }
-
-    // 2. If not seen, show it and set the flag
-    const timer = setTimeout(() => {
-      setShow(false);
-      try {
+      const hasSeenSplash = !!localStorage.getItem("hasSeenSplash");
+      if (!hasSeenSplash) {
+        setShow(true);
         localStorage.setItem("hasSeenSplash", "true");
-      } catch (e) {}
-    }, 1500);
-    
-    return () => clearTimeout(timer);
+        const timer = setTimeout(() => {
+          setShow(false);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch {
+      setShow(false);
+    }
   }, []);
+
+  if (!show) return null;
 
   return (
     <AnimatePresence>
@@ -39,8 +32,8 @@ export default function LaunchScreen() {
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0, y: -40, filter: "blur(10px)" }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed inset-0 bg-brand-primary flex flex-col items-center justify-center overflow-hidden"
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed inset-0 bg-brand-primary flex flex-col items-center justify-center overflow-hidden pointer-events-none"
           style={{ zIndex: 99999, position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
         >
           {/* Animated Logo */}

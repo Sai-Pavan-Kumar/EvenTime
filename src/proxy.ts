@@ -3,24 +3,22 @@ import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
 
 export async function proxy(request: NextRequest) {
- const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV === 'development' ? "'unsafe-eval'" : ""};
-   style-src 'self' 'unsafe-inline' https://api.fontshare.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.clarity.ms https://us-assets.i.posthog.com https://us.i.posthog.com https://cdn.fontshare.com;
+    style-src 'self' 'unsafe-inline' https://api.fontshare.com;
     img-src 'self' blob: data: https: http:;
     font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
-    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms https://*.posthog.com https://us.i.posthog.com https://vitals.vercel-insights.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    upgrade-insecure-requests;
+    ${process.env.NODE_ENV === 'production' ? "upgrade-insecure-requests;" : ""}
   `;
   const contentSecurityPolicyHeaderValue = cspHeader.replace(/\s{2,}/g, ' ').trim();
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
   requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
 
   let response = NextResponse.next({
