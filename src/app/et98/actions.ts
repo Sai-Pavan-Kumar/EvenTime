@@ -95,7 +95,7 @@ export async function rejectEventAction(formData: FormData) {
 
   await adminClient
     .from("events")
-    .update({ status: "rejected" })
+    .update({ status: "rejected", admin_notes: reason || null })
     .eq("id", eventId);
 
  revalidatePath("/", "layout"); 
@@ -323,4 +323,58 @@ export async function toggleFeaturedAction(formData: FormData) {
   revalidatePath("/");
   revalidateTag("events", "events");
   return { success: true };
+}
+
+export async function updateFeedbackStatusAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const feedbackId = formData.get("feedbackId") as string;
+  const status = formData.get("status") as string;
+
+  if (!feedbackId || !status) return { error: "Missing required fields." };
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
+    .from("platform_feedback")
+    .update({ status })
+    .eq("id", feedbackId);
+
+  if (error) {
+    console.error("Update feedback status failed:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/et98");
+  return { success: true };
+}
+
+export async function addCollegeAdminAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const name = (formData.get("name") as string)?.trim();
+  const state = (formData.get("state") as string)?.trim() || null;
+  const website = (formData.get("website") as string)?.trim() || null;
+
+  if (!name) return { error: "College name is required." };
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const adminClient = createAdminClient();
+  const { data, error } = await adminClient.from("colleges").insert({
+    name,
+    slug: `${slug}-${Date.now()}`,
+    state,
+    website
+  }).select().single();
+
+  if (error) {
+    console.error("Add college failed:", error);
+    return { error: error.message };
+  }
+
+  revalidatePath("/et98");
+  return { success: true, data };
 }
