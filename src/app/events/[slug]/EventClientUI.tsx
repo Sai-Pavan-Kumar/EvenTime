@@ -31,10 +31,11 @@ import {
   MessageCircle,
   UserCheck,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isValid } from "date-fns";
 import { parseEventDateString } from "@/lib/utils/date";
 import { submitReportAction } from "../report-actions";
 import { getCategoryConfig } from "@/lib/category-config";
+import { eventSync } from "@/lib/events/eventSync";
 import { EventCard } from "@/app/events/EventCard";
 import type { EventRow } from "@/types";
 import Link from "next/link";
@@ -290,6 +291,8 @@ export default function EventClientUI({
     const nextState = !isSaved;
     setIsSaved(nextState);
     setIsSaving(true);
+    // Broadcast 0ms instant sync across all cards & screens
+    eventSync.emit({ eventId: safeId, type: 'save', isSaved: nextState });
 
     // Sync localStorage
     try {
@@ -325,6 +328,7 @@ export default function EventClientUI({
     } catch (err: any) {
       console.error("Bookmark error:", err);
       setIsSaved(!nextState);
+      eventSync.emit({ eventId: safeId, type: 'save', isSaved: !nextState });
       toast.error("Could not update saved events.");
     } finally {
       setIsSaving(false);
@@ -347,7 +351,17 @@ export default function EventClientUI({
     const previousState = isInterested;
     const nextState = !previousState;
     setIsInterested(nextState);
-    setLocalInterestCount((prev: number) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
+    const newCount = nextState ? localInterestCount + 1 : Math.max(0, localInterestCount - 1);
+    setLocalInterestCount(newCount);
+
+    // Broadcast 0ms instant sync across all cards & screens
+    eventSync.emit({
+      eventId: safeId,
+      type: 'interest',
+      isInterested: nextState,
+      interestedCountDelta: nextState ? 1 : -1,
+      newInterestedCount: newCount,
+    });
 
     try {
       if (nextState) {
@@ -376,7 +390,14 @@ export default function EventClientUI({
     } catch (error: any) {
       console.error("Failed to update interest status:", error.message || error);
       setIsInterested(previousState);
-      setLocalInterestCount((prev: number) => (previousState ? prev + 1 : Math.max(0, prev - 1)));
+      setLocalInterestCount(localInterestCount);
+      eventSync.emit({
+        eventId: safeId,
+        type: 'interest',
+        isInterested: previousState,
+        interestedCountDelta: previousState ? 1 : -1,
+        newInterestedCount: localInterestCount,
+      });
       toast.error("Could not update interest status.");
     }
   };
@@ -990,7 +1011,7 @@ export default function EventClientUI({
                         }`
                       : simEvent.date_string
                   }
-                  city={simEvent.is_virtual ? "Online" : (simEvent.location || simEvent.city || "Venue TBA")}
+                  city={simEvent.is_virtual ? "Online" : (simEvent.city || simEvent.location || "Venue TBA")}
                   imageUrl={
                     simEvent.poster_url ||
                     getCategoryConfig(simEvent.category)?.backgroundImage ||

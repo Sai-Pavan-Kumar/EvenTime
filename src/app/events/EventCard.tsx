@@ -10,6 +10,7 @@
   import { motion, AnimatePresence } from "framer-motion";
   import { getCategoryConfig } from "@/lib/category-config";
   import { parseEventDateString } from "@/lib/utils/date";
+  import { eventSync } from "@/lib/events/eventSync";
 
   interface EventCardProps {
     id: string;   // MUST be the exact UUID from database
@@ -69,6 +70,7 @@
     from,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
+    const [dynamicInterestCount, setDynamicInterestCount] = useState<number>(interestedCount ?? 0);
     const [isSaving, setIsSaving] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
     const [copied, setCopied] = useState(false);
@@ -76,6 +78,33 @@
     const [ownerNotice, setOwnerNotice] = useState(false);
 
     const eventHref = from ? `/events/${slug}?from=${from}` : `/events/${slug}`;
+
+    // Sync interest count with props
+    useEffect(() => {
+      setDynamicInterestCount(interestedCount ?? 0);
+    }, [interestedCount]);
+
+    // Reactive subscription to global Client Event Bus (0ms sync across all cards & screens)
+    useEffect(() => {
+      const unsubscribe = eventSync.subscribe((payload) => {
+        if (payload.eventId === id || payload.eventId === slug) {
+          if (payload.type === 'interest') {
+            if (typeof payload.interestedCountDelta === 'number') {
+              setDynamicInterestCount((prev) => Math.max(0, prev + payload.interestedCountDelta!));
+            } else if (typeof payload.newInterestedCount === 'number') {
+              setDynamicInterestCount(payload.newInterestedCount);
+            }
+          }
+          if (payload.type === 'save' && typeof payload.isSaved === 'boolean') {
+            setSavedState(payload.isSaved);
+          }
+          if (payload.type === 'delete') {
+            setIsVisible(false);
+          }
+        }
+      });
+      return unsubscribe;
+    }, [id, slug]);
 
     // Sync savedState with prop and localStorage
     useEffect(() => {
@@ -118,6 +147,7 @@
       setIsSaving(true);
       const newState = !savedState;
       setSavedState(newState); // optimistic update
+      eventSync.emit({ eventId: id, type: 'save', isSaved: newState });
 
       // Sync with localStorage
       try {
@@ -431,12 +461,12 @@
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
                   </span>
-                  {interestedCount && interestedCount > 0 ? (
+                  {dynamicInterestCount > 0 ? (
                     <>
                       <span className="text-slate-300 shrink-0">|</span>
                       <span className="flex items-center gap-1 shrink-0">
                         <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {interestedCount}
+                        {dynamicInterestCount}
                       </span>
                     </>
                   ) : null}

@@ -263,7 +263,7 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
   return (
     <>
-    <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/5 shadow-[0_1px_0_rgba(0,0,0,0.03)]">
+    <nav className={`sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/5 shadow-[0_1px_0_rgba(0,0,0,0.03)] ${pathname === '/search' ? 'hidden sm:block' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 gap-4 relative">
           
@@ -281,121 +281,123 @@ function NavbarInner({ variant = 'default', categoryChips = [], locationChips = 
 
           {variant !== 'centered' && (
             <>
-              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
-                <button
-                  type="submit"
-                  aria-label="Search"
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer text-text-secondary hover:text-brand-primary transition-colors flex items-center justify-center"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setShowDesktopFilters(true)}
-                  placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
-                />
-                {showDesktopFilters && (
-                  <div className="absolute left-0 top-full mt-2 w-full min-w-[360px] bg-white rounded-2xl shadow-xl border border-slate-100 p-3.5 z-50 animate-in fade-in zoom-in-95">
-                    <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-slate-100">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Filters</span>
-                      <span className="text-[11px] text-slate-400">Pick a pill to filter</span>
-                    </div>
-
-                    {/* Quick Filter Pills Row */}
-                    <div className="flex items-center flex-wrap gap-2">
-                      {/* Today Pill */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowDesktopFilters(false);
-                          const today = new Date().toISOString().substring(0, 10);
-                          router.push(`/search?date=${today}`);
-                        }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 active:scale-95"
-                      >
-                        Today
-                      </button>
-
-                      {/* Tomorrow Pill */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowDesktopFilters(false);
-                          const tomorrow = new Date();
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          const tomorrowStr = tomorrow.toISOString().substring(0, 10);
-                          router.push(`/search?date=${tomorrowStr}`);
-                        }}
-                        className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 active:scale-95"
-                      >
-                        Tomorrow
-                      </button>
-
-                      {/* City Dropdown Pill */}
-                      <div className="relative group/city">
-                        <select
-                          value={locationParam || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setShowDesktopFilters(false);
-                            if (val) router.push(`/search?city=${encodeURIComponent(val)}`);
-                          }}
-                          className="appearance-none px-3.5 py-1.5 pr-7 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 outline-none cursor-pointer active:scale-95"
-                        >
-                          <option value="" disabled>City ▾</option>
-                          {effectiveLocationChips.map((c) => (
-                            <option key={c.value} value={c.value}>
-                              {c.name} {typeof c.count === 'number' ? `(${c.count})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              {pathname !== '/search' && (
+                <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+                  <button
+                    type="submit"
+                    aria-label="Search"
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 p-0 bg-transparent border-none cursor-pointer text-text-secondary hover:text-brand-primary transition-colors flex items-center justify-center"
+                  >
+                    <Search className="w-4 h-4" />
+                  </button>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowDesktopFilters(true)}
+                    placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                  />
+                  {showDesktopFilters && (
+                    <div className="absolute left-0 top-full mt-2 w-full min-w-[360px] bg-white rounded-2xl shadow-xl border border-slate-100 p-3.5 z-50 animate-in fade-in zoom-in-95">
+                      <div className="flex items-center justify-between mb-2.5 pb-1.5 border-b border-slate-100">
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Filters</span>
+                        <span className="text-[11px] text-slate-400">Pick a pill to filter</span>
                       </div>
 
-                      {/* Category Dropdown Pill */}
-                      <div className="relative group/cat">
-                        <select
-                          value={categoryParam || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setShowDesktopFilters(false);
-                            if (val) router.push(`/search?category=${encodeURIComponent(val)}`);
-                          }}
-                          className="appearance-none px-3.5 py-1.5 pr-7 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 outline-none cursor-pointer active:scale-95"
-                        >
-                          <option value="" disabled>Category ▾</option>
-                          {effectiveCategoryChips.map((c) => (
-                            <option key={c.value} value={c.value}>
-                              {c.name} {typeof c.count === 'number' ? `(${c.count})` : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
-                    </div>
-
-                    {/* Popular categories quick tags */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center flex-wrap gap-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Popular:</span>
-                      {["Hackathon", "Tech Event", "Workshop", "Conference", "Startup Event"].map((cat) => (
+                      {/* Quick Filter Pills Row */}
+                      <div className="flex items-center flex-wrap gap-2">
+                        {/* Today Pill */}
                         <button
-                          key={cat}
                           type="button"
                           onClick={() => {
                             setShowDesktopFilters(false);
-                            router.push(`/search?category=${encodeURIComponent(cat)}`);
+                            const today = new Date().toISOString().substring(0, 10);
+                            router.push(`/search?date=${today}`);
                           }}
-                          className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-brand-primary transition-colors active:scale-95"
+                          className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 active:scale-95"
                         >
-                          {cat}
+                          Today
                         </button>
-                      ))}
+
+                        {/* Tomorrow Pill */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowDesktopFilters(false);
+                            const tomorrow = new Date();
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            const tomorrowStr = tomorrow.toISOString().substring(0, 10);
+                            router.push(`/search?date=${tomorrowStr}`);
+                          }}
+                          className="px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 active:scale-95"
+                        >
+                          Tomorrow
+                        </button>
+
+                        {/* City Dropdown Pill */}
+                        <div className="relative group/city">
+                          <select
+                            value={locationParam || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setShowDesktopFilters(false);
+                              if (val) router.push(`/search?city=${encodeURIComponent(val)}`);
+                            }}
+                            className="appearance-none px-3.5 py-1.5 pr-7 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 outline-none cursor-pointer active:scale-95"
+                          >
+                            <option value="" disabled>City ▾</option>
+                            {effectiveLocationChips.map((c) => (
+                              <option key={c.value} value={c.value}>
+                                {c.name} {typeof c.count === 'number' ? `(${c.count})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+
+                        {/* Category Dropdown Pill */}
+                        <div className="relative group/cat">
+                          <select
+                            value={categoryParam || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setShowDesktopFilters(false);
+                              if (val) router.push(`/search?category=${encodeURIComponent(val)}`);
+                            }}
+                            className="appearance-none px-3.5 py-1.5 pr-7 rounded-full text-xs font-bold transition-all border border-slate-200 bg-slate-50 text-slate-700 hover:border-brand-primary hover:text-brand-primary hover:bg-purple-50 outline-none cursor-pointer active:scale-95"
+                          >
+                            <option value="" disabled>Category ▾</option>
+                            {effectiveCategoryChips.map((c) => (
+                              <option key={c.value} value={c.value}>
+                                {c.name} {typeof c.count === 'number' ? `(${c.count})` : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
+                      </div>
+
+                      {/* Popular categories quick tags */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center flex-wrap gap-1.5">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Popular:</span>
+                        {["Hackathon", "Tech Event", "Workshop", "Conference", "Startup Event"].map((cat) => (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              setShowDesktopFilters(false);
+                              router.push(`/search?category=${encodeURIComponent(cat)}`);
+                            }}
+                            className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-brand-primary transition-colors active:scale-95"
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </form>
+                  )}
+                </form>
+              )}
 
               <div ref={mobileCalendarRef} className="relative shrink-0">
                 <div className="sm:hidden flex items-center gap-1 pl-3 pr-1.5 py-1.5 rounded-full bg-slate-50">

@@ -12,6 +12,7 @@ import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
 import { differenceInCalendarDays } from "date-fns";
 import type { User } from "@supabase/supabase-js";
+import { eventSync } from "@/lib/events/eventSync";
 import { HeroSection } from "./HeroSection";
 import { LandingIntro } from "./LandingIntro";
 import { EventGrid } from "./EventGrid";
@@ -166,6 +167,17 @@ export function HomePageClient(props: HomePageClientProps) {
   // Sync with server if the static buffet updates via ISR
   useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
+
+  // Reactive client-side deletion sync
+  useEffect(() => {
+    const unsubscribe = eventSync.subscribe((payload) => {
+      if (payload.type === 'delete') {
+        setLiveAllEvents((prev) => prev.filter((e) => e.id !== payload.eventId && e.slug !== payload.eventId));
+        setLiveFeaturedEvents((prev) => prev.filter((e) => e.id !== payload.eventId && e.slug !== payload.eventId));
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Validate and sync User & Profile in background without layout shift
   useEffect(() => {
@@ -572,7 +584,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             title={event.title!}
                             category={event.category!}
                             date={event.start_time ? `${event.date_string} · ${event.start_time}` : event.date_string!}
-                            city={event.is_virtual ? "Online" : (event.location || event.city!)}
+                            city={event.is_virtual ? "Online" : (event.city || event.location || "India")}
                             imageUrl={event.poster_url || ""}
                             organizerName={event.organizer_name!}
                             organizerUsername={(event as any).profiles?.username}
@@ -585,6 +597,7 @@ export function HomePageClient(props: HomePageClientProps) {
                               ? null
                                 : (event as any).colleges?.name
                             }
+                            interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
                             isGuest={!user}
                           />
                         </div>

@@ -33,7 +33,7 @@ export function LoadMoreGrid({
             title={event.title || "Untitled Event"}
             category={event.category || "General"}
             date={event.date_string || "TBA"}
-            city={event.is_virtual ? "Online" : (event.location || event.city || "Online")}
+            city={event.is_virtual ? "Online" : (event.city || event.location || "India")}
             imageUrl={event.poster_url || "/window.svg"}
             organizerName={event.organizer_name || "Organizer"}
             organizerUsername={event.profiles?.username}

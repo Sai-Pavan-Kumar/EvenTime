@@ -51,7 +51,7 @@ export function EventGrid({
             title={event.title!}
             category={event.category!}
             date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
-            city={event.is_virtual ? "Online" : (event.location || event.city!)}
+            city={event.is_virtual ? "Online" : (event.city || event.location || "India")}
             imageUrl={event.poster_url || defaultImage}
            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}
            organizerUsername={(event as any).profiles?.username}
@@ -65,7 +65,7 @@ export function EventGrid({
                 ? null 
                 : (event as any).colleges?.name
             }
-            interestedCount={0}
+            interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
             isGuest={!user}
             layout={true}
             isPastDateView={isPastDateView}

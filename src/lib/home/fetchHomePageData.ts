@@ -17,7 +17,7 @@ export async function fetchHomePageData() {
   const dd = String(todayIST.getDate()).padStart(2, '0');
   const todayStr = `${yyyy}-${mm}-${dd}`;
   
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username), interested_events(count)";
 
   // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
   const getCachedGlobalData = unstable_cache(

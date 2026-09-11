@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Heart } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 // --- Custom SVG Icons to replace missing Lucide Brand Icons ---
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -20,8 +23,11 @@ const YoutubeIcon = ({ className }: { className?: string }) => (
 // --------------------------------------------------------------
 
 export function Footer() {
+  const pathname = usePathname();
+  const isSearchPage = pathname === "/search";
+
   return (
-    <footer className="bg-[#0D0B1A] w-full mt-auto py-12 px-6">
+    <footer className={`bg-[#0D0B1A] w-full mt-auto py-12 px-6 ${isSearchPage ? "hidden sm:block" : ""}`}>
       <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
 
         <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">

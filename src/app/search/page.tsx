@@ -22,7 +22,7 @@ const getCachedSearchEvents = unstable_cache(
     const { data } = await supabaseAnon
       .from("events")
       .select(
-        "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username, full_name), description"
+        "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username, full_name), description, interested_events(count)"
       )
       .eq("status", "approved")
       .or("college_only.is.null,college_only.eq.false")
