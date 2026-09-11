@@ -757,86 +757,111 @@ export function HomePageClient(props: HomePageClientProps) {
                     const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
                     const isPastDate = date ? date < todayStr : false;
                     
-                    const isCampusBatchEmpty = activeFeedPill === 'campus' && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
-                    const isCampusEmpty = activeFeedPill === 'campus' && liveCollegeEvents.length === 0;
-                    const isForYouEmpty = (user || profile) && activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
-                    const isAroundYouEmpty = (user || profile) && activeFeedPill === 'around_you' && liveAroundYouEvents.length === 0 && !date;
-                    const isGuestEmpty = !user && !profile && upcomingEvents.length === 0;
-                    
-                    const emptyImageSrc = isCampusBatchEmpty
-                      ? "/eligible_for_me.webp"
-                      : isCampusEmpty
-                      ? "/no_college_events.webp"
-                      : isForYouEmpty
+                    const isCampusTab = activeFeedPill === 'campus';
+                    const isForYouTab = activeFeedPill === 'for_you';
+                    const isAroundYouTab = activeFeedPill === 'around_you';
+                    const isGuest = !user && !profile;
+
+                    const isCampusBatchEmpty = isCampusTab && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
+                    const isCampusEmpty = isCampusTab && (!liveCollegeEvents || liveCollegeEvents.length === 0);
+
+                    // 1. Direct, Unconditional Image Selection by Active Feed Tab
+                    const emptyImageSrc = isCampusTab
+                      ? (isCampusBatchEmpty ? "/eligible_for_me.webp" : "/no_college_events.webp")
+                      : isForYouTab
                       ? "/For_you.webp"
-                      : isAroundYouEmpty
+                      : isAroundYouTab
                       ? "/Around_you.webp"
+                      : q
+                      ? "/illustrations/Search_state.webp"
                       : "/illustrations/Empty_state.webp";
 
-                    const title = isGuestEmpty
-                      ? "No Upcoming Events Yet"
+                    // 2. Clear, Dedicated Title per Tab
+                    const title = isPastDate
+                      ? "No past events"
+                      : date
+                      ? "No Events Scheduled"
                       : isCampusBatchEmpty
                       ? "No Specific Batch Events"
                       : isCampusEmpty
-                      ? (date ? "No Events Scheduled" : "No Campus Events")
-                      : isForYouEmpty
-                      ? (liveAroundYouEvents.length > 0 ? "No Events In Your Categories" : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'Your City'))
-                      : isAroundYouEmpty
-                      ? (livePersonalizedEvents.length > 0 ? "All caught up in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + "!" : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city'))
-                      : isPastDate
-                      ? "No past events"
+                      ? "No Campus Events"
+                      : isForYouTab
+                      ? (liveAroundYouEvents.length > 0
+                          ? "No Events In Your Categories"
+                          : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'Your City'))
+                      : isAroundYouTab
+                      ? (livePersonalizedEvents.length > 0
+                          ? "All caught up in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + "!"
+                          : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city'))
+                      : isGuest && upcomingEvents.length === 0
+                      ? "No Upcoming Events Yet"
                       : "No exact matches";
 
-                    const message = isGuestEmpty
-                      ? "Stay tuned! New hackathons, workshops, and tech events across India are added regularly."
+                    // 3. Clear, Distinct Message per Tab
+                    const message = isPastDate
+                      ? "There were no events hosted on this date."
+                      : date
+                      ? `There are no events scheduled for ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}. Be the first to host one!`
                       : isCampusBatchEmpty
                       ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
                       : isCampusEmpty
-                      ? (date ? "There are no events scheduled for this date. Be the first to host one!" : "There are no private events currently listed for your campus. Host one for your college!")
-                      : isForYouEmpty
+                      ? "There are no private events currently listed for your campus. Host one for your college!"
+                      : isForYouTab
                       ? (liveAroundYouEvents.length > 0
                         ? "Events are happening in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ", but none currently match your selected interest categories. Explore 'Around You' to discover them, or update your preferences in Profile!"
                         : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community buzzing!")
-                      : isAroundYouEmpty
+                      : isAroundYouTab
                       ? (livePersonalizedEvents.length > 0
                         ? "All scheduled events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + " currently match your selected interests and are waiting in 'For You'. Check back soon as new categories are added!"
                         : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community started!")
-                      : isPastDate 
-                      ? "There were no events hosted on this date." 
-                      : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
+                      : isGuest && upcomingEvents.length === 0
+                      ? "Stay tuned! New hackathons, workshops, and tech events across India are added regularly."
+                      : q ? `We couldn't find any events for "${q}". But the stage is never empty.`
                       : location ? `No events happening in ${location} right now. Try changing your city or category filters for better matches.`
-                      : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
+                      : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.`
                       : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
 
-                    const showBtn = isCampusBatchEmpty || isCampusEmpty || isForYouEmpty || isAroundYouEmpty || isGuestEmpty || !isPastDate;
-                    const btnText = isGuestEmpty
+                    // 4. Action Buttons and Call-to-Action Handlers
+                    const showBtn = !isPastDate;
+                    const btnText = date
+                      ? "Clear Date"
+                      : isCampusBatchEmpty
+                      ? "Show All Campus Events"
+                      : isCampusEmpty
+                      ? "Host an Event"
+                      : isForYouTab
+                      ? (liveAroundYouEvents.length > 0 ? "Explore Around You" : (user || profile ? "Update Preferences" : "Sign In / Sign Up"))
+                      : isAroundYouTab
+                      ? (livePersonalizedEvents.length > 0 ? "View For You" : (user || profile ? "Update Cities" : "Sign In / Sign Up"))
+                      : isGuest
                       ? "Sign In / Sign Up"
-                      : isCampusBatchEmpty 
-                      ? "Show All Campus Events" 
-                      : isCampusEmpty 
-                      ? (date ? "Clear Date" : "Host an Event") 
-                      : isForYouEmpty
-                      ? (liveAroundYouEvents.length > 0 ? "Explore Around You" : "Update Preferences")
-                      : isAroundYouEmpty
-                      ? (livePersonalizedEvents.length > 0 ? "View For You" : "Update Cities")
                       : "Be the first to host one";
 
-                    const onAction = isCampusBatchEmpty
+                    const onAction = date
+                      ? () => {
+                          const params = new URLSearchParams(searchParams.toString());
+                          params.delete('date');
+                          window.history.replaceState(null, '', '?' + params.toString());
+                          window.location.reload();
+                        }
+                      : isCampusBatchEmpty
                       ? () => setCampusFilterMode('all')
-                      : isForYouEmpty && liveAroundYouEvents.length > 0
+                      : isForYouTab && liveAroundYouEvents.length > 0
                       ? () => setActiveFeedPill('around_you')
-                      : isAroundYouEmpty && livePersonalizedEvents.length > 0
+                      : isAroundYouTab && livePersonalizedEvents.length > 0
                       ? () => setActiveFeedPill('for_you')
                       : undefined;
 
-                    const actionHref = isGuestEmpty
-                      ? "/login"
+                    const actionHref = date || isCampusBatchEmpty || (isForYouTab && liveAroundYouEvents.length > 0) || (isAroundYouTab && livePersonalizedEvents.length > 0)
+                      ? undefined
                       : isCampusEmpty
-                      ? (date ? "/" : "/events/new")
-                      : isForYouEmpty && liveAroundYouEvents.length === 0
-                      ? "/profile"
-                      : isAroundYouEmpty && livePersonalizedEvents.length === 0
-                      ? "/profile"
+                      ? "/events/new"
+                      : isForYouTab
+                      ? (user || profile ? "/profile" : "/login")
+                      : isAroundYouTab
+                      ? (user || profile ? "/profile" : "/login")
+                      : isGuest
+                      ? "/login"
                       : undefined;
                     
                     return (
