@@ -153,6 +153,35 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
     fetchUser();
   }, [supabase, fetchEvents, initialEvents.length]);
 
+  // Sync state from URL params when navigation occurs (e.g. from Navbar quick filters, Home search, or browser history)
+  useEffect(() => {
+    const qParam = searchParams.get("q") || "";
+    const cityParam = searchParams.get("city") || null;
+    const categoryParam = searchParams.get("category") || null;
+    const dateParam = searchParams.get("date") || null;
+
+    setKeyword((prev) => (prev !== qParam ? qParam : prev));
+    setSelectedCity((prev) => (prev !== cityParam ? cityParam : prev));
+    setSelectedCategory((prev) => (prev !== categoryParam ? categoryParam : prev));
+    setSelectedDate((prev) => (prev !== dateParam ? dateParam : prev));
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const q = sp.get("q") || "";
+      const city = sp.get("city") || null;
+      const cat = sp.get("category") || null;
+      const dt = sp.get("date") || null;
+      setKeyword(q);
+      setSelectedCity(city);
+      setSelectedCategory(cat);
+      setSelectedDate(dt);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   // Sync state changes to browser URL seamlessly
   useEffect(() => {
     const params = new URLSearchParams();
@@ -349,29 +378,28 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
   return (
     <main className="min-h-screen bg-surface-base pb-28 sm:pb-24">
       {/* Top navbar: visible on desktop, hidden on mobile for /search */}
-      <Navbar />
+      <Navbar searchValue={keyword} onSearchChange={setKeyword} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8">
-        {/* Search Bar Container */}
-        <div className="max-w-3xl mx-auto mb-4 sm:mb-6">
-          <div className="relative flex items-center bg-white rounded-2xl border border-slate-200/80 shadow-sm transition-all focus-within:ring-4 focus-within:ring-brand-primary/10 focus-within:border-brand-primary">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        {/* Mobile Search Bar: only visible on mobile screens where Navbar is hidden */}
+        <div className="block sm:hidden max-w-3xl mx-auto mb-3">
+          <div className="relative flex items-center bg-white rounded-full border border-slate-200/80 shadow-sm transition-all focus-within:ring-4 focus-within:ring-brand-primary/10 focus-within:border-brand-primary">
             <button
               type="button"
               onClick={() => searchInputRef.current?.focus()}
-              className="p-0 ml-3.5 sm:ml-4 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0 text-slate-400 hover:text-brand-primary transition-colors"
+              className="p-0 ml-3.5 bg-transparent border-none cursor-pointer flex items-center justify-center shrink-0 text-slate-400 hover:text-brand-primary transition-colors"
               aria-label="Focus search"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
             </button>
             <input
               ref={searchInputRef}
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Search events, categories, cities..."
+              placeholder="Search hackathons, meetups..."
               maxLength={100}
-              className="w-full bg-transparent py-3 sm:py-4 pl-3 pr-10 text-slate-900 placeholder:text-slate-400 font-medium text-sm sm:text-base outline-none"
-              autoFocus
+              className="w-full bg-transparent py-2.5 pl-3 pr-10 text-slate-900 placeholder:text-slate-400 font-medium text-sm outline-none"
             />
             {keyword.length > 0 && (
               <button
@@ -380,88 +408,20 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
                   setKeyword("");
                   searchInputRef.current?.focus();
                 }}
-                className="p-2 text-slate-400 hover:text-slate-600 transition-colors mr-2 shrink-0"
+                className="p-2 text-slate-400 hover:text-slate-600 transition-colors mr-2 shrink-0 cursor-pointer"
                 aria-label="Clear search text"
               >
                 <X className="w-4 h-4" />
               </button>
             )}
           </div>
+        </div>
 
+        {/* Filter Chips Bar Container */}
+        <div className="max-w-3xl sm:max-w-none mx-auto mb-4 sm:mb-6">
           {/* Quick Filter Chips Bar: horizontal scroll on mobile, unclipped overflow on desktop */}
-          <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible py-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {/* 1. Date Chip */}
-            <div className="relative shrink-0" ref={dateDropdownRef}>
-              <button
-                type="button"
-                onClick={handleDateClick}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                  selectedDate
-                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
-                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <CalendarDays className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-[#6C47FF]"}`} />
-                <span>
-                  {selectedDate
-                    ? new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                    : "Date"}
-                </span>
-              </button>
-
-              {/* Desktop Date Popover */}
-              {showDateDropdown && (
-                <div className="hidden sm:block absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Date</span>
-                    {selectedDate && (
-                      <button
-                        onClick={() => {
-                          setSelectedDate(null);
-                          setShowDateDropdown(false);
-                        }}
-                        className="text-xs font-semibold text-red-500 hover:underline"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="date"
-                    value={selectedDate || ""}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value || null);
-                      setShowDateDropdown(false);
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary mb-3"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(todayStr);
-                        setShowDateDropdown(false);
-                      }}
-                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(tomorrowStr);
-                        setShowDateDropdown(false);
-                      }}
-                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
-                    >
-                      Tomorrow
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 2. Today Chip */}
+          <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {/* 1. Today Chip */}
             <button
               type="button"
               onClick={() => setSelectedDate((prev) => (prev === todayStr ? null : todayStr))}
@@ -474,7 +434,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               Today
             </button>
 
-            {/* 3. Tomorrow Chip */}
+            {/* 2. Tomorrow Chip */}
             <button
               type="button"
               onClick={() => setSelectedDate((prev) => (prev === tomorrowStr ? null : tomorrowStr))}
@@ -487,7 +447,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               Tomorrow
             </button>
 
-            {/* 4. City Dropdown Chip */}
+            {/* 3. City Dropdown Chip */}
             <div className="relative shrink-0" ref={cityDropdownRef}>
               <button
                 type="button"
@@ -569,7 +529,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               )}
             </div>
 
-            {/* 5. Category Dropdown Chip */}
+            {/* 4. Category Dropdown Chip */}
             <div className="relative shrink-0" ref={categoryDropdownRef}>
               <button
                 type="button"
@@ -643,6 +603,77 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               )}
             </div>
 
+            {/* 5. Date Dropdown Chip */}
+            <div className="relative shrink-0" ref={dateDropdownRef}>
+              <button
+                type="button"
+                onClick={handleDateClick}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                  selectedDate
+                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <CalendarDays className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-[#6C47FF]"}`} />
+                <span>
+                  {selectedDate
+                    ? new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short" })
+                    : "Date"}
+                </span>
+              </button>
+
+              {/* Desktop Date Popover */}
+              {showDateDropdown && (
+                <div className="hidden sm:block absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in zoom-in-95">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Date</span>
+                    {selectedDate && (
+                      <button
+                        onClick={() => {
+                          setSelectedDate(null);
+                          setShowDateDropdown(false);
+                        }}
+                        className="text-xs font-semibold text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="date"
+                    value={selectedDate || ""}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value || null);
+                      setShowDateDropdown(false);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary mb-3"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(todayStr);
+                        setShowDateDropdown(false);
+                      }}
+                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(tomorrowStr);
+                        setShowDateDropdown(false);
+                      }}
+                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Tomorrow
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* 6. Reset Filters Chip */}
             {hasActiveFilters && (
               <button
@@ -656,25 +687,6 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               </button>
             )}
           </div>
-
-          {/* Active Date Indicator Tag */}
-          {selectedDate && (
-            <div className="flex items-center justify-between bg-purple-50/90 border border-purple-200/80 rounded-xl px-3.5 py-2 mt-2">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-[#6C47FF]" />
-                <span className="text-xs font-bold text-[#6C47FF]">
-                  Showing events for {new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
-                </span>
-              </div>
-              <button
-                onClick={() => setSelectedDate(null)}
-                className="text-red-500 hover:text-red-600 text-xs font-bold transition-colors"
-                aria-label="Clear date filter"
-              >
-                Clear
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Results Section */}
