@@ -11,7 +11,6 @@ import {
   ArrowRight, 
   MapPin, 
   GraduationCap, 
-  Sparkles,
   Users,
   Compass
 } from "lucide-react";

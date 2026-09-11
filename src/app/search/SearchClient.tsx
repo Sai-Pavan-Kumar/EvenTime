@@ -419,27 +419,29 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
 
         {/* Filter Chips Bar Container */}
         <div className="max-w-3xl sm:max-w-none mx-auto mb-4 sm:mb-6">
-          {/* Quick Filter Chips Bar: horizontal scroll on mobile, unclipped overflow on desktop */}
-          <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {/* 1. Date Dropdown Chip */}
-            <div className="relative shrink-0" ref={dateDropdownRef}>
-              <button
-                type="button"
-                onClick={handleDateClick}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                  selectedDate
-                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
-                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <CalendarDays className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-[#6C47FF]"}`} />
-                <span>
-                  {selectedDate
-                    ? new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                    : "Date"}
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-slate-400"}`} />
-              </button>
+          {(() => {
+            const isCustomDate = Boolean(selectedDate && selectedDate !== todayStr && selectedDate !== tomorrowStr);
+            return (
+              <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {/* 1. Date Dropdown Chip */}
+                <div className="relative shrink-0" ref={dateDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={handleDateClick}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                      isCustomDate
+                        ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <CalendarDays className={`w-3.5 h-3.5 ${isCustomDate ? "text-white" : "text-[#6C47FF]"}`} />
+                    <span>
+                      {isCustomDate
+                        ? new Date(selectedDate!).toLocaleDateString("en-US", { day: "numeric", month: "short" })
+                        : "Date"}
+                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 ${isCustomDate ? "text-white" : "text-slate-400"}`} />
+                  </button>
 
               {/* Desktop Date Popover */}
               {showDateDropdown && (
@@ -688,7 +690,9 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               </button>
             )}
           </div>
-        </div>
+        );
+      })()}
+    </div>
 
         {/* Results Section */}
         {isLoading ? (

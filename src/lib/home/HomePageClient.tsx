@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { CalendarDays, Search, Building2, SearchX, ArrowRight, X, Sparkles } from "lucide-react";
+import { CalendarDays, Search, Building2, SearchX, ArrowRight, X } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
@@ -309,7 +309,7 @@ export function HomePageClient(props: HomePageClientProps) {
       
       if (date) {
         if (e.date_string !== date) match = false;
-        if (!location && !cityMatch(e)) match = false;
+        if (location && !e.city?.toLowerCase().includes(location.toLowerCase()) && !e.location?.toLowerCase().includes(location.toLowerCase())) match = false;
       } else {
         if (branch && !e.branch_tags?.includes(branch)) match = false;
         if (category && e.category !== category) match = false;
@@ -494,13 +494,15 @@ export function HomePageClient(props: HomePageClientProps) {
                         : 'Your Campus'}
                     </h2>
                     <span className="text-xs sm:text-sm font-bold text-slate-400">
-                      {!user
-                        ? `${allUpcomingEvents.length} events`
+                      {date
+                        ? `${filteredAllEvents.length} ${filteredAllEvents.length === 1 ? 'event' : 'events'}`
+                        : !user
+                        ? `${allUpcomingEvents.length} ${allUpcomingEvents.length === 1 ? 'event' : 'events'}`
                         : activeFeedPill === 'for_you' 
-                        ? `${upcomingForYouCount} events` 
+                        ? `${upcomingForYouCount} ${upcomingForYouCount === 1 ? 'event' : 'events'}` 
                         : activeFeedPill === 'around_you' 
-                        ? `${upcomingAroundYouCount} events` 
-                        : `${upcomingCollegeCount} events`}
+                        ? `${upcomingAroundYouCount} ${upcomingAroundYouCount === 1 ? 'event' : 'events'}` 
+                        : `${upcomingCollegeCount} ${upcomingCollegeCount === 1 ? 'event' : 'events'}`}
                     </span>
                   </div>
                   {branch && <p className="text-slate-500 text-sm font-medium mt-1">Showing results for branch: {branch}</p>}
@@ -652,10 +654,11 @@ export function HomePageClient(props: HomePageClientProps) {
                       return toMinutes(a.start_time) - toMinutes(b.start_time);
                     });
                   
-                    // For guests (!user): show strictly the first 8 events across present to future dates
+                    // For guests (!user): show strictly 4 events first; "Show More" reveals next 4 (max 8)
                     const isGuest = !user;
+                    const guestLimit = feedLoadStage === 0 ? 4 : 8;
                     const eventsToShow = isGuest
-                      ? sortedEvents.slice(0, 8)
+                      ? sortedEvents.slice(0, guestLimit)
                       : (() => {
                           const rowSize = isMobile ? 2 : 4;
                           const maxEvents =
@@ -677,32 +680,46 @@ export function HomePageClient(props: HomePageClientProps) {
                         />
                         
                         {isGuest ? (
-                          <div className="mt-10 p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center flex flex-col items-center justify-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
-                              <Sparkles className="w-6 h-6" />
-                            </div>
-                            <div className="max-w-md">
-                              <h3 className="text-xl font-bold font-heading text-slate-900 font-['Outfit']">
-                                Want to explore all events across India?
-                              </h3>
-                              <p className="text-sm text-slate-500 font-['Switzer',sans-serif] mt-1">
-                                Sign in to discover hackathons, tech meetups, and college fests with personalized matching and instant RSVPs.
-                              </p>
-                            </div>
-                            <Link
-                              href="/login"
-                              className="px-6 py-3 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-full shadow-md shadow-brand-primary/20 transition-all active:scale-95 flex items-center gap-2"
-                            >
-                              <span>Sign In / Create Account</span>
-                              <ArrowRight className="w-4 h-4" />
-                            </Link>
-                          </div>
+                          <>
+                            {/* If at stage 0 and there are more than 4 events, show "Show More" */}
+                            {feedLoadStage === 0 && sortedEvents.length > 4 ? (
+                              <div className="flex justify-center pt-6">
+                                <button
+                                  type="button"
+                                  onClick={() => setFeedLoadStage(1)}
+                                  className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group cursor-pointer"
+                                >
+                                  <span>Show More</span>
+                                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+                                </button>
+                              </div>
+                            ) : (
+                              /* After clicking Show More (or if total events <= 4), show Sign In CTA card */
+                              <div className="mt-8 p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center flex flex-col items-center justify-center gap-4">
+                                <div className="max-w-md">
+                                  <h3 className="text-xl font-bold font-heading text-slate-900 font-['Outfit']">
+                                    Want to explore all events across India?
+                                  </h3>
+                                  <p className="text-sm text-slate-500 font-['Switzer',sans-serif] mt-1">
+                                    Sign in to discover hackathons, tech meetups, and college fests with personalized matching and instant RSVPs.
+                                  </p>
+                                </div>
+                                <Link
+                                  href="/login"
+                                  className="px-6 py-3 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-full shadow-md shadow-brand-primary/20 transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                  <span>Sign In to view all</span>
+                                  <ArrowRight className="w-4 h-4" />
+                                </Link>
+                              </div>
+                            )}
+                          </>
                         ) : (
                           sortedEvents.length > eventsToShow.length && (
                             <div className="flex justify-center pt-8">
                               <button
                                 onClick={() => setFeedLoadStage((s) => s + 1)}
-                                className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
+                                className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group cursor-pointer"
                               >
                                 Load More
                                 <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
