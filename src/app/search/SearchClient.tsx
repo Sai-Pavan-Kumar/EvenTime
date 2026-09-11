@@ -705,7 +705,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
           <div className="text-center py-14 sm:py-20 px-4">
             <div className="relative w-44 h-44 mx-auto mb-4">
               <Image
-                src="/illustrations/search_state.webp"
+                src="/illustrations/Search_state.webp"
                 alt="No events found"
                 fill
                 className="object-contain"

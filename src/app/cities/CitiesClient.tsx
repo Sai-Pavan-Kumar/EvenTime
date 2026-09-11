@@ -118,7 +118,7 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
           <div className="py-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
             <div className="relative w-48 h-48 mb-4">
               <Image
-                src="/illustrations/search_state.webp"
+                src="/illustrations/Search_state.webp"
                 alt="No active events"
                 fill
                 className="object-contain"

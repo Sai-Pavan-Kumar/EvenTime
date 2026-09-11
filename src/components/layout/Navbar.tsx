@@ -520,7 +520,7 @@ function NavbarInner({
         {!searchQuery.trim() && !categoryParam && !locationParam ? (
           <div className="flex flex-col items-center justify-center mt-4">
             <div className="relative w-64 h-64 mb-4">
-                  <Image src="/illustrations/search_state.webp" alt="Search events" fill className="object-contain" />
+                  <Image src="/illustrations/Search_state.webp" alt="Search events" fill className="object-contain" />
                 </div>
                 <p className="text-sm text-slate-400 font-medium text-center">Start typing or pick a filter to see events...</p>
               </div>

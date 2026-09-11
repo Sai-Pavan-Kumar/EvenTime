@@ -334,7 +334,7 @@ export function LeaderboardClient() {
         /* Empty State matching app */
         <div className="flex flex-col items-center justify-center bg-white rounded-3xl p-10 md:p-16 border border-slate-200 shadow-sm max-w-xl mx-auto text-center mb-16">
           <div className="w-36 h-36 relative mb-4">
-            <Image src="/throne-empty.webp" alt="Empty throne" fill className="object-contain" priority />
+            <Image src="/Throne_empty.webp" alt="Empty throne" fill className="object-contain" priority />
           </div>
           <h3 className="text-2xl font-black text-slate-900 font-heading mb-2">
             {activeCohort === "campus"

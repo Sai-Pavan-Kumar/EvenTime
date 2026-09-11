@@ -526,7 +526,7 @@ function ProfileContent() {
               {activeTab === "saved" && savedEvents.length === 0 && (
                 <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                   <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-6">
-                    <Image src="/empty-saved.webp" alt="No Saved Events" fill className="object-contain" priority />
+                    <Image src="/Empty_saved.webp" alt="No Saved Events" fill className="object-contain" priority />
                   </div>
                   <h3 className="text-slate-900 font-bold text-xl">No Saved Events</h3>
                   <p className="text-slate-500 font-medium text-sm mt-2 leading-relaxed max-w-[380px] mx-auto">
@@ -571,7 +571,7 @@ function ProfileContent() {
                 ) : (
                   <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
                     <div className="relative w-full max-w-[280px] sm:max-w-[420px] aspect-video mb-8">
-                      <Image src="/empty-alerts.webp" alt="No Alerts" fill className="object-contain" priority />
+                      <Image src="/Empty_alerts.webp" alt="No Alerts" fill className="object-contain" priority />
                     </div>
                     <h3 className="text-slate-900 font-bold text-xl">No Active Alerts</h3>
                     <p className="text-slate-500 font-medium text-sm mt-3 leading-relaxed max-w-[380px] mx-auto">Your curated events look stellar and community approved!</p>

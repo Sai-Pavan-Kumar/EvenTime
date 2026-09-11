@@ -122,19 +122,33 @@ export function HomePageClient(props: HomePageClientProps) {
       if (!ev) return false;
       if (!studentBranch && !studentGradYear) return true;
 
-      let branchMatch = true;
-      const evBranches = ev.branch_tags || (ev.college_branch ? [ev.college_branch] : []);
-      if (studentBranch && evBranches.length > 0) {
-        branchMatch = evBranches.some((b: string) => {
+      // 1. Branch match: all branches, exact match, or bracketed abbreviation match
+      const evBranch = (ev.college_branch || '').trim().toLowerCase();
+      const evBranches = ev.branch_tags || (evBranch ? [evBranch] : []);
+      let branchMatch = !evBranch || evBranch === 'all branches' || evBranch === 'all';
+      if (!branchMatch && studentBranch) {
+        if (evBranch === studentBranch || evBranches.some((b: string) => {
           const bl = b.toLowerCase();
           return bl === 'all' || bl === 'all branches' || bl === studentBranch;
-        });
+        })) {
+          branchMatch = true;
+        } else {
+          // Check bracketed abbreviation if exists, e.g. "CSE"
+          const evCode = evBranch.match(/\(([^)]+)\)/)?.[1]?.trim() || '';
+          const sCode = studentBranch.match(/\(([^)]+)\)/)?.[1]?.trim() || '';
+          if (evCode && sCode && evCode === sCode) {
+            branchMatch = true;
+          }
+        }
       }
 
-      let yearMatch = true;
-      const evYear = ev.college_year ? String(ev.college_year).trim().toLowerCase() : '';
-      if (studentGradYear && evYear) {
-        yearMatch = evYear === 'all' || evYear === 'all years' || evYear === studentGradYear;
+      // 2. Year match: all years or exact match
+      const evYear = (ev.college_year || '').toString().trim().toLowerCase();
+      let yearMatch = !evYear || evYear === 'all years' || evYear === 'all';
+      if (!yearMatch && studentGradYear) {
+        if (evYear === studentGradYear) {
+          yearMatch = true;
+        }
       }
 
       return branchMatch && yearMatch;
@@ -251,14 +265,23 @@ export function HomePageClient(props: HomePageClientProps) {
       const fetchCollegeEvents = async () => {
         const supabase = createClient();
         const todayStr = new Date().toISOString().substring(0, 10);
-        const { data: cEvents } = await supabase
+        let query = supabase
           .from("events")
-          .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)")
+          .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, college_branch, college_year, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)")
           .eq("status", "approved")
-          .eq("college_id", profile.college_id!)
-          .gte("date_string", todayStr)
+          .eq("college_id", profile.college_id!);
+
+        if (date) {
+          query = query.eq("date_string", date);
+        } else {
+          query = query.gte("date_string", todayStr);
+        }
+
+        const { data: cEvents } = await query
+          .order("date_string", { ascending: true })
           .order("created_at", { ascending: false })
-          .limit(8);
+          .limit(50);
+
         if (cEvents) {
           setLiveCollegeEvents(cEvents as any);
           setLocalCampusEvents(cEvents as any);
@@ -266,7 +289,7 @@ export function HomePageClient(props: HomePageClientProps) {
       };
       fetchCollegeEvents();
     }
-  }, [profile?.user_type, profile?.college_id]);
+  }, [profile?.user_type, profile?.college_id, date]);
 
   // Smart cascading filters: options in each dropdown narrow down based on
   // the OTHER filter currently selected — computed from already-loaded
@@ -737,16 +760,29 @@ export function HomePageClient(props: HomePageClientProps) {
                     const isCampusBatchEmpty = activeFeedPill === 'campus' && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
                     const isCampusEmpty = activeFeedPill === 'campus' && liveCollegeEvents.length === 0;
                     const isForYouEmpty = (user || profile) && activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
+                    const isAroundYouEmpty = (user || profile) && activeFeedPill === 'around_you' && liveAroundYouEvents.length === 0 && !date;
                     const isGuestEmpty = !user && !profile && upcomingEvents.length === 0;
                     
+                    const emptyImageSrc = isCampusBatchEmpty
+                      ? "/eligible_for_me.webp"
+                      : isCampusEmpty
+                      ? "/no_college_events.webp"
+                      : isForYouEmpty
+                      ? "/For_you.webp"
+                      : isAroundYouEmpty
+                      ? "/Around_you.webp"
+                      : "/illustrations/Empty_state.webp";
+
                     const title = isGuestEmpty
                       ? "No Upcoming Events Yet"
                       : isCampusBatchEmpty
                       ? "No Specific Batch Events"
                       : isCampusEmpty
-                      ? "No Campus Events"
+                      ? (date ? "No Events Scheduled" : "No Campus Events")
                       : isForYouEmpty
                       ? (liveAroundYouEvents.length > 0 ? "No Events In Your Categories" : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'Your City'))
+                      : isAroundYouEmpty
+                      ? (livePersonalizedEvents.length > 0 ? "All caught up in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + "!" : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city'))
                       : isPastDate
                       ? "No past events"
                       : "No exact matches";
@@ -756,11 +792,15 @@ export function HomePageClient(props: HomePageClientProps) {
                       : isCampusBatchEmpty
                       ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
                       : isCampusEmpty
-                      ? "There are no private events currently listed for your campus. Host one for your college!"
+                      ? (date ? "There are no events scheduled for this date. Be the first to host one!" : "There are no private events currently listed for your campus. Host one for your college!")
                       : isForYouEmpty
                       ? (liveAroundYouEvents.length > 0
                         ? "Events are happening in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ", but none currently match your selected interest categories. Explore 'Around You' to discover them, or update your preferences in Profile!"
                         : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community buzzing!")
+                      : isAroundYouEmpty
+                      ? (livePersonalizedEvents.length > 0
+                        ? "All scheduled events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + " currently match your selected interests and are waiting in 'For You'. Check back soon as new categories are added!"
+                        : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community started!")
                       : isPastDate 
                       ? "There were no events hosted on this date." 
                       : q ? `We couldn't find any events for "${q}". But the stage is never empty.` 
@@ -768,27 +808,48 @@ export function HomePageClient(props: HomePageClientProps) {
                       : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
                       : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
 
-                    const showBtn = isCampusBatchEmpty || isCampusEmpty || isGuestEmpty || !isPastDate;
+                    const showBtn = isCampusBatchEmpty || isCampusEmpty || isForYouEmpty || isAroundYouEmpty || isGuestEmpty || !isPastDate;
                     const btnText = isGuestEmpty
                       ? "Sign In / Sign Up"
                       : isCampusBatchEmpty 
                       ? "Show All Campus Events" 
                       : isCampusEmpty 
-                      ? "Host an Event" 
+                      ? (date ? "Clear Date" : "Host an Event") 
                       : isForYouEmpty
                       ? (liveAroundYouEvents.length > 0 ? "Explore Around You" : "Update Preferences")
+                      : isAroundYouEmpty
+                      ? (livePersonalizedEvents.length > 0 ? "View For You" : "Update Cities")
                       : "Be the first to host one";
+
+                    const onAction = isCampusBatchEmpty
+                      ? () => setCampusFilterMode('all')
+                      : isForYouEmpty && liveAroundYouEvents.length > 0
+                      ? () => setActiveFeedPill('around_you')
+                      : isAroundYouEmpty && livePersonalizedEvents.length > 0
+                      ? () => setActiveFeedPill('for_you')
+                      : undefined;
+
+                    const actionHref = isGuestEmpty
+                      ? "/login"
+                      : isCampusEmpty
+                      ? (date ? "/" : "/events/new")
+                      : isForYouEmpty && liveAroundYouEvents.length === 0
+                      ? "/profile"
+                      : isAroundYouEmpty && livePersonalizedEvents.length === 0
+                      ? "/profile"
+                      : undefined;
                     
                     return (
                       <div className="col-span-full">
                         <EmptyState 
                           title={title}
                           message={message}
+                          imageSrc={emptyImageSrc}
                           variant="default"
                           showButton={showBtn}
                           buttonText={btnText}
-                          onAction={isCampusBatchEmpty ? () => setCampusFilterMode('all') : isForYouEmpty && liveAroundYouEvents.length > 0 ? () => setActiveFeedPill('around_you') : undefined}
-                          actionHref={isGuestEmpty ? "/login" : isCampusEmpty ? "/events/new" : isForYouEmpty && liveAroundYouEvents.length === 0 ? "/profile" : undefined}
+                          onAction={onAction}
+                          actionHref={actionHref}
                         />
                       
                         {clientIsFallback && clientFallbackEvents.length > 0 && (
