@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { CalendarDays, Search, Building2, SearchX, ArrowRight, X } from "lucide-react";
+import { CalendarDays, Search, Building2, SearchX, ArrowRight, X, Sparkles } from "lucide-react";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
@@ -299,7 +299,7 @@ export function HomePageClient(props: HomePageClientProps) {
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
-  const showFeedPills = noFiltersActive;
+  const showFeedPills = Boolean(user && profile && noFiltersActive);
 
   let filteredAllEvents = liveAllEvents || [];
 
@@ -329,17 +329,22 @@ export function HomePageClient(props: HomePageClientProps) {
     });
   }
 
-   const gridSource = !noFiltersActive
-    ? filteredAllEvents
-    : showFeedPills
-      ? (activeFeedPill === 'campus' ? displayedCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
-      : liveAroundYouEvents;
-
   const isUpcoming = (e: Partial<EventRow>) => {
-  const checkDate = parseEventDateString(e.date_string || "");
-  if (!checkDate) return true;
+    const checkDate = parseEventDateString(e.date_string || "");
+    if (!checkDate) return true;
     return differenceInCalendarDays(checkDate, new Date()) >= 0;
   };
+
+  const allUpcomingEvents = useMemo(() => {
+    return (liveAllEvents || []).filter(isUpcoming);
+  }, [liveAllEvents]);
+
+  const gridSource = !noFiltersActive
+    ? filteredAllEvents
+    : user
+      ? (activeFeedPill === 'campus' ? displayedCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
+      : allUpcomingEvents;
+
   const upcomingForYouCount = livePersonalizedEvents.filter(isUpcoming).length;
   const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcoming).length;
   const upcomingCollegeCount = liveCollegeEvents.filter(isUpcoming).length;
@@ -355,80 +360,82 @@ export function HomePageClient(props: HomePageClientProps) {
     <main className="min-h-screen bg-surface-base">
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
 
-      {/* Top Stationary Greeting and Feed Segmented Tabs (Matching mobile app design) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-3 pb-1">
-        <div className="flex flex-col gap-2.5">
-          <h1 className="text-[22px] sm:text-2xl font-heading font-black text-[#0F172A] tracking-[-0.4px] truncate">
-            {(() => {
-              const h = new Date().getHours();
-              const rawName = profile?.username?.trim() || profile?.full_name?.split(" ")[0]?.trim() || (user ? undefined : "explorer");
-              const name = rawName ? (rawName.length > 12 ? rawName.slice(0, 12) : rawName) : "there";
-              if (h >= 6 && h < 9) return `Morning, ${name}.`;
-              if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
-              if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
-              if (h >= 14 && h < 17) return `Lunch done, ${name}?`;
-              if (h >= 17 && h < 18) return `Snack time, ${name}.`;
-              if (h >= 18 && h < 20) return `Evening, ${name}.`;
-              if (h >= 20 && h < 22) return `Dinner time, ${name}.`;
-              if (h >= 22 && h < 23) return `Dinner done yet, ${name}?`;
-              if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
-              if (h >= 0 && h < 4) return `Still up, ${name}?`;
-              return `Up early, ${name}?`;
-            })()}
-          </h1>
+      {/* Top Stationary Greeting and Feed Segmented Tabs (Only for logged-in users) */}
+      {Boolean(user && profile) && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-3 pb-1">
+          <div className="flex flex-col gap-2.5">
+            <h1 className="text-[22px] sm:text-2xl font-heading font-black text-[#0F172A] tracking-[-0.4px] truncate">
+              {(() => {
+                const h = new Date().getHours();
+                const rawName = profile?.username?.trim() || profile?.full_name?.split(" ")[0]?.trim();
+                const name = rawName ? (rawName.length > 12 ? rawName.slice(0, 12) : rawName) : "there";
+                if (h >= 6 && h < 9) return `Morning, ${name}.`;
+                if (h >= 9 && h < 12) return `Tiffin time, ${name}.`;
+                if (h >= 12 && h < 14) return `Afternoon, ${name}.`;
+                if (h >= 14 && h < 17) return `Lunch done, ${name}?`;
+                if (h >= 17 && h < 18) return `Snack time, ${name}.`;
+                if (h >= 18 && h < 20) return `Evening, ${name}.`;
+                if (h >= 20 && h < 22) return `Dinner time, ${name}.`;
+                if (h >= 22 && h < 23) return `Dinner done yet, ${name}?`;
+                if (h >= 23 || h < 0) return `Night, ${name} — sleep well.`;
+                if (h >= 0 && h < 4) return `Still up, ${name}?`;
+                return `Up early, ${name}?`;
+              })()}
+            </h1>
 
-          {showFeedPills && (
-            <div className="w-full max-w-md bg-[#F1F5F9] rounded-[14px] p-[3px] flex items-center h-11 relative">
-              <button
-                type="button"
-                onClick={() => setActiveFeedPill('for_you')}
-                className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
-                  activeFeedPill === 'for_you'
-                    ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                <span>For You</span>
-                <span className={`text-[11px] font-semibold ${activeFeedPill === 'for_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
-                  ({upcomingForYouCount})
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveFeedPill('around_you')}
-                className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
-                  activeFeedPill === 'around_you'
-                    ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
-                    : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                <span>Around You</span>
-                <span className={`text-[11px] font-semibold ${activeFeedPill === 'around_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
-                  ({upcomingAroundYouCount})
-                </span>
-              </button>
-
-              {isCollegeStudent && (
+            {showFeedPills && (
+              <div className="w-full max-w-md bg-[#F1F5F9] rounded-[14px] p-[3px] flex items-center h-11 relative">
                 <button
                   type="button"
-                  onClick={() => setActiveFeedPill('campus')}
+                  onClick={() => setActiveFeedPill('for_you')}
                   className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
-                    activeFeedPill === 'campus'
+                    activeFeedPill === 'for_you'
                       ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
                       : 'text-[#64748B] hover:text-[#0F172A]'
                   }`}
                 >
-                  <span>Your Campus</span>
-                  <span className={`text-[11px] font-semibold ${activeFeedPill === 'campus' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
-                    ({upcomingCollegeCount})
+                  <span>For You</span>
+                  <span className={`text-[11px] font-semibold ${activeFeedPill === 'for_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                    ({upcomingForYouCount})
                   </span>
                 </button>
-              )}
-            </div>
-          )}
+
+                <button
+                  type="button"
+                  onClick={() => setActiveFeedPill('around_you')}
+                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                    activeFeedPill === 'around_you'
+                      ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
+                      : 'text-[#64748B] hover:text-[#0F172A]'
+                  }`}
+                >
+                  <span>Around You</span>
+                  <span className={`text-[11px] font-semibold ${activeFeedPill === 'around_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                    ({upcomingAroundYouCount})
+                  </span>
+                </button>
+
+                {isCollegeStudent && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveFeedPill('campus')}
+                    className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                      activeFeedPill === 'campus'
+                        ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
+                        : 'text-[#64748B] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <span>Your Campus</span>
+                    <span className={`text-[11px] font-semibold ${activeFeedPill === 'campus' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
+                      ({upcomingCollegeCount})
+                    </span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Onboarding check: don't show until auth finishes checking */}
       {!isAuthLoading && !profile?.is_onboarded && (<OnboardingModal user={user} profile={profile} />
@@ -478,6 +485,8 @@ export function HomePageClient(props: HomePageClientProps) {
                         ? `${category}s in ${location === "online" ? "Online" : location}`
                         : date
                         ? `Events on ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`
+                        : !user
+                        ? "What's Happening"
                         : activeFeedPill === 'for_you'
                         ? 'For You'
                         : activeFeedPill === 'around_you'
@@ -485,7 +494,9 @@ export function HomePageClient(props: HomePageClientProps) {
                         : 'Your Campus'}
                     </h2>
                     <span className="text-xs sm:text-sm font-bold text-slate-400">
-                      {activeFeedPill === 'for_you' 
+                      {!user
+                        ? `${allUpcomingEvents.length} events`
+                        : activeFeedPill === 'for_you' 
                         ? `${upcomingForYouCount} events` 
                         : activeFeedPill === 'around_you' 
                         ? `${upcomingAroundYouCount} events` 
@@ -641,13 +652,18 @@ export function HomePageClient(props: HomePageClientProps) {
                       return toMinutes(a.start_time) - toMinutes(b.start_time);
                     });
                   
-                    // Row-based staged reveal: 2 rows first, then 4 rows total, then +3 rows each click
-                    const rowSize = isMobile ? 2 : 4;
-                    const maxEvents =
-                      feedLoadStage === 0 ? rowSize * 2 :
-                      feedLoadStage === 1 ? rowSize * 4 :
-                      rowSize * 4 + rowSize * 3 * (feedLoadStage - 1);
-                    const eventsToShow = sortedEvents.slice(0, maxEvents);
+                    // For guests (!user): show strictly the first 8 events across present to future dates
+                    const isGuest = !user;
+                    const eventsToShow = isGuest
+                      ? sortedEvents.slice(0, 8)
+                      : (() => {
+                          const rowSize = isMobile ? 2 : 4;
+                          const maxEvents =
+                            feedLoadStage === 0 ? rowSize * 2 :
+                            feedLoadStage === 1 ? rowSize * 4 :
+                            rowSize * 4 + rowSize * 3 * (feedLoadStage - 1);
+                          return sortedEvents.slice(0, maxEvents);
+                        })();
 
                     return (
                       <div className="space-y-12">
@@ -660,16 +676,39 @@ export function HomePageClient(props: HomePageClientProps) {
                           isPastDateView={!!date && date < new Date().toISOString().substring(0, 10)}
                         />
                         
-                        {sortedEvents.length > maxEvents && (
-                          <div className="flex justify-center pt-8">
-                            <button
-                              onClick={() => setFeedLoadStage((s) => s + 1)}
-                              className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
+                        {isGuest ? (
+                          <div className="mt-10 p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center flex flex-col items-center justify-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-brand-primary/10 flex items-center justify-center text-brand-primary">
+                              <Sparkles className="w-6 h-6" />
+                            </div>
+                            <div className="max-w-md">
+                              <h3 className="text-xl font-bold font-heading text-slate-900 font-['Outfit']">
+                                Want to explore all events across India?
+                              </h3>
+                              <p className="text-sm text-slate-500 font-['Switzer',sans-serif] mt-1">
+                                Sign in to discover hackathons, tech meetups, and college fests with personalized matching and instant RSVPs.
+                              </p>
+                            </div>
+                            <Link
+                              href="/login"
+                              className="px-6 py-3 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-full shadow-md shadow-brand-primary/20 transition-all active:scale-95 flex items-center gap-2"
                             >
-                              Load More
-                              <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
-                            </button>
+                              <span>Sign In / Create Account</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </Link>
                           </div>
+                        ) : (
+                          sortedEvents.length > eventsToShow.length && (
+                            <div className="flex justify-center pt-8">
+                              <button
+                                onClick={() => setFeedLoadStage((s) => s + 1)}
+                                className="px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group"
+                              >
+                                Load More
+                                <ArrowRight className="w-5 h-5 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
+                              </button>
+                            </div>
+                          )
                         )}
                       </div>
                     );
@@ -680,9 +719,12 @@ export function HomePageClient(props: HomePageClientProps) {
                     
                     const isCampusBatchEmpty = activeFeedPill === 'campus' && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
                     const isCampusEmpty = activeFeedPill === 'campus' && liveCollegeEvents.length === 0;
-                    const isForYouEmpty = activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
+                    const isForYouEmpty = user && activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
+                    const isGuestEmpty = !user && upcomingEvents.length === 0;
                     
-                    const title = isCampusBatchEmpty
+                    const title = isGuestEmpty
+                      ? "No Upcoming Events Yet"
+                      : isCampusBatchEmpty
                       ? "No Specific Batch Events"
                       : isCampusEmpty
                       ? "No Campus Events"
@@ -692,7 +734,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       ? "No past events"
                       : "No exact matches";
 
-                    const message = isCampusBatchEmpty
+                    const message = isGuestEmpty
+                      ? "Stay tuned! New hackathons, workshops, and tech events across India are added regularly."
+                      : isCampusBatchEmpty
                       ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
                       : isCampusEmpty
                       ? "There are no private events currently listed for your campus. Host one for your college!"
@@ -707,8 +751,10 @@ export function HomePageClient(props: HomePageClientProps) {
                       : category ? `No ${category}s happening right now. Try changing your city or category filters for better matches.` 
                       : `We couldn't find exactly what you're looking for. Try changing your city or category filters for better matches.`;
 
-                    const showBtn = isCampusBatchEmpty || isCampusEmpty || !isPastDate;
-                    const btnText = isCampusBatchEmpty 
+                    const showBtn = isCampusBatchEmpty || isCampusEmpty || isGuestEmpty || !isPastDate;
+                    const btnText = isGuestEmpty
+                      ? "Sign In / Sign Up"
+                      : isCampusBatchEmpty 
                       ? "Show All Campus Events" 
                       : isCampusEmpty 
                       ? "Host an Event" 
@@ -725,7 +771,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           showButton={showBtn}
                           buttonText={btnText}
                           onAction={isCampusBatchEmpty ? () => setCampusFilterMode('all') : isForYouEmpty && liveAroundYouEvents.length > 0 ? () => setActiveFeedPill('around_you') : undefined}
-                          actionHref={isCampusEmpty ? "/events/new" : isForYouEmpty && liveAroundYouEvents.length === 0 ? "/profile" : undefined}
+                          actionHref={isGuestEmpty ? "/login" : isCampusEmpty ? "/events/new" : isForYouEmpty && liveAroundYouEvents.length === 0 ? "/profile" : undefined}
                         />
                       
                         {clientIsFallback && clientFallbackEvents.length > 0 && (

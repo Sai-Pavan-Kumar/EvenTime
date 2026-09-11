@@ -421,7 +421,79 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
         <div className="max-w-3xl sm:max-w-none mx-auto mb-4 sm:mb-6">
           {/* Quick Filter Chips Bar: horizontal scroll on mobile, unclipped overflow on desktop */}
           <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible py-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {/* 1. Today Chip */}
+            {/* 1. Date Dropdown Chip */}
+            <div className="relative shrink-0" ref={dateDropdownRef}>
+              <button
+                type="button"
+                onClick={handleDateClick}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
+                  selectedDate
+                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
+                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <CalendarDays className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-[#6C47FF]"}`} />
+                <span>
+                  {selectedDate
+                    ? new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short" })
+                    : "Date"}
+                </span>
+                <ChevronDown className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-slate-400"}`} />
+              </button>
+
+              {/* Desktop Date Popover */}
+              {showDateDropdown && (
+                <div className="hidden sm:block absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in zoom-in-95">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Date</span>
+                    {selectedDate && (
+                      <button
+                        onClick={() => {
+                          setSelectedDate(null);
+                          setShowDateDropdown(false);
+                        }}
+                        className="text-xs font-semibold text-red-500 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="date"
+                    value={selectedDate || ""}
+                    onChange={(e) => {
+                      setSelectedDate(e.target.value || null);
+                      setShowDateDropdown(false);
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary mb-3"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(todayStr);
+                        setShowDateDropdown(false);
+                      }}
+                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate(tomorrowStr);
+                        setShowDateDropdown(false);
+                      }}
+                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
+                    >
+                      Tomorrow
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Today Chip */}
             <button
               type="button"
               onClick={() => setSelectedDate((prev) => (prev === todayStr ? null : todayStr))}
@@ -434,7 +506,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               Today
             </button>
 
-            {/* 2. Tomorrow Chip */}
+            {/* 3. Tomorrow Chip */}
             <button
               type="button"
               onClick={() => setSelectedDate((prev) => (prev === tomorrowStr ? null : tomorrowStr))}
@@ -447,7 +519,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               Tomorrow
             </button>
 
-            {/* 3. City Dropdown Chip */}
+            {/* 4. City Dropdown Chip */}
             <div className="relative shrink-0" ref={cityDropdownRef}>
               <button
                 type="button"
@@ -529,7 +601,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
               )}
             </div>
 
-            {/* 4. Category Dropdown Chip */}
+            {/* 5. Category Dropdown Chip */}
             <div className="relative shrink-0" ref={categoryDropdownRef}>
               <button
                 type="button"
@@ -598,77 +670,6 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
                         </button>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* 5. Date Dropdown Chip */}
-            <div className="relative shrink-0" ref={dateDropdownRef}>
-              <button
-                type="button"
-                onClick={handleDateClick}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border ${
-                  selectedDate
-                    ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
-                    : "bg-white text-slate-700 border-slate-200 hover:border-slate-300"
-                }`}
-              >
-                <CalendarDays className={`w-3.5 h-3.5 ${selectedDate ? "text-white" : "text-[#6C47FF]"}`} />
-                <span>
-                  {selectedDate
-                    ? new Date(selectedDate).toLocaleDateString("en-US", { day: "numeric", month: "short" })
-                    : "Date"}
-                </span>
-              </button>
-
-              {/* Desktop Date Popover */}
-              {showDateDropdown && (
-                <div className="hidden sm:block absolute left-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 z-50 animate-in fade-in zoom-in-95">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Date</span>
-                    {selectedDate && (
-                      <button
-                        onClick={() => {
-                          setSelectedDate(null);
-                          setShowDateDropdown(false);
-                        }}
-                        className="text-xs font-semibold text-red-500 hover:underline"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="date"
-                    value={selectedDate || ""}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value || null);
-                      setShowDateDropdown(false);
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary mb-3"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(todayStr);
-                        setShowDateDropdown(false);
-                      }}
-                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate(tomorrowStr);
-                        setShowDateDropdown(false);
-                      }}
-                      className="flex-1 py-1.5 bg-purple-50 text-brand-primary text-xs font-bold rounded-lg hover:bg-purple-100 transition-colors"
-                    >
-                      Tomorrow
-                    </button>
                   </div>
                 </div>
               )}
