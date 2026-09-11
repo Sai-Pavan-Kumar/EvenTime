@@ -109,7 +109,7 @@ export function HomePageClient(props: HomePageClientProps) {
     return (cached?.goals && cached.goals.length > 0) ? 'for_you' : 'around_you';
   });
   
-  const isCollegeStudent = !!(user && profile?.user_type === 'student' && profile?.college_id);
+  const isCollegeStudent = !!((user || profile) && profile?.user_type === 'student' && profile?.college_id);
 
   // Apple-grade Campus Batch Eligibility Filter (All Events vs Eligible for Me)
   const [campusFilterMode, setCampusFilterMode] = useState<'all' | 'eligible'>('all');
@@ -153,7 +153,7 @@ export function HomePageClient(props: HomePageClientProps) {
     return liveCollegeEvents;
   }, [campusFilterMode, eligibleCollegeEvents, liveCollegeEvents]);  
 
-  const isLandingPage = !user && !q && !date && !category;
+  const isLandingPage = !user && !profile && !q && !date && !category;
   const [feedLoadStage, setFeedLoadStage] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -299,7 +299,7 @@ export function HomePageClient(props: HomePageClientProps) {
   // Filtering Logic instantly applies without server hits
   const noFiltersActive = !q && !category && !location && !date && !branch;
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
-  const showFeedPills = Boolean(user && profile && noFiltersActive);
+  const showFeedPills = Boolean((user || profile) && profile && noFiltersActive);
 
   let filteredAllEvents = liveAllEvents || [];
 
@@ -341,7 +341,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
   const gridSource = !noFiltersActive
     ? filteredAllEvents
-    : user
+    : (user || profile)
       ? (activeFeedPill === 'campus' ? displayedCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : allUpcomingEvents;
 
@@ -361,7 +361,7 @@ export function HomePageClient(props: HomePageClientProps) {
       <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
 
       {/* Top Stationary Greeting and Feed Segmented Tabs (Only for logged-in users) */}
-      {Boolean(user && profile) && (
+      {Boolean((user || profile) && profile) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-3 pb-1">
           <div className="flex flex-col gap-2.5">
             <h1 className="text-[22px] sm:text-2xl font-heading font-black text-[#0F172A] tracking-[-0.4px] truncate">
@@ -485,7 +485,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         ? `${category}s in ${location === "online" ? "Online" : location}`
                         : date
                         ? `Events on ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`
-                        : !user
+                        : (!user && !profile)
                         ? "What's Happening"
                         : activeFeedPill === 'for_you'
                         ? 'For You'
@@ -496,7 +496,7 @@ export function HomePageClient(props: HomePageClientProps) {
                     <span className="text-xs sm:text-sm font-bold text-slate-400">
                       {date
                         ? `${filteredAllEvents.length} ${filteredAllEvents.length === 1 ? 'event' : 'events'}`
-                        : !user
+                        : (!user && !profile)
                         ? `${allUpcomingEvents.length} ${allUpcomingEvents.length === 1 ? 'event' : 'events'}`
                         : activeFeedPill === 'for_you' 
                         ? `${upcomingForYouCount} ${upcomingForYouCount === 1 ? 'event' : 'events'}` 
@@ -611,7 +611,7 @@ export function HomePageClient(props: HomePageClientProps) {
                                 : (event as any).colleges?.name
                             }
                             interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
-                            isGuest={!user}
+                            isGuest={!user && !profile}
                           />
                         </div>
                       ))}
@@ -654,8 +654,8 @@ export function HomePageClient(props: HomePageClientProps) {
                       return toMinutes(a.start_time) - toMinutes(b.start_time);
                     });
                   
-                    // For guests (!user): show strictly 4 events first; "Show More" reveals next 4 (max 8)
-                    const isGuest = !user;
+                    // For guests (!user && !profile): show strictly 4 events first; "Show More" reveals next 4 (max 8)
+                    const isGuest = !user && !profile;
                     const guestLimit = feedLoadStage === 0 ? 4 : 8;
                     const eventsToShow = isGuest
                       ? sortedEvents.slice(0, guestLimit)
@@ -736,8 +736,8 @@ export function HomePageClient(props: HomePageClientProps) {
                     
                     const isCampusBatchEmpty = activeFeedPill === 'campus' && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
                     const isCampusEmpty = activeFeedPill === 'campus' && liveCollegeEvents.length === 0;
-                    const isForYouEmpty = user && activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
-                    const isGuestEmpty = !user && upcomingEvents.length === 0;
+                    const isForYouEmpty = (user || profile) && activeFeedPill === 'for_you' && livePersonalizedEvents.length === 0 && !date;
+                    const isGuestEmpty = !user && !profile && upcomingEvents.length === 0;
                     
                     const title = isGuestEmpty
                       ? "No Upcoming Events Yet"
