@@ -5,11 +5,11 @@ import { COOKIE_OPTIONS } from '@/lib/constants/cookies';
 export async function proxy(request: NextRequest) {
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.clarity.ms https://us-assets.i.posthog.com https://us.i.posthog.com https://cdn.fontshare.com;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://*.clarity.ms https://us-assets.i.posthog.com https://us.i.posthog.com https://cdn.fontshare.com https://static.cloudflareinsights.com;
     style-src 'self' 'unsafe-inline' https://api.fontshare.com;
     img-src 'self' blob: data: https: http:;
     font-src 'self' https://api.fontshare.com https://cdn.fontshare.com;
-    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms https://*.posthog.com https://us.i.posthog.com https://vitals.vercel-insights.com;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_SUPABASE_URL} https://*.ingest.us.sentry.io https://www.google-analytics.com https://www.googletagmanager.com https://region1.google-analytics.com https://*.clarity.ms https://*.posthog.com https://us.i.posthog.com https://vitals.vercel-insights.com https://cloudflareinsights.com;
     object-src 'none';
     base-uri 'self';
     form-action 'self';
