@@ -19,6 +19,7 @@ import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { CITIES } from "@/lib/constants/cities";
 import type { User } from "@supabase/supabase-js";
 import type { ProfileRow } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 
 const DEFAULT_EXCLUDED_EMAILS = ["p.pavansiri@gmail.com", "eventime.admin@gmail.com"];
 const DEFAULT_EXCLUDED_USERNAMES = ["eventime.admin", "eventimeadmin", "admin"];
@@ -37,49 +38,36 @@ export interface LeaderboardCurator {
   rank?: number;
 }
 
-export function LeaderboardClient() {
+interface LeaderboardClientProps {
+  initialCohortData?: Record<CohortType, LeaderboardCurator[]>;
+}
+
+export function LeaderboardClient({ initialCohortData }: LeaderboardClientProps) {
   const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Partial<ProfileRow> | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const { user, profile, isLoading: isAuthLoading } = useAuth();
 
   const [activeCohort, setActiveCohort] = useState<CohortType>("all_time");
   const [selectedLeaderboardCity, setSelectedLeaderboardCity] = useState<string>("Hyderabad");
-  const [isLoadingCohort, setIsLoadingCohort] = useState(true);
+  const [isLoadingCohort, setIsLoadingCohort] = useState(false);
 
-  const [cohortData, setCohortData] = useState<Record<CohortType, LeaderboardCurator[]>>({
-    campus: [],
-    city: [],
-    all_time: [],
-  });
+  const [cohortData, setCohortData] = useState<Record<CohortType, LeaderboardCurator[]>>(() => ({
+    campus: initialCohortData?.campus || [],
+    city: initialCohortData?.city || [],
+    all_time: initialCohortData?.all_time || [],
+  }));
 
-  // Fetch current user and profile on mount
+  // Sync cohort and city when profile is available
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (currentUser) {
-        setUser(currentUser);
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id, username, full_name, avatar_url, user_type, college, branch, preferred_cities, et_score")
-          .eq("id", currentUser.id)
-          .maybeSingle();
-
-        if (prof) {
-          setProfile(prof as any);
-          const userCity = prof.preferred_cities?.[0] || "Hyderabad";
-          setSelectedLeaderboardCity(userCity);
-          if (prof.user_type === "student" && prof.college) {
-            setActiveCohort("campus");
-          } else {
-            setActiveCohort("city");
-          }
-        }
+    if (profile) {
+      const userCity = profile.preferred_cities?.[0] || "Hyderabad";
+      if (userCity !== "Hyderabad") {
+        setSelectedLeaderboardCity(userCity);
       }
-      setIsAuthLoading(false);
-    };
-    fetchUser();
-  }, [supabase]);
+      if (profile.user_type === "student" && profile.college) {
+        setActiveCohort("campus");
+      }
+    }
+  }, [profile]);
 
   const isStudent = profile?.user_type === "student";
   const userCollege = profile?.college || "";
@@ -185,11 +173,15 @@ export function LeaderboardClient() {
     }
   }, [supabase, isStudent, userCollege, selectedLeaderboardCity]);
 
-  // Initial fetch on cohort change or city change
+  // Fetch cohort data only when not already pre-populated from Edge cache
   useEffect(() => {
-    if (!isAuthLoading) {
-      fetchCohortData(activeCohort, selectedLeaderboardCity);
-    }
+    if (isAuthLoading) return;
+    // If all_time is already populated, no client DB query needed
+    if (activeCohort === "all_time" && (cohortData.all_time?.length ?? 0) > 0) return;
+    // If default city (Hyderabad) is already populated, no client DB query needed
+    if (activeCohort === "city" && selectedLeaderboardCity === "Hyderabad" && (cohortData.city?.length ?? 0) > 0) return;
+
+    fetchCohortData(activeCohort, selectedLeaderboardCity);
   }, [activeCohort, selectedLeaderboardCity, isAuthLoading, fetchCohortData]);
 
   const currentList = cohortData[activeCohort] || [];

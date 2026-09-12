@@ -20,35 +20,44 @@ export async function fetchHomePageData() {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
       const visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
       
-       const sixMonthsAgo = new Date(todayIST);
+      const sixMonthsAgo = new Date(todayIST);
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
       const sixMonthsAgoStr = sixMonthsAgo.toISOString().substring(0, 10);
 
-       const { data: rawAllEvents } = await supabaseAnon
-        .from("events")
-        .select(PUBLIC_EVENT_FIELDS)
-        .eq("status", "approved")
-        .gte("date_string", sixMonthsAgoStr)
-        .or(visibilityFilter)
-        .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(50);
+      // Fetch events, stats, settings, and calendar dates in parallel inside the Edge Cache
+      const [eventsRes, statsRes, settingsRes, datesRes] = await Promise.all([
+        supabaseAnon
+          .from("events")
+          .select(PUBLIC_EVENT_FIELDS)
+          .eq("status", "approved")
+          .gte("date_string", sixMonthsAgoStr)
+          .or(visibilityFilter)
+          .order("is_featured", { ascending: false })
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabaseAnon.rpc("get_platform_stats").single(),
+        supabaseAnon.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
+        supabaseAnon.from("events").select("date_string").eq("status", "approved").gte("date_string", sixMonthsAgoStr)
+      ]);
 
-      // Fetch platform stats for hero section
-      const { data: statsData } = await supabaseAnon.rpc("get_platform_stats").single();
-      const platformStats = statsData as { event_count: number; city_count: number; category_count: number; user_count: number };
+      const rawAllEvents = eventsRes.data || [];
+      const platformStats = (statsRes.data as any) || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 };
+      const leaderboardEnabled = settingsRes.data?.leaderboard_enabled ?? true;
+      const calendarDates = Array.from(new Set((datesRes.data || []).map((r: any) => r.date_string).filter(Boolean) as string[]));
       
       return {
-        rawAllEvents: rawAllEvents || [],
-        platformStats: platformStats || { event_count: 0, city_count: 0, category_count: 0, user_count: 0 }
+        rawAllEvents,
+        platformStats,
+        leaderboardEnabled,
+        calendarDates
       };
     },
     ['global_events_cache'],
-    { tags: ['events'], revalidate: 3600 } // Cache for 1 hour
+    { tags: ['events', 'settings'], revalidate: 3600 } // Cache for 1 hour
   );
 
   // Grab the data instantly from Cache (No DB load)
-  const { rawAllEvents, platformStats } = await getCachedGlobalData();
+  const { rawAllEvents, platformStats, leaderboardEnabled, calendarDates } = await getCachedGlobalData();
   const allEvents = rawAllEvents as Partial<EventRow>[];
 
   // Derive dynamic lists from the cached events for filters
@@ -62,7 +71,9 @@ export async function fetchHomePageData() {
     ? [{ name: "Anywhere", value: "" }, ...activeLocations.map(loc => ({ name: loc, value: loc }))]
     : [];
 
-  const allEventDates = Array.from(new Set(allEvents.map(e => e.date_string).filter(Boolean) as string[]));
+  const allEventDates = calendarDates.length > 0
+    ? calendarDates
+    : Array.from(new Set(allEvents.map(e => e.date_string).filter(Boolean) as string[]));
   const featuredEvents = allEvents.filter(e => e.is_featured);
 
   return {
@@ -72,6 +83,8 @@ export async function fetchHomePageData() {
     allEventDates,
     featuredEvents,
     platformStats,
+    leaderboardEnabled,
+    calendarDates: allEventDates,
     displayToday: `${todayIST.getDate()} ${todayIST.toLocaleDateString('en-US', { month: 'short' })}`
   };
 }

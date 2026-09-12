@@ -95,6 +95,29 @@ const getCachedInterestedAvatars = (eventId: string) =>
     { tags: ["events"], revalidate: 300 }
   )();
 
+export async function generateStaticParams() {
+  try {
+    const supabaseAnon = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { persistSession: false } }
+    );
+    const { data } = await supabaseAnon
+      .from("events")
+      .select("slug, id")
+      .eq("status", "approved")
+      .order("is_featured", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    return (data || []).map((ev) => ({
+      slug: ev.slug || ev.id,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -107,45 +130,41 @@ export async function generateMetadata({
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://eventime.thesurfboard.in";
   const ogUrl = new URL(`${baseUrl}/api/og`);
-
   ogUrl.searchParams.set("title", event.title);
-  ogUrl.searchParams.set("category", event.category);
-  ogUrl.searchParams.set("date", event.date_string || "TBA");
+  if (event.category) ogUrl.searchParams.set("category", event.category);
+  if (event.date_string) ogUrl.searchParams.set("date", event.date_string);
+  if (event.city) ogUrl.searchParams.set("city", event.city);
+  if (event.location) ogUrl.searchParams.set("location", event.location);
+
+  const ogImageUrl = event.poster_url || event.banner_url || ogUrl.toString();
 
   return {
     title: `${event.title} | EvenTime`,
-    description: event.description || `Join this ${event.category} event on EvenTime!`,
-    alternates: {
-      canonical: `${baseUrl}/events/${slug}`,
-    },
+    description: event.description?.slice(0, 160) || "Check out this event on EvenTime.",
     openGraph: {
       title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      url: `${baseUrl}/events/${slug}`,
+      description: event.description?.slice(0, 160) || "Check out this event on EvenTime.",
+      images: [ogImageUrl],
+      url: `${baseUrl}/events/${event.slug || event.id}`,
       type: "website",
-      images: [
-        {
-          url: ogUrl.toString(),
-          width: 1200,
-          height: 630,
-          alt: event.title,
-        },
-      ],
     },
     twitter: {
       card: "summary_large_image",
       title: event.title,
-      description: event.description || `Join this ${event.category} event on EvenTime!`,
-      images: [ogUrl.toString()],
+      description: event.description?.slice(0, 160) || "Check out this event on EvenTime.",
+      images: [ogImageUrl],
     },
   };
 }
-function to24Hour(time: string | null | undefined): string | null {
-  if (!time) return null;
-  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+
+// Convert "10:00 AM" or "02:30 PM" to "HH:mm:00" for Schema.org ISO format
+function to24Hour(timeStr: string | null | undefined): string | null {
+  if (!timeStr) return null;
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
   if (!match) return null;
   const [, h, m, ampm] = match;
   let hour = parseInt(h, 10);
+  if (!ampm) return `${String(hour).padStart(2, "0")}:${m}:00`;
   if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
   if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
   return `${String(hour).padStart(2, "0")}:${m}:00`;
@@ -157,20 +176,20 @@ export default async function EventPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createServerClient();
 
   const finalEvent = await getEvent(slug);
-
-  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
-  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
-  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
 
   if (!finalEvent) {
     notFound();
   }
 
+  // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
+  const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
+  const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
+
   // Ensure pending/rejected events are only visible to the creator or an admin
   if (finalEvent.status !== "approved") {
+    const supabase = await createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     const isCreator = user?.id === finalEvent.creator_id;
     

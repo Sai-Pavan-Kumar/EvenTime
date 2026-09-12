@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { PostHogProvider } from "./providers";
+import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import LaunchScreen from "@/components/layout/LaunchScreen";
@@ -72,10 +73,14 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <head>
-        {/* Forcing the browser to load Switzer directly */}
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to Fontshare CDN & R2 */}
+        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://api.fontshare.com" />
+        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.fontshare.com" />
         <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to R2 CDN */}
         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://cdn.sbhub.in" />
         
         {/* Microsoft Clarity */}
         {process.env.NEXT_PUBLIC_CLARITY_ID && (
@@ -147,16 +152,18 @@ export default function RootLayout({
           shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
         />
         <LaunchScreen /> {/* Added LaunchScreen component here */}
-        <DevToolsGuard />
         
-        <PostHogProvider>
-          {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
-          <div className="flex-1 w-full flex flex-col">
-            {children}
-          </div>
-          
-          <Footer /> {/* Render the Footer globally */}
-        </PostHogProvider>
+        <AuthProvider>
+          <DevToolsGuard />
+          <PostHogProvider>
+            {/* Wrap children in a flex-1 container to push the footer to the bottom of the page */}
+            <div className="flex-1 w-full flex flex-col">
+              {children}
+            </div>
+            
+            <Footer /> {/* Render the Footer globally */}
+          </PostHogProvider>
+        </AuthProvider>
         
         <Toaster />
         <Analytics />

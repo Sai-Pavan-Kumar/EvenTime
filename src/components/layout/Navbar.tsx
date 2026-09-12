@@ -13,6 +13,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { AuthUser } from "@/types";
 import { CITIES } from "@/lib/constants/cities";
 import { categoriesList } from "@/features/create-event/constants";
+import { useAuth } from "@/context/AuthContext";
 import NProgress from "nprogress";
 
 
@@ -40,6 +41,8 @@ interface NavbarProps {
   platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
   searchValue?: string;
   onSearchChange?: (val: string) => void;
+  leaderboardEnabled?: boolean;
+  calendarDates?: string[];
 }
 
 function NavbarInner({ 
@@ -48,13 +51,12 @@ function NavbarInner({
   locationChips = [], 
   platformStats,
   searchValue,
-  onSearchChange
+  onSearchChange,
+  leaderboardEnabled = true,
+  calendarDates = []
 }: NavbarProps) {
   const [supabase] = useState(() => createClient());
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [profileDetails, setProfileDetails] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { user, profile: profileDetails, isAdmin, isLoading, signOut } = useAuth();
   const isControlled = typeof searchValue !== "undefined";
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const searchQuery = isControlled ? (searchValue || "") : internalSearchQuery;
@@ -68,11 +70,10 @@ function NavbarInner({
   const [imgError, setImgError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [leaderboardEnabled, setLeaderboardEnabled] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const mobileSearchInputRef = useRef<HTMLInputElement>(null);
   const [showMobileCalendar, setShowMobileCalendar] = useState(false);
-  const [calendarEventDates, setCalendarEventDates] = useState<string[]>([]);
+  const [calendarEventDates, setCalendarEventDates] = useState<string[]>(calendarDates);
   const mobileCalendarRef = useRef<HTMLDivElement>(null);
   const desktopSearchRef = useRef<HTMLFormElement>(null);
   const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
@@ -96,67 +97,30 @@ function NavbarInner({
     NProgress.done();
   }, [pathname, searchParams]);
 
+  useEffect(() => {
+    if (calendarDates.length > 0) {
+      setCalendarEventDates(calendarDates);
+    }
+  }, [calendarDates]);
+
+  // Lazy load calendar dates if mobile calendar is opened outside home page
+  useEffect(() => {
+    if (showMobileCalendar && calendarEventDates.length === 0) {
+      fetch('/api/buffet')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.allEventDates) setCalendarEventDates(data.allEventDates);
+        })
+        .catch(() => {});
+    }
+  }, [showMobileCalendar, calendarEventDates.length]);
+
   const handleProtectedAction = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
       setShowAuthModal(true);
     }
   };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchProfile = async (userId: string) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from("profiles")
-          .select("role, avatar_url, college, goals, username, preferred_cities, user_type, graduation_year")
-          .eq("id", userId)
-          .single();        
-        if (mounted && !error && profile) {
-          setIsAdmin(profile.role === "admin");
-          setProfileDetails(profile);
-        }
-      } catch (err) {
-        console.error("Profile fetch error:", err);
-      }
-    };
-
-    // NEW: Manually fetch initial user state just in case the listener misses the fast initial load
-    const initUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      
-      setUser(user);
-      if (user) {
-        fetchProfile(user.id);
-      } else if (mounted) {
-        setIsLoading(false);
-      }
-    };
-    initUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        fetchProfile(currentUser.id);
-      } else {
-        setIsAdmin(false);
-        setProfileDetails(null);
-      }
-      
-      if (mounted) setIsLoading(false);
-    });
-
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase]);
 
   useEffect(() => {
     const q = searchParams.get("q");
@@ -169,32 +133,6 @@ function NavbarInner({
   useEffect(() => {
     if (showMobileSearch) mobileSearchInputRef.current?.focus();
   }, [showMobileSearch]);
-
-  useEffect(() => {
-    supabase
-      .from("app_settings")
-      .select("leaderboard_enabled")
-      .eq("id", 1)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) setLeaderboardEnabled(data.leaderboard_enabled);
-      });
-  }, [supabase]);
-
-  useEffect(() => {
-    let query = supabase
-      .from("events")
-      .select("date_string")
-      .eq("status", "approved");
-
-    if (profileDetails?.preferred_cities && profileDetails.preferred_cities.length > 0) {
-      query = query.in("city", profileDetails.preferred_cities);
-    }
-
-    query.then(({ data }) => {
-      if (data) setCalendarEventDates(data.map((r) => r.date_string).filter(Boolean) as string[]);
-    });
-  }, [supabase, profileDetails]);
 
   useEffect(() => {
     const hasQuery = searchQuery.trim().length > 0;
@@ -279,7 +217,7 @@ function NavbarInner({
 
   const handleLogout = async () => {
     if (!window.confirm("Are you sure you want to sign out?")) return;
-    await supabase.auth.signOut();
+    await signOut();
     router.refresh();
   };
 
@@ -662,7 +600,9 @@ export function Navbar({
   locationChips, 
   platformStats,
   searchValue,
-  onSearchChange
+  onSearchChange,
+  leaderboardEnabled,
+  calendarDates
 }: NavbarProps) {
   return (
     <Suspense fallback={null}>
@@ -673,6 +613,8 @@ export function Navbar({
         platformStats={platformStats}
         searchValue={searchValue}
         onSearchChange={onSearchChange}
+        leaderboardEnabled={leaderboardEnabled}
+        calendarDates={calendarDates}
       />
     </Suspense>
   );

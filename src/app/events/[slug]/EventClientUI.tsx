@@ -38,6 +38,7 @@ import { getCategoryConfig } from "@/lib/category-config";
 import { eventSync } from "@/lib/events/eventSync";
 import { EventCard } from "@/app/events/EventCard";
 import type { EventRow } from "@/types";
+import { useAuth } from "@/context/AuthContext";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
@@ -104,6 +105,7 @@ export default function EventClientUI({
   const totalInterested = event.interested_events?.[0]?.count || 0;
   const [localInterestCount, setLocalInterestCount] = useState(totalInterested);
 
+  const { user: authUser, profile: authProfile, isAdmin, isLoading: isAuthLoading } = useAuth();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isCuratorOrAdmin, setIsCuratorOrAdmin] = useState(false);
@@ -180,71 +182,66 @@ export default function EventClientUI({
   })();
 
   useEffect(() => {
-    const fetchInitialState = async () => {
+    if (isAuthLoading) return;
+
+    if (!authUser) {
+      setCurrentUser(null);
+      setUserProfile(null);
+      setIsCuratorOrAdmin(false);
+      setIsLoadingInterest(false);
+      return;
+    }
+
+    setCurrentUser(authUser);
+    setUserProfile(authProfile);
+
+    const isUserAdmin = isAdmin || authProfile?.role === "admin";
+    if (authUser.id === safeCreatorId || isUserAdmin) {
+      setIsCuratorOrAdmin(true);
+    }
+
+    if (safeId) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setIsLoadingInterest(false);
-          return;
+        const cached = localStorage.getItem("eventime_saved_ids");
+        if (cached) {
+          const ids: string[] = JSON.parse(cached);
+          if (ids.includes(safeId)) setIsSaved(true);
         }
-        setCurrentUser(user);
+      } catch {}
 
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role, user_type, college")
-          .eq("id", user.id)
-          .maybeSingle();
-
-        setUserProfile(profile);
-
-        const isAdmin = profile?.role === "admin";
-        if (user.id === safeCreatorId || isAdmin) {
-          setIsCuratorOrAdmin(true);
-        }
-
-        if (safeId) {
-          try {
-            const cached = localStorage.getItem("eventime_saved_ids");
-            if (cached) {
-              const ids: string[] = JSON.parse(cached);
-              if (ids.includes(safeId)) setIsSaved(true);
-            }
-          } catch {}
-
-          const [{ data: savedRows }, { data: interestRow }, { data: reportRow }] = await Promise.all([
-            supabase
-              .from("saved_events")
-              .select("id")
-              .eq("event_id", safeId)
-              .eq("user_id", user.id)
-              .limit(1),
-            supabase
-              .from("interested_events")
-              .select("id")
-              .eq("event_id", safeId)
-              .eq("user_id", user.id)
-              .maybeSingle(),
-            supabase
-              .from("event_reports")
-              .select("id")
-              .eq("event_id", safeId)
-              .eq("reporter_id", user.id)
-              .eq("status", "pending")
-              .maybeSingle(),
-          ]);
-
-          if (savedRows && savedRows.length > 0) setIsSaved(true);
-          if (interestRow) setIsInterested(true);
-          if (reportRow) setIsReportedByMe(true);
-        }
-      } catch (err) {
-        console.error("Error fetching event interaction state:", err);
-      } finally {
+      Promise.all([
+        supabase
+          .from("saved_events")
+          .select("id")
+          .eq("event_id", safeId)
+          .eq("user_id", authUser.id)
+          .limit(1),
+        supabase
+          .from("interested_events")
+          .select("id")
+          .eq("event_id", safeId)
+          .eq("user_id", authUser.id)
+          .maybeSingle(),
+        supabase
+          .from("event_reports")
+          .select("id")
+          .eq("event_id", safeId)
+          .eq("reporter_id", authUser.id)
+          .eq("status", "pending")
+          .maybeSingle(),
+      ]).then(([{ data: savedRows }, { data: interestRow }, { data: reportRow }]) => {
+        if (savedRows && savedRows.length > 0) setIsSaved(true);
+        if (interestRow) setIsInterested(true);
+        if (reportRow) setIsReportedByMe(true);
         setIsLoadingInterest(false);
-      }
-    };
-    fetchInitialState();
-  }, [safeId, safeCreatorId, supabase]);
+      }).catch((err) => {
+        console.warn("[EventClientUI] Error fetching user interaction state:", err);
+        setIsLoadingInterest(false);
+      });
+    } else {
+      setIsLoadingInterest(false);
+    }
+  }, [authUser, authProfile, isAdmin, isAuthLoading, safeId, safeCreatorId, supabase]);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(eventUrl);

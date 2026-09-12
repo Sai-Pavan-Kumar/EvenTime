@@ -18,6 +18,7 @@ import { LandingIntro } from "./LandingIntro";
 import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
+import { useAuth } from "@/context/AuthContext";
 
 // The props now ONLY receive the public static buffet from the server
 export interface HomePageClientProps {
@@ -28,6 +29,8 @@ export interface HomePageClientProps {
   featuredEvents: Partial<EventRow>[];
   platformStats?: { event_count: number; city_count: number; category_count: number; user_count: number };
   displayToday: string;
+  leaderboardEnabled?: boolean;
+  calendarDates?: string[];
 }
 
 
@@ -93,10 +96,9 @@ export function HomePageClient(props: HomePageClientProps) {
   const date = searchParams.get('date') || undefined;
   const view = searchParams.get('view') || undefined;
 
-  // 0ms Cache Hydration: Read directly from browser localStorage before initial paint
-  const [profile, setProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(() => getLocalProfile());
-  const [user, setUser] = useState<User | null>(null);
-  const [isAuthLoading, setIsAuthLoading] = useState(() => !getLocalProfile());
+  // Read directly from centralized AuthContext (0 network requests for guests)
+  const { user, profile: authProfile, isLoading: isAuthLoading } = useAuth();
+  const profile = (authProfile || getLocalProfile()) as (Partial<ProfileRow> & { city?: string }) | null;
 
   // Local copies of events
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
@@ -193,40 +195,12 @@ export function HomePageClient(props: HomePageClientProps) {
     return unsubscribe;
   }, []);
 
-  // Validate and sync User & Profile in background without layout shift
+  // Sync active feed pill when user goals are available
   useEffect(() => {
-    let isMounted = true;
-    const fetchUserAndProfile = async () => {
-      const supabase = createClient();
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!isMounted) return;
-
-      if (currentUser) {
-        setUser(currentUser);
-        const { data } = await supabase
-          .from("profiles")
-          .select("is_onboarded, goals, user_type, college_id, branch, graduation_year, preferred_cities, username")
-          .eq("id", currentUser.id)
-          .single();
-        if (!isMounted) return;
-        if (data) {
-          const freshProfile = data as any;
-          setProfile(freshProfile);
-          setLocalProfile(freshProfile);
-          if (!profile && freshProfile.goals && freshProfile.goals.length > 0) {
-            setActiveFeedPill('for_you');
-          }
-        }
-      } else {
-        setUser(null);
-        setProfile(null);
-        setLocalProfile(null);
-      }
-      setIsAuthLoading(false);
-    };
-    fetchUserAndProfile();
-    return () => { isMounted = false; };
-  }, []);
+    if (profile?.goals && profile.goals.length > 0) {
+      setActiveFeedPill('for_you');
+    }
+  }, [profile?.goals]);
 
   const preferredCities = useMemo(() => profile?.preferred_cities || [], [profile?.preferred_cities]);
   const cityMatch = useCallback(
@@ -381,7 +355,13 @@ export function HomePageClient(props: HomePageClientProps) {
 
   return (
     <main className="min-h-screen bg-surface-base">
-      <Navbar categoryChips={cascadingCategoryChips} locationChips={cascadingLocationChips} platformStats={platformStats} />
+      <Navbar 
+        categoryChips={cascadingCategoryChips} 
+        locationChips={cascadingLocationChips} 
+        platformStats={platformStats} 
+        leaderboardEnabled={props.leaderboardEnabled}
+        calendarDates={props.calendarDates || allEventDates}
+      />
 
       {/* Top Stationary Greeting and Feed Segmented Tabs (Only for logged-in users) */}
       {Boolean((user || profile) && profile) && (
