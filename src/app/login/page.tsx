@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ShieldCheck, Sparkles } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -69,7 +69,7 @@ export default function LoginPage() {
 
           <div className="mb-8">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 text-brand-primary text-xs font-bold font-heading mb-3">
-              <Sparkles className="w-3.5 h-3.5" /> Fast 1-Click Access
+              <ShieldCheck className="w-3.5 h-3.5" /> Fast 1-Click Access
             </div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2 font-heading">Sign In to EvenTime</h2>
             <p className="text-slate-500 text-sm font-medium">Continue with your preferred developer or social profile.</p>
