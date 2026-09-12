@@ -21,7 +21,7 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('Content-Security-Policy', contentSecurityPolicyHeaderValue);
 
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },

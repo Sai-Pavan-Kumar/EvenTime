@@ -16,7 +16,21 @@ const s3Client = new S3Client({
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const authHeader = request.headers.get("authorization");
+    let user = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.substring(7).trim();
+      if (token) {
+        const { data: authData } = await supabase.auth.getUser(token);
+        user = authData?.user || null;
+      }
+    }
+
+    if (!user) {
+      const { data: authData } = await supabase.auth.getUser();
+      user = authData?.user || null;
+    }
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

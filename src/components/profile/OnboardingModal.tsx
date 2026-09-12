@@ -144,15 +144,19 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
 
-    if (!error) {
-      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
-    }
-
     if (error) {
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
       return;
     }
+
+    try {
+      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
+    } catch (rpcErr) {
+      console.warn("increment_et_score error, falling back to direct update:", rpcErr);
+      await supabase.from("profiles").update({ et_score: 150 }).eq("id", user.id);
+    }
+
     window.location.reload();
   };
 

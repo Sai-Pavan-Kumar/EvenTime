@@ -5,7 +5,7 @@ import type { Database } from '@/types/database';
 if (typeof window !== 'undefined') {
   try {
     window.localStorage.getItem('test');
-  } catch (error) {
+  } catch {
     console.warn('localStorage is blocked by iOS/Safari. Injecting memory fallback.');
     const memoryStorage = {
       getItem: () => null, setItem: () => {}, removeItem: () => {}, clear: () => {}, length: 0, key: () => null
@@ -13,7 +13,7 @@ if (typeof window !== 'undefined') {
     try {
       Object.defineProperty(window, 'localStorage', { value: memoryStorage, writable: true });
       Object.defineProperty(window, 'sessionStorage', { value: memoryStorage, writable: true });
-    } catch (e) {}
+    } catch {}
   }
 
   // SAFEGUARD: Fix iOS WebSocket insecure operation crash
@@ -30,11 +30,11 @@ if (typeof window !== 'undefined') {
             readyState: 3, CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3, url: url?.toString() || ""
           } as unknown as WebSocket;
         }
-      } as any;
+      } as unknown as typeof WebSocket;
       window.WebSocket.prototype = OriginalWebSocket.prototype;
       Object.assign(window.WebSocket, OriginalWebSocket);
     }
-  } catch (e) {}
+  } catch {}
 }
 
 // Shared instance to ensure all components listen to the exact same auth state

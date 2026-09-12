@@ -12,18 +12,13 @@ export async function fetchHomePageData() {
 
   const serverTime = new Date();
   const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const yyyy = todayIST.getFullYear();
-  const mm = String(todayIST.getMonth() + 1).padStart(2, '0');
-  const dd = String(todayIST.getDate()).padStart(2, '0');
-  const todayStr = `${yyyy}-${mm}-${dd}`;
-  
   const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username), interested_events(count)";
 
   // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
   const getCachedGlobalData = unstable_cache(
     async () => {
       // Fetch only public events (exclude strictly college-only events unless target audience allows it)
-      let visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
+      const visibilityFilter = `college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`;
       
        const sixMonthsAgo = new Date(todayIST);
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);

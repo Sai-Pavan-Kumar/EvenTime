@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
@@ -143,7 +144,7 @@ function to24Hour(time: string | null | undefined): string | null {
   if (!time) return null;
   const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
   if (!match) return null;
-  let [, h, m, ampm] = match;
+  const [, h, m, ampm] = match;
   let hour = parseInt(h, 10);
   if (ampm.toUpperCase() === "PM" && hour !== 12) hour += 12;
   if (ampm.toUpperCase() === "AM" && hour === 12) hour = 0;
@@ -165,11 +166,7 @@ export default async function EventPage({
   const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
 
   if (!finalEvent) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400 font-medium">
-        Event not found.
-      </div>
-    );
+    notFound();
   }
 
   // Ensure pending/rejected events are only visible to the creator or an admin

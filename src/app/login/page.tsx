@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowRight, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -158,7 +159,7 @@ export default function LoginPage() {
               className="mt-1 w-4 h-4 rounded border-slate-300 text-brand-primary focus:ring-[#6C47FF] outline-none cursor-pointer"
             />
             <label htmlFor="consent-social" className="text-xs text-slate-500 font-medium leading-relaxed cursor-pointer select-none">
-              I consent to the collection of my email and profile details to personalize my event experience, as per the <a href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</a>.
+              I consent to the collection of my email and profile details to personalize my event experience, as per the <Link href="/privacy" className="text-brand-primary hover:underline">Privacy Policy</Link>.
             </label>
           </div>
 

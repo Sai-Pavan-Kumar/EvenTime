@@ -5,6 +5,7 @@ import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
 import Image from "next/image";
 import type { ProfileRow } from "@/types";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export async function generateMetadata({
   params,
@@ -19,11 +20,11 @@ export async function generateMetadata({
 
   const { data: curator } = await supabase
     .from("profiles")
-    .select("id, full_name, username, avatar_url")
+    .select("id, full_name, username, avatar_url, et_score")
     .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
     .maybeSingle();
 
-  if (!curator) return { title: "Curator Not Found | EvenTime" };
+  if (!curator) return { title: "Page Not Found | EvenTime" };
 
   const { data: scoreRow } = await supabase
     .from("leaderboard_view")
@@ -31,7 +32,7 @@ export async function generateMetadata({
     .eq("user_id", curator.id)
     .maybeSingle();
 
-  const score = scoreRow?.et_score ?? 100;
+  const score = scoreRow?.et_score ?? curator.et_score ?? 100;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
   const ogUrl = new URL(`${baseUrl}/api/og/leaderboard`);
   ogUrl.searchParams.set("name", curator.full_name || "Curator");
@@ -99,12 +100,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     .maybeSingle();
 
   if (!curator) {
-    return (
-      <div className="min-h-screen bg-surface-base">
-        <Navbar />
-        <div className="text-center py-20 font-bold text-xl text-slate-400">Curator not found or handle is incorrect.</div>
-      </div>
-    );
+    notFound();
   }
 
   // Fix: Running the remaining dependent queries in parallel using Promise.all
@@ -151,7 +147,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   // Dynamic ga events anni thirigi saves count ni sum chesthundi
   const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
-  const etScore = leaderboardRow?.et_score ?? 100;
+  const etScore = leaderboardRow?.et_score ?? curator.et_score ?? 100;
   const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 

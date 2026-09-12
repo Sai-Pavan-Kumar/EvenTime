@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { Building2, Home, Search } from "lucide-react";
 
@@ -7,8 +8,20 @@ export default function NotFound() {
     <main className="min-h-screen bg-surface-base flex flex-col">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-16 sm:py-24">
-        <div className="max-w-md w-full text-center space-y-6 bg-white p-8 sm:p-10 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-900/5">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
+        <div className="max-w-md w-full text-center space-y-5 bg-white p-8 sm:p-10 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-900/5">
+          {/* 404 Illustration */}
+          <div className="flex justify-center -mt-2">
+            <Image
+              src="/illustrations/404_State.webp"
+              alt="404 Page Not Found"
+              width={240}
+              height={240}
+              priority
+              className="w-48 sm:w-56 h-auto object-contain select-none pointer-events-none"
+            />
+          </div>
+
           {/* Badge */}
           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-xs font-black font-['Outfit'] uppercase tracking-wider">
             404 • Not Found
@@ -16,10 +29,10 @@ export default function NotFound() {
 
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-black font-['Outfit'] text-slate-900 tracking-tight">
-              Not in our directory
+              Page not found
             </h1>
             <p className="text-sm font-medium font-['Switzer',sans-serif] text-slate-500 leading-relaxed">
-              The city, category, or event you requested does not exist in our active directory or may have moved.
+              The page, curator profile, or event you requested does not exist or may have moved.
             </p>
           </div>
 

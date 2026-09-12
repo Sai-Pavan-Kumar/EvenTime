@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { CreateEventForm } from "@/features/create-event/CreateEventForm";
 
@@ -16,7 +16,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
     .eq("slug", slug)
     .single() as any;
 
-  if (!event) return <div className="text-center p-20 font-bold text-xl">Event not found.</div>;
+  if (!event) notFound();
   if (event.creator_id !== user.id) return <div className="text-center p-20 font-bold text-red-500">You don't have permission to edit this event.</div>;
 
   // Inside your EditEventPage return

@@ -762,18 +762,18 @@ export function HomePageClient(props: HomePageClientProps) {
                     const isAroundYouTab = activeFeedPill === 'around_you';
                     const isGuest = !user && !profile;
 
-                    const isCampusBatchEmpty = isCampusTab && campusFilterMode === 'eligible' && liveCollegeEvents.length > 0;
-                    const isCampusEmpty = isCampusTab && (!liveCollegeEvents || liveCollegeEvents.length === 0);
+                    const isCampusEligibleTab = isCampusTab && campusFilterMode === 'eligible';
+                    const isCampusAllTab = isCampusTab && campusFilterMode === 'all';
 
                     // 1. Direct, Unconditional Image Selection by Active Feed Tab
                     const emptyImageSrc = isCampusTab
-                      ? (isCampusBatchEmpty ? "/eligible_for_me.webp" : "/no_college_events.webp")
+                      ? (isCampusEligibleTab ? "/eligible_for_me.webp" : "/no_college_events.webp")
                       : isForYouTab
                       ? "/For_you.webp"
                       : isAroundYouTab
                       ? "/Around_you.webp"
                       : q
-                      ? "/illustrations/Search_state.webp"
+                      ? "/illustrations/search_state.webp"
                       : "/illustrations/Empty_state.webp";
 
                     // 2. Clear, Dedicated Title per Tab
@@ -781,10 +781,10 @@ export function HomePageClient(props: HomePageClientProps) {
                       ? "No past events"
                       : date
                       ? "No Events Scheduled"
-                      : isCampusBatchEmpty
+                      : isCampusEligibleTab
                       ? "No Specific Batch Events"
-                      : isCampusEmpty
-                      ? "No Campus Events"
+                      : isCampusAllTab
+                      ? "No Campus Events Yet"
                       : isForYouTab
                       ? (liveAroundYouEvents.length > 0
                           ? "No Events In Your Categories"
@@ -802,9 +802,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       ? "There were no events hosted on this date."
                       : date
                       ? `There are no events scheduled for ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}. Be the first to host one!`
-                      : isCampusBatchEmpty
+                      : isCampusEligibleTab
                       ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
-                      : isCampusEmpty
+                      : isCampusAllTab
                       ? "There are no private events currently listed for your campus. Host one for your college!"
                       : isForYouTab
                       ? (liveAroundYouEvents.length > 0
@@ -825,9 +825,9 @@ export function HomePageClient(props: HomePageClientProps) {
                     const showBtn = !isPastDate;
                     const btnText = date
                       ? "Clear Date"
-                      : isCampusBatchEmpty
+                      : isCampusEligibleTab
                       ? "Show All Campus Events"
-                      : isCampusEmpty
+                      : isCampusAllTab
                       ? "Host an Event"
                       : isForYouTab
                       ? (liveAroundYouEvents.length > 0 ? "Explore Around You" : (user || profile ? "Update Preferences" : "Sign In / Sign Up"))
@@ -844,7 +844,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           window.history.replaceState(null, '', '?' + params.toString());
                           window.location.reload();
                         }
-                      : isCampusBatchEmpty
+                      : isCampusEligibleTab
                       ? () => setCampusFilterMode('all')
                       : isForYouTab && liveAroundYouEvents.length > 0
                       ? () => setActiveFeedPill('around_you')
@@ -852,9 +852,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       ? () => setActiveFeedPill('for_you')
                       : undefined;
 
-                    const actionHref = date || isCampusBatchEmpty || (isForYouTab && liveAroundYouEvents.length > 0) || (isAroundYouTab && livePersonalizedEvents.length > 0)
+                    const actionHref = date || isCampusEligibleTab || (isForYouTab && liveAroundYouEvents.length > 0) || (isAroundYouTab && livePersonalizedEvents.length > 0)
                       ? undefined
-                      : isCampusEmpty
+                      : isCampusAllTab
                       ? "/events/new"
                       : isForYouTab
                       ? (user || profile ? "/profile" : "/login")

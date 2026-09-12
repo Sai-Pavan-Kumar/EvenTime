@@ -11,8 +11,8 @@ export async function updateProfileSettings(formData: FormData) {
     return { error: "Please login to update settings." };
   }
 
-  // Fetch profile to check if user is admin
-  const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).single();
+  // Fetch profile to check if user is admin and current score
+  const { data: profile } = await supabase.from('profiles').select('user_type, role, et_score, is_onboarded').eq('id', user.id).single();
   const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
 
   const fullName = formData.get("fullName") as string;
@@ -83,6 +83,9 @@ export async function updateProfileSettings(formData: FormData) {
   }
 
   const isStudent = user_type.toLowerCase() === "student";
+  const hasPreferences = preferred_cities.length > 0 && goals.length > 0;
+  const currentScore = profile?.et_score ?? 100;
+  const needsProfileBonus = hasPreferences && (currentScore < 150 || !profile?.is_onboarded);
 
   const { error } = await supabase
     .from("profiles")
@@ -105,8 +108,18 @@ export async function updateProfileSettings(formData: FormData) {
     return { error: "Failed to update profile. Please try again." };
   }
 
+  if (needsProfileBonus) {
+    try {
+      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
+    } catch (rpcErr) {
+      console.warn("increment_et_score error, falling back to direct update:", rpcErr);
+      await supabase.from("profiles").update({ et_score: Math.max(currentScore + 50, 150) }).eq("id", user.id);
+    }
+  }
+
   revalidatePath("/profile");
   revalidatePath("/profile/settings");
+  revalidatePath("/leaderboard");
 
   return { success: true };
 }
