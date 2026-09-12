@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bug, Lightbulb, Loader2 } from "lucide-react";
 import { submitFeedbackAction } from "@/app/profile/action";
@@ -11,11 +12,16 @@ interface FeedbackModalProps {
 }
 
 export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [type, setType] = useState<'bug' | 'feature'>('feature');
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,25 +54,32 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
     }, 300);
   };
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-110 flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pointer-events-auto"
+          style={{ zIndex: 99999 }}
+        >
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="absolute inset-0 bg-slate-900/60"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs"
+            style={{ zIndex: 99999 }}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
-            className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden z-10"
-          >
-            <div className="p-8">
+            className="relative w-full max-w-md bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden z-[100000]"
+            style={{ zIndex: 100000 }}
+          >
+            <div className="p-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                     <h3 className="font-heading font-bold text-xl text-slate-900 leading-tight">Share Feedback</h3>
@@ -156,6 +169,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
