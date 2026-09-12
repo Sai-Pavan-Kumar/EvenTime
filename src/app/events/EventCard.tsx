@@ -225,9 +225,12 @@
       diffDays = differenceInCalendarDays(eventDate, today);
       isPastTime = today.getTime() > exactEventDate.getTime();
 
-      if (diffDays < 0 || isPastTime) {
+            if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
+      } else if (diffDays === 0 && !isPastTime) {
+        statusLabel = "Live Today";
+        statusColor = "bg-emerald-600 text-white shadow-md shadow-emerald-600/30";
       }  
     }
 

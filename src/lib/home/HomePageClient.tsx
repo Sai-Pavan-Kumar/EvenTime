@@ -222,7 +222,7 @@ export function HomePageClient(props: HomePageClientProps) {
   const livePersonalizedEvents = useMemo(() => {
     if (!profile?.goals || profile.goals.length === 0) return [];
     const goalSet = new Set(profile.goals);
-    return nonCampusEvents.filter((e) => cityMatch(e) && !!(e.category && goalSet.has(e.category)));
+    return nonCampusEvents.filter((e) => isUpcomingEvent(e) && cityMatch(e) && !!(e.category && goalSet.has(e.category)));
   }, [nonCampusEvents, profile?.goals, cityMatch]);
 
   const liveAroundYouEvents = useMemo(() => {

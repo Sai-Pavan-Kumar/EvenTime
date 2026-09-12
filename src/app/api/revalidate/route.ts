@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       // Invalidate global events collection and layout
       (revalidateTag as any)('events', 'events');
       revalidatePath('/', 'layout');
+      revalidatePath('/', 'page');
       revalidatePath('/search', 'page');
       revalidatePath('/cities', 'page');
     }

@@ -110,7 +110,7 @@ export function useEventSubmit() {
         }]).select("id");
         if (error) throw error;
         insertedId = insertedRows?.[0]?.id;
-        if (finalStatus === "approved") await revalidateEventsCacheAction();
+        if (finalStatus === "approved") await revalidateEventsCacheAction(uniqueSlug);
       }
       
       toast.success(
@@ -120,6 +120,7 @@ export function useEventSubmit() {
           ? "Event posted! It's live now."
           : "Event submitted! It'll go live once approved."
       );
+      try { localStorage.removeItem("@eventime_create_event_draft_v1"); } catch {}
       if (isEditing) {
         router.push("/profile");
       }

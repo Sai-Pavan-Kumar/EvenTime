@@ -219,12 +219,12 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const { isSubmitting, submitEvent } = useEventSubmit();
 
    // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
       alert("Please select your college before restricting this event to it — or turn off 'College Only' if you want it open to everyone.");
       return;
     }
-    submitEvent({
+    const res = await submitEvent({
       title: eventData.title,
       category: eventData.category,
       organizer_name: eventData.organizer,
@@ -254,6 +254,13 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);
+    if (res && res.success) {
+      clearDraft();
+      if (!isEditing) {
+        setCelebrationEvent(res as any);
+        setIsCelebrationOpen(true);
+      }
+    }
   };
 
   const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedDate && (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city));
