@@ -274,11 +274,6 @@ export function HomePageClient(props: HomePageClientProps) {
   // Smart cascading filters: options in each dropdown narrow down based on
   // the OTHER filter currently selected — computed from already-loaded
   // events (liveAllEvents), no extra database call.
-  const isUpcomingEvent = (e: Partial<EventRow>) => {
-    const checkDate = parseEventDateString(e.date_string || "");
-    if (!checkDate) return true;
-    return differenceInCalendarDays(checkDate, new Date()) >= 0;
-  };
 
   const cascadingCategoryChips = useMemo(() => {
     const upcoming = (liveAllEvents || []).filter(isUpcomingEvent);
@@ -332,14 +327,8 @@ export function HomePageClient(props: HomePageClientProps) {
     });
   }
 
-  const isUpcoming = (e: Partial<EventRow>) => {
-    const checkDate = parseEventDateString(e.date_string || "");
-    if (!checkDate) return true;
-    return differenceInCalendarDays(checkDate, new Date()) >= 0;
-  };
-
   const allUpcomingEvents = useMemo(() => {
-    return (liveAllEvents || []).filter(isUpcoming);
+    return (liveAllEvents || []).filter(isUpcomingEvent);
   }, [liveAllEvents]);
 
   const gridSource = !noFiltersActive
@@ -348,9 +337,9 @@ export function HomePageClient(props: HomePageClientProps) {
       ? (activeFeedPill === 'campus' ? displayedCollegeEvents : activeFeedPill === 'for_you' ? livePersonalizedEvents : liveAroundYouEvents)
       : allUpcomingEvents;
 
-  const upcomingForYouCount = livePersonalizedEvents.filter(isUpcoming).length;
-  const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcoming).length;
-  const upcomingCollegeCount = liveCollegeEvents.filter(isUpcoming).length;
+  const upcomingForYouCount = livePersonalizedEvents.filter(isUpcomingEvent).length;
+  const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcomingEvent).length;
+  const upcomingCollegeCount = liveCollegeEvents.filter(isUpcomingEvent).length;
   useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;
   let clientFallbackEvents: Partial<EventRow>[] = [];
