@@ -1,26 +1,36 @@
 import { Navbar } from "@/components/layout/Navbar";
-import { CreateEventFormLazy } from "@/features/create-event/CreateEventFormLazy";
-import { createClient } from "@/lib/supabase/server";
+import { NewEventClient } from "./NewEventClient";
+import { unstable_cache } from "next/cache";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+export const revalidate = 3600;
+
+const getAppSettings = unstable_cache(
+  async () => {
+    const supabase = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    const { data } = await supabase
+      .from("app_settings")
+      .select("featured_enabled")
+      .eq("id", 1)
+      .maybeSingle();
+    return data?.featured_enabled ?? true;
+  },
+  ["app-settings-featured"],
+  { revalidate: 3600, tags: ["app_settings"] }
+);
 
 export default async function NewEventPage() {
-  const supabase = await createClient();
-  const [{ data: appSettings }, { data: { user } }] = await Promise.all([
-    supabase.from("app_settings").select("featured_enabled").eq("id", 1).maybeSingle(),
-    supabase.auth.getUser(),
-  ]);
-
-  let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase.from('profiles').select('user_type, role').eq('id', user.id).maybeSingle();
-    isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-  }
+  const featuredEnabled = await getAppSettings();
 
   return (
     <main className="min-h-screen bg-slate-50/50">
       <Navbar />
       <div className="py-12 px-4 sm:px-6">
-        <CreateEventFormLazy isAdminFeatureEnabled={appSettings?.featured_enabled ?? true} isCurrentUserAdmin={isAdmin} />
+        <NewEventClient featuredEnabled={featuredEnabled} />
       </div>
     </main>
   );
-}
+}
