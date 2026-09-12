@@ -5,6 +5,8 @@ import { PostHogProvider as PHProvider } from "posthog-js/react";
 import { useEffect, Suspense } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import NProgress from "nprogress";
+// PostHog $pageview auto-fire DISABLED — was generating ~9M billed events/month at 2M scale.
+// To track a user action, call posthog.capture('event_name') explicitly at the call-site only.
 
 function RouteProgressBar() {
   const pathname = usePathname();
@@ -31,22 +33,7 @@ function RouteProgressBar() {
   return null;
 }
 
-function PostHogPageview() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    if (pathname) {
-      let url = window.origin + pathname;
-      if (searchParams?.toString()) {
-        url += `?${searchParams.toString()}`;
-      }
-      posthog.capture("$pageview", { $current_url: url });
-    }
-  }, [pathname, searchParams]);
-
-  return null;
-}
+// PostHogPageview removed — firing $pageview on every navigation was billing ₹1.5 lakh/month at 2M users.
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -60,9 +47,6 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PHProvider client={posthog}>
-      <Suspense fallback={null}>
-        <PostHogPageview />
-      </Suspense>
       <Suspense fallback={null}>
         <RouteProgressBar />
       </Suspense>

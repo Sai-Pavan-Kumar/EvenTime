@@ -6,7 +6,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import EventClientUI from "./EventClientUI";
 
-export const revalidate = 3600;
+export const revalidate = false; // Pure event-driven — busted by revalidateTag("events") on admin approve/reject
 
 // Helper function to check if the slug is a valid UUID
 const isValidUUID = (id: string) => {
@@ -31,7 +31,7 @@ const getCachedPublicEvent = (slug: string) =>
       return data;
     },
     ["event_detail", slug],
-    { tags: ["events", `event_${slug}`], revalidate: 3600 }
+    { tags: ["events", `event_${slug}`], revalidate: false }
   )();
 
 // Fallback for draft/pending events visible only to curator/admin
@@ -73,7 +73,7 @@ const getCachedSimilarEvents = (category: string, currentId: string) =>
       return data || [];
     },
     ["similar_events", category, currentId],
-    { tags: ["events"], revalidate: 3600 }
+    { tags: ["events"], revalidate: false }
   )();
 
 const getCachedInterestedAvatars = (eventId: string) =>
@@ -92,7 +92,7 @@ const getCachedInterestedAvatars = (eventId: string) =>
       return (interestedRows || []).map((r: any) => r.profiles).filter(Boolean);
     },
     ["interested_avatars", eventId],
-    { tags: ["events"], revalidate: 300 }
+    { tags: ["events"], revalidate: false }
   )();
 
 export async function generateStaticParams() {
