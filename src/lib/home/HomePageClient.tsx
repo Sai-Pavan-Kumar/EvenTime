@@ -59,6 +59,12 @@ function setLocalProfile(data: (Partial<ProfileRow> & { city?: string }) | null)
   } catch {}
 }
 
+function isUpcomingEvent(e: Partial<EventRow>): boolean {
+  const checkDate = parseEventDateString(e.date_string || "");
+  if (!checkDate) return true;
+  return differenceInCalendarDays(checkDate, new Date()) >= 0;
+}
+
 function getLocalCampusEvents(): Partial<EventRow>[] {
   if (typeof window === 'undefined') return [];
   try {

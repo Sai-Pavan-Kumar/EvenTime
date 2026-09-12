@@ -166,9 +166,13 @@
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // ALWAYS delete existing rows for this event/user first to prevent duplicates in DB
-          await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
           if (newState) {
-            await supabase.from("saved_events").insert({ event_id: id, user_id: user.id });
+            await supabase.from("saved_events").upsert(
+              { event_id: id, user_id: user.id },
+              { onConflict: "event_id,user_id", ignoreDuplicates: true }
+            );
+          } else {
+            await supabase.from("saved_events").delete().eq("event_id", id).eq("user_id", user.id);
           }
         }
       } catch (err) {

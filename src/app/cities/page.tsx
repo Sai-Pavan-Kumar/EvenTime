@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600; // 1-hour ISR buffet cache
+export const revalidate = false;
 
 const getCachedCityCounts = unstable_cache(
   async () => {
@@ -44,7 +44,7 @@ const getCachedCityCounts = unstable_cache(
     return cityCounts;
   },
   ["cities-page-counts"],
-  { revalidate: 3600, tags: ["events"] }
+  { revalidate: false, tags: ["events"] }
 );
 
 export default async function CitiesPage() {

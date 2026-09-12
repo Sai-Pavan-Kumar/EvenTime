@@ -3,7 +3,7 @@ import { NewEventClient } from "./NewEventClient";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-export const revalidate = 3600;
+export const revalidate = false;
 
 const getAppSettings = unstable_cache(
   async () => {
@@ -19,7 +19,7 @@ const getAppSettings = unstable_cache(
     return data?.featured_enabled ?? true;
   },
   ["app-settings-featured"],
-  { revalidate: 3600, tags: ["app_settings"] }
+  { revalidate: false, tags: ["app_settings"] }
 );
 
 export default async function NewEventPage() {

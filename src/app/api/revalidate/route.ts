@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       revalidatePath('/', 'page');
       revalidatePath('/search', 'page');
       revalidatePath('/cities', 'page');
+      revalidatePath('/api/buffet');
     }
 
     // If a specific event was updated/inserted, invalidate its granular tag as well

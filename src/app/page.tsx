@@ -2,7 +2,7 @@ import { fetchHomePageData } from "@/lib/home/fetchHomePageData";
 import { HomePageClient } from "@/lib/home/HomePageClient";
 import { Suspense } from "react";
 
-export const revalidate = 3600; // Cache the buffet for 1 hour
+export const revalidate = false; // Pure event-driven on-demand cache (0 hourly polling)
 
 export default async function Home() {
   // Fetch only the global public buffet securely from the backend logic

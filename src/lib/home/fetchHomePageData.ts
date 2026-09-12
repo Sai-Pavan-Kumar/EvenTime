@@ -53,7 +53,7 @@ export async function fetchHomePageData() {
       };
     },
     ['global_events_cache'],
-    { tags: ['events', 'settings'], revalidate: 3600 } // Cache for 1 hour
+    { tags: ['events', 'settings'], revalidate: false } // Pure on-demand revalidation on event change
   );
 
   // Grab the data instantly from Cache (No DB load)

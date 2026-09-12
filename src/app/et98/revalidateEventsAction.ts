@@ -9,6 +9,7 @@ export async function revalidateEventsCacheAction(slug?: string) {
     revalidatePath("/", "page");
     revalidatePath("/search", "page");
     revalidatePath("/cities", "page");
+    revalidatePath("/api/buffet");
     if (slug) {
       (revalidateTag as any)(`event_${slug}`, `event_${slug}`);
       revalidatePath(`/events/${slug}`, "page");

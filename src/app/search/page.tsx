@@ -6,7 +6,7 @@ import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { EventRow } from "@/types";
 
-export const revalidate = 3600;
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "Search Events & Hackathons | EvenTime",
@@ -31,7 +31,7 @@ const getCachedSearchEvents = unstable_cache(
     return (data || []) as Partial<EventRow>[];
   },
   ["search_events_pool"],
-  { tags: ["events"], revalidate: 3600 }
+  { tags: ["events"], revalidate: false }
 );
 
 export default async function SearchPage() {
