@@ -48,6 +48,8 @@ const nextConfig: NextConfig = {
        { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
        { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
        { protocol: 'https', hostname: 'avatars.githubusercontent.com', pathname: '/**' },
+       { protocol: 'https', hostname: 'images.lumacdn.com', pathname: '/**' },
+       { protocol: 'https', hostname: '**.supabase.co', pathname: '/**' },
      ],
      deviceSizes: [375, 640, 750, 828, 1080, 1200],
   },

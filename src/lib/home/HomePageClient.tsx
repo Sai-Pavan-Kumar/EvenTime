@@ -111,11 +111,26 @@ export function HomePageClient(props: HomePageClientProps) {
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
   const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>(() => getLocalCampusEvents());
 
-  // Determine initial active pill synchronously on Frame 1
+  // Determine initial active pill synchronously on Frame 1 (persisted in sessionStorage)
   const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('et_active_feed_pill');
+        if (saved === 'for_you' || saved === 'around_you' || saved === 'campus') {
+          return saved;
+        }
+      } catch {}
+    }
     const cached = getLocalProfile();
     return (cached?.goals && cached.goals.length > 0) ? 'for_you' : 'around_you';
   });
+
+  const handleSelectFeedPill = (pill: 'for_you' | 'around_you' | 'campus') => {
+    setActiveFeedPill(pill);
+    try {
+      sessionStorage.setItem('et_active_feed_pill', pill);
+    } catch {}
+  };
   
   const isCollegeStudent = !!((user || profile) && profile?.user_type === 'student' && profile?.college_id);
 
@@ -201,10 +216,60 @@ export function HomePageClient(props: HomePageClientProps) {
     return unsubscribe;
   }, []);
 
-  // Sync active feed pill when user goals are available
+  // Instant background revalidation on tab focus / visibility change (0 Supabase DB load)
+  useEffect(() => {
+    let isFetching = false;
+    let lastSync = Date.now();
+
+    const revalidateBuffet = async () => {
+      const now = Date.now();
+      if (isFetching || now - lastSync < 4000) return;
+      isFetching = true;
+      try {
+        const res = await fetch(`/api/buffet?_t=${now}`, {
+          headers: { 'Cache-Control': 'no-cache, no-store' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.allEvents && Array.isArray(data.allEvents) && data.allEvents.length > 0) {
+            setLiveAllEvents(data.allEvents);
+            if (data.featuredEvents) setLiveFeaturedEvents(data.featuredEvents);
+            lastSync = Date.now();
+          }
+        }
+      } catch (err) {
+        // silent fail
+      } finally {
+        isFetching = false;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        revalidateBuffet();
+      }
+    };
+
+    window.addEventListener('focus', revalidateBuffet);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', revalidateBuffet);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Sync active feed pill when user goals are available (respecting manual user selection in session)
   useEffect(() => {
     if (profile?.goals && profile.goals.length > 0) {
-      setActiveFeedPill('for_you');
+      try {
+        const saved = sessionStorage.getItem('et_active_feed_pill');
+        if (!saved) {
+          handleSelectFeedPill('for_you');
+        }
+      } catch {
+        handleSelectFeedPill('for_you');
+      }
     }
   }, [profile?.goals]);
 
@@ -385,7 +450,7 @@ export function HomePageClient(props: HomePageClientProps) {
               <div className="w-full max-w-md bg-[#F1F5F9] rounded-[14px] p-[3px] flex items-center h-11 relative">
                 <button
                   type="button"
-                  onClick={() => setActiveFeedPill('for_you')}
+                  onClick={() => handleSelectFeedPill('for_you')}
                   className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
                     activeFeedPill === 'for_you'
                       ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
@@ -400,7 +465,7 @@ export function HomePageClient(props: HomePageClientProps) {
 
                 <button
                   type="button"
-                  onClick={() => setActiveFeedPill('around_you')}
+                  onClick={() => handleSelectFeedPill('around_you')}
                   className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
                     activeFeedPill === 'around_you'
                       ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
@@ -416,7 +481,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 {isCollegeStudent && (
                   <button
                     type="button"
-                    onClick={() => setActiveFeedPill('campus')}
+                    onClick={() => handleSelectFeedPill('campus')}
                     className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
                       activeFeedPill === 'campus'
                         ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
@@ -822,9 +887,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       : isCampusEligibleTab
                       ? () => setCampusFilterMode('all')
                       : isForYouTab && liveAroundYouEvents.length > 0
-                      ? () => setActiveFeedPill('around_you')
+                      ? () => handleSelectFeedPill('around_you')
                       : isAroundYouTab && livePersonalizedEvents.length > 0
-                      ? () => setActiveFeedPill('for_you')
+                      ? () => handleSelectFeedPill('for_you')
                       : undefined;
 
                     const actionHref = date || isCampusEligibleTab || (isForYouTab && liveAroundYouEvents.length > 0) || (isAroundYouTab && livePersonalizedEvents.length > 0)

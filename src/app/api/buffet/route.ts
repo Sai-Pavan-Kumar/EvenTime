@@ -8,7 +8,7 @@ export async function GET() {
     const data = await fetchHomePageData();
     return NextResponse.json(data, {
       headers: {
-        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+        "Cache-Control": "public, s-maxage=0, must-revalidate",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
       },

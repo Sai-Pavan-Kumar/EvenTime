@@ -122,7 +122,15 @@ export default function EventClientUI({
   const isOwner = Boolean(currentUser && safeCreatorId && currentUser.id === safeCreatorId);
   const isStudent = userProfile?.user_type === "student";
 
-  const imageUrl = event.poster_url || event.banner_url || getCategoryConfig(safeCategory)?.backgroundImage || "";
+  const fallbackImage = getCategoryConfig(safeCategory)?.backgroundImage || "/card-backgrounds/default-event.webp";
+  const isCustomPoster = Boolean(event.is_featured && event.poster_url && event.poster_url.startsWith('http'));
+  const imageUrl = isCustomPoster ? event.poster_url! : fallbackImage;
+  const [currentImageSrc, setCurrentImageSrc] = useState(imageUrl);
+
+  useEffect(() => {
+    const isCustom = Boolean(event.is_featured && event.poster_url && event.poster_url.startsWith('http'));
+    setCurrentImageSrc(isCustom ? event.poster_url! : fallbackImage);
+  }, [event.is_featured, event.poster_url, fallbackImage]);
 
   const formatDetailedDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return "Date TBA";
@@ -558,15 +566,21 @@ export default function EventClientUI({
         <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
           {/* LEFT COLUMN — Media & Action Buttons */}
           <div className="lg:sticky lg:top-8 space-y-6">
-            {imageUrl ? (
+            {currentImageSrc ? (
               <div className="relative w-full rounded-3xl overflow-hidden shadow-sm border border-slate-100">
                 <Image
-                  src={imageUrl}
+                  src={currentImageSrc}
                   alt={safeTitle}
                   width={1200}
                   height={675}
                   className="w-full h-auto object-cover"
                   priority
+                  unoptimized={true}
+                  onError={() => {
+                    if (currentImageSrc !== fallbackImage) {
+                      setCurrentImageSrc(fallbackImage);
+                    }
+                  }}
                 />
                 <div className="absolute bottom-3 left-3 px-3 py-1 bg-slate-900/80 backdrop-blur-sm text-white text-xs font-extrabold uppercase tracking-wider rounded-lg">
                   {safeCategory}
