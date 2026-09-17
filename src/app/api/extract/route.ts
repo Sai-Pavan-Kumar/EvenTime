@@ -140,7 +140,10 @@ const extractFromDevfolio: ExtractorFn = ($, _jsonLd) => {
 /** Unstop: OG tags + h1 fallback */
 const extractFromUnstop: ExtractorFn = ($, _jsonLd) => {
   const base = extractOgBase($);
-  const title = base.title || safeStr($("h1").first().text());
+  // Unstop default fallback title is generic marketing copy ("Unstop - Competitions, Quizzes, Hackathons...")
+  const isGeneric = !base.title || base.title.toLowerCase().startsWith("unstop -") || base.title.toLowerCase().includes("competitions, quizzes, hackathons");
+  const h1 = safeStr($("h1").first().text());
+  const title = (!isGeneric && base.title) ? base.title : h1;
   return { ...base, title };
 };
 
@@ -242,7 +245,12 @@ function isBlockedIp(address: string): boolean {
 // actual fetch-time lookup could return two different IPs.
 async function resolveSafeIp(hostname: string): Promise<string | null> {
   try {
-    const result = await dns.lookup(hostname);
+    const lookupPromise = dns.lookup(hostname);
+    let timer: NodeJS.Timeout;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("DNS timeout")), 2500);
+    });
+    const result = await Promise.race([lookupPromise, timeoutPromise]).finally(() => clearTimeout(timer));
     if (isBlockedIp(result.address)) return null;
     return result.address;
   } catch {
@@ -341,17 +349,29 @@ export async function POST(request: Request) {
     // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
     // at every hop instead of letting fetch() silently follow redirects
     // and re-resolve DNS on its own (that's the rebinding hole).
+    // Global fetch timeout for all redirects + response stream read combined (6 seconds hard limit)
+    const TOTAL_FETCH_TIMEOUT_MS = 6000;
+    const fetchController = new AbortController();
+    const fetchTimeoutId = setTimeout(() => fetchController.abort(), TOTAL_FETCH_TIMEOUT_MS);
+
     let currentUrl = url;
     let res: Response | null = null;
+    let finalUrl = currentUrl;
+    let html = "";
+
     try {
       for (let hop = 0; hop < 4; hop++) {
+        if (fetchController.signal.aborted) {
+          throw new DOMException("The event page took too long to respond.", "TimeoutError");
+        }
+
         const { safe: hopSafe, ip: hopIp } = await isSafeUrl(currentUrl);
         if (!hopSafe || !hopIp) {
           return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
         }
 
         const attempt = await fetch(currentUrl, {
-          signal: AbortSignal.timeout(8000),
+          signal: fetchController.signal,
           redirect: "manual",
           headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
         });
@@ -369,35 +389,41 @@ export async function POST(request: Request) {
       if (!res) {
         return NextResponse.json({ ...EMPTY_RESULT, message: "Too many redirects." }, { status: 422 });
       }
+
+      finalUrl = res.url || currentUrl;
+      
+      const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
+      const reader = res.body?.getReader();
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      if (reader) {
+        while (true) {
+          if (fetchController.signal.aborted) {
+            reader.cancel();
+            throw new DOMException("The event page took too long to respond.", "TimeoutError");
+          }
+          const { done, value } = await reader.read();
+          if (done) break;
+          totalBytes += value.length;
+          if (totalBytes > MAX_BODY_BYTES) {
+            reader.cancel();
+            return NextResponse.json({ ...EMPTY_RESULT, message: "Page too large to extract." }, { status: 422 });
+          }
+          chunks.push(value);
+        }
+      }
+      html = new TextDecoder().decode(Buffer.concat(chunks));
     } catch (err) {
-      const isTimeout = err instanceof Error && err.name === "TimeoutError";
+      const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
       return NextResponse.json({
         ...EMPTY_RESULT,
         message: isTimeout
           ? "The event page took too long to respond. Please try again or enter details manually."
           : "Could not reach the event page. Check the URL and try again.",
       }, { status: 504 });
+    } finally {
+      clearTimeout(fetchTimeoutId);
     }
-
-    const finalUrl = res.url || currentUrl;
-    
-    const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
-    const reader = res.body?.getReader();
-    const chunks: Uint8Array[] = [];
-    let totalBytes = 0;
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        totalBytes += value.length;
-        if (totalBytes > MAX_BODY_BYTES) {
-          reader.cancel();
-          return NextResponse.json({ ...EMPTY_RESULT, message: "Page too large to extract." }, { status: 422 });
-        }
-        chunks.push(value);
-      }
-    }
-    const html = new TextDecoder().decode(Buffer.concat(chunks));
 
     // Parse hostname
     const parsedUrl = new URL(finalUrl);

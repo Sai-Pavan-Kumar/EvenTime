@@ -112,7 +112,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
               <div className="w-5 h-5 border-2 border-slate-200 border-t-[#6C47FF] rounded-full animate-spin" />
             </div>
           )}
-          {!extraction.isExtracting && data.regLink && !extraction.linkDuplicateError && (
+          {!extraction.isExtracting && data.regLink && !extraction.linkDuplicateError && !extraction.extractError && (
             <div className="absolute right-5 top-1/2 -translate-y-1/2 text-green-500">
               <CheckCircle2 className="w-5 h-5" />
             </div>

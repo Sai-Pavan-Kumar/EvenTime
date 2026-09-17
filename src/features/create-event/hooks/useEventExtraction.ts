@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useDuplicateCheck } from "./useDuplicateCheck";
 import type { EventRow } from "@/types";
 import type { FieldStatus } from "../types";
@@ -20,43 +20,71 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
   const [isExtracting, setIsExtracting] = useState(false);
   const [linkDuplicateError, setLinkDuplicateError] = useState("");
   const [extractError, setExtractError] = useState("");
-  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);  const [trustWarning, setTrustWarning] = useState("");
+  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);
+  const [trustWarning, setTrustWarning] = useState("");
   const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
-  
+
+  const activeControllerRef = useRef<AbortController | null>(null);
   const { checkDuplicateLink } = useDuplicateCheck();
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      activeControllerRef.current?.abort();
+    };
+  }, []);
+
   const handleLinkInput = async (val: string) => {
-    setRegLink(val);
+    // Abort any in-flight extraction request immediately
+    if (activeControllerRef.current) {
+      activeControllerRef.current.abort();
+      activeControllerRef.current = null;
+    }
+
+    const trimmed = val.trim();
+    setRegLink(trimmed);
     setLinkDuplicateError("");
     setExtractError("");
 
-    if (!val) {
+    if (!trimmed) {
+      setIsExtracting(false);
       setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
       setFieldStatus({ title: "idle", description: "idle", location: "idle" });
       return;
     }
-    if (!val.startsWith("http")) return;
+
+    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+      setIsExtracting(false);
+      return;
+    }
+
+    // Single unified 8-second client timeout covering duplicate check + API fetch + JSON parsing
+    const controller = new AbortController();
+    activeControllerRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     setIsExtracting(true);
     try {
-      const existing = await checkDuplicateLink(val, currentEventId);
+      const existing = await checkDuplicateLink(trimmed, currentEventId, controller.signal);
       if (existing) {
         setLinkDuplicateError(`This event was already posted as "${existing.title}".`);
-        setIsExtracting(false); return;
+        return;
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: trimmed }),
+        signal: controller.signal,
+      });
 
-      const res = await fetch("/api/extract", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: val }),
-        signal: controller.signal,
-      });
+      const data = await res.json().catch(() => ({}));
 
-      clearTimeout(timeoutId);
-      const data = await res.json();
+      if (!res.ok) {
+        setExtractError(data.message || "Could not fetch details, please enter manually");
+        setFieldStatus({ title: "idle", description: "idle", location: "idle" });
+        return;
+      }
 
       const confidence: number = data.confidence ?? 0;
       setExtractionConfidence(confidence);
@@ -69,7 +97,7 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       }
       if (data.location) setLocation(data.location);
 
-      if (data.finalUrl && data.finalUrl !== val) {
+      if (data.finalUrl && data.finalUrl !== trimmed) {
         setRegLink(data.finalUrl);
       }
 
@@ -92,16 +120,31 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       }
 
       if (!data.title) {
-        setExtractError("Could not fetch details, please enter manually");
-      }
-    } catch (err) {
-      setExtractError("Could not fetch details, please enter manually");
-    } finally {
-      setIsExtracting(false);
+        setExtractError("Could not fetch details, please enter manually");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        if (activeControllerRef.current === controller) {
+          setExtractError("Link extraction timed out. Please enter details manually.");
+        }
+      } else {
+        setExtractError("Could not fetch details, please enter manually");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      if (activeControllerRef.current === controller) {
+        activeControllerRef.current = null;
+        setIsExtracting(false);
+      }
     }
   };
 
   const handleSkipLink = (setStep: (s: number) => void) => {
+    if (activeControllerRef.current) {
+      activeControllerRef.current.abort();
+      activeControllerRef.current = null;
+    }
+    setIsExtracting(false);
     setRegLink("");
     setLinkDuplicateError("");
     setExtractError("");
