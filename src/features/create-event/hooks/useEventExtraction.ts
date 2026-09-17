@@ -58,10 +58,10 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       return;
     }
 
-    // Single unified 8-second client timeout covering duplicate check + API fetch + JSON parsing
+    // Single unified 5-second client timeout covering duplicate check + API fetch + JSON parsing
     const controller = new AbortController();
     activeControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     setIsExtracting(true);
     try {
@@ -152,8 +152,16 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
     setStep(1);
   };
 
+  const abortExtraction = () => {
+    if (activeControllerRef.current) {
+      activeControllerRef.current.abort();
+      activeControllerRef.current = null;
+    }
+    setIsExtracting(false);
+  };
+
   return {
     regLink, setRegLink, isExtracting, linkDuplicateError, extractError,
-    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink
+    isTrusted, trustWarning, extractionConfidence, handleLinkInput, handleSkipLink, abortExtraction
   };
 }

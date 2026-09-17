@@ -211,19 +211,67 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
     initialLink: initialData?.registration_link ?? undefined,
     currentEventId: initialData?.id,
-    initialIsTrusted: eventData.isTrustedDomain,
     isAdmin: isCurrentUserAdmin 
   });
   
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
   const { isSubmitting, submitEvent } = useEventSubmit();
 
-   // Re-run domain trust check ONLY if it's a new event and they pasted a link.
-  const handleSubmit = async () => {
-    if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
-      alert("Please select your college before restricting this event to it — or turn off 'College Only' if you want it open to everyone.");
-      return;
+  const validateMandatoryFields = () => {
+    if (extraction.isExtracting) {
+      extraction.abortExtraction();
     }
+
+    if (!eventData.title?.trim()) {
+      toast.error("Please enter an Event Title");
+      document.getElementById("event-title-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-title-input")?.focus();
+      return false;
+    }
+    if (!eventData.category) {
+      toast.error("Please select a Category for your event");
+      document.getElementById("event-category-select")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-category-select")?.focus();
+      return false;
+    }
+    if (!eventData.description?.trim()) {
+      toast.error("Please enter an Event Description");
+      document.getElementById("event-description-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-description-input")?.focus();
+      return false;
+    }
+    if (!eventData.selectedDate) {
+      toast.error("Please select an Event Date on the calendar");
+      document.getElementById("event-date-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+    if (eventData.isOnline && !eventData.regLink?.trim()) {
+      toast.error("Registration link is required for Virtual Events");
+      document.getElementById("event-reg-link-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-reg-link-input")?.focus();
+      return false;
+    }
+    if (!eventData.isOnline && !eventData.city) {
+      toast.error("Please select a City for your in-person event");
+      document.getElementById("event-city-select")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-city-select")?.focus();
+      return false;
+    }
+    if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
+      toast.error("Please select your college before restricting this event to it — or turn off 'College Only'.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (!validateMandatoryFields()) return;
+    setStep(1);
+  };
+
+  const handleSubmit = async () => {
+    if (!validateMandatoryFields()) return;
+
     const res = await submitEvent({
       title: eventData.title,
       category: eventData.category,
@@ -298,7 +346,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               updateData={updateData} 
               isCollegeCategory={isCollegeCategory}
               extraction={extraction}
-              onNext={() => setStep(1)}
+              onNext={handleNextStep}
               isValid={Boolean(step0Valid)}
               isSubmitting={isSubmitting && !isAdminFeatureEnabled}
               onSubmit={handleSubmit}
@@ -307,18 +355,18 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               isEditing={isEditing}
             />
           )}
-            {step === 1 && (
-              <StepFeatured 
-                data={eventData} 
-                updateData={updateData} 
-                crop={crop}
-                onBack={() => setStep(0)} 
-                onSubmit={handleSubmit} 
-                isSubmitting={isSubmitting}
-                isEditing={isEditing}
-                isAdminFeatureEnabled={isAdminFeatureEnabled}
-              />
-            )}
+          {step === 1 && (
+            <StepFeatured 
+              data={eventData} 
+              updateData={updateData} 
+              crop={crop}
+              onBack={() => setStep(0)} 
+              onSubmit={handleSubmit} 
+              isSubmitting={isSubmitting}
+              isEditing={isEditing}
+              isAdminFeatureEnabled={isAdminFeatureEnabled}
+            />
+          )}
         </AnimatePresence>
       </div>
 

@@ -349,8 +349,8 @@ export async function POST(request: Request) {
     // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
     // at every hop instead of letting fetch() silently follow redirects
     // and re-resolve DNS on its own (that's the rebinding hole).
-    // Global fetch timeout for all redirects + response stream read combined (6 seconds hard limit)
-    const TOTAL_FETCH_TIMEOUT_MS = 6000;
+    // Global fetch timeout for all redirects + response stream read combined (4 seconds hard limit)
+    const TOTAL_FETCH_TIMEOUT_MS = 4000;
     const fetchController = new AbortController();
     const fetchTimeoutId = setTimeout(() => fetchController.abort(), TOTAL_FETCH_TIMEOUT_MS);
 
@@ -373,7 +373,16 @@ export async function POST(request: Request) {
         const attempt = await fetch(currentUrl, {
           signal: fetchController.signal,
           redirect: "manual",
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1",
+          },
         });
 
         if ([301, 302, 303, 307, 308].includes(attempt.status)) {

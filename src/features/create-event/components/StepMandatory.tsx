@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee } from "lucide-react";
+import { Link2, AlertTriangle, MapPin, Video, CheckCircle2, IndianRupee, Loader2 } from "lucide-react";
 import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
 import { categoriesList, hours, mins, ampms, COLLEGE_YEAR_OPTIONS } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
@@ -103,6 +103,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
         <div className="relative">
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
+            id="event-reg-link-input"
             type="url" value={data.regLink} maxLength={500} onChange={e => handleLinkInput(e.target.value)}
             placeholder="Paste event link (lu.ma, eventbrite, etc.)"
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
@@ -157,6 +158,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           </span>
         </div>
         <input
+          id="event-title-input"
           type="text"
           value={data.title}
           maxLength={100}
@@ -169,7 +171,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       <div className="grid grid-cols-1 gap-6">
         <div className="space-y-3">
           <label className="block text-sm font-semibold text-slate-700">Category <span className="text-red-500">*</span></label>
-          <select value={data.category} onChange={e => updateData({ category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none">
+          <select id="event-category-select" value={data.category} onChange={e => updateData({ category: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3.5 outline-none">
             <option value="" disabled>Select category</option>
             {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
@@ -351,6 +353,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
               </span>
             </div>
             <textarea
+              id="event-description-input"
               value={data.description}
               maxLength={3000}
               onChange={e => updateData({ description: e.target.value })}
@@ -361,7 +364,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 
           {/* DATE & TIME & LOCATION */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4 border-t border-slate-200">
-        <div className="space-y-4">
+        <div id="event-date-section" className="space-y-4">
            <div className="flex items-center justify-between mb-2">
              <label className="text-sm font-semibold text-slate-700">Event Date <span className="text-red-500">*</span></label>
              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 cursor-pointer hover:text-brand-primary transition-colors">
@@ -433,6 +436,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
            {!data.isOnline ? (
               <div className="space-y-3">
                 <select
+                  id="event-city-select"
                   value={data.city || ""}
                   onChange={e => updateData({ city: e.target.value, location: data.location && data.location !== data.city ? data.location : e.target.value })}
                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-brand-primary/20 outline-none"
@@ -517,12 +521,32 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
             
            {/* isAdminFeatureEnabled OFF will block the next step */}
            {isAdmin && isAdminFeatureEnabled && data.isFeatured ? (
-              <button type="button" onClick={onNext} disabled={!isValid || extraction.isExtracting} className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md">
+              <button 
+                type="button" 
+                onClick={onNext} 
+                disabled={isSubmitting} 
+                className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
+              >
                  Continue to Next Step
               </button>
             ) : (
-              <button type="button" onClick={onSubmit} disabled={!isValid || isSubmitting || extraction.isExtracting} className="bg-brand-primary hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20">
-              {isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")} <CheckCircle2 className="w-5 h-5" />
+              <button 
+                type="button" 
+                onClick={onSubmit} 
+                disabled={isSubmitting} 
+                className="bg-brand-primary hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>{isEditing ? "Updating Event..." : (extraction.isTrusted ? "Posting Event..." : "Submitting Event...")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span>{isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")}</span>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </>
+                )}
               </button>
             )}
           </div>
