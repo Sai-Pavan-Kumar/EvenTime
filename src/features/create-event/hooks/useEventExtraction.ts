@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useDuplicateCheck } from "./useDuplicateCheck";
+import { createClient } from "@/lib/supabase/client";
+import { isVerifiedDomain, updateDynamicVerifiedDomains } from "@/lib/constants/verifiedDomains";
 import type { EventRow } from "@/types";
 import type { FieldStatus } from "../types";
 
@@ -20,12 +22,28 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
   const [isExtracting, setIsExtracting] = useState(false);
   const [linkDuplicateError, setLinkDuplicateError] = useState("");
   const [extractError, setExtractError] = useState("");
-  const [isTrusted, setIsTrusted] = useState(initialIsTrusted);
+  const [isTrusted, setIsTrusted] = useState(() => isVerifiedDomain(initialLink) || initialIsTrusted);
   const [trustWarning, setTrustWarning] = useState("");
   const [extractionConfidence, setExtractionConfidence] = useState<number>(0);
 
   const activeControllerRef = useRef<AbortController | null>(null);
   const { checkDuplicateLink } = useDuplicateCheck();
+
+  // Fetch updated list of verified domains from DB on mount to keep dynamic cache hot
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("verified_domains")
+      .select("domain_name")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          updateDynamicVerifiedDomains(data.map((d: { domain_name: string }) => d.domain_name));
+          if (regLink) {
+            setIsTrusted(isVerifiedDomain(regLink));
+          }
+        }
+      });
+  }, [regLink]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -51,6 +69,17 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
       setFieldStatus({ title: "idle", description: "idle", location: "idle" });
       return;
+    }
+
+    // Instantly verify domain from verified domains list (0ms latency, works offline/unauthenticated)
+    const instantTrusted = isVerifiedDomain(trimmed);
+    setIsTrusted(instantTrusted);
+    if (instantTrusted) {
+      setTrustWarning("");
+    } else if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      if (!isAdmin) {
+        setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
+      }
     }
 
     if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
@@ -108,8 +137,9 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
         location: data.location ? (isHigh ? "success" : "warning") : "idle",
       });
 
-      setIsTrusted(data.isTrusted === true);
-      if (data.isTrusted === false) {
+      const finalTrusted = data.isTrusted === true || instantTrusted || isVerifiedDomain(data.finalUrl || trimmed);
+      setIsTrusted(finalTrusted);
+      if (!finalTrusted) {
         if (!isAdmin) {
           setTrustWarning("This link cannot be verified. Wait for the event to get approved.");
         } else {

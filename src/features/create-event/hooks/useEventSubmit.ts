@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { TablesInsert } from "@/types/database";
 import { toast } from "sonner";
 import { revalidateEventsCacheAction } from "@/app/et98/revalidateEventsAction";
+import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 type SubmitPayload = TablesInsert<"events"> & {
   imageFile?: File | null;
   previewUrl?: string | null;
@@ -101,7 +102,8 @@ export function useEventSubmit() {
           
       } else {
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
-        finalStatus = isAdmin ? "approved" : (finalPayload.status || "pending");
+        const isTrustedLink = isVerifiedDomain(finalPayload.registration_link);
+        finalStatus = isAdmin || isTrustedLink ? "approved" : (finalPayload.status || "pending");
         const { data: insertedRows, error } = await supabase.from("events").insert([{
           ...finalPayload, 
           slug: uniqueSlug, 

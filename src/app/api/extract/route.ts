@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { createClient } from "@/lib/supabase/server";
+import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { isIP } from "net";
 import dns from "dns/promises";
 
@@ -439,14 +440,14 @@ export async function POST(request: Request) {
     let hostname = parsedUrl.hostname.toLowerCase();
     if (hostname.startsWith("www.")) hostname = hostname.slice(4);
 
-    // Trusted domain check (matches hostname, or hostname+path for shared hosts like Google Forms)
-    const fullPath = `${hostname}${parsedUrl.pathname}`;
+    // Trusted domain check (matches exact domain, subdomains, or shared path rules)
     const { data: trustedDomains } = await supabase
       .from("verified_domains")
       .select("domain_name");
-    const isTrusted = !!trustedDomains?.some(
-      (d) => hostname === d.domain_name || fullPath.startsWith(d.domain_name)
-    );
+    const domainList = trustedDomains && trustedDomains.length > 0
+      ? trustedDomains.map((d: { domain_name: string }) => d.domain_name)
+      : undefined;
+    const isTrusted = isVerifiedDomain(finalUrl, domainList) || isVerifiedDomain(url, domainList);
 
     // Parse HTML + JSON-LD
     const $ = cheerio.load(html);

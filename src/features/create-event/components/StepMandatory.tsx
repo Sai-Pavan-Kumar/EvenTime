@@ -10,6 +10,7 @@ import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 
 
 
@@ -17,6 +18,9 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
   
   // SECURE ADMIN CHECK
   const isAdmin = isCurrentUserAdmin;
+
+  // Instant domain trust computation (0ms, no flash of unverified badge)
+  const isLinkVerified = !data.regLink || isVerifiedDomain(data.regLink) || extraction.isTrusted || data.isTrustedDomain;
 
   // NEW: College picker for restricted college events (live server search)
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
@@ -73,7 +77,8 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
 
   // Smart Link Handler (Point 5 & 3)
   const handleLinkInput = (url: string) => {
-    updateData({ regLink: url });
+    const trusted = isVerifiedDomain(url);
+    updateData({ regLink: url, isTrustedDomain: trusted });
     // Run the actual backend extraction hook
     extraction.handleLinkInput(url);
   };
@@ -94,7 +99,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}
           </label>
-          {!extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+          {!isLinkVerified && data.regLink && !extraction.isExtracting && (
             <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs font-bold">
               <AlertTriangle className="w-3.5 h-3.5" /> Unverified Domain
             </span>
@@ -513,7 +518,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       </div>
 
       <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
-            {!isAdmin && !extraction.isTrusted && data.regLink && !extraction.isExtracting && (
+            {!isAdmin && !isLinkVerified && data.regLink && !extraction.isExtracting && (
               <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>
@@ -539,11 +544,11 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>{isEditing ? "Updating Event..." : (extraction.isTrusted ? "Posting Event..." : "Submitting Event...")}</span>
+                    <span>{isEditing ? "Updating Event..." : (isLinkVerified ? "Posting Event..." : "Submitting Event...")}</span>
                   </>
                 ) : (
                   <>
-                    <span>{isEditing ? "Update Event" : (extraction.isTrusted ? "Post your event" : "Submit Event")}</span>
+                    <span>{isEditing ? "Update Event" : (isLinkVerified ? "Post your event" : "Submit Event")}</span>
                     <CheckCircle2 className="w-5 h-5" />
                   </>
                 )}

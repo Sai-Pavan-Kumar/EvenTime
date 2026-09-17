@@ -18,6 +18,7 @@ import { StepMandatory } from "./components/StepMandatory";
 import { StepFeatured } from "./components/StepFeatured";
 import { CuratorCelebrationModal, CelebrationEventData } from "./components/CuratorCelebrationModal";
 import { toast } from "sonner";
+import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 
 interface ExtendedFormProps extends CreateEventFormProps {
   isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
@@ -35,7 +36,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   // Unified State Object
   const [eventData, setEventData] = useState({
     regLink: initialData?.registration_link || "",
-    isTrustedDomain: initialData?.status ? initialData.status === "approved" : true,
+    isTrustedDomain: initialData?.status ? initialData.status === "approved" : (initialData?.registration_link ? isVerifiedDomain(initialData.registration_link) : true),
     title: initialData?.title || "",
     category: initialData?.category || "",
     isCreatingNewCategory: false,
@@ -89,6 +90,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
           setEventData((prev) => ({
             ...prev,
             ...draft,
+            isTrustedDomain: draft.regLink ? isVerifiedDomain(draft.regLink) : true,
             selectedDate: draft.selectedDate ? new Date(draft.selectedDate) : undefined,
             endDate: draft.endDate ? new Date(draft.endDate) : undefined,
             registrationDeadline: draft.registrationDeadline ? new Date(draft.registrationDeadline) : undefined,
@@ -292,7 +294,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       team_size: eventData.isFeatured ? (eventData.teamSize?.trim() || null) : null,
       website: eventData.isFeatured ? (eventData.website?.trim() || null) : null,
       is_featured: eventData.isFeatured,
-      status: (eventData.isTrustedDomain && eventData.regLink) ? "approved" : "pending",
+      status: (eventData.regLink && isVerifiedDomain(eventData.regLink)) || eventData.isTrustedDomain ? "approved" : "pending",
       registration_deadline: eventData.isFeatured && eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : null,
       branch_tags: isCollegeCategory && eventData.collegeBranch && eventData.collegeBranch !== "All Branches" ? [eventData.collegeBranch] : null,
       college_branch: isCollegeCategory && eventData.collegeBranch && eventData.collegeBranch !== "All Branches" ? eventData.collegeBranch : null,
