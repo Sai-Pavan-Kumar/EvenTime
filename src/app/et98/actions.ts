@@ -287,43 +287,55 @@ if (!event) {
 }
 
 export async function toggleLeaderboardAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
+  try {
+    const supabase = await createClient();
+    const isAdmin = await verifyAdmin(supabase);
+    if (!isAdmin) return { error: "Unauthorized." };
 
-  const enabled = formData.get("enabled") === "true";
+    const enabled = formData.get("enabled") === "true";
 
-  const { error } = await supabase.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle leaderboard failed:", error);
-    return { error: "Failed to update setting." };
+    const adminClient = createAdminClient();
+    const { error } = await adminClient.from("app_settings").update({ leaderboard_enabled: enabled }).eq("id", 1);
+    if (error) {
+      console.error("Toggle leaderboard failed:", error);
+      return { error: error.message || "Failed to update setting in database." };
+    }
+
+    revalidatePath("/et98");
+    revalidatePath("/");
+    revalidatePath("/leaderboard");
+    revalidateTag("app_settings", "max");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Toggle leaderboard exception:", err);
+    return { error: err?.message || "Failed to update setting." };
   }
-
-  revalidatePath("/et98");
-
-  revalidatePath("/");
-  revalidatePath("/leaderboard");
-  return { success: true };
 }
 
 export async function toggleAppBannerAction(formData: FormData) {
-  const supabase = await createClient();
-  const isAdmin = await verifyAdmin(supabase);
-  if (!isAdmin) throw new Error("Unauthorized.");
+  try {
+    const supabase = await createClient();
+    const isAdmin = await verifyAdmin(supabase);
+    if (!isAdmin) return { error: "Unauthorized." };
 
-  const enabled = formData.get("enabled") === "true";
+    const enabled = formData.get("enabled") === "true";
 
-  const { error } = await supabase.from("app_settings").update({ app_banner_enabled: enabled }).eq("id", 1);
-  if (error) {
-    console.error("Toggle app banner failed:", error);
-    return { error: "Failed to update setting. Please apply the DB migration if not yet present." };
+    const adminClient = createAdminClient();
+    const { error } = await adminClient.from("app_settings").update({ app_banner_enabled: enabled }).eq("id", 1);
+    if (error) {
+      console.error("Toggle app banner failed:", error);
+      return { error: error.message || "Failed to update setting in database." };
+    }
+
+    revalidatePath("/et98");
+    revalidatePath("/");
+    revalidateTag("app_settings", "max");
+    revalidateTag("events", "max");
+    return { success: true };
+  } catch (err: any) {
+    console.error("Toggle app banner exception:", err);
+    return { error: err?.message || "Failed to update setting." };
   }
-
-  revalidatePath("/et98");
-  revalidatePath("/");
-  revalidateTag("app_settings", "app_settings");
-  revalidateTag("events", "events");
-  return { success: true };
 }
 
 export async function toggleFeaturedAction(formData: FormData) {

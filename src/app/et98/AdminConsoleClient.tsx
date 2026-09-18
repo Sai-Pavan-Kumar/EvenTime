@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -119,12 +119,27 @@ export default function AdminConsoleClient({
   const [collegeWebsite, setCollegeWebsite] = useState("");
   const [isAddingCollege, setIsAddingCollege] = useState(false);
 
-  // Switch tabs
+  // Sync activeTab with URL params & browser popstate (back/forward)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = (params.get("tab") as TabType) || "overview";
+      if (validTabs.includes(tab)) {
+        setActiveTab(tab);
+      } else {
+        setActiveTab("overview");
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  // Switch tabs (push to browser history so device back returns to previous tab)
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setSearchQuery("");
     const newUrl = tab === "overview" ? "/et98" : `/et98?tab=${tab}`;
-    window.history.replaceState(null, "", newUrl);
+    window.history.pushState({ tab }, "", newUrl);
   };
 
   // Refresh data
@@ -143,14 +158,19 @@ export default function AdminConsoleClient({
   const handleToggleLeaderboard = async () => {
     const nextState = !settings.leaderboardEnabled;
     setSettings((prev) => ({ ...prev, leaderboardEnabled: nextState }));
-    const fd = new FormData();
-    fd.set("enabled", nextState.toString());
-    const res = await toggleLeaderboardAction(fd);
-    if (res?.error) {
-      toast.error(res.error);
+    try {
+      const fd = new FormData();
+      fd.set("enabled", nextState.toString());
+      const res = await toggleLeaderboardAction(fd);
+      if (res?.error) {
+        toast.error(res.error);
+        setSettings((prev) => ({ ...prev, leaderboardEnabled: !nextState }));
+      } else {
+        toast.success(`Leaderboard ${nextState ? "enabled" : "disabled"}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to toggle leaderboard");
       setSettings((prev) => ({ ...prev, leaderboardEnabled: !nextState }));
-    } else {
-      toast.success(`Leaderboard ${nextState ? "enabled" : "disabled"}`);
     }
   };
 
@@ -167,14 +187,19 @@ export default function AdminConsoleClient({
   const handleToggleAppBanner = async () => {
     const nextState = !settings.appBannerEnabled;
     setSettings((prev) => ({ ...prev, appBannerEnabled: nextState }));
-    const fd = new FormData();
-    fd.set("enabled", nextState.toString());
-    const res = await toggleAppBannerAction(fd);
-    if (res?.error) {
-      toast.error(res.error);
+    try {
+      const fd = new FormData();
+      fd.set("enabled", nextState.toString());
+      const res = await toggleAppBannerAction(fd);
+      if (res?.error) {
+        toast.error(res.error);
+        setSettings((prev) => ({ ...prev, appBannerEnabled: !nextState }));
+      } else {
+        toast.success(`Mobile App Banner ${nextState ? "enabled" : "disabled"}`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to toggle mobile app banner");
       setSettings((prev) => ({ ...prev, appBannerEnabled: !nextState }));
-    } else {
-      toast.success(`Mobile App Banner ${nextState ? "enabled" : "disabled"}`);
     }
   };
 
@@ -462,13 +487,20 @@ export default function AdminConsoleClient({
           <div className="flex items-center justify-between h-16">
             {/* Left: Back & Title */}
             <div className="flex items-center gap-3">
-              <Link
-                href="/"
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeTab !== "overview") {
+                    handleTabChange("overview");
+                  } else {
+                    router.push("/");
+                  }
+                }}
                 className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                title="Back to EvenTime"
+                title={activeTab !== "overview" ? "Back to Overview" : "Back to EvenTime"}
               >
                 <ArrowLeft className="w-5 h-5" />
-              </Link>
+              </button>
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF]">
                   <Shield className="w-4 h-4" />
@@ -714,6 +746,8 @@ export default function AdminConsoleClient({
                     </p>
                   </div>
                   <button
+                    id="toggle-app-banner-btn"
+                    aria-label="Toggle Mobile App Banner"
                     type="button"
                     onClick={handleToggleAppBanner}
                     className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${

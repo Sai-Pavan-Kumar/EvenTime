@@ -165,7 +165,7 @@ export default function RootLayout({
           </PostHogProvider>
         </AuthProvider>
         
-        <Toaster />
+        <Toaster richColors position="top-right" closeButton />
         <Analytics />
         <SpeedInsights />
       </body>

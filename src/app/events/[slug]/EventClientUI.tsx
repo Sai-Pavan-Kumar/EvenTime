@@ -436,6 +436,22 @@ export default function EventClientUI({
     }
   };
 
+  if (event.status !== "approved" && !isAuthLoading && !isAdmin && (!authUser || authUser.id !== safeCreatorId)) {
+    return (
+      <main className="min-h-screen bg-surface-base font-['Switzer'] flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6">
+          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
+          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
+          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
+          <Link href="/" className="mt-6 px-5 py-2.5 rounded-full bg-[#6C47FF] text-white font-bold text-sm font-['Outfit'] hover:bg-[#5835E5] transition-colors">
+            Browse Active Events
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-white pb-24 md:pb-12 overflow-x-hidden">
       <Navbar />

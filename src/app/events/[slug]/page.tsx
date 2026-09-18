@@ -1,12 +1,10 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { unstable_cache } from "next/cache";
 import EventClientUI from "./EventClientUI";
-
-export const revalidate = false; // Pure event-driven — busted by revalidateTag("events") on admin approve/reject
 
 // Helper function to check if the slug is a valid UUID
 const isValidUUID = (id: string) => {
@@ -34,19 +32,19 @@ const getCachedPublicEvent = (slug: string) =>
     { tags: ["events", `event_${slug}`], revalidate: false }
   )();
 
-// Fallback for draft/pending events visible only to curator/admin
+// Fallback for draft/pending events visible to curator/admin (service role fetch, 0 cookies)
 const getEvent = cache(async (slug: string) => {
   const cached = await getCachedPublicEvent(slug);
   if (cached && cached.status === "approved") {
     return cached;
   }
   try {
-    const supabase = await createServerClient();
+    const adminClient = createAdminClient();
     const isUUID = isValidUUID(slug);
-    let query = supabase.from("events").select(EVENT_DETAIL_FIELDS);
+    let query = adminClient.from("events").select(EVENT_DETAIL_FIELDS);
     query = isUUID ? query.eq("id", slug) : query.eq("slug", slug);
     const { data } = await query.maybeSingle();
-    return data;
+    return data || cached;
   } catch {
     return cached;
   }
@@ -147,7 +145,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const event = await getEvent(slug);
+  const event = await getCachedPublicEvent(slug);
 
   if (!event || event.status !== "approved") return { title: "Event Not Found" };
 
@@ -209,29 +207,6 @@ export default async function EventPage({
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
   const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
   const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
-
-  // Ensure pending/rejected events are only visible to the creator or an admin
-  if (finalEvent.status !== "approved") {
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    const isCreator = user?.id === finalEvent.creator_id;
-    
-    let isAdmin = false;
-    if (user && !isCreator) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-      isAdmin = profile?.role === "admin";
-    }
-
-    if (!isCreator && !isAdmin) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center text-center p-6 bg-surface-base">
-          <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-4 text-2xl shadow-sm border border-amber-100">⏳</div>
-          <h2 className="text-2xl font-black text-slate-900 mb-2 font-['Outfit'] tracking-tight">Event Under Review</h2>
-          <p className="text-slate-500 font-medium max-w-md font-['Switzer']">This event is currently pending approval by our moderators or has been rejected. Check back later.</p>
-        </div>
-      );
-    }
-  }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||  "https://eventime.thesurfboard.in";
   const eventUrl = `${baseUrl}/events/${finalEvent.slug || finalEvent.id}`;
