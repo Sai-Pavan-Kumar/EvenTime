@@ -29,7 +29,9 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
   const activeControllerRef = useRef<AbortController | null>(null);
   const { checkDuplicateLink } = useDuplicateCheck();
 
-  // Fetch updated list of verified domains from DB on mount to keep dynamic cache hot
+  const lastExtractedUrlRef = useRef<string>("");
+
+  // Fetch updated list of verified domains from DB ONCE on mount
   useEffect(() => {
     const supabase = createClient();
     supabase
@@ -42,8 +44,8 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
             setIsTrusted(isVerifiedDomain(regLink));
           }
         }
-      });
-  }, [regLink]);
+      }, () => {});
+  }, []); // Run ONCE on mount
 
   // Cleanup on unmount
   useEffect(() => {
@@ -53,18 +55,17 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
   }, []);
 
   const handleLinkInput = async (val: string) => {
-    // Abort any in-flight extraction request immediately
-    if (activeControllerRef.current) {
-      activeControllerRef.current.abort();
-      activeControllerRef.current = null;
-    }
-
     const trimmed = val.trim();
     setRegLink(trimmed);
     setLinkDuplicateError("");
     setExtractError("");
 
     if (!trimmed) {
+      if (activeControllerRef.current) {
+        activeControllerRef.current.abort();
+        activeControllerRef.current = null;
+      }
+      lastExtractedUrlRef.current = "";
       setIsExtracting(false);
       setTitle(""); setDescription(""); setTrustWarning(""); setIsTrusted(false);
       setFieldStatus({ title: "idle", description: "idle", location: "idle" });
@@ -87,10 +88,22 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       return;
     }
 
-    // Single unified 5-second client timeout covering duplicate check + API fetch + JSON parsing
+    // Skip if already extracting this exact URL
+    if (trimmed === lastExtractedUrlRef.current && isExtracting) {
+      return;
+    }
+    lastExtractedUrlRef.current = trimmed;
+
+    // Abort previous in-flight request if a new URL is entered
+    if (activeControllerRef.current) {
+      activeControllerRef.current.abort();
+      activeControllerRef.current = null;
+    }
+
+    // Generous 10-second client timeout covering duplicate check + API fetch + JSON parsing
     const controller = new AbortController();
     activeControllerRef.current = controller;
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     setIsExtracting(true);
     try {
@@ -100,9 +113,22 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
         return;
       }
 
+      // Read active Supabase session token to send with request
+      const supabase = createClient();
+      let accessToken = "";
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        accessToken = sessionData?.session?.access_token || "";
+      } catch {}
+
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
       const res = await fetch("/api/extract", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ url: trimmed }),
         signal: controller.signal,
       });

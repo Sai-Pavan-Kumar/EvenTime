@@ -27,14 +27,19 @@ export function useEventSubmit() {
 
   const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
     setIsSubmitting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast.error("Please login to submit an event.");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
+      const userRes = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
+          setTimeout(() => reject(new Error("Authentication check timed out")), 5000)
+        )
+      ]);
+      const user = userRes?.data?.user;
+      if (!user) {
+        toast.error("Please login to submit an event.");
+        return;
+      }
+
       let finalPosterUrl = payloadData.previewUrl; // Fallback to existing
       
       if (payloadData.imageFile) {
@@ -64,17 +69,21 @@ export function useEventSubmit() {
 
       if (finalPosterUrl) finalPayload.poster_url = finalPosterUrl;
 
-      // 1. Fetch profile data from your database (MOVED TO TOP LEVEL SCOPE)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, username, user_type, role")
-        .eq("id", user.id)
-        .single();
+      // 1. Fetch profile data with 4s timeout
+      let profile: any = null;
+      try {
+        const profileRes = await Promise.race([
+          supabase.from("profiles").select("full_name, username, user_type, role").eq("id", user.id).single(),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Profile query timeout")), 4000))
+        ]);
+        profile = profileRes?.data;
+      } catch (profileErr) {
+        console.warn("[useEventSubmit] Profile fetch warning, using fallback:", profileErr);
+      }
 
       // NEW: Auto-fetch and assign curator name if organizer_name is empty
       if (!finalPayload.organizer_name || String(finalPayload.organizer_name).trim() === "") {
         // 2. Extract name from Supabase/Google Auth metadata
-        // Google usually stores this under 'name' or 'full_name'
         const authName = user.user_metadata?.full_name || user.user_metadata?.name;
 
         // 3. Fallback logic: Profile Name -> Google Name -> Profile Username -> Default
@@ -86,14 +95,16 @@ export function useEventSubmit() {
       }
 
       let finalStatus: string | null = null;
-
       let insertedId: string | undefined = undefined;
 
       if (isEditing && eventId) {
         insertedId = eventId;
-        const { error } = await supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id);
+        const updateRes = await Promise.race([
+          supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event update timed out")), 8000))
+        ]);
         
-        if (error) throw error;
+        if (updateRes.error) throw updateRes.error;
         
         await supabase.from("event_reports")
           .update({ status: "resolved" })
@@ -104,15 +115,26 @@ export function useEventSubmit() {
         const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
         const isTrustedLink = isVerifiedDomain(finalPayload.registration_link);
         finalStatus = isAdmin || isTrustedLink ? "approved" : (finalPayload.status || "pending");
-        const { data: insertedRows, error } = await supabase.from("events").insert([{
-          ...finalPayload, 
-          slug: uniqueSlug, 
-          creator_id: user.id,
-          status: finalStatus 
-        }]).select("id");
-        if (error) throw error;
-        insertedId = insertedRows?.[0]?.id;
-        if (finalStatus === "approved") await revalidateEventsCacheAction(uniqueSlug);
+        
+        const insertRes = await Promise.race([
+          supabase.from("events").insert([{
+            ...finalPayload, 
+            slug: uniqueSlug, 
+            creator_id: user.id,
+            status: finalStatus 
+          }]).select("id"),
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event submission timed out")), 8000))
+        ]);
+        
+        if (insertRes.error) throw insertRes.error;
+        insertedId = insertRes.data?.[0]?.id;
+        
+        // Background cache revalidation without blocking UI
+        if (finalStatus === "approved") {
+          void revalidateEventsCacheAction(uniqueSlug).catch((err) => {
+            console.error("[useEventSubmit] Cache revalidation warning:", err);
+          });
+        }
       }
       
       toast.success(
@@ -146,6 +168,7 @@ export function useEventSubmit() {
           ? "This event link has already been posted by someone else."
           : (err?.message || "Submission failed. Please try again.")
       );
+      return { success: false, error: err };
     } finally {
       setIsSubmitting(false);
     }

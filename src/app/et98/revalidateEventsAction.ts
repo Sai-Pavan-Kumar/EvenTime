@@ -4,14 +4,14 @@ import { revalidateTag, revalidatePath } from "next/cache";
 
 export async function revalidateEventsCacheAction(slug?: string) {
   try {
-    (revalidateTag as any)("events", "events");
+    revalidateTag("events", "events");
     revalidatePath("/", "layout");
     revalidatePath("/", "page");
     revalidatePath("/search", "page");
     revalidatePath("/cities", "page");
     revalidatePath("/api/buffet");
     if (slug) {
-      (revalidateTag as any)(`event_${slug}`, `event_${slug}`);
+      revalidateTag(`event_${slug}`, "events");
       revalidatePath(`/events/${slug}`, "page");
     }
   } catch (e) {

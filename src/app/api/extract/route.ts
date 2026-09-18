@@ -58,12 +58,30 @@ function safeStr(value: unknown): string {
 
 /** Pull common OG/Twitter/title tags — used as fallback by all extractors */
 function extractOgBase($: cheerio.CheerioAPI): ExtractedEvent {
+  const title = safeStr(
+    $('meta[property="og:title"]').attr("content") ??
+    $('meta[name="twitter:title"]').attr("content") ??
+    $('meta[name="title"]').attr("content") ??
+    $("title").text() ??
+    $("h1").first().text()
+  );
+  const description = safeStr(
+    $('meta[property="og:description"]').attr("content") ??
+    $('meta[name="twitter:description"]').attr("content") ??
+    $('meta[name="description"]').attr("content")
+  );
+  const image = safeStr(
+    $('meta[property="og:image"]').attr("content") ??
+    $('meta[property="og:image:url"]').attr("content") ??
+    $('meta[name="twitter:image"]').attr("content") ??
+    $('meta[name="twitter:image:src"]').attr("content")
+  );
   return {
-    title:       safeStr($('meta[property="og:title"]').attr("content") ?? $("title").text()),
-    description: safeStr($('meta[property="og:description"]').attr("content") ?? $('meta[name="description"]').attr("content")),
-    image:       safeStr($('meta[property="og:image"]').attr("content") ?? $('meta[name="twitter:image"]').attr("content")),
-    date:        "",
-    location:    "",
+    title,
+    description,
+    image,
+    date: "",
+    location: "",
   };
 }
 
@@ -249,7 +267,7 @@ async function resolveSafeIp(hostname: string): Promise<string | null> {
     const lookupPromise = dns.lookup(hostname);
     let timer: NodeJS.Timeout;
     const timeoutPromise = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error("DNS timeout")), 2500);
+      timer = setTimeout(() => reject(new Error("DNS timeout")), 4000);
     });
     const result = await Promise.race([lookupPromise, timeoutPromise]).finally(() => clearTimeout(timer));
     if (isBlockedIp(result.address)) return null;
@@ -301,22 +319,20 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      const { data: authData } = await supabase.auth.getUser();
-      user = authData?.user || null;
+      try {
+        const { data: authData } = await supabase.auth.getUser();
+        user = authData?.user || null;
+      } catch {}
     }
 
-    if (!user) {
-      return NextResponse.json({ ...EMPTY_RESULT, message: "Unauthorized" }, { status: 401 });
-    }
-
-      // Extract client IP for rate limiting
+    // Extract client IP for rate limiting
     const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
     
-    // Atomic rate limit check (row-locked in the DB, safe under concurrent requests)
+    // Atomic rate limit check (row-locked in DB: 20/min for logged in users, 10/min for guest links)
     const { data: allowed, error: rlError } = await supabase.rpc("check_and_increment_rate_limit", {
       p_ip_address: clientIp,
       p_endpoint: "/api/extract",
-      p_max_requests: 5,
+      p_max_requests: user ? 20 : 10,
       p_window_seconds: 60
     });
 
@@ -348,10 +364,9 @@ export async function POST(request: Request) {
     }
 
     // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
-    // at every hop instead of letting fetch() silently follow redirects
-    // and re-resolve DNS on its own (that's the rebinding hole).
-    // Global fetch timeout for all redirects + response stream read combined (4 seconds hard limit)
-    const TOTAL_FETCH_TIMEOUT_MS = 4000;
+    // at every hop instead of letting fetch() silently follow redirects.
+    // Global fetch timeout for all redirects combined (10 seconds)
+    const TOTAL_FETCH_TIMEOUT_MS = 10000;
     const fetchController = new AbortController();
     const fetchTimeoutId = setTimeout(() => fetchController.abort(), TOTAL_FETCH_TIMEOUT_MS);
 
@@ -361,14 +376,22 @@ export async function POST(request: Request) {
     let html = "";
 
     try {
+      let previousHostname = "";
       for (let hop = 0; hop < 4; hop++) {
         if (fetchController.signal.aborted) {
           throw new DOMException("The event page took too long to respond.", "TimeoutError");
         }
 
-        const { safe: hopSafe, ip: hopIp } = await isSafeUrl(currentUrl);
-        if (!hopSafe || !hopIp) {
-          return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
+        let hopHostname = "";
+        try { hopHostname = new URL(currentUrl).hostname; } catch {}
+
+        // Only re-check SSRF if the host actually changed across hops
+        if (hopHostname !== previousHostname) {
+          const { safe: hopSafe, ip: hopIp } = await isSafeUrl(currentUrl);
+          if (!hopSafe || !hopIp) {
+            return NextResponse.json({ ...EMPTY_RESULT, message: "URL not allowed." }, { status: 422 });
+          }
+          previousHostname = hopHostname;
         }
 
         const attempt = await fetch(currentUrl, {
@@ -401,28 +424,9 @@ export async function POST(request: Request) {
       }
 
       finalUrl = res.url || currentUrl;
-      
-      const MAX_BODY_BYTES = 2 * 1024 * 1024; // 2MB
-      const reader = res.body?.getReader();
-      const chunks: Uint8Array[] = [];
-      let totalBytes = 0;
-      if (reader) {
-        while (true) {
-          if (fetchController.signal.aborted) {
-            reader.cancel();
-            throw new DOMException("The event page took too long to respond.", "TimeoutError");
-          }
-          const { done, value } = await reader.read();
-          if (done) break;
-          totalBytes += value.length;
-          if (totalBytes > MAX_BODY_BYTES) {
-            reader.cancel();
-            return NextResponse.json({ ...EMPTY_RESULT, message: "Page too large to extract." }, { status: 422 });
-          }
-          chunks.push(value);
-        }
-      }
-      html = new TextDecoder().decode(Buffer.concat(chunks));
+      const rawText = await res.text();
+      // Cap body to 2MB to prevent memory bloat
+      html = rawText.length > 2 * 1024 * 1024 ? rawText.substring(0, 2 * 1024 * 1024) : rawText;
     } catch (err) {
       const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
       return NextResponse.json({
