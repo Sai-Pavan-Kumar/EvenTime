@@ -28,13 +28,30 @@ export function useEventSubmit() {
   const submitEvent = async (payloadData: SubmitPayload, isEditing: boolean, eventId?: string) => {
     setIsSubmitting(true);
     try {
-      const userRes = await Promise.race([
-        supabase.auth.getUser(),
-        new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
-          setTimeout(() => reject(new Error("Authentication check timed out")), 5000)
-        )
-      ]);
-      const user = userRes?.data?.user;
+      // 1. Instant check from local session/cookies (0ms latency, eliminates auth check timeout)
+      let user = null;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        user = sessionData?.session?.user || null;
+      } catch (sessionErr) {
+        console.warn("[useEventSubmit] getSession warning:", sessionErr);
+      }
+
+      // 2. Fallback to getUser() if session was null
+      if (!user) {
+        try {
+          const userRes = await Promise.race([
+            supabase.auth.getUser(),
+            new Promise<{ data: { user: null }; error: Error }>((_, reject) =>
+              setTimeout(() => reject(new Error("Authentication check timed out")), 10000)
+            )
+          ]);
+          user = userRes?.data?.user || null;
+        } catch (authErr) {
+          console.warn("[useEventSubmit] getUser fallback warning:", authErr);
+        }
+      }
+
       if (!user) {
         toast.error("Please login to submit an event.");
         return;
@@ -101,7 +118,7 @@ export function useEventSubmit() {
         insertedId = eventId;
         const updateRes = await Promise.race([
           supabase.from("events").update(finalPayload).eq("id", eventId).eq("creator_id", user.id),
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event update timed out")), 8000))
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event update timed out")), 20000))
         ]);
         
         if (updateRes.error) throw updateRes.error;
@@ -123,7 +140,7 @@ export function useEventSubmit() {
             creator_id: user.id,
             status: finalStatus 
           }]).select("id"),
-          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event submission timed out")), 8000))
+          new Promise<any>((_, reject) => setTimeout(() => reject(new Error("Event submission timed out")), 20000))
         ]);
         
         if (insertRes.error) throw insertRes.error;

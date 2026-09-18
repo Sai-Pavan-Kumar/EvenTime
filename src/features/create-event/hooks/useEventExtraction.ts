@@ -180,15 +180,13 @@ export function useEventExtraction({ setTitle, setDescription, setLocation, setS
       }
     } catch (err) {
       if (err instanceof Error && err.name === "AbortError") {
-        if (activeControllerRef.current === controller) {
-          setExtractError("Link extraction timed out. Please enter details manually.");
-        }
+        setExtractError("Link extraction timed out. Please enter details manually.");
       } else {
         setExtractError("Could not fetch details, please enter manually");
       }
     } finally {
       clearTimeout(timeoutId);
-      if (activeControllerRef.current === controller) {
+      if (activeControllerRef.current === controller || activeControllerRef.current === null) {
         activeControllerRef.current = null;
         setIsExtracting(false);
       }

@@ -156,6 +156,14 @@ const extractFromDevfolio: ExtractorFn = ($, _jsonLd) => {
   return { ...base, title, description, date, location };
 };
 
+/** Devnovate: OG tags + clean title */
+const extractFromDevnovate: ExtractorFn = ($) => {
+  const base = extractOgBase($);
+  let title = base.title || safeStr($("title").text()) || safeStr($("h1").first().text());
+  title = title.replace(/\s*[|\-–—]\s*Devnovate.*$/i, "").trim();
+  return { ...base, title };
+};
+
 /** Unstop: OG tags + h1 fallback */
 const extractFromUnstop: ExtractorFn = ($, _jsonLd) => {
   const base = extractOgBase($);
@@ -197,6 +205,7 @@ const EXTRACTOR_MAP: Array<{ match: string; fn: ExtractorFn }> = [
   { match: "eventbrite.com", fn: extractFromEventbrite },
   { match: "meetup.com",     fn: extractFromMeetup },
   { match: "devfolio.co",    fn: extractFromDevfolio },
+  { match: "devnovate.co",   fn: extractFromDevnovate },
   { match: "unstop.com",     fn: extractFromUnstop },
   { match: "townscript.com", fn: extractFromTownscript },
   { match: "bookmyshow.com", fn: extractFromBMS },
@@ -377,6 +386,7 @@ export async function POST(request: Request) {
 
     try {
       let previousHostname = "";
+      try { previousHostname = new URL(url).hostname; } catch {}
       for (let hop = 0; hop < 4; hop++) {
         if (fetchController.signal.aborted) {
           throw new DOMException("The event page took too long to respond.", "TimeoutError");

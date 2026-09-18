@@ -26,17 +26,25 @@ export function useDuplicateCheck() {
       // invalid URL, eventId stays null
     }
 
-    const pattern = eventId ? `%/${eventId}%` : `%${normalized}%`;
-    let query = supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1);
-    if (currentEventId) {
-      query = query.neq("id", currentEventId);
+    try {
+      const pattern = eventId ? `%/${eventId}%` : `%${normalized}%`;
+      let query = supabase.from("events").select("id, title").ilike("registration_link", pattern).limit(1);
+      if (currentEventId) {
+        query = query.neq("id", currentEventId);
+      }
+      if (signal) {
+        query = query.abortSignal(signal);
+      }
+      
+      const res = await Promise.race([
+        query.maybeSingle(),
+        new Promise<{ data: null }>((resolve) => setTimeout(() => resolve({ data: null }), 3000))
+      ]);
+      return res?.data || null;
+    } catch (err) {
+      console.warn("[useDuplicateCheck] checkDuplicateLink fallback:", err);
+      return null;
     }
-    if (signal) {
-      query = query.abortSignal(signal);
-    }
-    
-    const { data } = await query.maybeSingle();
-    return data;
   };
 
   return { checkDuplicateLink };

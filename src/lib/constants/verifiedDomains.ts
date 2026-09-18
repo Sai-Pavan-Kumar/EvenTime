@@ -10,6 +10,7 @@ export const DEFAULT_VERIFIED_DOMAINS: string[] = [
   "townscript.com",
   "unstop.com",
   "devfolio.co",
+  "devnovate.co",
   "skillenza.com",
   "allevents.in",
   "bookmyshow.com",
