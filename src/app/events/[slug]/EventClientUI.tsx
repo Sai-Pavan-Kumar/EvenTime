@@ -51,6 +51,7 @@ export interface EventUIProps {
   same_college_interested_count?: number;
   interestedAvatars?: { avatar_url: string | null; username: string | null }[];
   collegeName?: string | null;
+  isAppBannerEnabled?: boolean;
 }
 
 export default function EventClientUI({
@@ -59,6 +60,7 @@ export default function EventClientUI({
   curatorUsername = null,
   interestedAvatars = [],
   collegeName = null,
+  isAppBannerEnabled = false,
 }: EventUIProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -448,30 +450,38 @@ export default function EventClientUI({
       )}
 
       {/* Mobile App Handoff Banner */}
-      <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm border-b border-slate-800">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-brand-primary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="font-heading font-black text-white text-xs">ET</span>
+      {isAppBannerEnabled && (
+        <div className="md:hidden bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm border-b border-slate-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="relative w-8 h-8 rounded-xl overflow-hidden shrink-0 shadow-sm bg-white p-1 border border-slate-700/50">
+              <Image
+                src="/logo1.webp"
+                alt="EvenTime Logo"
+                width={32}
+                height={32}
+                className="object-contain w-full h-full"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-white leading-tight truncate">Open in EvenTime App</p>
+              <p className="text-[11px] text-slate-400 leading-tight">Faster & smoother experience</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-white leading-tight truncate">Open in EvenTime App</p>
-            <p className="text-[11px] text-slate-400 leading-tight">Faster & smoother experience</p>
-          </div>
+          <a
+            href={`intent://events/${event.slug || safeId}#Intent;scheme=eventime;package=com.eventime.app;end`}
+            onClick={(e) => {
+              const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+              if (!isAndroid) {
+                e.preventDefault();
+                window.location.href = `eventime://events/${event.slug || safeId}`;
+              }
+            }}
+            className="shrink-0 bg-brand-primary hover:bg-[#5835e5] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
+          >
+            Open App
+          </a>
         </div>
-        <a
-          href={`intent://events/${event.slug || safeId}#Intent;scheme=eventime;package=com.eventime.app;end`}
-          onClick={(e) => {
-            const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
-            if (!isAndroid) {
-              e.preventDefault();
-              window.location.href = `eventime://events/${event.slug || safeId}`;
-            }
-          }}
-          className="shrink-0 bg-brand-primary hover:bg-[#5835e5] text-white text-xs font-bold px-3.5 py-1.5 rounded-xl transition-all shadow-sm active:scale-95"
-        >
-          Open App
-        </a>
-      </div>
+      )}
 
       <div className="max-w-6xl mx-auto w-full px-6 py-8 md:py-10 space-y-8">
         {/* Top Header Bar with Bookmark, Share, Report, Edit */}
@@ -976,6 +986,57 @@ export default function EventClientUI({
                   </p>
                 </div>
               )}
+
+              {/* Mobile Action Buttons (Inline) */}
+              <div className="md:hidden flex gap-3 pt-4 border-t border-slate-200 mt-2">
+                {currentUser?.id === safeCreatorId ? (
+                  <Link
+                    href={`/events/${event.slug || safeId}/edit`}
+                    className="flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 text-sm"
+                  >
+                    Edit Event
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleInterestedClick}
+                    disabled={isLoadingInterest || isCuratorOrAdmin || isPastEvent}
+                    className={`flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
+                      isPastEvent
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+                        : isOwner
+                        ? "bg-slate-100 text-slate-400 cursor-default"
+                        : isInterested
+                        ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
+                        : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
+                    }`}
+                  >
+                    {isPastEvent
+                      ? "Event Concluded"
+                      : isOwner
+                      ? "Host"
+                      : isInterested
+                      ? "✓ Interested"
+                      : "I'm Interested"}
+                  </button>
+                )}
+                {!isPastEvent && (
+                  hasRegistrationLink ? (
+                    <Link
+                      href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-brand-primary text-white py-3.5 rounded-xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
+                    >
+                      Register <ExternalLink className="w-4 h-4" />
+                    </Link>
+                  ) : (
+                    <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-1.5 text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Walk-in Event
+                    </div>
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>

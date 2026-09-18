@@ -306,6 +306,26 @@ export async function toggleLeaderboardAction(formData: FormData) {
   return { success: true };
 }
 
+export async function toggleAppBannerAction(formData: FormData) {
+  const supabase = await createClient();
+  const isAdmin = await verifyAdmin(supabase);
+  if (!isAdmin) throw new Error("Unauthorized.");
+
+  const enabled = formData.get("enabled") === "true";
+
+  const { error } = await supabase.from("app_settings").update({ app_banner_enabled: enabled }).eq("id", 1);
+  if (error) {
+    console.error("Toggle app banner failed:", error);
+    return { error: "Failed to update setting. Please apply the DB migration if not yet present." };
+  }
+
+  revalidatePath("/et98");
+  revalidatePath("/");
+  revalidateTag("app_settings", "app_settings");
+  revalidateTag("events", "events");
+  return { success: true };
+}
+
 export async function toggleFeaturedAction(formData: FormData) {
   const supabase = await createClient();
   const isAdmin = await verifyAdmin(supabase);

@@ -84,15 +84,38 @@ const getCachedInterestedAvatars = (eventId: string) =>
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { auth: { persistSession: false } }
       );
-      const { data: interestedRows } = await supabaseAnon
+      const { data } = await supabaseAnon
         .from("interested_events")
-        .select("profiles(avatar_url, username)")
+        .select("profiles(username, avatar_url)")
         .eq("event_id", eventId)
         .limit(3);
-      return (interestedRows || []).map((r: any) => r.profiles).filter(Boolean);
+      return (data || []).map((row: any) => row.profiles).filter(Boolean);
     },
     ["interested_avatars", eventId],
-    { tags: ["events"], revalidate: false }
+    { tags: [`event_interested_${eventId}`], revalidate: false }
+  )();
+
+const getCachedAppBannerSetting = () =>
+  unstable_cache(
+    async () => {
+      try {
+        const supabaseAnon = createSupabaseClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          { auth: { persistSession: false } }
+        );
+        const { data } = await supabaseAnon
+          .from("app_settings")
+          .select("app_banner_enabled")
+          .eq("id", 1)
+          .maybeSingle();
+        return Boolean(data?.app_banner_enabled);
+      } catch {
+        return false;
+      }
+    },
+    ["app_settings_banner"],
+    { tags: ["app_settings"], revalidate: false }
   )();
 
 export async function generateStaticParams() {
@@ -257,6 +280,7 @@ export default async function EventPage({
     : [];
 
   const interestedAvatars = await getCachedInterestedAvatars(finalEvent.id);
+  const isAppBannerEnabled = await getCachedAppBannerSetting();
 
   // Pass the data cleanly to the client UI
   return (
@@ -266,7 +290,14 @@ export default async function EventPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Suspense fallback={null}>
-        <EventClientUI event={finalEvent} similarEvents={similarEvents} curatorUsername={curatorUsername} interestedAvatars={interestedAvatars} collegeName={(finalEvent as any).colleges?.name || null} />
+        <EventClientUI
+          event={finalEvent}
+          similarEvents={similarEvents}
+          curatorUsername={curatorUsername}
+          interestedAvatars={interestedAvatars}
+          collegeName={(finalEvent as any).colleges?.name || null}
+          isAppBannerEnabled={isAppBannerEnabled}
+        />
       </Suspense>
     </>
   );

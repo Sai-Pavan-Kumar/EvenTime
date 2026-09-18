@@ -16,16 +16,19 @@ export type Database = {
     Tables: {
       app_settings: {
         Row: {
+          app_banner_enabled?: boolean
           featured_enabled: boolean
           id: number
           leaderboard_enabled: boolean
         }
         Insert: {
+          app_banner_enabled?: boolean
           featured_enabled?: boolean
           id?: number
           leaderboard_enabled?: boolean
         }
         Update: {
+          app_banner_enabled?: boolean
           featured_enabled?: boolean
           id?: number
           leaderboard_enabled?: boolean

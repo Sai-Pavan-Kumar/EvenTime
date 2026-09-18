@@ -31,6 +31,7 @@ import {
   resolveReportAction,
   punishCuratorAction,
   toggleLeaderboardAction,
+  toggleAppBannerAction,
   toggleFeaturedAction,
   deleteEventAction,
   updateUserRoleAction,
@@ -50,6 +51,7 @@ export interface AdminStats {
 export interface AdminSettings {
   leaderboardEnabled: boolean;
   featuredEnabled: boolean;
+  appBannerEnabled?: boolean;
 }
 
 type TabType = "overview" | "pending" | "events" | "feedback" | "users" | "reports" | "colleges";
@@ -159,6 +161,21 @@ export default function AdminConsoleClient({
     const fd = new FormData();
     fd.set("is_featured", nextState.toString());
     toast.success(`Featured carousel ${nextState ? "enabled" : "disabled"}`);
+  };
+
+  // Toggle Mobile App Banner
+  const handleToggleAppBanner = async () => {
+    const nextState = !settings.appBannerEnabled;
+    setSettings((prev) => ({ ...prev, appBannerEnabled: nextState }));
+    const fd = new FormData();
+    fd.set("enabled", nextState.toString());
+    const res = await toggleAppBannerAction(fd);
+    if (res?.error) {
+      toast.error(res.error);
+      setSettings((prev) => ({ ...prev, appBannerEnabled: !nextState }));
+    } else {
+      toast.success(`Mobile App Banner ${nextState ? "enabled" : "disabled"}`);
+    }
   };
 
   // Approve Event
@@ -681,6 +698,31 @@ export default function AdminConsoleClient({
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                         settings.featuredEnabled ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Mobile App Banner Switch */}
+                <div className="flex items-center justify-between py-3 pt-4">
+                  <div className="pr-4">
+                    <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                      Mobile &quot;Open in App&quot; Banner
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                      Show mobile app handoff banner on event pages (keep disabled during closed testing).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleToggleAppBanner}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      settings.appBannerEnabled ? "bg-[#6C47FF]" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        settings.appBannerEnabled ? "translate-x-5" : "translate-x-0"
                       }`}
                     />
                   </button>

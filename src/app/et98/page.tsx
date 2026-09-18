@@ -68,7 +68,7 @@ export default async function AdminDashboard(props: PageProps) {
 
     supabase
       .from("app_settings")
-      .select("leaderboard_enabled, featured_enabled")
+      .select("leaderboard_enabled, featured_enabled, app_banner_enabled")
       .eq("id", 1)
       .maybeSingle(),
 
@@ -118,6 +118,7 @@ export default async function AdminDashboard(props: PageProps) {
   const initialSettings = {
     leaderboardEnabled: appSettings?.leaderboard_enabled ?? true,
     featuredEnabled: appSettings?.featured_enabled ?? true,
+    appBannerEnabled: appSettings?.app_banner_enabled ?? false,
   };
 
   return (
