@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, full_name, avatar_url, role, user_type, college, college_id, branch, graduation_year, goals, preferred_cities, is_onboarded, et_score")
+        .select("id, email, username, full_name, avatar_url, role, user_type, college, college_id, branch, graduation_year, goals, preferred_cities, is_onboarded, et_score")
         .eq("id", userId)
         .maybeSingle();
 
@@ -114,6 +114,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setProfile(null);
       setCachedProfile(null);
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem(PROFILE_STORAGE_KEY);
+          localStorage.removeItem("et_cached_campus_events");
+          sessionStorage.clear();
+        } catch {}
+      }
     }
   }, [supabase]);
 
@@ -128,18 +135,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     } else {
       // Auth cookie exists - verify session and fetch profile in one go
-      supabase.auth.getUser().then(async ({ data: { user: currentUser } }) => {
-        if (!mounted) return;
-        if (currentUser) {
-          setUser(currentUser);
-          await fetchProfile(currentUser.id);
-        } else {
-          setUser(null);
-          setProfile(null);
-          setCachedProfile(null);
-        }
-        if (mounted) setIsLoading(false);
-      });
+      supabase.auth.getUser()
+        .then(async (res) => {
+          if (!mounted) return;
+          const currentUser = res?.data?.user ?? null;
+          if (currentUser) {
+            setUser(currentUser);
+            await fetchProfile(currentUser.id);
+          } else {
+            setUser(null);
+            setProfile(null);
+            setCachedProfile(null);
+          }
+        })
+        .catch((err) => {
+          console.warn("[AuthContext] Error getting user:", err);
+        })
+        .finally(() => {
+          if (mounted) setIsLoading(false);
+        });
     }
 
     // Subscribe to auth state changes for real-time login/logout
@@ -147,11 +161,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!mounted) return;
 
       const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
       if (currentUser) {
+        setUser(currentUser);
         await fetchProfile(currentUser.id);
-      } else {
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
         setProfile(null);
         setCachedProfile(null);
       }

@@ -57,6 +57,7 @@ function NavbarInner({
 }: NavbarProps) {
   const [supabase] = useState(() => createClient());
   const { user, profile: profileDetails, isAdmin, isLoading, signOut } = useAuth();
+  const isAuthenticated = Boolean(user || profileDetails);
   const isControlled = typeof searchValue !== "undefined";
   const [internalSearchQuery, setInternalSearchQuery] = useState("");
   const searchQuery = isControlled ? (searchValue || "") : internalSearchQuery;
@@ -116,7 +117,7 @@ function NavbarInner({
   }, [showMobileCalendar, calendarEventDates.length]);
 
   const handleProtectedAction = (e: React.MouseEvent) => {
-    if (!user) {
+    if (!isAuthenticated) {
       e.preventDefault();
       setShowAuthModal(true);
     }
@@ -221,7 +222,7 @@ function NavbarInner({
     router.refresh();
   };
 
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
+  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || profileDetails?.avatar_url;
   const completionPercent = calculateCompletion(profileDetails);
 
   const selectedDate = searchParams.get("date");
@@ -370,7 +371,7 @@ function NavbarInner({
             </Link>
 
             <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
-              <button onClick={(e) => user ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
+              <button onClick={(e) => isAuthenticated ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
                 <Bug className="w-4 h-4" />
               </button>
 
@@ -379,7 +380,7 @@ function NavbarInner({
                   <div className="w-9 h-9 rounded-full bg-slate-100" />
                   <div className="w-8 h-8 rounded-full bg-transparent mr-1" />
                 </div>
-              ) : user ? (
+              ) : isAuthenticated ? (
                 <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0">
                   <Link href="/profile" className="relative w-9 h-9 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0 group">
                     <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 40 40">
@@ -520,7 +521,7 @@ function NavbarInner({
             <div className="w-6 h-6 rounded-full bg-slate-200 mb-1" />
             <div className="w-6 h-2 bg-slate-200 rounded-full" />
           </div>
-        ) : user ? (
+        ) : isAuthenticated ? (
           <Link 
             href="/profile?tab=menu" 
             onClick={() => setShowMobileSearch(false)} 
@@ -542,13 +543,13 @@ function NavbarInner({
                   />
                 ) : (
                   <span className="text-[9px] font-black text-slate-700">
-                    {((profileDetails?.username || user.email || 'U')[0]).toUpperCase()}
+                    {((profileDetails?.username || user?.email || 'U')[0]).toUpperCase()}
                   </span>
                 )}
               </div>
             </div>
             <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">
-              {user ? 'You' : 'Profile'}
+              {isAuthenticated ? 'You' : 'Profile'}
             </span>
           </Link>
         ) : (

@@ -1,16 +1,16 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export function MobileSignOutButton() {
   const router = useRouter();
+  const { signOut } = useAuth();
   
   const handleSignOut = async () => {
     if (!window.confirm("Are you sure you want to sign out?")) return;
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/login");
     router.refresh();
   };
