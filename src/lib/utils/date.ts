@@ -42,7 +42,7 @@ export function checkIsEventPast(
   dateString: string | null | undefined,
   endDateString?: string | null,
   endTime?: string | null,
-  startTime?: string | null
+  _startTime?: string | null
 ): boolean {
   const targetDateStr = endDateString || dateString;
   if (!targetDateStr) return false;

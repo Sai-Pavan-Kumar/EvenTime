@@ -201,7 +201,11 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
 
       {/* COLLEGE FIELDS (DYNAMIC) */}
       {isCollegeCategory && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }} 
+              animate={{ opacity: 1, height: "auto", transitionEnd: { overflow: "visible" } }} 
+              className="overflow-visible"
+            >
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
                 <p className="text-sm font-bold text-brand-primary">College Event Details</p>
                 <div className="flex items-center justify-between">
@@ -216,7 +220,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${!data.collegeOnly ? "translate-x-6" : "translate-x-1"}`} />
                   </button>
                 </div>
-                  <div className="space-y-2 relative">
+                  <div className="space-y-2 relative z-30">
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-bold text-slate-500">College / Institute Name <span className="text-red-500">*</span></label>
                       {Boolean(profileCollege?.name && data.collegeName && data.collegeName.trim().toLowerCase() === profileCollege.name.trim().toLowerCase()) && (
@@ -230,16 +234,19 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                       value={collegeSearchQuery}
                       onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
                       onFocus={() => setShowCollegeDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 150)}
+                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 250)}
                       placeholder="Search college (e.g. CBIT, IIT, BITS...)" maxLength={100}
                       className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
                     />
                      {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
-                      <div className="absolute left-0 right-0 mt-2 max-h-48 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col" onMouseDown={(e) => e.preventDefault()}>
-                        {isSearchingColleges && (
-                          <div className="px-4 py-3 text-sm text-slate-400 font-medium">Searching...</div>
+                      <div className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 flex flex-col no-scrollbar" onMouseDown={(e) => e.preventDefault()}>
+                        {isSearchingColleges && collegesList.length === 0 && (
+                          <div className="px-4 py-3 text-sm text-slate-400 font-medium flex items-center gap-2">
+                            <div className="w-3.5 h-3.5 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />
+                            Searching colleges...
+                          </div>
                         )}
-                         {!isSearchingColleges && collegesList.map(item => (
+                        {collegesList.map(item => (
                           <button 
                             key={item.id} 
                             type="button" 
@@ -262,7 +269,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                               handleCreateCollege(collegeSearchQuery);
                             }} 
                             disabled={isCreatingCollege} 
-                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0"
+                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0 border-t border-slate-100"
                           >
                             {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
                             {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
@@ -271,7 +278,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                       </div>
                     )}
                   </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-20">
                   <div className="space-y-2 relative">
                     <label className="block text-xs font-bold text-slate-500">Branch</label>
                     <div className="relative">
@@ -279,11 +286,18 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                         type="text"
                         value={branchSearchQuery}
                         onChange={e => {
-                          setBranchSearchQuery(e.target.value);
+                          const val = e.target.value;
+                          setBranchSearchQuery(val);
                           setShowBranchDropdown(true);
+                          const exact = INDIAN_COLLEGE_BRANCHES.find(b => b.toLowerCase() === val.trim().toLowerCase());
+                          if (exact) {
+                            updateData({ collegeBranch: exact });
+                          } else if (!val.trim()) {
+                            updateData({ collegeBranch: "" });
+                          }
                         }}
                         onFocus={() => setShowBranchDropdown(true)}
-                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 200)}
+                        onBlur={() => setTimeout(() => setShowBranchDropdown(false), 250)}
                         placeholder="Search branch (e.g. CSE, ECE)..."
                         className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF] pr-8"
                       />
@@ -306,7 +320,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                     </div>
                     {showBranchDropdown && (
                       <div
-                        className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-100 rounded-2xl shadow-xl z-50 flex flex-col no-scrollbar"
+                        className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 flex flex-col no-scrollbar"
                         onMouseDown={(e) => e.preventDefault()}
                       >
                         <button
