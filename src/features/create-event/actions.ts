@@ -256,12 +256,12 @@ export async function submitEventAction(
 
     if (insertErr) throw insertErr;
 
-    // Award +100 ET points if approved live
+    // Award +20 ET points if approved live
     if (finalStatus === "approved") {
       try {
         await supabase.rpc("increment_et_score", {
           user_id: user.id,
-          delta: 100,
+          delta: 20,
         });
       } catch {}
 
