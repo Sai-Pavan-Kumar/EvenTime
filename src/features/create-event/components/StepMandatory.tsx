@@ -14,13 +14,13 @@ import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, extraction, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin, profileCollege }: any) {
+export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin, profileCollege }: any) {
   
   // SECURE ADMIN CHECK
   const isAdmin = isCurrentUserAdmin;
 
   // Instant domain trust computation (0ms, no flash of unverified badge)
-  const isLinkVerified = !data.regLink || isVerifiedDomain(data.regLink) || extraction.isTrusted || data.isTrustedDomain;
+  const isLinkVerified = !data.regLink || isVerifiedDomain(data.regLink);
 
   // NEW: College picker for restricted college events (live server search)
   const [collegeSearchQuery, setCollegeSearchQuery] = useState(data.collegeName || "");
@@ -75,20 +75,11 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
     }
   }, [isCollegeCategory, data.selectedAudience.length, updateData]);
 
-  // Smart Link Handler (Point 5 & 3)
+  // Link Domain Verification Handler
   const handleLinkInput = (url: string) => {
     const trusted = isVerifiedDomain(url);
     updateData({ regLink: url, isTrustedDomain: trusted });
-    // Run the actual backend extraction hook
-    extraction.handleLinkInput(url);
   };
-
-  // Sync the backend trust status with the form data so the final submission gets the right status
-  useEffect(() => {
-    if (data.isTrustedDomain !== extraction.isTrusted) {
-      updateData({ isTrustedDomain: extraction.isTrusted });
-    }
-  }, [data.isTrustedDomain, extraction.isTrusted, updateData]);
 
   return (
     <motion.div key="stepMandatory" initial={{ x: -24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -24, opacity: 0 }} className="space-y-8">
@@ -99,7 +90,12 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}
           </label>
-          {!isLinkVerified && data.regLink && !extraction.isExtracting && (
+          {data.regLink && isLinkVerified && (
+            <span title="Verified platform domain. Approved automatically." className="text-emerald-600 flex items-center gap-1 text-xs font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Verified Domain
+            </span>
+          )}
+          {data.regLink && !isLinkVerified && (
             <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs font-bold">
               <AlertTriangle className="w-3.5 h-3.5" /> Unverified Domain
             </span>
@@ -110,44 +106,28 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
           <input
             id="event-reg-link-input"
             type="url" value={data.regLink} maxLength={500} onChange={e => handleLinkInput(e.target.value)}
-            placeholder="Paste event link (lu.ma, eventbrite, etc.)"
+            placeholder="Paste event link (lu.ma, eventbrite, unstop, etc.)"
             className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
           />
-          {extraction.isExtracting && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2">
-              <div className="w-5 h-5 border-2 border-slate-200 border-t-[#6C47FF] rounded-full animate-spin" />
+          {data.regLink && isLinkVerified && (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-500">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
           )}
-          {!extraction.isExtracting && data.regLink && !extraction.linkDuplicateError && !extraction.extractError && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-green-500">
-              <CheckCircle2 className="w-5 h-5" />
+          {data.regLink && !isLinkVerified && (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-amber-500">
+              <AlertTriangle className="w-5 h-5" />
             </div>
           )}
         </div>
 
-        {/* EXTRACTION STATUS ALERTS */}
-        {extraction.linkDuplicateError && (
-          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-red-500 flex items-center gap-1.5 mt-2">
-            <AlertTriangle className="w-4 h-4" /> {extraction.linkDuplicateError}
-          </motion.p>
-        )}
-        {extraction.extractError && !extraction.linkDuplicateError && (
-          <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-bold text-amber-600 flex items-center gap-1.5 mt-2">
-            <AlertTriangle className="w-4 h-4" /> {extraction.extractError}
-          </motion.p>
-        )}
-        {extraction.trustWarning && !extraction.linkDuplicateError && (
+        {/* TRUST WARNING IF UNVERIFIED */}
+        {!isLinkVerified && data.regLink && !isAdmin && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2 mt-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-xs font-semibold text-amber-700 leading-relaxed">{extraction.trustWarning}</p>
-          </motion.div>
-        )}
-        {extraction.extractionConfidence > 0 && !extraction.linkDuplicateError && (
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold mt-2 ${extraction.extractionConfidence >= 0.8 ? "bg-green-50 text-green-700 border border-green-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-            {extraction.extractionConfidence >= 0.8
-              ? <><CheckCircle2 className="w-4 h-4" /> Details auto-filled. Review and continue.</>
-              : <><AlertTriangle className="w-4 h-4" /> Partial details found. Please review highlighted fields carefully.</>
-            }
+            <p className="text-xs font-semibold text-amber-700 leading-relaxed">
+              This link is from an unverified platform. The event will go live once reviewed by an admin.
+            </p>
           </motion.div>
         )}
       </div>
@@ -518,7 +498,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, extraction,
       </div>
 
       <div className="pt-10 border-t border-slate-200 flex flex-col items-center justify-center space-y-5">
-            {!isAdmin && !isLinkVerified && data.regLink && !extraction.isExtracting && (
+            {!isAdmin && !isLinkVerified && data.regLink && (
               <div className="text-xs text-amber-600 font-medium text-center bg-amber-50 px-4 py-2.5 rounded-xl max-w-md border border-amber-100">
                 ⚠️ Since this link is from an unverified domain, your event will require admin approval before going live.
               </div>

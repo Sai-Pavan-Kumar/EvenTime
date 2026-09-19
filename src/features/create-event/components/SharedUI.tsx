@@ -31,6 +31,11 @@ const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | undefined; onSelect: (d: Date) => void; }) {
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const maxAllowedDate = new Date(today);
+  maxAllowedDate.setFullYear(today.getFullYear() + 1);
+
   const [viewYear, setViewYear] = useState(selectedDate?.getFullYear() || today.getFullYear());
   const [viewMonth, setViewMonth] = useState(selectedDate?.getMonth() || today.getMonth());
 
@@ -40,11 +45,12 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
       setViewMonth(selectedDate.getMonth());
     }
   }, [selectedDate]);
+
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const maxYear = today.getFullYear() + 2;
+
   const isMinMonth = viewYear <= today.getFullYear() && viewMonth <= today.getMonth();
-  const isMaxMonth = viewYear >= maxYear && viewMonth >= today.getMonth();
+  const isMaxMonth = viewYear > maxAllowedDate.getFullYear() || (viewYear === maxAllowedDate.getFullYear() && viewMonth >= maxAllowedDate.getMonth());
 
   const prevMonth = () => {
     if (isMinMonth) return;
@@ -56,9 +62,14 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
     else setViewMonth(m => m + 1);
   };
+
   const isSelected = (d: number) => selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === viewMonth && selectedDate.getFullYear() === viewYear;
   const isToday = (d: number) => d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
-  const isPast = (d: number) => new Date(viewYear, viewMonth, d) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const isDateDisabled = (d: number) => {
+    const target = new Date(viewYear, viewMonth, d);
+    target.setHours(0, 0, 0, 0);
+    return target < today || target > maxAllowedDate;
+  };
   
   return (
     <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
@@ -76,9 +87,9 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
         <div className="grid grid-cols-7 gap-[2px]">
           {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
           {Array.from({ length: daysInMonth }).map((_, i) => {
-            const d = i + 1; const past = isPast(d); const selected = isSelected(d); const todayCell = isToday(d);
+            const d = i + 1; const disabled = isDateDisabled(d); const selected = isSelected(d); const todayCell = isToday(d);
             return (
-              <button key={d} type="button" disabled={past} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", past ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !past ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
+              <button key={d} type="button" disabled={disabled} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", disabled ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !disabled ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
             );
           })}
         </div>

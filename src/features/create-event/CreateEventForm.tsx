@@ -9,7 +9,6 @@ function toLocalDateString(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 // Hooks
-import { useEventExtraction } from "./hooks/useEventExtraction";
 import { useImageCrop } from "./hooks/useImageCrop";
 import { useEventSubmit } from "./hooks/useEventSubmit";
 
@@ -45,7 +44,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     location: initialData?.location || "",
     city: initialData?.city || "",
     selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
-    fieldStatus: { title: "idle", description: "idle", location: "idle" } as Record<string, FieldStatus>,
     collegeBranch: initialData?.college_branch || "",
     collegeYear: initialData?.college_year || "",
     collegeOnly: initialData?.college_only || false,
@@ -116,7 +114,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
           selectedDate: eventData.selectedDate ? eventData.selectedDate.toISOString() : undefined,
           endDate: eventData.endDate ? eventData.endDate.toISOString() : undefined,
           registrationDeadline: eventData.registrationDeadline ? eventData.registrationDeadline.toISOString() : undefined,
-          fieldStatus: undefined,
         };
         localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(toSave));
       } catch (e) {
@@ -142,7 +139,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
         location: "",
         city: "",
         selectedDate: undefined,
-        fieldStatus: { title: "idle", description: "idle", location: "idle" },
         collegeBranch: "",
         collegeYear: "",
         collegeOnly: false,
@@ -204,26 +200,11 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       });
     }
   }, [isCollegeCategory, profileCollege, eventData.collegeName, initialData]);
-
-  const extraction = useEventExtraction({ 
-    setTitle: (v) => updateData({ title: v }), 
-    setDescription: (v) => updateData({ description: v }), 
-    setLocation: (v) => updateData({ location: v }), 
-    setSelectedDate: (v) => updateData({ selectedDate: v }), 
-    setFieldStatus: (v) => updateData({ fieldStatus: typeof v === 'function' ? v(eventData.fieldStatus) : v }), 
-    initialLink: initialData?.registration_link ?? undefined,
-    currentEventId: initialData?.id,
-    isAdmin: isCurrentUserAdmin 
-  });
   
   const crop = useImageCrop(initialData?.poster_url ?? undefined);
   const { isSubmitting, submitEvent } = useEventSubmit();
 
   const validateMandatoryFields = () => {
-    if (extraction.isExtracting) {
-      extraction.abortExtraction();
-    }
-
     if (!eventData.title?.trim()) {
       toast.error("Please enter an Event Title");
       document.getElementById("event-title-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -247,6 +228,22 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       document.getElementById("event-date-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return false;
     }
+
+    // 1-year future window validation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const maxAllowedDate = new Date(today);
+    maxAllowedDate.setFullYear(today.getFullYear() + 1);
+
+    if (eventData.selectedDate < today && !isEditing) {
+      toast.error("Event date cannot be in the past");
+      return false;
+    }
+    if (eventData.selectedDate > maxAllowedDate) {
+      toast.error("Event date cannot be more than 1 year in advance");
+      return false;
+    }
+
     if (eventData.isOnline && !eventData.regLink?.trim()) {
       toast.error("Registration link is required for Virtual Events");
       document.getElementById("event-reg-link-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -347,7 +344,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               data={eventData} 
               updateData={updateData} 
               isCollegeCategory={isCollegeCategory}
-              extraction={extraction}
               onNext={handleNextStep}
               isValid={Boolean(step0Valid)}
               isSubmitting={isSubmitting}
