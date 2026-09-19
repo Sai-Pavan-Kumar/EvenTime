@@ -32,7 +32,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
-import { parseEventDateString } from "@/lib/utils/date";
+import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
 import { submitReportAction } from "../report-actions";
 import { getCategoryConfig } from "@/lib/category-config";
 import { eventSync } from "@/lib/events/eventSync";
@@ -162,13 +162,13 @@ export default function EventClientUI({
 
   const eventUrl = typeof window !== "undefined" ? window.location.href : "";
   const isPastEvent = useMemo(() => {
-    if (!event.date_string) return false;
-    const parsed = parseEventDateString(event.date_string);
-    if (!parsed) return false;
-    const endOfDay = new Date(parsed);
-    endOfDay.setHours(23, 59, 59, 999);
-    return endOfDay.getTime() < Date.now();
-  }, [event.date_string]);
+    return checkIsEventPast(
+      event.date_string,
+      event.end_date_string,
+      event.end_time,
+      event.start_time
+    );
+  }, [event.date_string, event.end_date_string, event.end_time, event.start_time]);
   const storyImageUrl = `/api/og/story?title=${encodeURIComponent(safeTitle)}&category=${encodeURIComponent(safeCategory)}&date=${encodeURIComponent(displayDateRange)}&organizer=${encodeURIComponent(safeOrganizer)}`;
 
   const venueLocation = useMemo(() => {
@@ -288,12 +288,16 @@ export default function EventClientUI({
       toast.info("Already in My Events");
       return;
     }
+    if (isPastEvent) {
+      toast.info("This event has already concluded.");
+      return;
+    }
     if (!currentUser) {
       setAuthModalReason("bookmark");
       setIsAuthModalOpen(true);
       return;
     }
-    if (!safeId || (isPastEvent && !isSaved)) return;
+    if (!safeId) return;
 
     const nextState = !isSaved;
     setIsSaved(nextState);
@@ -348,7 +352,10 @@ export default function EventClientUI({
       toast.info("Host can't mark interest");
       return;
     }
-    if (isPastEvent) return;
+    if (isPastEvent) {
+      toast.info("This event has already concluded.");
+      return;
+    }
     if (!currentUser) {
       setAuthModalReason("interested");
       setIsAuthModalOpen(true);
@@ -521,7 +528,15 @@ export default function EventClientUI({
             )}
 
             {/* Bookmark / Save Event Button */}
-            {(!isPastEvent || isSaved || isOwner) && (
+            {isPastEvent ? (
+              <button
+                disabled
+                title="Event Concluded"
+                className="p-2.5 rounded-full bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed select-none opacity-60"
+              >
+                <Bookmark className="w-4 h-4 text-slate-400" />
+              </button>
+            ) : (
               <button
                 onClick={handleBookmarkToggle}
                 disabled={isSaving}
@@ -667,8 +682,6 @@ export default function EventClientUI({
                       <p className="text-xs text-slate-500 font-medium">
                         {isOwner
                           ? "You are the creator of this event"
-                          : isPastEvent
-                          ? "This event has already concluded"
                           : isInterested
                           ? "You are marked as interested · Click to remove"
                           : "Click to show you're interested"}
@@ -677,18 +690,16 @@ export default function EventClientUI({
                   </div>
                   <button
                     onClick={handleInterestedClick}
-                    disabled={isLoadingInterest || isCuratorOrAdmin || isPastEvent}
+                    disabled={isLoadingInterest || isCuratorOrAdmin}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
-                      isPastEvent
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                        : isOwner
+                      isOwner
                         ? "bg-slate-100 text-slate-400 cursor-default"
                         : isInterested
                         ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
                         : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
                     }`}
                   >
-                    {isPastEvent ? "Event Concluded" : isOwner ? "Host" : isInterested ? "✓ Interested" : "I'm Interested"}
+                    {isOwner ? "Host" : isInterested ? "✓ Interested" : "I'm Interested"}
                   </button>
                 </div>
               </div>
@@ -713,7 +724,7 @@ export default function EventClientUI({
                   </div>
                 )
               ) : (
-                <div className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2">
+                <div className="flex-1 bg-slate-100 text-slate-400 py-4 rounded-2xl font-bold text-center flex items-center justify-center gap-2 border border-slate-200 cursor-not-allowed select-none">
                   Event Concluded
                 </div>
               )}
@@ -1005,7 +1016,11 @@ export default function EventClientUI({
 
               {/* Mobile Action Buttons (Inline) */}
               <div className="md:hidden flex gap-3 pt-4 border-t border-slate-200 mt-2">
-                {currentUser?.id === safeCreatorId ? (
+                {isPastEvent ? (
+                  <div className="w-full bg-slate-100 text-slate-400 py-3.5 rounded-xl font-bold text-center text-sm border border-slate-200 cursor-not-allowed select-none flex items-center justify-center gap-2">
+                    Event Concluded
+                  </div>
+                ) : currentUser?.id === safeCreatorId ? (
                   <Link
                     href={`/events/${event.slug || safeId}/edit`}
                     className="flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 text-sm"
@@ -1013,44 +1028,40 @@ export default function EventClientUI({
                     Edit Event
                   </Link>
                 ) : (
-                  <button
-                    onClick={handleInterestedClick}
-                    disabled={isLoadingInterest || isCuratorOrAdmin || isPastEvent}
-                    className={`flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
-                      isPastEvent
-                        ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
-                        : isOwner
-                        ? "bg-slate-100 text-slate-400 cursor-default"
-                        : isInterested
-                        ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
-                        : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
-                    }`}
-                  >
-                    {isPastEvent
-                      ? "Event Concluded"
-                      : isOwner
-                      ? "Host"
-                      : isInterested
-                      ? "✓ Interested"
-                      : "I'm Interested"}
-                  </button>
-                )}
-                {!isPastEvent && (
-                  hasRegistrationLink ? (
-                    <Link
-                      href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 bg-brand-primary text-white py-3.5 rounded-xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
+                  <>
+                    <button
+                      onClick={handleInterestedClick}
+                      disabled={isLoadingInterest || isCuratorOrAdmin}
+                      className={`flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
+                        isOwner
+                          ? "bg-slate-100 text-slate-400 cursor-default"
+                          : isInterested
+                          ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
+                          : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
+                      }`}
                     >
-                      Register <ExternalLink className="w-4 h-4" />
-                    </Link>
-                  ) : (
-                    <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-1.5 text-xs">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Walk-in Event
-                    </div>
-                  )
+                      {isOwner
+                        ? "Host"
+                        : isInterested
+                        ? "✓ Interested"
+                        : "I'm Interested"}
+                    </button>
+                    {hasRegistrationLink ? (
+                      <Link
+                        href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-brand-primary text-white py-3.5 rounded-xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
+                      >
+                        Register <ExternalLink className="w-4 h-4" />
+                      </Link>
+                    ) : (
+                      <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-3.5 rounded-xl font-bold text-center flex items-center justify-center gap-1.5 text-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        Walk-in Event
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1140,7 +1151,7 @@ export default function EventClientUI({
             </div>
           )
         ) : (
-          <div className="flex-1 bg-slate-100 text-slate-400 py-3 px-4 rounded-xl font-bold text-center text-sm">
+          <div className="flex-1 bg-slate-100 text-slate-400 py-3 px-4 rounded-xl font-bold text-center text-sm border border-slate-200 cursor-not-allowed select-none">
             Event Concluded
           </div>
         )}
