@@ -81,7 +81,7 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
           directQuery = directQuery.ilike('name', `%${w}%`);
         }
 
-        const calls: Promise<any>[] = [Promise.resolve(directQuery.limit(15))];
+        const calls: Promise<any>[] = [directQuery.limit(15)];
 
         // Check if any word matches a known abbreviation/alias
         const matchedAliases = words.map(w => COMMON_COLLEGE_ALIASES[w]).filter(Boolean);
@@ -94,7 +94,7 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
           for (const aw of aliasWords) {
             aliasQuery = aliasQuery.ilike('name', `%${aw}%`);
           }
-          calls.push(Promise.resolve(aliasQuery.limit(10)));
+          calls.push(aliasQuery.limit(10));
         }
 
         const results = await Promise.all(calls);
