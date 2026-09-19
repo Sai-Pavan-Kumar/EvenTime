@@ -157,7 +157,8 @@ export async function generateMetadata({
   if (event.city) ogUrl.searchParams.set("city", event.city);
   if (event.location) ogUrl.searchParams.set("location", event.location);
 
-  const ogImageUrl = event.poster_url || event.banner_url || ogUrl.toString();
+  const hasCustomUpload = event.poster_url && event.poster_url.startsWith("http");
+  const ogImageUrl = hasCustomUpload ? event.poster_url : ogUrl.toString();
 
   return {
     title: `${event.title} | EvenTime`,
@@ -165,7 +166,14 @@ export async function generateMetadata({
     openGraph: {
       title: event.title,
       description: event.description?.slice(0, 160) || "Check out this event on EvenTime.",
-      images: [ogImageUrl],
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: event.title,
+        },
+      ],
       url: `${baseUrl}/events/${event.slug || event.id}`,
       type: "website",
     },

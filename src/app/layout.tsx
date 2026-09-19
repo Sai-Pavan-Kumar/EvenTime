@@ -41,19 +41,20 @@ export const metadata: Metadata = {
     siteName: "EvenTime",
     images: [
       {
-        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/api/og?title=Discover%20Tech%20%26%20Startup%20Events&category=EvenTime`,
+        url: `${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/api/og`,
         width: 1200,
         height: 630,
-        alt: "EvenTime Platform",
+        alt: "EvenTime — Discover Tech, Startup & Career Events",
       },
     ],
     locale: "en_IN",
     type: "website",
   },
-   twitter: {
+  twitter: {
     card: "summary_large_image",
     title: "EvenTime | Discover Tech, Startup & Career Events",
     description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    images: [`${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/api/og`],
   },
   verification: {
     google: "M2Cu6l_l0OOEs5qm6PRROSH2Pm5QGRlDj-RNYaRUKDM",
