@@ -47,6 +47,7 @@ supabase/.temp/
 .env.sentry-build-plugin
 .playwright-mcp/
 *.mp4
+scratch/
 
 # Local notes, strategy & drive docs
 read.md

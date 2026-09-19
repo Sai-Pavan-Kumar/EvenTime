@@ -1,7 +1,9 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 function formatDisplayDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -56,6 +58,17 @@ export async function GET(req: NextRequest) {
 
     const fontSize = isHomepage ? 54 : getFontSize(title);
 
+    // Load brand fonts (Outfit) and logo synchronously from local disk
+    const fontExtraBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Outfit-ExtraBold.ttf');
+    const fontSemiBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Outfit-SemiBold.ttf');
+    const logoPath = path.join(process.cwd(), 'public', 'logo-256.png');
+
+    const [fontExtraBoldData, fontSemiBoldData, logoData] = await Promise.all([
+      fs.promises.readFile(fontExtraBoldPath),
+      fs.promises.readFile(fontSemiBoldPath),
+      fs.promises.readFile(logoPath).then((buf) => `data:image/png;base64,${buf.toString('base64')}`),
+    ]);
+
     return new ImageResponse(
       (
         <div
@@ -67,11 +80,11 @@ export async function GET(req: NextRequest) {
             justifyContent: 'space-between',
             backgroundColor: '#FAFAFC',
             padding: '72px 80px',
-            fontFamily: 'sans-serif',
+            fontFamily: 'Outfit, sans-serif',
             position: 'relative',
           }}
         >
-          {/* Subtle Top 4px Brand Accent Bar */}
+          {/* Subtle Top 5px Brand Accent Bar */}
           <div
             style={{
               position: 'absolute',
@@ -84,7 +97,7 @@ export async function GET(req: NextRequest) {
             }}
           />
 
-          {/* Top Row: Brand Logo & Wordmark (Left) + Minimal Category (Right) */}
+          {/* Top Row: Official Brand Logo & Wordmark (Left) + Category (Right) */}
           <div
             style={{
               display: 'flex',
@@ -101,40 +114,33 @@ export async function GET(req: NextRequest) {
                 gap: '14px',
               }}
             >
-              <div
+              <img
+                src={logoData}
+                alt="EvenTime"
                 style={{
                   width: '44px',
                   height: '44px',
                   borderRadius: '12px',
-                  backgroundColor: '#6C47FF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#FFFFFF',
-                  fontSize: '20px',
-                  fontWeight: 900,
-                  letterSpacing: '-0.02em',
                 }}
-              >
-                ET
-              </div>
+              />
               <span
                 style={{
-                  fontSize: '26px',
+                  fontSize: '28px',
                   fontWeight: 800,
-                  color: '#0F172A',
                   letterSpacing: '-0.03em',
+                  display: 'flex',
                 }}
               >
-                EvenTime
+                <span style={{ color: '#6C47FF' }}>Even</span>
+                <span style={{ color: '#0F172A' }}>Time</span>
               </span>
             </div>
 
-            {/* Right Tag */}
+            {/* Right Category Tag */}
             <span
               style={{
                 fontSize: '13px',
-                fontWeight: 700,
+                fontWeight: 600,
                 color: '#6C47FF',
                 letterSpacing: '2.5px',
                 textTransform: 'uppercase',
@@ -172,7 +178,7 @@ export async function GET(req: NextRequest) {
               <p
                 style={{
                   fontSize: '24px',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: '#64748B',
                   lineHeight: 1.4,
                   letterSpacing: '-0.01em',
@@ -222,6 +228,20 @@ export async function GET(req: NextRequest) {
       {
         width: 1200,
         height: 630,
+        fonts: [
+          {
+            name: 'Outfit',
+            data: fontExtraBoldData,
+            style: 'normal',
+            weight: 800,
+          },
+          {
+            name: 'Outfit',
+            data: fontSemiBoldData,
+            style: 'normal',
+            weight: 600,
+          },
+        ],
         headers: {
           'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable',
         },
