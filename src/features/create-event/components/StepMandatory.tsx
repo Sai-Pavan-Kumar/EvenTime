@@ -229,18 +229,30 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                         </span>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      value={collegeSearchQuery}
-                      onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
-                      onFocus={() => setShowCollegeDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 250)}
-                      placeholder="Search college (e.g. CBIT, IIT, BITS...)" maxLength={100}
-                      className="w-full bg-white border border-slate-200 rounded-xl p-3 outline-none text-sm focus:border-[#6C47FF]"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={collegeSearchQuery}
+                        onChange={e => { setCollegeSearchQuery(e.target.value); setShowCollegeDropdown(true); updateData({ collegeId: null, collegeName: "" }); }}
+                        onFocus={() => setShowCollegeDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowCollegeDropdown(false), 250)}
+                        placeholder="Search college (e.g. CBIT, IIT, BITS...)" maxLength={100}
+                        className="w-full bg-white border border-slate-200 rounded-xl p-3 pr-10 outline-none text-sm focus:border-[#6C47FF]"
+                      />
+                      {isSearchingColleges && (
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                          <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />
+                        </div>
+                      )}
+                    </div>
                      {showCollegeDropdown && collegeSearchQuery.trim().length > 0 && (
                       <div className="absolute left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 flex flex-col no-scrollbar" onMouseDown={(e) => e.preventDefault()}>
-                        {isSearchingColleges && collegesList.length === 0 && (
+                        {collegeSearchQuery.trim().length === 1 && (
+                          <div className="px-4 py-3 text-xs text-slate-400 font-medium">
+                            Type at least 2 characters to search...
+                          </div>
+                        )}
+                        {isSearchingColleges && collegesList.length === 0 && collegeSearchQuery.trim().length >= 2 && (
                           <div className="px-4 py-3 text-sm text-slate-400 font-medium flex items-center gap-2">
                             <div className="w-3.5 h-3.5 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />
                             Searching colleges...
@@ -261,7 +273,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                             🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                           </button>
                         ))}
-                        {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
+                        {!isSearchingColleges && collegeSearchQuery.trim().length >= 2 && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
                           <button 
                             type="button" 
                             onMouseDown={(e) => {

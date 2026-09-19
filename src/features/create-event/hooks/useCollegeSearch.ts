@@ -7,54 +7,40 @@ type CollegeRow = Database['public']['Tables']['colleges']['Row'];
 const COMMON_COLLEGE_ALIASES: Record<string, string> = {
   cbit: "Chaitanya Bharathi",
   bits: "Birla Institute",
-  iit: "Indian Institute of Technology",
-  nit: "National Institute",
   iiit: "Information Technology",
-  jntu: "JNTU",
-  jntuh: "JNTUH",
-  jntuk: "JNTUK",
-  jntua: "JNTUA",
-  ou: "Osmania",
-  vit: "Vellore Institute",
-  srm: "SRM",
-  mit: "Manipal Institute",
-  dtu: "Delhi Technological",
-  nsut: "Netaji Subhas",
   vnr: "Vignana Jyothi",
   vnrvjiet: "Vignana Jyothi",
   vbit: "Vignana Bharathi",
   mgit: "Mahatma Gandhi Institute of Technology",
   griet: "Gokaraju",
-  kmit: "Keshav Memorial",
-  cvr: "CVR",
-  bvrit: "B V Raju",
   snist: "Sreenidhi",
   mrec: "Malla Reddy",
   mlrit: "Marri Laxman",
-  cmr: "CMR",
   cmrec: "CMR Engineering",
-  vardhaman: "Vardhaman",
-  gitam: "GITAM",
-  kl: "K L University",
-  klu: "K L University",
-  amrita: "Amrita",
-  thapar: "Thapar",
-  lpu: "Lovely Professional",
+  nsut: "Netaji Subhas",
+  dtu: "Delhi Technological",
 };
 
-// Global in-memory cache to ensure 0ms instantaneous results for repeated queries
+// Global in-memory cache for instantaneous (0ms) results on repeated queries
 const searchCache = new Map<string, CollegeRow[]>();
 
 export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
   const [collegesList, setCollegesList] = useState<CollegeRow[]>([]);
   const [isSearchingColleges, setIsSearchingColleges] = useState(false);
-  const activeQueryRef = useRef("");
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     const query = searchQuery.trim();
-    activeQueryRef.current = query;
 
+    // Reset immediately if empty or skipped
     if (!query || skip) {
+      setCollegesList([]);
+      setIsSearchingColleges(false);
+      return;
+    }
+
+    // Require at least 2 characters to avoid lagging against 52k rows
+    if (query.length < 2) {
       setCollegesList([]);
       setIsSearchingColleges(false);
       return;
@@ -69,75 +55,104 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
       return;
     }
 
+    const currentRequestId = ++requestIdRef.current;
     setIsSearchingColleges(true);
 
+    // Safety timeout: Never leave user stuck on "Searching..." if network stalls
+    const safetyTimer = setTimeout(() => {
+      if (requestIdRef.current === currentRequestId) {
+        setIsSearchingColleges(false);
+      }
+    }, 3500);
+
     const timer = setTimeout(async () => {
-      if (activeQueryRef.current !== query) return;
+      if (requestIdRef.current !== currentRequestId) return;
 
       const supabase = createClient();
-      const alias = COMMON_COLLEGE_ALIASES[normalized];
+      const words = normalized.split(/\s+/).filter(Boolean);
 
       try {
-        const calls: Promise<{ data: CollegeRow[] | null; error: any }>[] = [
-          supabase.rpc('search_colleges', { search_term: query }) as any,
-        ];
+        // Direct multi-word search
+        let directQuery = supabase
+          .from('colleges')
+          .select('id, name, slug, state, theme_color, logo_url, website');
 
-        if (alias) {
-          calls.push(supabase.rpc('search_colleges', { search_term: alias }) as any);
-          calls.push(
-            supabase
-              .from('colleges')
-              .select('id, name, slug, state, theme_color, logo_url, website')
-              .ilike('name', `%${alias}%`)
-              .limit(10) as any
-          );
+        for (const w of words) {
+          directQuery = directQuery.ilike('name', `%${w}%`);
         }
 
-        const responses = await Promise.all(calls);
-        const map = new Map<string, CollegeRow>();
+        const calls: Promise<any>[] = [Promise.resolve(directQuery.limit(15))];
 
-        for (const res of responses) {
+        // Check if any word matches a known abbreviation/alias
+        const matchedAliases = words.map(w => COMMON_COLLEGE_ALIASES[w]).filter(Boolean);
+        for (const alias of matchedAliases) {
+          const aliasWords = alias.toLowerCase().split(/\s+/).filter(Boolean);
+          let aliasQuery = supabase
+            .from('colleges')
+            .select('id, name, slug, state, theme_color, logo_url, website');
+
+          for (const aw of aliasWords) {
+            aliasQuery = aliasQuery.ilike('name', `%${aw}%`);
+          }
+          calls.push(Promise.resolve(aliasQuery.limit(10)));
+        }
+
+        const results = await Promise.all(calls);
+
+        if (requestIdRef.current !== currentRequestId) return;
+
+        const map = new Map<string, CollegeRow>();
+        for (const res of results) {
           if (res?.data && Array.isArray(res.data)) {
-            for (const item of res.data) {
-              if (item?.id && !map.has(item.id)) {
-                map.set(item.id, item as CollegeRow);
+            for (const col of res.data) {
+              if (col?.id && !map.has(col.id)) {
+                map.set(col.id, col as CollegeRow);
               }
             }
           }
         }
 
-        // Fallback: if nothing returned yet, try direct ILIKE on colleges table
-        if (map.size === 0) {
-          const { data: fallback } = await supabase
-            .from('colleges')
-            .select('id, name, slug, state, theme_color, logo_url, website')
-            .ilike('name', `%${query}%`)
-            .limit(10);
-          if (fallback) {
-            for (const item of fallback) {
-              map.set(item.id, item as CollegeRow);
-            }
-          }
+        // Rank results: items starting with query or word boundaries rank higher
+        const sorted = Array.from(map.values()).sort((a, b) => {
+          const aName = a.name.toLowerCase();
+          const bName = b.name.toLowerCase();
+          const aStarts = aName.startsWith(normalized);
+          const bStarts = bName.startsWith(normalized);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+
+          const aWordMatch = aName.includes(` ${normalized}`) || aName.includes(`(${normalized}`);
+          const bWordMatch = bName.includes(` ${normalized}`) || bName.includes(`(${normalized}`);
+          if (aWordMatch && !bWordMatch) return -1;
+          if (!aWordMatch && bWordMatch) return 1;
+
+          return aName.localeCompare(bName);
+        });
+
+        // Store in LRU-style cache
+        if (searchCache.size > 200) {
+          const firstKey = searchCache.keys().next().value;
+          if (firstKey) searchCache.delete(firstKey);
         }
+        searchCache.set(normalized, sorted);
 
-        const list = Array.from(map.values());
-
-        // Cache the result
-        searchCache.set(normalized, list);
-
-        if (activeQueryRef.current === query) {
-          setCollegesList(list);
+        if (requestIdRef.current === currentRequestId) {
+          setCollegesList(sorted);
         }
       } catch (error) {
-        console.error("Colleges fetch error:", error);
+        console.warn("[useCollegeSearch] Search error:", error);
       } finally {
-        if (activeQueryRef.current === query) {
+        if (requestIdRef.current === currentRequestId) {
           setIsSearchingColleges(false);
+          clearTimeout(safetyTimer);
         }
       }
-    }, 150);
+    }, 200);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(safetyTimer);
+    };
   }, [searchQuery, skip]);
 
   return { collegesList, setCollegesList, isSearchingColleges };
