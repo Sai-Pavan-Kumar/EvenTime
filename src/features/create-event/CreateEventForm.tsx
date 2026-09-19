@@ -2,13 +2,13 @@
 
 import { useState, useEffect, SetStateAction } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { createClient } from "@/lib/supabase/client";
 import { FieldStatus, CreateEventFormProps } from "./types";
 import { CATEGORY_TEMPLATES, categoriesList, teamOptions, hours, mins, ampms } from "./constants";
 function toLocalDateString(d: Date) { 
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 // Hooks
+import { useAuth } from "@/context/AuthContext";
 import { useImageCrop } from "./hooks/useImageCrop";
 import { useEventSubmit } from "./hooks/useEventSubmit";
 
@@ -30,7 +30,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const DRAFT_STORAGE_KEY = "@eventime_create_event_draft_v1";
-  const supabase = createClient();
+  const { user, profile } = useAuth();
 
   // Unified State Object
   const [eventData, setEventData] = useState({
@@ -173,24 +173,13 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 
   // Auto-prefill student's registered college if creating a college event or fest
   useEffect(() => {
-    const fetchUserProfileCollege = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("college_id, colleges(name)")
-        .eq("id", user.id)
-        .single();
-      if (data && data.college_id && (data.colleges as any)?.name) {
-        setProfileCollege({
-          id: data.college_id,
-          name: (data.colleges as any).name,
-        });
-      }
-    };
-    fetchUserProfileCollege();
-  }, []);
+    if (profile?.college_id && profile?.college) {
+      setProfileCollege({
+        id: profile.college_id,
+        name: profile.college,
+      });
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (!initialData && isCollegeCategory && profileCollege && !eventData.collegeName) {
@@ -270,6 +259,11 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 
   const handleSubmit = async () => {
     if (!validateMandatoryFields()) return;
+
+    if (!user) {
+      toast.error("Please login to post an event.");
+      return;
+    }
 
     const res = await submitEvent({
       title: eventData.title,
