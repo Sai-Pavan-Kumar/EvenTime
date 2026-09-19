@@ -34,6 +34,9 @@ export function parseEventDateString(dateStr: string): Date | null {
 /**
  * Checks if an event is concluded based on date string and optional time strings.
  * Supports end_date_string, date_string, end_time, and start_time.
+ * If an event has an explicit end time (or a time range like "09:00 AM - 07:00 PM"),
+ * it concludes once that end time passes.
+ * If no explicit end time is provided, same-day events remain active for the day (conclude at 23:59:59).
  */
 export function checkIsEventPast(
   dateString: string | null | undefined,
@@ -47,9 +50,19 @@ export function checkIsEventPast(
   const targetDate = parseEventDateString(targetDateStr);
   if (!targetDate) return false;
 
-  const timeStr = endTime || startTime;
-  if (timeStr) {
-    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  let effectiveEndTime = endTime;
+
+  // If no explicit endTime provided, check if the string contains a time range (e.g. "09:00 AM - 07:00 PM")
+  if (!effectiveEndTime && targetDateStr.includes(" · ")) {
+    const timePart = targetDateStr.split(" · ")[1];
+    const matches = Array.from(timePart.matchAll(/(\d+):(\d+)\s*(AM|PM)?/gi));
+    if (matches.length > 1) {
+      effectiveEndTime = matches[matches.length - 1][0];
+    }
+  }
+
+  if (effectiveEndTime && effectiveEndTime.trim()) {
+    const match = effectiveEndTime.match(/(\d+):(\d+)\s*(AM|PM)?/i);
     if (match) {
       let hours = parseInt(match[1], 10);
       const minutes = parseInt(match[2], 10);
@@ -61,7 +74,7 @@ export function checkIsEventPast(
     }
   }
 
-  // Fallback: If no time specified, consider it concluded at the end of that day
+  // Fallback: If no explicit end time specified, consider it concluded at the end of that day (23:59:59)
   targetDate.setHours(23, 59, 59, 999);
   return targetDate.getTime() < Date.now();
 }

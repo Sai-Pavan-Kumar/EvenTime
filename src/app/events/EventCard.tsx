@@ -9,7 +9,7 @@
   import { format, differenceInCalendarDays } from "date-fns";
   import { motion, AnimatePresence } from "framer-motion";
   import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString } from "@/lib/utils/date";
+  import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
   import { eventSync } from "@/lib/events/eventSync";
 
   interface EventCardProps {
@@ -18,6 +18,8 @@
     title: string;
     category: string;
     date: string;
+    startTime?: string | null;
+    endTime?: string | null;
     city: string;
     imageUrl: string;
     organizerName: string;
@@ -47,6 +49,8 @@
     title,
     category,
     date,
+    startTime,
+    endTime,
     city,
     imageUrl,
     organizerName,
@@ -143,6 +147,11 @@
       } catch (e) {
         // Proceed if auth check errored
       }
+
+      // Concluded check: cannot bookmark if event is concluded unless already saved (matches mobile app)
+      if (isPast && !savedState) {
+        return;
+      }
       
       setIsSaving(true);
       const newState = !savedState;
@@ -206,30 +215,10 @@
     const eventDate = parseEventDateString(date);
     if (eventDate) {
       const today = new Date();
-      const exactEventDate = new Date(eventDate);
-      
-      // Extract the actual time from the date prop (e.g., "2026-06-21 · 04:00 PM")
-      const parts = date.split(" · ");
-      if (parts.length > 1) {
-        const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          let hours = parseInt(match[1], 10);
-          const minutes = parseInt(match[2], 10);
-          if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-          if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-          exactEventDate.setHours(hours, minutes, 0, 0);
-        } else {
-          exactEventDate.setHours(23, 59, 59, 999);
-        }
-      } else {
-        // If no time is specified, assume it lasts until the end of the day
-        exactEventDate.setHours(23, 59, 59, 999);
-      }
-
       diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = today.getTime() > exactEventDate.getTime();
+      isPastTime = checkIsEventPast(date, null, endTime, startTime);
 
-            if (diffDays < 0 || isPastTime) {
+      if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
       } else if (diffDays === 0 && !isPastTime) {
@@ -237,6 +226,7 @@
         statusColor = "bg-emerald-600 text-white shadow-md shadow-emerald-600/30";
       }  
     }
+    const isPast = Boolean((diffDays !== null && diffDays < 0) || isPastTime);
 
     useEffect(() => {
       // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
@@ -245,29 +235,9 @@
         const checkDate = parseEventDateString(date);
         if (checkDate) {
           const today = new Date();
-          const exactCheckDate = new Date(checkDate);
-          
-          // Apply the exact time logic inside the auto-hide effect as well
-          const parts = date.split(" · ");
-          if (parts.length > 1) {
-            const match = parts[1].match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (match) {
-              let hours = parseInt(match[1], 10);
-              const minutes = parseInt(match[2], 10);
-              if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
-              if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
-              exactCheckDate.setHours(hours, minutes, 0, 0);
-            } else {
-              exactCheckDate.setHours(23, 59, 59, 999);
-            }
-          } else {
-            exactCheckDate.setHours(23, 59, 59, 999);
-          }
-
           const pastDate = differenceInCalendarDays(checkDate, today) < 0;
           
-          // Fix: We no longer check `pastTime` to hide the card.
-          // This ensures same-day past events stay visible (with a "Past Event" badge),
+          // Same-day past events stay visible (with a "Past Event" badge),
           // keeping the UI counts perfectly synchronized with the server counts.
           if (pastDate) {
             setIsVisible(false);
@@ -489,8 +459,21 @@
                 )}
                 <button 
                   onClick={(e) => { e.preventDefault(); handleSave(e); }}
-                  disabled={isSaving}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center disabled:opacity-70 hover:bg-slate-100 shrink-0"
+                  disabled={isSaving || (isPast && !savedState)}
+                  title={
+                    isPast && !savedState
+                      ? "Event Concluded"
+                      : ownerNotice
+                      ? "Your Event"
+                      : savedState
+                      ? "Remove from Saved"
+                      : "Save Event"
+                  }
+                  className={`w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center shrink-0 ${
+                    isPast && !savedState
+                      ? "cursor-not-allowed opacity-50"
+                      : "disabled:opacity-70 hover:bg-slate-100"
+                  }`}
                 >
                   <Bookmark
                     className="w-4 h-4 text-slate-400 transition-colors hover:text-slate-900"

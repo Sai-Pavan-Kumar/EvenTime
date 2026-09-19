@@ -32,7 +32,9 @@ export function LoadMoreGrid({
             slug={event.slug || event.id}
             title={event.title || "Untitled Event"}
             category={event.category || "General"}
-            date={event.date_string || "TBA"}
+            date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string || "TBA"}
+            startTime={event.start_time}
+            endTime={event.end_time}
             city={event.is_virtual ? "Online" : (event.city || event.location || "India")}
             imageUrl={event.poster_url || "/window.svg"}
             organizerName={event.organizer_name || "Organizer"}

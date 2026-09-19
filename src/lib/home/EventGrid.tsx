@@ -51,6 +51,8 @@ export function EventGrid({
             title={event.title!}
             category={event.category!}
             date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+            startTime={event.start_time}
+            endTime={event.end_time}
             city={event.is_virtual ? "Online" : (event.city || event.location || "India")}
             imageUrl={event.poster_url || defaultImage}
            organizerName={(event as any).profiles?.username || event.organizer_name || "Event Curator"}

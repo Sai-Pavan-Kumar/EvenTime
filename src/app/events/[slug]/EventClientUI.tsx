@@ -1110,6 +1110,8 @@ export default function EventClientUI({
                         }`
                       : simEvent.date_string
                   }
+                  startTime={simEvent.start_time}
+                  endTime={simEvent.end_time}
                   city={simEvent.is_virtual ? "Online" : (simEvent.city || simEvent.location || "Venue TBA")}
                   imageUrl={
                     simEvent.poster_url ||
