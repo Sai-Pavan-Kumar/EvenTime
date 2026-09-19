@@ -103,8 +103,16 @@ export async function submitEventAction(
       profile = profileData;
     } catch {}
 
+    let dbDomains: string[] = [];
+    try {
+      const { data: trustedData } = await supabase.from("verified_domains").select("domain_name");
+      if (trustedData) {
+        dbDomains = trustedData.map((d: any) => d.domain_name);
+      }
+    } catch {}
+
     const isAdmin = profile?.user_type === "admin" || profile?.role === "admin";
-    const isTrustedLink = isVerifiedDomain(finalRegLink);
+    const isTrustedLink = isVerifiedDomain(finalRegLink, dbDomains.length > 0 ? dbDomains : undefined);
     const finalStatus: "approved" | "pending" = isAdmin || isTrustedLink ? "approved" : "pending";
 
     // Auto-fetch and assign curator name if organizer_name is empty
@@ -255,6 +263,23 @@ export async function submitEventAction(
           user_id: user.id,
           delta: 100,
         });
+      } catch {}
+
+      // Broadcast push notifications to mobile app users in that city
+      try {
+        if (insertPayload.city && insertPayload.city !== "online") {
+          void supabase.functions.invoke("send-push-notification", {
+            body: {
+              city: insertPayload.city,
+              category: insertPayload.category,
+              notification_type: "city_updates",
+              title: `New in ${insertPayload.city} · ${insertPayload.category}`,
+              body: `"${insertPayload.title}" opened for registration.`,
+              data: { eventId: insertedEvent?.id, id: insertedEvent?.id },
+              channel_id: "city-updates",
+            },
+          }).catch(() => {});
+        }
       } catch {}
 
       try {
