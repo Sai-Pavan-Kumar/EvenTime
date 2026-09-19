@@ -11,10 +11,6 @@ export const CATEGORY_TEMPLATES: Record<string, string> = {
 
   "Charity Event": `About the Initiative:\n\nWho Should Attend:`,
 
-  "College Event": `About the Event:\n\nWho Should Attend:`,
-
-  "College Fest": `About the Fest:\n\nWho Should Attend:`,
-
   "Comedy Show": `About the Show:\n\nWho Should Attend:`,
 
   "Community Event": `About the Gathering:\n\nWho Should Attend:`,
@@ -77,7 +73,7 @@ export const CATEGORY_TEMPLATES: Record<string, string> = {
 export const audienceOptions = ["Everyone", "Students Only", "Professionals Only","Selected Audience Only","16+ Only", "18+ Only"];
 
 export const categoriesList = [
-  "AI Event", "Alumni Event", "Auto & EV Expo", "Awards Night", "Career Event","Charity Event", "College Event","College Fest", "Comedy Show", "Community Event", "Concert", "Conference","Creator Meetup", "Developer Event", "Educational Fair", "Exhibition", "Expo", "Film Festival","Fitness Event", "Food Festival", "Founder Meetup", "Gaming & Esports", "Hackathon","Investor Event", "Music Festival", "Networking Event", "Open Mic", "Pet Event", "Running Event","Sports Tournament", "Startup Event", "Summit", "Tech Event", "Wellness Event","Women Event", "Workshop"
+  "AI Event", "Alumni Event", "Auto & EV Expo", "Awards Night", "Career Event","Charity Event", "Comedy Show", "Community Event", "Concert", "Conference","Creator Meetup", "Developer Event", "Educational Fair", "Exhibition", "Expo", "Film Festival","Fitness Event", "Food Festival", "Founder Meetup", "Gaming & Esports", "Hackathon","Investor Event", "Music Festival", "Networking Event", "Open Mic", "Pet Event", "Running Event","Sports Tournament", "Startup Event", "Summit", "Tech Event", "Wellness Event","Women Event", "Workshop"
 ];
 
 export const teamOptions = ["Solo", "Teams of 2-4", "Teams of 4+", "Both Solo & Team"];

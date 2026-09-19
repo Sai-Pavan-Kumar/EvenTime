@@ -161,10 +161,46 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
             {categoriesList.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-          </div>
+      </div>
 
-          {/* COLLEGE FIELDS (DYNAMIC) */}
-          {isCollegeCategory && (
+      {/* COLLEGE / CAMPUS EVENT TOGGLE */}
+      <div className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+        <div>
+          <p className="text-sm font-bold text-slate-800">College / Campus Event?</p>
+          <p className="text-xs text-slate-500">Enable if this event is hosted by or associated with a college</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const next = !data.isCollegeEvent;
+            updateData({
+              isCollegeEvent: next,
+              ...(!next ? {
+                collegeId: null,
+                collegeName: "",
+                collegeBranch: "",
+                collegeYear: "",
+                collegeOnly: false,
+              } : {})
+            });
+            if (!next) {
+              setCollegeSearchQuery("");
+            }
+          }}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            data.isCollegeEvent ? "bg-[#6C47FF]" : "bg-slate-300"
+          }`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              data.isCollegeEvent ? "translate-x-6" : "translate-x-1"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* COLLEGE FIELDS (DYNAMIC) */}
+      {isCollegeCategory && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="overflow-hidden">
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5 space-y-4">
                 <p className="text-sm font-bold text-brand-primary">College Event Details</p>

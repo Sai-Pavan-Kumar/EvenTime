@@ -49,6 +49,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     collegeOnly: initialData?.college_only || false,
     collegeId: initialData?.college_id || null,
     collegeName: initialData?.colleges?.name || "",
+    isCollegeEvent: Boolean(initialData?.college_id),
     selectedHour: initialData?.start_time ? initialData.start_time.split(":")[0] : "",
     selectedMin: initialData?.start_time ? initialData.start_time.split(":")[1].substring(0, 2) : "",
     selectedAmPm: initialData?.start_time ? initialData.start_time.slice(-2) : "AM",
@@ -74,7 +75,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     setEventData((prev) => ({ ...prev, ...updates }));
   };
 
-  const isCollegeCategory = eventData.category === "College Event" || eventData.category === "College Fest";
+  const isCollegeCategory = eventData.isCollegeEvent;
 
   
   // Auto-restore draft from localStorage
@@ -84,10 +85,11 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (raw) {
         const draft = JSON.parse(raw);
-        if (draft && (draft.title || draft.regLink || draft.description || draft.category)) {
+        if (draft && (draft.title || draft.regLink || draft.description || draft.category || draft.isCollegeEvent)) {
           setEventData((prev) => ({
             ...prev,
             ...draft,
+            isCollegeEvent: Boolean(draft.isCollegeEvent),
             isTrustedDomain: draft.regLink ? isVerifiedDomain(draft.regLink) : true,
             selectedDate: draft.selectedDate ? new Date(draft.selectedDate) : undefined,
             endDate: draft.endDate ? new Date(draft.endDate) : undefined,
@@ -144,6 +146,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
         collegeOnly: false,
         collegeId: null,
         collegeName: "",
+        isCollegeEvent: false,
         selectedHour: "",
         selectedMin: "",
         selectedAmPm: "AM",
