@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
+import { toast } from "sonner";
 
 
 
@@ -56,15 +57,23 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
   }, [branchSearchQuery, data.collegeBranch]);
 
   const handleCreateCollege = async (name: string) => {
+    const trimmed = name.trim();
+    if (trimmed.length < 3) {
+      toast.error("Please enter the full official college name (at least 3 characters).");
+      return;
+    }
     setIsCreatingCollege(true);
     const { createCollegeAction } = await import("@/app/profile/action");
-    const result = await createCollegeAction(name);
+    const result = await createCollegeAction(trimmed);
     setIsCreatingCollege(false);
     if (result?.data) {
       updateData({ collegeId: result.data.id, collegeName: result.data.name });
       setCollegeSearchQuery(result.data.name);
       setShowCollegeDropdown(false);
       setCollegesList(prev => [...prev, result.data as CollegeRow]);
+      toast.success(`Added "${result.data.name}" to directory!`);
+    } else if (result?.error) {
+      toast.error(result.error || "Failed to add college.");
     }
   };
 
@@ -273,19 +282,27 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
                             🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                           </button>
                         ))}
-                        {!isSearchingColleges && collegeSearchQuery.trim().length >= 2 && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                          <button 
-                            type="button" 
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleCreateCollege(collegeSearchQuery);
-                            }} 
-                            disabled={isCreatingCollege} 
-                            className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0 border-t border-slate-100"
-                          >
-                            {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
-                            {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
-                          </button>
+                        {!isSearchingColleges && collegeSearchQuery.trim().length >= 2 && collegesList.length === 0 && (
+                          <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex flex-col gap-2">
+                            <p className="text-xs text-slate-500 font-medium">
+                              No matching college found in our directory.
+                            </p>
+                            <button 
+                              type="button" 
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleCreateCollege(collegeSearchQuery);
+                              }} 
+                              disabled={isCreatingCollege} 
+                              className="w-full px-3 py-2 text-sm font-bold text-brand-primary bg-white hover:bg-brand-primary/10 border border-[#6C47FF]/20 rounded-xl transition-colors flex items-center justify-center gap-2"
+                            >
+                              {isCreatingCollege && <div className="w-4 h-4 border-2 border-[#6C47FF]/30 border-t-[#6C47FF] rounded-full animate-spin" />}
+                              {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery.trim()}" as new college`}
+                            </button>
+                            <p className="text-[10px] text-slate-400 leading-tight">
+                              💡 Please enter the full official college name (e.g. CVR College of Engineering) so other students can easily find it.
+                            </p>
+                          </div>
                         )}
                       </div>
                     )}

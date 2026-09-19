@@ -79,10 +79,15 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
 
   // NEW: Notion-style Create College Function via Server Action
   const handleCreateCollege = async (newCollegeName: string) => {
+    const trimmed = newCollegeName.trim();
+    if (trimmed.length < 3) {
+      toast.error("Please enter the full official college name (at least 3 characters).");
+      return;
+    }
     setIsCreatingCollege(true);
     
     // Call the secure server action instead of hitting the DB directly
-    const result = await createCollegeAction(newCollegeName);
+    const result = await createCollegeAction(trimmed);
 
     if (result.data && !result.error) {
       // Cast to CollegeRow in case your type requires specific fields returning from action
@@ -90,7 +95,9 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       setCollege(result.data.name);
       setCollegeId(result.data.id);
       setSearchQuery(result.data.name);
+      toast.success(`Added "${result.data.name}" to directory!`);
     } else {
+      toast.error(result.error || "Failed to add college.");
       console.error("Failed to add college:", result.error);
     }
     
@@ -298,11 +305,22 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                                   🏢 {item.name} {item.state ? <span className="text-[10px] text-slate-400 font-bold uppercase float-right">{item.state}</span> : null}
                                 </button>
                               ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === searchQuery.toLowerCase().trim()) && (
-                              <button type="button" onClick={() => handleCreateCollege(searchQuery)} disabled={isCreatingCollege} className="w-full text-left px-4 py-3 text-sm font-bold text-brand-primary bg-brand-primary/5 hover:bg-brand-primary/10 transition-colors flex items-center gap-2 sticky bottom-0">
-                                {isCreatingCollege && <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery}" as new college`}
-                              </button>
+                            {!isSearchingColleges && searchQuery.trim().length >= 2 && collegesList.length === 0 && (
+                              <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex flex-col gap-2">
+                                <p className="text-xs text-slate-500 font-medium">No matching college found in our directory.</p>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateCollege(searchQuery)}
+                                  disabled={isCreatingCollege}
+                                  className="w-full px-3 py-2 text-sm font-bold text-brand-primary bg-white hover:bg-brand-primary/10 border border-brand-primary/20 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                  {isCreatingCollege && <div className="w-4 h-4 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />}
+                                  {isCreatingCollege ? "Adding..." : `+ Add "${searchQuery.trim()}" as new college`}
+                                </button>
+                                <p className="text-[10px] text-slate-400 leading-tight">
+                                  💡 Please enter the full official college name so other students can easily find it.
+                                </p>
+                              </div>
                             )}
                           </div>
                         )}

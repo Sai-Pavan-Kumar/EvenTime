@@ -74,15 +74,21 @@ export default function SettingsClient({
   }, []);
 
   const handleCreateCollege = async (name: string) => {
+    const trimmed = name.trim();
+    if (trimmed.length < 3) {
+      toast.error("Please enter the full official college name (at least 3 characters).");
+      return;
+    }
     setIsCreatingCollege(true);
-    const result = await createCollegeAction(name);
+    const result = await createCollegeAction(trimmed);
     if (result.data && !result.error) {
       setCollegesList(prev => [...prev, result.data as CollegeRow]);
       setCollege(result.data.name);
       setCollegeId(result.data.id);
       setCollegeSearchQuery(result.data.name);
+      toast.success(`Added "${result.data.name}" to directory!`);
     } else {
-      toast.error("Failed to add college. Please try again.");
+      toast.error(result.error || "Failed to add college. Please try again.");
     }
     setIsCreatingCollege(false);
     setShowCollegeDropdown(false);
@@ -367,16 +373,20 @@ export default function SettingsClient({
                                   {item.state && <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">{item.state}</span>}
                                 </button>
                               ))}
-                            {!isSearchingColleges && !collegesList.some(item => item.name.toLowerCase() === collegeSearchQuery.toLowerCase().trim()) && (
-                              <button
-                                type="button"
-                                onClick={() => handleCreateCollege(collegeSearchQuery)}
-                                disabled={isCreatingCollege}
-                                className="w-full text-left px-4 py-3 text-sm font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors flex items-center gap-2 sticky bottom-0"
-                              >
+                            {!isSearchingColleges && collegeSearchQuery.trim().length >= 2 && collegesList.length === 0 && (
+                              <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex flex-col gap-2">
+                                <p className="text-xs text-slate-500 font-medium">No matching college found in our directory.</p>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateCollege(collegeSearchQuery)}
+                                  disabled={isCreatingCollege}
+                                  className="w-full px-3 py-2 text-sm font-bold text-blue-600 bg-white hover:bg-blue-50 border border-blue-200 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
                                   {isCreatingCollege && <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />}
-                                {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery}" as new college`}
-                              </button>
+                                  {isCreatingCollege ? "Adding..." : `+ Add "${collegeSearchQuery.trim()}" as new college`}
+                                </button>
+                                <p className="text-[10px] text-slate-400">💡 Please enter the full official college name so others can easily find it.</p>
+                              </div>
                             )}
                           </div>
                         )}
