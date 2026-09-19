@@ -4,6 +4,17 @@ import { Database } from '@/types/database';
 
 type CollegeRow = Database['public']['Tables']['colleges']['Row'];
 
+const WORD_NORMALIZATION: Record<string, string> = {
+  clg: "college",
+  engg: "engineering",
+  eng: "engineering",
+  univ: "university",
+  varsity: "university",
+  inst: "institute",
+  tech: "technology",
+  govt: "government",
+};
+
 const COMMON_COLLEGE_ALIASES: Record<string, string> = {
   cbit: "Chaitanya Bharathi",
   bits: "Birla Institute",
@@ -20,6 +31,11 @@ const COMMON_COLLEGE_ALIASES: Record<string, string> = {
   nsut: "Netaji Subhas",
   dtu: "Delhi Technological",
 };
+
+function cleanPrefix(name: string): string {
+  // Strip AISHE codes or numbering like "130083-", "C497 ", etc.
+  return name.replace(/^[\d\w]+[-_\s]+/, "");
+}
 
 // Global in-memory cache for instantaneous (0ms) results on repeated queries
 const searchCache = new Map<string, CollegeRow[]>();
@@ -69,10 +85,11 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
       if (requestIdRef.current !== currentRequestId) return;
 
       const supabase = createClient();
-      const words = normalized.split(/\s+/).filter(Boolean);
+      const rawWords = normalized.split(/\s+/).filter(Boolean);
+      const words = rawWords.map(w => WORD_NORMALIZATION[w] || w);
 
       try {
-        // Direct multi-word search
+        // Direct multi-word search with normalized terms (e.g. cvr clg -> cvr college)
         let directQuery = supabase
           .from('colleges')
           .select('id, name, slug, state, theme_color, logo_url, website');
@@ -81,10 +98,10 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
           directQuery = directQuery.ilike('name', `%${w}%`);
         }
 
-        const calls: Promise<any>[] = [directQuery.limit(15)];
+        const calls: PromiseLike<any>[] = [directQuery.limit(25)];
 
-        // Check if any word matches a known abbreviation/alias
-        const matchedAliases = words.map(w => COMMON_COLLEGE_ALIASES[w]).filter(Boolean);
+        // Check if any word matches a known abbreviation/alias (e.g. cbit, vnr, mgit)
+        const matchedAliases = rawWords.map(w => COMMON_COLLEGE_ALIASES[w]).filter(Boolean);
         for (const alias of matchedAliases) {
           const aliasWords = alias.toLowerCase().split(/\s+/).filter(Boolean);
           let aliasQuery = supabase
@@ -94,7 +111,7 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
           for (const aw of aliasWords) {
             aliasQuery = aliasQuery.ilike('name', `%${aw}%`);
           }
-          calls.push(aliasQuery.limit(10));
+          calls.push(aliasQuery.limit(15));
         }
 
         const results = await Promise.all(calls);
@@ -112,32 +129,44 @@ export function useCollegeSearch(searchQuery: string, skip: boolean = false) {
           }
         }
 
-        // Rank results: items starting with query or word boundaries rank higher
+        // Rank results: items starting with query or word boundaries rank higher, cleaner names first
         const sorted = Array.from(map.values()).sort((a, b) => {
           const aName = a.name.toLowerCase();
           const bName = b.name.toLowerCase();
-          const aStarts = aName.startsWith(normalized);
-          const bStarts = bName.startsWith(normalized);
+          const aClean = cleanPrefix(aName);
+          const bClean = cleanPrefix(bName);
+
+          const aExact = aName === normalized || aClean === normalized;
+          const bExact = bName === normalized || bClean === normalized;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+
+          const aStarts = aName.startsWith(normalized) || aClean.startsWith(normalized);
+          const bStarts = bName.startsWith(normalized) || bClean.startsWith(normalized);
           if (aStarts && !bStarts) return -1;
           if (!aStarts && bStarts) return 1;
 
-          const aWordMatch = aName.includes(` ${normalized}`) || aName.includes(`(${normalized}`);
-          const bWordMatch = bName.includes(` ${normalized}`) || bName.includes(`(${normalized}`);
-          if (aWordMatch && !bWordMatch) return -1;
-          if (!aWordMatch && bWordMatch) return 1;
+          const firstWord = words[0] || normalized;
+          const aWordBoundary = new RegExp(`(^|[\\s(-])` + firstWord).test(aName);
+          const bWordBoundary = new RegExp(`(^|[\\s(-])` + firstWord).test(bName);
+          if (aWordBoundary && !bWordBoundary) return -1;
+          if (!aWordBoundary && bWordBoundary) return 1;
 
-          return aName.localeCompare(bName);
+          // Shorter, cleaner college names preferred over 200+ char administrative strings
+          return a.name.length - b.name.length;
         });
+
+        const finalResults = sorted.slice(0, 20);
 
         // Store in LRU-style cache
         if (searchCache.size > 200) {
           const firstKey = searchCache.keys().next().value;
           if (firstKey) searchCache.delete(firstKey);
         }
-        searchCache.set(normalized, sorted);
+        searchCache.set(normalized, finalResults);
 
         if (requestIdRef.current === currentRequestId) {
-          setCollegesList(sorted);
+          setCollegesList(finalResults);
         }
       } catch (error) {
         console.warn("[useCollegeSearch] Search error:", error);
