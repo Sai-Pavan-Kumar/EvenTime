@@ -33,8 +33,7 @@ export async function fetchHomePageData() {
           .gte("date_string", sixMonthsAgoStr)
           .or(visibilityFilter)
           .order("is_featured", { ascending: false })
-          .order("created_at", { ascending: false })
-          .limit(50),
+          .order("date_string", { ascending: true }),
         supabaseAnon.rpc("get_platform_stats").single(),
         supabaseAnon.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
         supabaseAnon.from("events").select("date_string").eq("status", "approved").gte("date_string", sixMonthsAgoStr)
