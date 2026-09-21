@@ -50,7 +50,7 @@ const getEvent = cache(async (slug: string) => {
   }
 });
 
-const getCachedSimilarEvents = (category: string, currentId: string) =>
+const getCachedCityEvents = (city: string | null, isVirtual: boolean, currentId: string) =>
   unstable_cache(
     async () => {
       const supabaseAnon = createSupabaseClient(
@@ -59,18 +59,26 @@ const getCachedSimilarEvents = (category: string, currentId: string) =>
         { auth: { persistSession: false } }
       );
       const todayStr = new Date().toISOString().split("T")[0];
-      const { data } = await supabaseAnon
+      let query = supabaseAnon
         .from("events")
         .select(EVENT_DETAIL_FIELDS)
-        .eq("category", category)
         .eq("status", "approved")
         .gte("date_string", todayStr)
-        .neq("id", currentId)
-        .order("created_at", { ascending: false })
-        .limit(6);
+        .neq("id", currentId);
+
+      const normalizedCity = city?.trim().toLowerCase();
+      if (isVirtual || normalizedCity === "online") {
+        query = query.or("is_virtual.eq.true,city.ilike.online");
+      } else if (city?.trim()) {
+        query = query.ilike("city", city.trim());
+      }
+
+      const { data } = await query
+        .order("date_string", { ascending: true })
+        .limit(20);
       return data || [];
     },
-    ["similar_events", category, currentId],
+    ["city_events", city || "virtual", String(isVirtual), currentId],
     { tags: ["events"], revalidate: false }
   )();
 
@@ -257,10 +265,12 @@ export default async function EventPage({
     }
   };
 
-  // Cached Similar Events & Social Proof Avatars (0ms roundtrips)
-  const similarEvents = finalEvent.category
-    ? await getCachedSimilarEvents(finalEvent.category, finalEvent.id)
-    : [];
+  // Cached City Events & Social Proof Avatars (0ms roundtrips)
+  const similarEvents = await getCachedCityEvents(
+    finalEvent.city,
+    Boolean(finalEvent.is_virtual),
+    finalEvent.id
+  );
 
   const interestedAvatars = await getCachedInterestedAvatars(finalEvent.id);
   const isAppBannerEnabled = await getCachedAppBannerSetting();

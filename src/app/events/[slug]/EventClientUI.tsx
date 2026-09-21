@@ -1074,8 +1074,20 @@ export default function EventClientUI({
         <div className="max-w-6xl mx-auto w-full px-6 py-8 border-t border-slate-100 mt-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 font-heading">Similar Events</h2>
-              <p className="text-sm text-slate-500 font-medium">Events in the same category you might like</p>
+              <h2 className="text-2xl font-bold text-slate-900 font-heading">
+                {event.is_virtual || event.city?.toLowerCase() === "online"
+                  ? "More Online Events"
+                  : event.city
+                  ? `Events in ${event.city}`
+                  : "Similar Events"}
+              </h2>
+              <p className="text-sm text-slate-500 font-medium">
+                {event.is_virtual || event.city?.toLowerCase() === "online"
+                  ? "Upcoming virtual meetups, hackathons, and sessions"
+                  : event.city
+                  ? `Upcoming events happening around ${event.city}`
+                  : "Events you might be interested in"}
+              </p>
             </div>
             <div className="hidden md:flex gap-2">
               <button
