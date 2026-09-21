@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import Image from "next/image";
 import Link from "next/link";
-import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy, BarChart2, GraduationCap, Info, MessageSquare, Shield, ChevronRight } from "lucide-react";
+import { Plus, CalendarDays, Settings, Mail, Edit3, AlertTriangle, LayoutGrid, Bookmark, Eye, Trophy, BarChart2, GraduationCap, Info, Shield, ChevronRight } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { format, parseISO } from "date-fns";
@@ -14,6 +14,7 @@ import { getCategoryConfig } from "@/lib/category-config";
 import { deleteEventAction } from "./action";
 import type { ProfileRow } from "@/types";
 import { MobileSignOutButton } from "@/components/profile/MobileSignOutButton";
+import ProfileLoading from "./loading";
 
 type ReportWithEventSlug = {
   id: string;
@@ -80,86 +81,99 @@ function ProfileContent() {
   const [savedVisibleCount, setSavedVisibleCount] = useState(8);
 
   useEffect(() => {
+    let isMounted = true;
     async function fetchData() {
-      const supabase = createClient();
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      try {
+        const supabase = createClient();
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
 
-      if (!currentUser) {
-        memCache = null;
-        router.push("/login");
-        return;
-      }
-      if (memCache && memCache.user?.id !== currentUser.id) {
-        memCache = null;
-      }
+        if (authError || !currentUser) {
+          memCache = null;
+          router.push("/login");
+          return;
+        }
+        if (memCache && memCache.user?.id !== currentUser.id) {
+          memCache = null;
+        }
 
-      const [
-        { data: profileData },
-        { data: myEventsRaw },
-        { data: savedEventsData },
-        { data: myReportsRaw },
-        { data: appSettingsData },
-        { data: leaderboardRow }
-      ] = await Promise.all([
-        supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year, role").eq("id", currentUser.id).maybeSingle(),
-        supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).neq("status", "deleted").order("created_at", { ascending: false }),
-        supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
-        supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
-        supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
-        supabase.from("leaderboard_view").select("et_score").eq("user_id", currentUser.id).maybeSingle()
-      ]);
+        const [
+          { data: profileData },
+          { data: myEventsRaw },
+          { data: savedEventsData },
+          { data: myReportsRaw },
+          { data: appSettingsData },
+          { data: leaderboardRow }
+        ] = await Promise.all([
+          supabase.from("profiles").select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year, role").eq("id", currentUser.id).maybeSingle(),
+          supabase.from("events").select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)").eq("creator_id", currentUser.id).neq("status", "deleted").order("created_at", { ascending: false }),
+          supabase.from("saved_events").select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
+          supabase.from("event_reports").select("id, reason, status, created_at, events(title, slug)").eq("curator_id", currentUser.id).eq("status", "pending").order("created_at", { ascending: false }),
+          supabase.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
+          supabase.from("leaderboard_view").select("et_score").eq("user_id", currentUser.id).maybeSingle()
+        ]);
 
-      if (!profileData) {
-        router.push("/profile/settings");
-        return;
-      }
+        if (!isMounted) return;
 
-      // Sync with leaderboard_view if curator has earned event/save points
-      if (leaderboardRow?.et_score && leaderboardRow.et_score > (profileData.et_score ?? 100)) {
-        profileData.et_score = leaderboardRow.et_score;
-      }
+        if (!profileData) {
+          router.push("/profile/settings");
+          return;
+        }
 
-      // Auto-heal: Award +50 ET Complete Profile bonus if user has set up preferences but score is stuck at <= 100
-      const hasCompletedPreferences = (profileData.preferred_cities?.length ?? 0) > 0 && (profileData.goals?.length ?? 0) > 0;
-      if (hasCompletedPreferences && (profileData.et_score == null || profileData.et_score <= 100)) {
-        const bonusScore = Math.max((profileData.et_score ?? 100) + 50, 150);
+        // Sync with leaderboard_view if curator has earned event/save points
+        if (leaderboardRow?.et_score && leaderboardRow.et_score > (profileData.et_score ?? 100)) {
+          profileData.et_score = leaderboardRow.et_score;
+        }
+
+        // Auto-heal: Award +50 ET Complete Profile bonus if user has set up preferences but score is stuck at <= 100
+        const hasCompletedPreferences = (profileData.preferred_cities?.length ?? 0) > 0 && (profileData.goals?.length ?? 0) > 0;
+        if (hasCompletedPreferences && (profileData.et_score == null || profileData.et_score <= 100)) {
+          const bonusScore = Math.max((profileData.et_score ?? 100) + 50, 150);
+          try {
+            await supabase.rpc('increment_et_score', { user_id: currentUser.id, delta: 50 });
+            profileData.et_score = bonusScore;
+          } catch (healErr) {
+            console.warn('[Profile] Auto-grant profile completion score error:', healErr);
+            await supabase.from('profiles').update({ et_score: bonusScore }).eq('id', currentUser.id);
+            profileData.et_score = bonusScore;
+          }
+        }
+
+        const formattedSavedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
+        
+        setUser(currentUser);
+        setProfile(profileData);
+        setMyEvents(myEventsRaw as ProfileEvent[]);
+        setSavedEvents(formattedSavedEvents);
+        setMyReports(myReportsRaw as ReportWithEventSlug[]);
+        setAppSettings(appSettingsData);
+
         try {
-          await supabase.rpc('increment_et_score', { user_id: currentUser.id, delta: 50 });
-          profileData.et_score = bonusScore;
-        } catch (healErr) {
-          console.warn('[Profile] Auto-grant profile completion score error:', healErr);
-          await supabase.from('profiles').update({ et_score: bonusScore }).eq('id', currentUser.id);
-          profileData.et_score = bonusScore;
+          const savedIds = formattedSavedEvents.map((ev: any) => ev.id).filter(Boolean);
+          localStorage.setItem("eventime_saved_ids", JSON.stringify(savedIds));
+        } catch {}
+
+        // Save to memory cache for instant loads next time
+        memCache = {
+          user: currentUser,
+          profile: profileData,
+          myEvents: myEventsRaw as ProfileEvent[],
+          savedEvents: formattedSavedEvents,
+          myReports: myReportsRaw as ReportWithEventSlug[],
+          appSettings: appSettingsData
+        };
+      } catch (err) {
+        console.error("[Profile] Failed to fetch profile data:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
-
-      const formattedSavedEvents = savedEventsData?.flatMap((item) => item.events ? [item.events] : []) ?? [];
-      
-      setUser(currentUser);
-      setProfile(profileData);
-      setMyEvents(myEventsRaw as ProfileEvent[]);
-      setSavedEvents(formattedSavedEvents);
-      setMyReports(myReportsRaw as ReportWithEventSlug[]);
-      setAppSettings(appSettingsData);
-
-      try {
-        const savedIds = formattedSavedEvents.map((ev: any) => ev.id).filter(Boolean);
-        localStorage.setItem("eventime_saved_ids", JSON.stringify(savedIds));
-      } catch {}
-
-      // Save to memory cache for instant loads next time
-      memCache = {
-        user: currentUser,
-        profile: profileData,
-        myEvents: myEventsRaw as ProfileEvent[],
-        savedEvents: formattedSavedEvents,
-        myReports: myReportsRaw as ReportWithEventSlug[],
-        appSettings: appSettingsData
-      };
-
-      setIsLoading(false);
     }
     fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   const handleDelete = async (formData: FormData) => {
@@ -173,9 +187,8 @@ function ProfileContent() {
     // 2. Proceed with the actual deletion in the backend
     await deleteEventAction(formData);
   }; 
-  if (isLoading) {
-    // Exact same background as home page so no flickering occurs
-    return <main className="min-h-screen bg-surface-base animate-pulse" />;
+  if (isLoading || (!user && !memCache)) {
+    return <ProfileLoading />;
   }
 
   const etScore = profile?.et_score || 100;
@@ -258,7 +271,7 @@ function ProfileContent() {
                 </div>
 
                 <h1 className="text-xl font-heading font-bold text-slate-900 tracking-tight leading-tight">
-                  {profile?.full_name || user.user_metadata?.full_name || "Curator"}
+                  {profile?.full_name || user?.user_metadata?.full_name || "Curator"}
                 </h1>
 
                 {profile?.username && (
@@ -305,7 +318,7 @@ function ProfileContent() {
 
                <div className="flex items-center gap-1.5 text-slate-400 mt-2.5">
                   <Mail className="w-3.5 h-3.5" />
-                  <span className="font-medium text-xs break-all px-1">{user.email}</span>
+                  <span className="font-medium text-xs break-all px-1">{user?.email || profile?.username || "Curator"}</span>
                 </div>
 
                 {missingItems.length > 0 && (
@@ -609,7 +622,7 @@ function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-surface-base animate-pulse" />}>
+    <Suspense fallback={<ProfileLoading />}>
       <ProfileContent />
     </Suspense>
   );
