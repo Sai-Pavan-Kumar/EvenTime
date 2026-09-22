@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
+import { normalizeRegistrationLink } from "./utils/duplicateCheck";
 import { revalidateTag, revalidatePath } from "next/cache";
 import type { TablesUpdate, TablesInsert } from "@/types/database";
 
@@ -130,6 +131,30 @@ export async function submitEventAction(
       payloadData.college_id && payloadData.college_id.trim() !== ""
         ? payloadData.college_id.trim()
         : null;
+
+    // Check for duplicate registration link to prevent multiple postings of the same event
+    if (finalRegLink) {
+      const parsed = normalizeRegistrationLink(finalRegLink);
+      if (parsed) {
+        let dupQuery = supabase
+          .from("events")
+          .select("id, title")
+          .ilike("registration_link", parsed.pattern)
+          .limit(1);
+
+        if (isEditing && eventId) {
+          dupQuery = dupQuery.neq("id", eventId);
+        }
+
+        const { data: duplicateEvent } = await dupQuery.maybeSingle();
+        if (duplicateEvent) {
+          return {
+            success: false,
+            error: `This event was already posted as "${duplicateEvent.title}".`,
+          };
+        }
+      }
+    }
 
     if (isEditing && eventId) {
       const updatePayload: TablesUpdate<"events"> = {

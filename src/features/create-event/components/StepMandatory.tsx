@@ -10,15 +10,34 @@ import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
+import { useDuplicateCheck } from "@/features/create-event/hooks/useDuplicateCheck";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { toast } from "sonner";
 
 
 
-export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isValid, isSubmitting, onSubmit, isEditing, isAdminFeatureEnabled, isCurrentUserAdmin, profileCollege }: any) {
+export function StepMandatory({
+  data,
+  updateData,
+  isCollegeCategory,
+  onNext,
+  isValid,
+  isSubmitting,
+  onSubmit,
+  isEditing,
+  isAdminFeatureEnabled,
+  isCurrentUserAdmin,
+  profileCollege,
+  initialEventId,
+  duplicateError,
+  setDuplicateError,
+  isCheckingDuplicate,
+  setIsCheckingDuplicate,
+}: any) {
   
   // SECURE ADMIN CHECK
   const isAdmin = isCurrentUserAdmin;
+  const { checkDuplicateLink } = useDuplicateCheck();
 
   // Instant domain trust computation (0ms, no flash of unverified badge)
   const isLinkVerified = !data.regLink || isVerifiedDomain(data.regLink);
@@ -84,10 +103,44 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
     }
   }, [isCollegeCategory, data.selectedAudience.length, updateData]);
 
+  // Debounced duplicate registration link check
+  useEffect(() => {
+    const trimmed = (data.regLink || "").trim();
+    if (!trimmed || trimmed.length < 5) {
+      setDuplicateError?.("");
+      setIsCheckingDuplicate?.(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsCheckingDuplicate?.(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const existing = await checkDuplicateLink(trimmed, initialEventId, controller.signal);
+        if (existing) {
+          setDuplicateError?.(`This event was already posted as "${existing.title}".`);
+        } else {
+          setDuplicateError?.("");
+        }
+      } catch {
+        // Aborted or fetch error
+      } finally {
+        setIsCheckingDuplicate?.(false);
+      }
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [data.regLink, initialEventId, checkDuplicateLink, setDuplicateError, setIsCheckingDuplicate]);
+
   // Link Domain Verification Handler
   const handleLinkInput = (url: string) => {
     const trusted = isVerifiedDomain(url);
     updateData({ regLink: url, isTrustedDomain: trusted });
+    setDuplicateError?.("");
   };
 
   return (
@@ -99,14 +152,19 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
           <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             Registration Link {data.isOnline ? <span className="text-red-500">*</span> : <span className="text-slate-400 font-normal text-xs ml-1">(Optional)</span>}
           </label>
-          {data.regLink && isLinkVerified && (
+          {data.regLink && !duplicateError && isLinkVerified && (
             <span title="Verified platform domain. Approved automatically." className="text-emerald-600 flex items-center gap-1 text-xs font-bold">
               <CheckCircle2 className="w-3.5 h-3.5" /> Verified Domain
             </span>
           )}
-          {data.regLink && !isLinkVerified && (
+          {data.regLink && !duplicateError && !isLinkVerified && (
             <span title="Unverified link domain. Will require admin approval." className="text-amber-500 flex items-center gap-1 text-xs font-bold">
               <AlertTriangle className="w-3.5 h-3.5" /> Unverified Domain
+            </span>
+          )}
+          {duplicateError && (
+            <span className="text-red-500 flex items-center gap-1 text-xs font-bold">
+              <AlertTriangle className="w-3.5 h-3.5" /> Duplicate Link
             </span>
           )}
         </div>
@@ -114,24 +172,62 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
           <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             id="event-reg-link-input"
-            type="url" value={data.regLink} maxLength={500} onChange={e => handleLinkInput(e.target.value)}
+            type="url"
+            value={data.regLink}
+            maxLength={500}
+            onChange={e => handleLinkInput(e.target.value)}
             placeholder="Paste event link (lu.ma, eventbrite, unstop, etc.)"
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all"
+            className={`w-full bg-white border rounded-xl px-4 py-3.5 pl-11 pr-12 focus:ring-4 outline-none transition-all ${
+              duplicateError
+                ? "border-red-400 focus:ring-red-500/10 focus:border-red-500 text-red-950"
+                : "border-slate-200 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF]"
+            }`}
           />
-          {data.regLink && isLinkVerified && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-500">
-              <CheckCircle2 className="w-5 h-5" />
+          {isCheckingDuplicate ? (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin text-[#6C47FF]" />
             </div>
-          )}
-          {data.regLink && !isLinkVerified && (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-amber-500">
+          ) : duplicateError ? (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-red-500">
               <AlertTriangle className="w-5 h-5" />
             </div>
+          ) : (
+            <>
+              {data.regLink && isLinkVerified && (
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-emerald-500">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              )}
+              {data.regLink && !isLinkVerified && (
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 text-amber-500">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+              )}
+            </>
           )}
         </div>
 
-        {/* TRUST WARNING IF UNVERIFIED */}
-        {!isLinkVerified && data.regLink && !isAdmin && (
+        {/* DUPLICATE WARNING */}
+        {duplicateError && (
+          <motion.div
+            initial={{ opacity: 0, y: -5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 p-3.5 rounded-xl flex items-start gap-2.5 mt-2"
+          >
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-red-700 leading-snug">
+                Duplicate Event Detected
+              </p>
+              <p className="text-xs text-red-600 mt-0.5 leading-relaxed">
+                {duplicateError}
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {/* TRUST WARNING IF UNVERIFIED (ONLY IF NOT DUPLICATE) */}
+        {!duplicateError && !isLinkVerified && data.regLink && !isAdmin && (
           <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="bg-amber-50 border border-amber-200 p-3 rounded-xl flex items-start gap-2 mt-2">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-xs font-semibold text-amber-700 leading-relaxed">
@@ -588,7 +684,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
               <button 
                 type="button" 
                 onClick={onNext} 
-                disabled={isSubmitting} 
+                disabled={isSubmitting || isCheckingDuplicate || Boolean(duplicateError)} 
                 className="bg-[#1D1D1F] hover:bg-black disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 shadow-md flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed"
               >
                  Continue to Next Step
@@ -597,7 +693,7 @@ export function StepMandatory({ data, updateData, isCollegeCategory, onNext, isV
               <button 
                 type="button" 
                 onClick={onSubmit} 
-                disabled={isSubmitting} 
+                disabled={isSubmitting || isCheckingDuplicate || Boolean(duplicateError)} 
                 className="bg-brand-primary hover:bg-[#5835e5] disabled:bg-slate-300 text-white px-12 py-4 rounded-full text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-lg shadow-[#6C47FF]/20 cursor-pointer disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (

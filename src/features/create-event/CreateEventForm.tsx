@@ -29,6 +29,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const [celebrationEvent, setCelebrationEvent] = useState<CelebrationEventData | null>(null);
   const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+  const [duplicateError, setDuplicateError] = useState("");
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const DRAFT_STORAGE_KEY = "@eventime_create_event_draft_v1";
   const { user, profile } = useAuth();
 
@@ -166,6 +168,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
         registrationDeadline: undefined,
         website: "",
       });
+      setDuplicateError("");
+      setIsCheckingDuplicate(false);
       toast.success("Draft cleared");
     } catch (e) {
       console.error(e);
@@ -252,6 +256,19 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       toast.error("Please select your college before restricting this event to it — or turn off 'College Only'.");
       return false;
     }
+
+    if (duplicateError) {
+      toast.error(duplicateError);
+      document.getElementById("event-reg-link-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("event-reg-link-input")?.focus();
+      return false;
+    }
+
+    if (isCheckingDuplicate) {
+      toast.info("Verifying registration link...");
+      return false;
+    }
+
     return true;
   };
 
@@ -307,7 +324,14 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }
   };
 
-  const step0Valid = eventData.title && eventData.description && eventData.category && eventData.selectedDate && (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city));
+  const step0Valid =
+    eventData.title &&
+    eventData.description &&
+    eventData.category &&
+    eventData.selectedDate &&
+    (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city)) &&
+    !duplicateError &&
+    !isCheckingDuplicate;
 
   return (
     <div className="max-w-3xl mx-auto w-full">
@@ -348,6 +372,11 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               isAdminFeatureEnabled={isAdminFeatureEnabled}
               isCurrentUserAdmin={isCurrentUserAdmin}
               isEditing={isEditing}
+              initialEventId={initialData?.id}
+              duplicateError={duplicateError}
+              setDuplicateError={setDuplicateError}
+              isCheckingDuplicate={isCheckingDuplicate}
+              setIsCheckingDuplicate={setIsCheckingDuplicate}
             />
           )}
           {step === 1 && (
