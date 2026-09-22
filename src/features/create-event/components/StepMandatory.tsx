@@ -6,7 +6,7 @@ import { MiniCalendar, DrumColumn, ConfidenceField } from "./SharedUI";
 import { categoriesList, hours, mins, ampms, COLLEGE_YEAR_OPTIONS } from "../constants";
 import { CITIES } from "@/lib/constants/cities";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { CollegeRow } from "@/types";
 import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch";
@@ -103,11 +103,20 @@ export function StepMandatory({
     }
   }, [isCollegeCategory, data.selectedAudience.length, updateData]);
 
+  const lastCheckedUrlRef = useRef<string>("");
+
   // Debounced duplicate registration link check
   useEffect(() => {
     const trimmed = (data.regLink || "").trim();
     if (!trimmed || trimmed.length < 5) {
+      lastCheckedUrlRef.current = "";
       setDuplicateError?.("");
+      setIsCheckingDuplicate?.(false);
+      return;
+    }
+
+    // If this exact URL has already been checked, don't keep checking
+    if (trimmed === lastCheckedUrlRef.current) {
       setIsCheckingDuplicate?.(false);
       return;
     }
@@ -118,15 +127,21 @@ export function StepMandatory({
     const timer = setTimeout(async () => {
       try {
         const existing = await checkDuplicateLink(trimmed, initialEventId, controller.signal);
+        if (controller.signal.aborted) return;
+        lastCheckedUrlRef.current = trimmed;
         if (existing) {
           setDuplicateError?.(`This event was already posted as "${existing.title}".`);
         } else {
           setDuplicateError?.("");
         }
-      } catch {
-        // Aborted or fetch error
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.warn("[StepMandatory] checkDuplicateLink error:", err);
+        }
       } finally {
-        setIsCheckingDuplicate?.(false);
+        if (!controller.signal.aborted) {
+          setIsCheckingDuplicate?.(false);
+        }
       }
     }, 450);
 
@@ -140,7 +155,9 @@ export function StepMandatory({
   const handleLinkInput = (url: string) => {
     const trusted = isVerifiedDomain(url);
     updateData({ regLink: url, isTrustedDomain: trusted });
-    setDuplicateError?.("");
+    if (url.trim() !== lastCheckedUrlRef.current) {
+      setDuplicateError?.("");
+    }
   };
 
   return (
@@ -183,13 +200,13 @@ export function StepMandatory({
                 : "border-slate-200 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF]"
             }`}
           />
-          {isCheckingDuplicate ? (
-            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
-              <Loader2 className="w-5 h-5 animate-spin text-[#6C47FF]" />
-            </div>
-          ) : duplicateError ? (
+          {duplicateError ? (
             <div className="absolute right-5 top-1/2 -translate-y-1/2 text-red-500">
               <AlertTriangle className="w-5 h-5" />
+            </div>
+          ) : isCheckingDuplicate ? (
+            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin text-[#6C47FF]" />
             </div>
           ) : (
             <>
