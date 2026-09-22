@@ -1,5 +1,14 @@
 import { revalidateTag, revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
+
+function safeCompare(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return timingSafeEqual(bufA, bufB);
+}
 
 // Lightweight memory debounce to absorb rapid concurrent webhook hits
 let lastRevalidatedAt = 0;
@@ -13,7 +22,7 @@ export async function POST(request: Request) {
       request.headers.get('x-revalidate-secret') ||
       request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
-    if (!webhookSecret || incomingSecret !== webhookSecret) {
+    if (!webhookSecret || !safeCompare(incomingSecret, webhookSecret)) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 

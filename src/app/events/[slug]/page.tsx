@@ -4,6 +4,8 @@ import { cache, Suspense } from "react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { unstable_cache } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/auth/permissions";
 import EventClientUI from "./EventClientUI";
 
 // Helper function to check if the slug is a valid UUID
@@ -218,6 +220,23 @@ export default async function EventPage({
 
   if (!finalEvent) {
     notFound();
+  }
+
+  // Security Gate: Non-approved events (pending, draft, rejected) must only be accessible to their creator or admins
+  if (finalEvent.status !== "approved") {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      notFound();
+    }
+
+    const isCreator = user.id === finalEvent.creator_id;
+    const isAdmin = await requireAdmin(supabase as any, user.id);
+
+    if (!isCreator && !isAdmin) {
+      notFound();
+    }
   }
 
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
