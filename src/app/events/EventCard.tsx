@@ -74,6 +74,7 @@
     from,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
+    const [isRegisteredState, setIsRegisteredState] = useState(false);
     const [dynamicInterestCount, setDynamicInterestCount] = useState<number>(interestedCount ?? 0);
     const [isSaving, setIsSaving] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false); // NEW: Auth Modal State
@@ -102,6 +103,9 @@
           if (payload.type === 'save' && typeof payload.isSaved === 'boolean') {
             setSavedState(payload.isSaved);
           }
+          if (payload.type === 'register' && typeof payload.isRegistered === 'boolean') {
+            setIsRegisteredState(payload.isRegistered);
+          }
           if (payload.type === 'delete') {
             setIsVisible(false);
           }
@@ -125,6 +129,21 @@
         } catch {}
       }
     }, [isSaved, id]);
+
+    // Sync registeredState with localStorage
+    useEffect(() => {
+      if (id) {
+        try {
+          const cachedReg = localStorage.getItem("eventime_registered_ids");
+          if (cachedReg) {
+            const regIds: string[] = JSON.parse(cachedReg);
+            if (regIds.includes(id) || (slug && regIds.includes(slug))) {
+              setIsRegisteredState(true);
+            }
+          }
+        } catch {}
+      }
+    }, [id, slug]);
 
     const handleSave = async (e: React.MouseEvent) => {
       e.preventDefault(); // Prevent navigating to the event page
@@ -352,7 +371,13 @@
                 </div>
 
                 {/* Badges Overlay (FOMO & Status) — below the top row */}
-                <div className="absolute bottom-3 left-3 flex flex-col gap-2 items-start z-10">
+                <div className="absolute bottom-3 left-3 flex flex-col gap-1.5 items-start z-10">
+                  {isRegisteredState && (
+                    <span className="bg-emerald-600/95 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 backdrop-blur-md">
+                      <Check className="w-2.5 h-2.5 stroke-[2.5]" /> Registered
+                    </span>
+                  )}
+
                   {statusLabel && !(hidePastBadge && statusLabel === "Past Event") && (
                     <span className={`${statusColor} text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-widest flex items-center gap-2 backdrop-blur-md`}>
                       {statusLabel === "Live Today" && <span className="w-1.5 h-1.5 rounded-full bg-white/90" />}

@@ -6,11 +6,14 @@
 
 export type EventSyncPayload = {
   eventId: string;
-  type: 'interest' | 'save' | 'delete' | 'report';
+  type: 'interest' | 'save' | 'delete' | 'report' | 'register';
   isInterested?: boolean;
   interestedCountDelta?: number;
   newInterestedCount?: number;
   isSaved?: boolean;
+  isRegistered?: boolean;
+  registeredCountDelta?: number;
+  newRegisteredCount?: number;
 };
 
 type EventSyncListener = (payload: EventSyncPayload) => void;

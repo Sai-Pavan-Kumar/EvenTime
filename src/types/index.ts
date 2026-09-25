@@ -5,6 +5,7 @@ export type EventRow = Database['public']['Tables']['events']['Row'];
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export type ReportRow = Database['public']['Tables']['event_reports']['Row'];
 export type SavedEventRow = Database['public']['Tables']['saved_events']['Row'];
+export type RegisteredEventRow = Database['public']['Tables']['registered_events']['Row'];
 export type CollegeRow = Database['public']['Tables']['colleges']['Row'];
 
 // For Auth User

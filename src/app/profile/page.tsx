@@ -25,6 +25,7 @@ export default async function ProfilePage() {
     { data: profileData },
     { data: myEventsRaw },
     { data: savedEventsData },
+    registeredEventsRes,
     { data: myReportsRaw },
     { data: appSettingsData },
     { data: leaderboardRow },
@@ -36,15 +37,33 @@ export default async function ProfilePage() {
       .maybeSingle(),
     supabase
       .from("events")
-      .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)")
+      .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count), registered_events(count)")
       .eq("creator_id", currentUser.id)
       .neq("status", "deleted")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .then((res) => {
+        if (res.error) {
+          // Graceful fallback if registered_events table is not yet migrated in Supabase
+          return supabase
+            .from("events")
+            .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)")
+            .eq("creator_id", currentUser.id)
+            .neq("status", "deleted")
+            .order("created_at", { ascending: false });
+        }
+        return res;
+      }),
     supabase
       .from("saved_events")
       .select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)")
       .eq("user_id", currentUser.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("registered_events")
+      .select("id, status, created_at, events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .then((res) => (res.error ? { data: [] } : res)),
     supabase
       .from("event_reports")
       .select("id, reason, status, created_at, events(title, slug)")
@@ -89,6 +108,11 @@ export default async function ProfilePage() {
   const formattedSavedEvents =
     savedEventsData?.flatMap((item) => (item.events ? [item.events] : [])) ?? [];
 
+  const formattedRegisteredEvents =
+    ((registeredEventsRes?.data || []) as any[])
+      .map((item) => (item.events ? { ...item.events, registration_status: item.status, registered_at: item.created_at } : null))
+      .filter(Boolean);
+
   return (
     <Suspense fallback={<ProfileLoading />}>
       <ProfileClient
@@ -96,6 +120,7 @@ export default async function ProfilePage() {
         initialProfile={profileData}
         initialMyEvents={(myEventsRaw as any[]) || []}
         initialSavedEvents={formattedSavedEvents}
+        initialRegisteredEvents={formattedRegisteredEvents}
         initialMyReports={(myReportsRaw as any[]) || []}
         initialAppSettings={appSettingsData}
       />

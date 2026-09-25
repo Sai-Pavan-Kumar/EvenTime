@@ -30,6 +30,7 @@ import {
   Building,
   MessageCircle,
   UserCheck,
+  Check,
 } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
@@ -97,10 +98,13 @@ export default function EventClientUI({
   const [isWithdrawing, setIsWithdrawing] = useState(false);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalReason, setAuthModalReason] = useState<"interested" | "report" | "bookmark">("interested");
+  const [authModalReason, setAuthModalReason] = useState<"interested" | "report" | "bookmark" | "register">("interested");
 
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isRegistered, setIsRegistered] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const [isInterested, setIsInterested] = useState(false);
   const [isLoadingInterest, setIsLoadingInterest] = useState(true);
@@ -217,6 +221,11 @@ export default function EventClientUI({
           const ids: string[] = JSON.parse(cached);
           if (ids.includes(safeId)) setIsSaved(true);
         }
+        const cachedRegistered = localStorage.getItem("eventime_registered_ids");
+        if (cachedRegistered) {
+          const regIds: string[] = JSON.parse(cachedRegistered);
+          if (regIds.includes(safeId)) setIsRegistered(true);
+        }
       } catch {}
 
       Promise.all([
@@ -239,10 +248,17 @@ export default function EventClientUI({
           .eq("reporter_id", authUser.id)
           .eq("status", "pending")
           .maybeSingle(),
-      ]).then(([{ data: savedRows }, { data: interestRow }, { data: reportRow }]) => {
+        supabase
+          .from("registered_events")
+          .select("id")
+          .eq("event_id", safeId)
+          .eq("user_id", authUser.id)
+          .limit(1),
+      ]).then(([{ data: savedRows }, { data: interestRow }, { data: reportRow }, { data: registeredRows }]) => {
         if (savedRows && savedRows.length > 0) setIsSaved(true);
         if (interestRow) setIsInterested(true);
         if (reportRow) setIsReportedByMe(true);
+        if (registeredRows && registeredRows.length > 0) setIsRegistered(true);
         setIsLoadingInterest(false);
       }).catch((err) => {
         console.warn("[EventClientUI] Error fetching user interaction state:", err);
@@ -343,6 +359,70 @@ export default function EventClientUI({
       toast.error("Could not update saved events.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleRegistrationToggle = async () => {
+    if (isPastEvent) {
+      toast.info("This event has already concluded.");
+      return;
+    }
+    if (!currentUser) {
+      setAuthModalReason("register");
+      setIsAuthModalOpen(true);
+      return;
+    }
+    if (!safeId) return;
+
+    const nextState = !isRegistered;
+    setIsRegistered(nextState);
+    setIsRegistering(true);
+
+    // Broadcast 0ms instant sync across all cards & screens
+    eventSync.emit({ eventId: safeId, type: "register", isRegistered: nextState });
+
+    // Sync localStorage
+    try {
+      const cached = localStorage.getItem("eventime_registered_ids");
+      let idList: string[] = cached ? JSON.parse(cached) : [];
+      if (nextState) {
+        if (!idList.includes(safeId)) idList.push(safeId);
+      } else {
+        idList = idList.filter((x) => x !== safeId);
+      }
+      localStorage.setItem("eventime_registered_ids", JSON.stringify(idList));
+    } catch {}
+
+    try {
+      if (nextState) {
+        await supabase
+          .from("registered_events")
+          .delete()
+          .eq("event_id", safeId)
+          .eq("user_id", currentUser.id);
+        const { error } = await supabase.from("registered_events").insert({
+          event_id: safeId,
+          user_id: currentUser.id,
+          status: "confirmed",
+        });
+        if (error) throw error;
+        toast.success("Marked as registered! Saved to your profile.");
+      } else {
+        const { error } = await supabase
+          .from("registered_events")
+          .delete()
+          .eq("event_id", safeId)
+          .eq("user_id", currentUser.id);
+        if (error) throw error;
+        toast.success("Removed from your registered events.");
+      }
+    } catch (err: any) {
+      console.error("Registration toggle error:", err);
+      setIsRegistered(!nextState);
+      eventSync.emit({ eventId: safeId, type: "register", isRegistered: !nextState });
+      toast.error("Could not update registration status.");
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -706,17 +786,38 @@ export default function EventClientUI({
             )}
 
             {/* Desktop Action Buttons */}
-            <div className="hidden md:flex gap-4">
+            <div className="hidden md:flex gap-3 items-center">
               {!isPastEvent ? (
                 hasRegistrationLink ? (
-                  <Link
-                    href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm"
-                  >
-                    Register for Event <ExternalLink className="w-4 h-4" />
-                  </Link>
+                  <>
+                    <Link
+                      href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-brand-primary text-white py-4 rounded-2xl font-bold text-center hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      Register for Event <ExternalLink className="w-4 h-4" />
+                    </Link>
+                    <button
+                      onClick={handleRegistrationToggle}
+                      disabled={isRegistering}
+                      className={`py-4 px-5 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer ${
+                        isRegistered
+                          ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                      }`}
+                      title={isRegistered ? "Click to unmark registration" : "Mark as registered once applied"}
+                    >
+                      {isRegistered ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                          <span>Registered</span>
+                        </>
+                      ) : (
+                        <span>Mark as Registered</span>
+                      )}
+                    </button>
+                  </>
                 ) : (
                   <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-4 px-3 rounded-2xl font-bold text-center flex items-center justify-center gap-2 text-sm">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -732,7 +833,7 @@ export default function EventClientUI({
               {currentUser?.id === safeCreatorId && (
                 <Link
                   href={`/events/${event.slug || safeId}/edit`}
-                  className="px-8 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100"
+                  className="px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 shrink-0"
                 >
                   Edit Event
                 </Link>
@@ -1147,17 +1248,38 @@ export default function EventClientUI({
       )}
 
       {/* Mobile Sticky Bottom Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-4 flex items-center gap-3 shadow-lg">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-4 flex items-center gap-2.5 shadow-lg">
         {!isPastEvent ? (
           hasRegistrationLink ? (
-            <Link
-              href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 bg-brand-primary text-white py-3 px-4 rounded-xl font-bold text-center text-sm hover:bg-[#5835e5] transition-all flex items-center justify-center gap-2 shadow-sm"
-            >
-              Register for Event <ExternalLink className="w-4 h-4" />
-            </Link>
+            <>
+              <Link
+                href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 bg-brand-primary text-white py-3 px-3 rounded-xl font-bold text-center text-sm hover:bg-[#5835e5] transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              >
+                Register <ExternalLink className="w-3.5 h-3.5" />
+              </Link>
+              <button
+                onClick={handleRegistrationToggle}
+                disabled={isRegistering}
+                className={`py-3 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                  isRegistered
+                    ? "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : "bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200"
+                }`}
+                title={isRegistered ? "Click to unmark registration" : "Mark as registered once applied"}
+              >
+                {isRegistered ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                    <span>Registered</span>
+                  </>
+                ) : (
+                  <span>Mark Registered</span>
+                )}
+              </button>
+            </>
           ) : (
             <div className="flex-1 bg-emerald-50 border border-emerald-200 text-emerald-700 py-3 px-4 rounded-xl font-bold text-center text-xs flex items-center justify-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -1200,6 +1322,8 @@ export default function EventClientUI({
                   ? "Please sign in to report this event."
                   : authModalReason === "bookmark"
                   ? "Please sign in to bookmark and save events to your profile."
+                  : authModalReason === "register"
+                  ? "Please sign in to mark and track your event registrations."
                   : "Please sign in to mark interest and build your community schedule."}
               </p>
               <div className="flex gap-3">

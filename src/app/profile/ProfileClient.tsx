@@ -21,6 +21,9 @@ import {
   Info,
   Shield,
   ChevronRight,
+  Check,
+  CheckCircle2,
+  Users,
 } from "lucide-react";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
@@ -49,6 +52,7 @@ export type ProfileEvent = {
   is_featured: boolean;
   interested_events: { count: number }[];
   saved_events: { count: number }[];
+  registered_events?: { count: number }[];
 };
 
 export interface ProfileClientProps {
@@ -56,6 +60,7 @@ export interface ProfileClientProps {
   initialProfile: Partial<ProfileRow>;
   initialMyEvents: ProfileEvent[];
   initialSavedEvents: any[];
+  initialRegisteredEvents?: any[];
   initialMyReports: ReportWithEventSlug[];
   initialAppSettings: any;
 }
@@ -80,6 +85,7 @@ export default function ProfileClient({
   initialProfile,
   initialMyEvents,
   initialSavedEvents,
+  initialRegisteredEvents = [],
   initialMyReports,
   initialAppSettings,
 }: ProfileClientProps) {
@@ -93,10 +99,12 @@ export default function ProfileClient({
   const [profile] = useState<Partial<ProfileRow>>(initialProfile);
   const [myEvents, setMyEvents] = useState<ProfileEvent[]>(initialMyEvents);
   const [savedEvents] = useState<any[]>(initialSavedEvents);
+  const [registeredEvents] = useState<any[]>(initialRegisteredEvents);
   const [myReports] = useState<ReportWithEventSlug[]>(initialMyReports);
   const [appSettings] = useState<any>(initialAppSettings);
   const [postedVisibleCount, setPostedVisibleCount] = useState(8);
   const [savedVisibleCount, setSavedVisibleCount] = useState(8);
+  const [registeredVisibleCount, setRegisteredVisibleCount] = useState(8);
 
   // Sync saved event IDs with localStorage for fast global client-side lookup
   useEffect(() => {
@@ -105,6 +113,14 @@ export default function ProfileClient({
       localStorage.setItem("eventime_saved_ids", JSON.stringify(savedIds));
     } catch {}
   }, [savedEvents]);
+
+  // Sync registered event IDs with localStorage for fast global client-side lookup
+  useEffect(() => {
+    try {
+      const regIds = (registeredEvents || []).map((ev: any) => ev.id).filter(Boolean);
+      localStorage.setItem("eventime_registered_ids", JSON.stringify(regIds));
+    } catch {}
+  }, [registeredEvents]);
 
   const handleDelete = async (formData: FormData) => {
     const eventId = formData.get("eventId") as string;
@@ -134,13 +150,16 @@ export default function ProfileClient({
   const eventCount = myEvents?.length || 0;
   let totalSaves = 0;
   let totalInterested = 0;
+  let totalRegistered = 0;
 
   if (myEvents && myEvents.length > 0) {
     myEvents.forEach((ev) => {
       const eventSaves = ev.saved_events?.[0]?.count || 0;
       const eventInterested = ev.interested_events?.[0]?.count || 0;
+      const eventReg = (ev as any).registered_events?.[0]?.count || 0;
       totalSaves += eventSaves;
       totalInterested += eventInterested;
+      totalRegistered += eventReg;
     });
   }
 
@@ -297,20 +316,20 @@ export default function ProfileClient({
                       Events
                     </span>
                   </div>
-                  {leaderboardEnabled && (
-                    <div className="flex flex-col items-center">
-                      <span className="text-base font-bold text-slate-900 leading-none">{totalSaves}</span>
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">
-                        Saves
-                      </span>
-                    </div>
-                  )}
                   <div className="flex flex-col items-center">
                     <span className="text-base font-bold text-slate-900 leading-none">
                       {totalInterested}
                     </span>
                     <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mt-1.5">
                       Interested
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-base font-bold text-emerald-700 leading-none">
+                      {totalRegistered}
+                    </span>
+                    <span className="text-[9px] font-semibold text-emerald-600 uppercase tracking-wider mt-1.5">
+                      Registered
                     </span>
                   </div>
                   {leaderboardEnabled && (
@@ -337,6 +356,30 @@ export default function ProfileClient({
                   }`}
                 >
                   <LayoutGrid className="w-4 h-4" /> My Events
+                </Link>
+
+                <Link
+                  href="?tab=registered"
+                  className={`flex items-center justify-between px-4 py-3.5 rounded-xl font-bold text-sm transition-all ${
+                    activeTab === "registered"
+                      ? "bg-[#EDE8FF] text-brand-primary"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-4 h-4" /> My Registrations
+                  </div>
+                  {registeredEvents.length > 0 && (
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full ${
+                        activeTab === "registered"
+                          ? "bg-brand-primary/10 text-brand-primary"
+                          : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {registeredEvents.length}
+                    </span>
+                  )}
                 </Link>
 
                 <Link
@@ -474,11 +517,13 @@ export default function ProfileClient({
             <div className="mb-8">
               <h2 className="text-xl font-heading font-bold text-slate-900 tracking-tight">
                 {activeTab === "posted" && "My Posted Events"}
+                {activeTab === "registered" && "My Registrations"}
                 {activeTab === "saved" && "Saved Events"}
                 {activeTab === "alerts" && "Action Required"}
               </h2>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
                 {activeTab === "posted" && "Manage and track the events you've created."}
+                {activeTab === "registered" && "Events you've applied for and confirmed."}
                 {activeTab === "saved" && "Events you've bookmarked for later."}
                 {activeTab === "alerts" && "Events reported by users that need your attention."}
               </p>
@@ -523,7 +568,7 @@ export default function ProfileClient({
                         {event.title}
                       </h3>
 
-                      <div className="flex items-center justify-between mt-auto mb-3.5">
+                      <div className="flex items-center justify-between mt-auto mb-3.5 flex-wrap gap-2">
                         <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
                           <CalendarDays className="w-3.5 h-3.5" />
                           <span>
@@ -533,12 +578,31 @@ export default function ProfileClient({
                           </span>
                         </div>
 
-                        {leaderboardEnabled && (
-                          <div className="flex items-center gap-1 text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-100">
-                            <Bookmark className="w-2.5 h-2.5" />
-                            <span>{event.saved_events?.[0]?.count || 0} Saves</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <div
+                            title="Self-reported registrations"
+                            className="flex items-center gap-1 text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-emerald-200/80"
+                          >
+                            <Check className="w-2.5 h-2.5 text-emerald-600 stroke-[2.5]" />
+                            <span>{(event as any).registered_events?.[0]?.count || 0} Reg</span>
                           </div>
-                        )}
+                          <div
+                            title="People interested"
+                            className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200/60"
+                          >
+                            <Users className="w-2.5 h-2.5 text-slate-400" />
+                            <span>{event.interested_events?.[0]?.count || 0}</span>
+                          </div>
+                          {leaderboardEnabled && (
+                            <div
+                              title="People who bookmarked this event"
+                              className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-md text-[10px] font-bold border border-slate-200/60"
+                            >
+                              <Bookmark className="w-2.5 h-2.5 text-slate-400" />
+                              <span>{event.saved_events?.[0]?.count || 0}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="mt-auto flex gap-1.5 border-t border-slate-100 pt-3">
@@ -666,6 +730,91 @@ export default function ProfileClient({
                   <p className="text-slate-500 font-medium text-sm mt-2 leading-relaxed max-w-[380px] mx-auto">
                     Bookmark events you're interested in attending to keep track of deadlines and
                     updates.
+                  </p>
+                  <Link
+                    href="/"
+                    className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-[#5835e5] transition-all text-sm shadow-sm active:scale-95"
+                  >
+                    Explore Events
+                  </Link>
+                </div>
+              )}
+
+              {/* REGISTERED EVENTS GRID */}
+              {activeTab === "registered" &&
+                registeredEvents.length > 0 &&
+                registeredEvents.slice(0, registeredVisibleCount).map((event) => (
+                  <div
+                    key={event.id}
+                    className="group bg-white rounded-2xl border border-slate-200/60 p-2 flex flex-col h-full shadow-sm hover:shadow-md transition-all duration-300"
+                  >
+                    <Link href={`/events/${event.slug || event.id}`} className="flex flex-col h-full">
+                      <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-50">
+                        <Image
+                          src={
+                            event.poster_url ||
+                            getCategoryConfig(event.category)?.backgroundImage ||
+                            "/card-backgrounds/default-event.webp"
+                          }
+                          alt={event.title}
+                          fill
+                          unoptimized={true}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          className="object-cover group-hover:scale-102 transition-transform duration-500"
+                        />
+                        <div className="absolute top-2.5 right-2.5">
+                          <span className="bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded-md shadow-sm flex items-center gap-1">
+                            <Check className="w-2.5 h-2.5 stroke-[2.5]" /> Registered
+                          </span>
+                        </div>
+                      </div>
+                      <div className="px-2 pt-3.5 pb-1 flex flex-col grow">
+                        <h3 className="text-sm font-bold text-slate-900 leading-tight mb-2 line-clamp-2 h-9">
+                          {event.title}
+                        </h3>
+                        <div className="flex items-center justify-between mt-auto mb-3">
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-medium">
+                            <CalendarDays className="w-3.5 h-3.5" />
+                            <span>
+                              {event.date_string
+                                ? format(parseISO(event.date_string), "MMM d, yyyy")
+                                : "TBA"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {event.city || (event.is_virtual ? "Online" : "Venue TBA")}
+                          </span>
+                        </div>
+
+                        <div className="mt-auto border-t border-slate-100 pt-3 flex gap-2">
+                          <div className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-600 bg-slate-50 group-hover:bg-slate-900 group-hover:text-white py-2.5 rounded-lg transition-all">
+                            <Eye className="w-3.5 h-3.5" /> View Details
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                ))}
+
+              {activeTab === "registered" && registeredEvents.length > registeredVisibleCount && (
+                <div className="col-span-full flex justify-center pt-4">
+                  <button
+                    onClick={() => setRegisteredVisibleCount((c) => c + 8)}
+                    className="px-6 py-3 bg-slate-50 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-100 transition-all text-sm cursor-pointer"
+                  >
+                    Load More
+                  </button>
+                </div>
+              )}
+
+              {activeTab === "registered" && registeredEvents.length === 0 && (
+                <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-emerald-100">
+                    <CheckCircle2 className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-slate-900 font-bold text-xl">No Registered Events Yet</h3>
+                  <p className="text-slate-500 font-medium text-sm mt-2 leading-relaxed max-w-[380px] mx-auto">
+                    When you click "Mark as Registered" on events you apply for, they will appear here so you never lose track.
                   </p>
                   <Link
                     href="/"
