@@ -712,10 +712,10 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
                 priority
               />
             </div>
-            <h3 className="font-heading font-bold text-xl text-slate-900 mb-2 font-['Outfit']">
+            <h3 className="font-heading font-bold text-xl text-slate-900 mb-2">
               No matching events found
             </h3>
-            <p className="text-sm text-slate-500 max-w-md mx-auto font-['Switzer',sans-serif] mb-6">
+            <p className="text-sm text-slate-500 max-w-md mx-auto font-sans mb-6">
               Try searching for a different keyword, category, city, or curator name.
             </p>
             {hasActiveFilters && (
@@ -784,7 +784,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
           <div className="relative bg-white rounded-t-3xl max-h-[82vh] p-5 flex flex-col shadow-2xl z-10 animate-in slide-in-from-bottom duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-heading font-bold text-lg text-slate-900 font-['Outfit']">Select City</h3>
+              <h3 className="font-heading font-bold text-lg text-slate-900">Select City</h3>
               <button
                 type="button"
                 onClick={() => setShowCityModal(false)}
@@ -876,7 +876,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
           <div className="relative bg-white rounded-t-3xl max-h-[82vh] p-5 flex flex-col shadow-2xl z-10 animate-in slide-in-from-bottom duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-heading font-bold text-lg text-slate-900 font-['Outfit']">Select Category</h3>
+              <h3 className="font-heading font-bold text-lg text-slate-900">Select Category</h3>
               <button
                 type="button"
                 onClick={() => setShowCategoryModal(false)}
@@ -968,7 +968,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
           <div className="relative bg-white rounded-t-3xl p-5 flex flex-col shadow-2xl z-10 animate-in slide-in-from-bottom duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-heading font-bold text-lg text-slate-900 font-['Outfit']">Select Date</h3>
+              <h3 className="font-heading font-bold text-lg text-slate-900">Select Date</h3>
               <button
                 type="button"
                 onClick={() => setShowDateModal(false)}

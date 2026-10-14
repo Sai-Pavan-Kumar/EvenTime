@@ -451,7 +451,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 <button
                   type="button"
                   onClick={() => handleSelectFeedPill('for_you')}
-                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 z-10 ${
                     activeFeedPill === 'for_you'
                       ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
                       : 'text-[#64748B] hover:text-[#0F172A]'
@@ -466,7 +466,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 <button
                   type="button"
                   onClick={() => handleSelectFeedPill('around_you')}
-                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                  className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 z-10 ${
                     activeFeedPill === 'around_you'
                       ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
                       : 'text-[#64748B] hover:text-[#0F172A]'
@@ -482,7 +482,7 @@ export function HomePageClient(props: HomePageClientProps) {
                   <button
                     type="button"
                     onClick={() => handleSelectFeedPill('campus')}
-                    className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-['Switzer',sans-serif] transition-all flex items-center justify-center gap-1.5 z-10 ${
+                    className={`flex-1 h-full rounded-[11px] text-[13px] font-bold font-sans transition-all flex items-center justify-center gap-1.5 z-10 ${
                       activeFeedPill === 'campus'
                         ? 'bg-white text-[#0F172A] shadow-[0_2px_4px_rgba(0,0,0,0.08)]'
                         : 'text-[#64748B] hover:text-[#0F172A]'
@@ -762,10 +762,10 @@ export function HomePageClient(props: HomePageClientProps) {
                               /* After clicking Show More (or if total events <= 4), show Sign In CTA card */
                               <div className="mt-8 p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center flex flex-col items-center justify-center gap-4">
                                 <div className="max-w-md">
-                                  <h3 className="text-xl font-bold font-heading text-slate-900 font-['Outfit']">
+                                  <h3 className="text-xl font-bold font-heading text-slate-900">
                                     Want to explore all events across India?
                                   </h3>
-                                  <p className="text-sm text-slate-500 font-['Switzer',sans-serif] mt-1">
+                                  <p className="text-sm text-slate-500 font-sans mt-1">
                                     Sign in to discover hackathons, tech meetups, and college fests with personalized matching and instant RSVPs.
                                   </p>
                                 </div>

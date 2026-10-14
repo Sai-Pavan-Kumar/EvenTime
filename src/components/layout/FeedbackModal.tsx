@@ -144,7 +144,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       required
                     />
                     <div className="flex justify-end mt-1 px-1">
-                      <span className={`text-[11px] font-bold font-['Outfit'] ${message.length >= 1000 ? 'text-red-500' : 'text-slate-400'}`}>
+                      <span className={`text-[11px] font-bold font-heading ${message.length >= 1000 ? 'text-red-500' : 'text-slate-400'}`}>
                         {message.length} / 1000
                       </span>
                     </div>

@@ -246,7 +246,7 @@ function NavbarInner({
               <div className="w-9 h-9 relative shrink-0"> 
                 <Image src="/logo1.webp" alt="logo" fill sizes="100px" className="object-contain" priority />
               </div>
-              <span className="font-heading font-black text-xl tracking-tight block shrink-0 font-['Outfit']">
+              <span className="font-heading font-black text-xl tracking-tight block shrink-0">
                 <span className="text-brand-primary">Even</span>
                 <span className="text-text-primary">Time</span>
               </span>
@@ -274,7 +274,7 @@ function NavbarInner({
                   }}
                   placeholder="Search hackathons, meetups..."
                   maxLength={100}
-                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-9 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+                  className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-9 py-2.5 text-sm font-sans text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
                 {searchQuery.length > 0 && (
                   <button
@@ -331,7 +331,7 @@ function NavbarInner({
               <div className="hidden sm:flex items-center gap-4 lg:gap-6 shrink-0">
             <Link 
               href="/cities" 
-              className={`flex items-center gap-2 text-sm font-['Outfit'] transition-colors shrink-0 ${
+              className={`flex items-center gap-2 text-sm font-heading transition-colors shrink-0 ${
                 pathname === '/cities' || pathname.startsWith('/cities/') 
                   ? 'text-brand-primary font-black' 
                   : 'text-text-secondary hover:text-brand-primary font-bold'
@@ -343,7 +343,7 @@ function NavbarInner({
             {leaderboardEnabled && (
               <Link 
                 href="/leaderboard" 
-                className={`flex items-center gap-2 text-sm font-['Outfit'] transition-colors shrink-0 ${
+                className={`flex items-center gap-2 text-sm font-heading transition-colors shrink-0 ${
                   pathname === '/leaderboard' 
                     ? 'text-amber-500 font-black' 
                     : 'text-text-secondary hover:text-amber-500 font-bold'
@@ -356,7 +356,7 @@ function NavbarInner({
             {isAdmin && (
               <Link 
                 href="/et98" 
-                className={`flex items-center gap-2 text-sm font-['Outfit'] transition-colors shrink-0 ${
+                className={`flex items-center gap-2 text-sm font-heading transition-colors shrink-0 ${
                   pathname.startsWith('/et98') 
                     ? 'text-red-600 font-black' 
                     : 'text-red-500 hover:text-red-600 font-bold'
@@ -366,7 +366,7 @@ function NavbarInner({
               </Link>
             )}
 
-            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-['Outfit'] bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
+            <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-heading bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
               <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Post Event
             </Link>
 
@@ -406,7 +406,7 @@ function NavbarInner({
                   </button>
                 </div>
               ) : (
-                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-['Outfit'] transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
+                <Link href="/login" className="bg-text-primary hover:brightness-110 text-white px-5 py-2.5 rounded-full text-sm font-bold font-heading transition-all shadow-[0_8px_20px_rgba(0,0,0,0.08)] active:scale-95 shrink-0">
                   Sign In
                 </Link>
               )}
@@ -434,7 +434,7 @@ function NavbarInner({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-['Switzer',sans-serif] text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
+              placeholder="Search hackathons, meetups..." maxLength={100} className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-4 py-2.5 text-sm font-sans text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
             />
           </div>
           <button type="button" onClick={closeMobileSearch} className="p-2 text-text-secondary shrink-0">
@@ -482,7 +482,7 @@ function NavbarInner({
           className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
         >
           <Home className="w-5 h-5" strokeWidth={pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 2.5 : 2} />
-          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Home</span>
+          <span className="text-[11px] font-bold font-sans mt-1">Home</span>
         </Link>
 
         <Link 
@@ -491,7 +491,7 @@ function NavbarInner({
           className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === "/search" ? "text-brand-primary" : "text-[#94A3B8] hover:text-brand-primary"}`}
         >
           <Search className="w-5 h-5" strokeWidth={pathname === "/search" ? 2.5 : 2} />
-          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Search</span>
+          <span className="text-[11px] font-bold font-sans mt-1">Search</span>
         </Link>
 
         <Link 
@@ -502,7 +502,7 @@ function NavbarInner({
           <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
             <Plus className="w-6 h-6 text-white stroke-[2.5]" />
           </div>
-          <span className="text-[11px] font-bold font-['Switzer',sans-serif] text-brand-primary mt-0.5">Post</span>
+          <span className="text-[11px] font-bold font-sans text-brand-primary mt-0.5">Post</span>
         </Link>
 
         <Link 
@@ -513,7 +513,7 @@ function NavbarInner({
           <div className="w-5 h-5 flex items-center justify-center">
             <Building2 className="w-[19px] h-[19px]" strokeWidth={pathname === '/cities' ? 2.5 : 2} />
           </div>
-          <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Cities</span>
+          <span className="text-[11px] font-bold font-sans mt-1">Cities</span>
         </Link>
 
         {isLoading ? (
@@ -548,7 +548,7 @@ function NavbarInner({
                 )}
               </div>
             </div>
-            <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">
+            <span className="text-[11px] font-bold font-sans mt-1">
               {isAuthenticated ? 'You' : 'Profile'}
             </span>
           </Link>
@@ -559,7 +559,7 @@ function NavbarInner({
             className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
           >
             <User className="w-5 h-5" strokeWidth={pathname === '/login' ? 2.5 : 2} />
-            <span className="text-[11px] font-bold font-['Switzer',sans-serif] mt-1">Sign In</span>
+            <span className="text-[11px] font-bold font-sans mt-1">Sign In</span>
           </Link>
         )}
       </div>
@@ -576,13 +576,13 @@ function NavbarInner({
           <div className="w-14 h-14 bg-surface-base rounded-full flex items-center justify-center mx-auto mb-4 mt-2">
             <Plus className="w-6 h-6 text-text-primary" />
           </div>
-          <h3 className="font-bold text-xl text-text-primary leading-tight font-['Outfit']">Wait a second!</h3>
-          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-['Switzer',sans-serif]">Please sign in to host your own events on the platform.</p>
+          <h3 className="font-bold text-xl text-text-primary leading-tight font-heading">Wait a second!</h3>
+          <p className="text-[15px] text-[#555570] mt-2 mb-6 font-normal font-sans">Please sign in to host your own events on the platform.</p>
           <div className="flex gap-3">
-            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-['Outfit'] py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
+            <button onClick={() => setShowAuthModal(false)} className="flex-1 bg-surface-base text-text-primary font-bold font-heading py-3.5 rounded-full hover:bg-[#E8E5FF] transition-colors">
               Cancel
             </button>
-            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-['Outfit'] py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
+            <Link href="/login?next=/events/new" onClick={() => setShowAuthModal(false)} className="flex-1 bg-brand-primary text-white font-bold font-heading py-3.5 rounded-full hover:brightness-110 transition-colors flex items-center justify-center">
               Sign In
             </Link>
           </div>

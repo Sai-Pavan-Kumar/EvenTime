@@ -480,7 +480,7 @@ export default function AdminConsoleClient({
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-['Switzer']">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans">
       {/* STICKY TOP HEADER */}
       <header className="sticky top-0 z-40 bg-white border-b border-[#E2E8F0] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -506,7 +506,7 @@ export default function AdminConsoleClient({
                   <Shield className="w-4 h-4" />
                 </div>
                 <div>
-                  <h1 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900 tracking-tight leading-tight">
+                  <h1 className="text-base sm:text-lg font-bold font-heading text-slate-900 tracking-tight leading-tight">
                     ET98 Admin Console
                   </h1>
                   <p className="text-[11px] font-semibold text-slate-500 hidden sm:block">
@@ -530,7 +530,7 @@ export default function AdminConsoleClient({
 
               <Link
                 href="/"
-                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold font-['Outfit'] text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold font-heading text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Exit Admin</span>
@@ -548,7 +548,7 @@ export default function AdminConsoleClient({
                     key={tab.id}
                     type="button"
                     onClick={() => handleTabChange(tab.id)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold font-['Outfit'] transition-all select-none ${
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs sm:text-sm font-bold font-heading transition-all select-none ${
                       isActive
                         ? "bg-[#6C47FF] text-white shadow-sm"
                         : "bg-[#F1F5F9] text-[#64748B] hover:text-slate-900 hover:bg-slate-200"
@@ -582,7 +582,7 @@ export default function AdminConsoleClient({
             {/* KPI Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900">
+                <h2 className="text-base sm:text-lg font-bold font-heading text-slate-900">
                   Directory Health & KPIs
                 </h2>
                 <span className="text-xs font-semibold text-slate-500">Live platform metrics</span>
@@ -599,11 +599,11 @@ export default function AdminConsoleClient({
                     <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-[#D97706]">
                       <AlertTriangle className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider text-[#D97706] bg-amber-50 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-black font-heading uppercase tracking-wider text-[#D97706] bg-amber-50 px-2 py-0.5 rounded-md">
                       Action Needed
                     </span>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black font-['Outfit'] text-slate-900 tracking-tight">
+                  <div className="text-3xl sm:text-4xl font-black font-heading text-slate-900 tracking-tight">
                     {stats.pendingEvents}
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
@@ -621,11 +621,11 @@ export default function AdminConsoleClient({
                     <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-[#059669]">
                       <CheckCircle2 className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-black font-heading uppercase tracking-wider text-[#059669] bg-emerald-50 px-2 py-0.5 rounded-md">
                       Live
                     </span>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black font-['Outfit'] text-slate-900 tracking-tight">
+                  <div className="text-3xl sm:text-4xl font-black font-heading text-slate-900 tracking-tight">
                     {stats.activeEvents}
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
@@ -643,11 +643,11 @@ export default function AdminConsoleClient({
                     <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center text-[#6C47FF]">
                       <Users className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider text-[#6C47FF] bg-[#6C47FF]/10 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-black font-heading uppercase tracking-wider text-[#6C47FF] bg-[#6C47FF]/10 px-2 py-0.5 rounded-md">
                       Community
                     </span>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black font-['Outfit'] text-slate-900 tracking-tight">
+                  <div className="text-3xl sm:text-4xl font-black font-heading text-slate-900 tracking-tight">
                     {stats.totalUsers}
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
@@ -665,11 +665,11 @@ export default function AdminConsoleClient({
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-[#DC2626]">
                       <ShieldAlert className="w-5 h-5" />
                     </div>
-                    <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider text-[#DC2626] bg-red-50 px-2 py-0.5 rounded-md">
+                    <span className="text-[10px] font-black font-heading uppercase tracking-wider text-[#DC2626] bg-red-50 px-2 py-0.5 rounded-md">
                       Queue
                     </span>
                   </div>
-                  <div className="text-3xl sm:text-4xl font-black font-['Outfit'] text-slate-900 tracking-tight">
+                  <div className="text-3xl sm:text-4xl font-black font-heading text-slate-900 tracking-tight">
                     {stats.openReports}
                   </div>
                   <div className="text-xs sm:text-sm font-semibold text-slate-500 mt-1">
@@ -681,7 +681,7 @@ export default function AdminConsoleClient({
 
             {/* Feature Switches */}
             <div>
-              <h2 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900 mb-4">
+              <h2 className="text-base sm:text-lg font-bold font-heading text-slate-900 mb-4">
                 Feature Switches
               </h2>
               <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 p-6 shadow-sm">
@@ -770,7 +770,7 @@ export default function AdminConsoleClient({
         {activeTab === "pending" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900">
+              <h2 className="text-base sm:text-lg font-bold font-heading text-slate-900">
                 Pending Approval Queue ({pendingEvents.length})
               </h2>
             </div>
@@ -780,7 +780,7 @@ export default function AdminConsoleClient({
                 <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-[#10B981] mb-3">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-bold font-['Outfit'] text-slate-900">Queue All Clear!</h3>
+                <h3 className="text-lg font-bold font-heading text-slate-900">Queue All Clear!</h3>
                 <p className="text-sm text-slate-500 mt-1">No pending events waiting for approval.</p>
               </div>
             ) : (
@@ -793,10 +793,10 @@ export default function AdminConsoleClient({
                     <div>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1">
-                          <span className="inline-block px-2.5 py-1 rounded-md bg-[#EDE8FF] text-[#6C47FF] text-[11px] font-black font-['Outfit'] uppercase tracking-wider mb-2">
+                          <span className="inline-block px-2.5 py-1 rounded-md bg-[#EDE8FF] text-[#6C47FF] text-[11px] font-black font-heading uppercase tracking-wider mb-2">
                             {item.category || "Event"}
                           </span>
-                          <h3 className="text-base font-bold font-['Outfit'] text-slate-900 line-clamp-1">
+                          <h3 className="text-base font-bold font-heading text-slate-900 line-clamp-1">
                             {item.title}
                           </h3>
                           <p className="text-xs text-slate-500 mt-1">
@@ -830,7 +830,7 @@ export default function AdminConsoleClient({
                       <button
                         type="button"
                         onClick={() => setRejectModalEvent({ id: item.id, title: item.title })}
-                        className="flex-1 py-2.5 px-3 rounded-xl border border-red-200 bg-red-50 text-[#EF4444] text-xs font-bold font-['Outfit'] hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2.5 px-3 rounded-xl border border-red-200 bg-red-50 text-[#EF4444] text-xs font-bold font-heading hover:bg-red-100 transition-colors flex items-center justify-center gap-1.5"
                       >
                         <XCircle className="w-4 h-4" />
                         <span>Reject</span>
@@ -839,7 +839,7 @@ export default function AdminConsoleClient({
                       <button
                         type="button"
                         onClick={() => handleApproveEvent(item)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-[#10B981] text-white text-xs font-bold font-['Outfit'] hover:bg-[#059669] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-[#10B981] text-white text-xs font-bold font-heading hover:bg-[#059669] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                       >
                         <CheckCircle2 className="w-4 h-4" />
                         <span>Approve (+100 ET)</span>
@@ -883,7 +883,7 @@ export default function AdminConsoleClient({
                       key={f.id}
                       type="button"
                       onClick={() => setEventStatusFilter(f.id as any)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold font-['Outfit'] whitespace-nowrap transition-all ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold font-heading whitespace-nowrap transition-all ${
                         isSelected
                           ? "bg-[#6C47FF] text-white"
                           : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
@@ -911,7 +911,7 @@ export default function AdminConsoleClient({
                     <div>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1">
-                          <h3 className="text-base font-bold font-['Outfit'] text-slate-900 line-clamp-1">
+                          <h3 className="text-base font-bold font-heading text-slate-900 line-clamp-1">
                             {item.title}
                           </h3>
                           <p className="text-xs text-slate-500 mt-1">
@@ -945,7 +945,7 @@ export default function AdminConsoleClient({
                       <button
                         type="button"
                         onClick={() => handleToggleEventFeatured(item.id, !!item.is_featured)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-['Outfit'] transition-colors ${
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-heading transition-colors ${
                           item.is_featured
                             ? "bg-amber-50 text-[#D97706] border border-amber-200"
                             : "bg-slate-50 text-slate-600 hover:bg-slate-100"
@@ -979,7 +979,7 @@ export default function AdminConsoleClient({
         {activeTab === "feedback" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900">
+              <h2 className="text-base sm:text-lg font-bold font-heading text-slate-900">
                 User Feedback & Bug Reports ({feedbacks.length})
               </h2>
             </div>
@@ -999,7 +999,7 @@ export default function AdminConsoleClient({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-[10px] font-black font-['Outfit'] uppercase tracking-wider px-2.5 py-1 rounded-md ${
+                          className={`text-[10px] font-black font-heading uppercase tracking-wider px-2.5 py-1 rounded-md ${
                             item.type === "bug"
                               ? "bg-red-50 text-[#DC2626]"
                               : "bg-slate-100 text-slate-700"
@@ -1008,7 +1008,7 @@ export default function AdminConsoleClient({
                           {item.type || "GENERAL"}
                         </span>
 
-                        <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                        <span className="text-[10px] font-black font-heading uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-600">
                           {item.status || "PENDING"}
                         </span>
                       </div>
@@ -1039,7 +1039,7 @@ export default function AdminConsoleClient({
                         <button
                           type="button"
                           onClick={() => handleFeedbackStatus(item.id, "reviewed")}
-                          className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold font-['Outfit'] transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold font-heading transition-colors"
                         >
                           Mark Reviewed
                         </button>
@@ -1048,7 +1048,7 @@ export default function AdminConsoleClient({
                         <button
                           type="button"
                           onClick={() => handleFeedbackStatus(item.id, "resolved")}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-bold font-['Outfit'] transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 text-xs font-bold font-heading transition-colors"
                         >
                           Mark Resolved
                         </button>
@@ -1088,11 +1088,11 @@ export default function AdminConsoleClient({
                     className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-11 h-11 rounded-full bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-base font-['Outfit'] shrink-0">
+                      <div className="w-11 h-11 rounded-full bg-[#6C47FF]/10 text-[#6C47FF] flex items-center justify-center font-bold text-base font-heading shrink-0">
                         {(item.full_name || item.username || "U").charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-sm sm:text-base font-bold font-['Outfit'] text-slate-900 truncate">
+                        <h3 className="text-sm sm:text-base font-bold font-heading text-slate-900 truncate">
                           {item.full_name || "Anonymous User"}
                         </h3>
                         <p className="text-xs text-slate-500 truncate">
@@ -1116,7 +1116,7 @@ export default function AdminConsoleClient({
                       <button
                         type="button"
                         onClick={() => handleToggleUserRole(item)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold font-['Outfit'] shrink-0 transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold font-heading shrink-0 transition-colors ${
                           item.role === "admin"
                             ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
                             : "bg-[#6C47FF]/10 text-[#6C47FF] hover:bg-[#6C47FF]/20"
@@ -1136,7 +1136,7 @@ export default function AdminConsoleClient({
         {activeTab === "reports" && (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base sm:text-lg font-bold font-['Outfit'] text-slate-900">
+              <h2 className="text-base sm:text-lg font-bold font-heading text-slate-900">
                 Community Reports Queue ({reports.length})
               </h2>
             </div>
@@ -1146,7 +1146,7 @@ export default function AdminConsoleClient({
                 <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center text-[#10B981] mb-3">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-lg font-bold font-['Outfit'] text-slate-900">No Active Reports</h3>
+                <h3 className="text-lg font-bold font-heading text-slate-900">No Active Reports</h3>
                 <p className="text-sm text-slate-500 mt-1">The EvenTime community is clean and safe.</p>
               </div>
             ) : (
@@ -1157,12 +1157,12 @@ export default function AdminConsoleClient({
                     className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black font-['Outfit'] uppercase tracking-wider px-2.5 py-1 rounded-md bg-red-50 text-[#DC2626]">
+                      <span className="text-[10px] font-black font-heading uppercase tracking-wider px-2.5 py-1 rounded-md bg-red-50 text-[#DC2626]">
                         {item.reason || "REPORT"}
                       </span>
 
                       <span
-                        className={`text-[10px] font-black font-['Outfit'] uppercase tracking-wider px-2 py-0.5 rounded ${
+                        className={`text-[10px] font-black font-heading uppercase tracking-wider px-2 py-0.5 rounded ${
                           item.status === "resolved"
                             ? "bg-emerald-50 text-[#059669]"
                             : item.status === "dismissed"
@@ -1176,7 +1176,7 @@ export default function AdminConsoleClient({
 
                     <Link
                       href={item.event_id ? `/events/${item.events?.slug || item.event_id}?from=admin` : "#"}
-                      className="block text-base font-bold font-['Outfit'] text-slate-900 hover:text-[#6C47FF] transition-colors"
+                      className="block text-base font-bold font-heading text-slate-900 hover:text-[#6C47FF] transition-colors"
                     >
                       {item.events?.title || "Unknown Event"} →
                     </Link>
@@ -1198,7 +1198,7 @@ export default function AdminConsoleClient({
                         <button
                           type="button"
                           onClick={() => handleDismissReport(item.id)}
-                          className="flex-1 py-2 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold font-['Outfit'] transition-colors"
+                          className="flex-1 py-2 px-3 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold font-heading transition-colors"
                         >
                           Dismiss (Safe)
                         </button>
@@ -1206,7 +1206,7 @@ export default function AdminConsoleClient({
                         <button
                           type="button"
                           onClick={() => handleTakeDownAndPunish(item.id)}
-                          className="flex-1 py-2 px-3 rounded-xl bg-[#EF4444] text-white hover:bg-[#DC2626] text-xs font-bold font-['Outfit'] transition-colors shadow-sm"
+                          className="flex-1 py-2 px-3 rounded-xl bg-[#EF4444] text-white hover:bg-[#DC2626] text-xs font-bold font-heading transition-colors shadow-sm"
                         >
                           Take Down & Punish
                         </button>
@@ -1237,7 +1237,7 @@ export default function AdminConsoleClient({
               <button
                 type="button"
                 onClick={() => setShowAddCollege(true)}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6C47FF] text-white text-xs sm:text-sm font-bold font-['Outfit'] hover:bg-[#5835E5] transition-colors shadow-sm"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#6C47FF] text-white text-xs sm:text-sm font-bold font-heading hover:bg-[#5835E5] transition-colors shadow-sm"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add College</span>
@@ -1257,11 +1257,11 @@ export default function AdminConsoleClient({
                     className="p-4 sm:p-5 flex items-center justify-between gap-4 hover:bg-slate-50/70 transition-colors"
                   >
                     <div className="flex items-center gap-3.5">
-                      <span className="w-6 text-xs font-black font-['Outfit'] text-slate-400 text-right">
+                      <span className="w-6 text-xs font-black font-heading text-slate-400 text-right">
                         #{idx + 1}
                       </span>
                       <div>
-                        <h3 className="text-sm sm:text-base font-bold font-['Outfit'] text-slate-900">
+                        <h3 className="text-sm sm:text-base font-bold font-heading text-slate-900">
                           {college.name}
                         </h3>
                         {college.state && (
@@ -1294,7 +1294,7 @@ export default function AdminConsoleClient({
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold font-['Outfit'] text-slate-900">Reject Event</h3>
+              <h3 className="text-lg font-bold font-heading text-slate-900">Reject Event</h3>
               <button
                 type="button"
                 onClick={() => setRejectModalEvent(null)}
@@ -1320,7 +1320,7 @@ export default function AdminConsoleClient({
               <button
                 type="button"
                 onClick={() => setRejectModalEvent(null)}
-                className="px-4 py-2 rounded-xl text-xs font-bold font-['Outfit'] text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold font-heading text-slate-600 hover:bg-slate-100"
               >
                 Cancel
               </button>
@@ -1328,7 +1328,7 @@ export default function AdminConsoleClient({
                 type="button"
                 disabled={isRejecting}
                 onClick={handleConfirmReject}
-                className="px-4 py-2 rounded-xl text-xs font-bold font-['Outfit'] bg-[#EF4444] text-white hover:bg-[#DC2626] transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 rounded-xl text-xs font-bold font-heading bg-[#EF4444] text-white hover:bg-[#DC2626] transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
               >
                 {isRejecting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 <span>Confirm Rejection</span>
@@ -1346,7 +1346,7 @@ export default function AdminConsoleClient({
             className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200"
           >
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-bold font-['Outfit'] text-slate-900">Add New College</h3>
+              <h3 className="text-lg font-bold font-heading text-slate-900">Add New College</h3>
               <button
                 type="button"
                 onClick={() => setShowAddCollege(false)}
@@ -1362,7 +1362,7 @@ export default function AdminConsoleClient({
 
             <div className="space-y-3 mb-5">
               <div>
-                <label className="block text-xs font-bold font-['Outfit'] text-slate-700 mb-1">
+                <label className="block text-xs font-bold font-heading text-slate-700 mb-1">
                   College Name *
                 </label>
                 <input
@@ -1376,7 +1376,7 @@ export default function AdminConsoleClient({
               </div>
 
               <div>
-                <label className="block text-xs font-bold font-['Outfit'] text-slate-700 mb-1">
+                <label className="block text-xs font-bold font-heading text-slate-700 mb-1">
                   State
                 </label>
                 <input
@@ -1389,7 +1389,7 @@ export default function AdminConsoleClient({
               </div>
 
               <div>
-                <label className="block text-xs font-bold font-['Outfit'] text-slate-700 mb-1">
+                <label className="block text-xs font-bold font-heading text-slate-700 mb-1">
                   Website URL
                 </label>
                 <input
@@ -1406,14 +1406,14 @@ export default function AdminConsoleClient({
               <button
                 type="button"
                 onClick={() => setShowAddCollege(false)}
-                className="px-4 py-2 rounded-xl text-xs font-bold font-['Outfit'] text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold font-heading text-slate-600 hover:bg-slate-100"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isAddingCollege}
-                className="px-4 py-2 rounded-xl text-xs font-bold font-['Outfit'] bg-[#6C47FF] text-white hover:bg-[#5835E5] transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                className="px-4 py-2 rounded-xl text-xs font-bold font-heading bg-[#6C47FF] text-white hover:bg-[#5835E5] transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
               >
                 {isAddingCollege ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 <span>Save College</span>

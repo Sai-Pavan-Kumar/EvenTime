@@ -58,9 +58,9 @@ export async function GET(req: NextRequest) {
 
     const fontSize = isHomepage ? 54 : getFontSize(title);
 
-    // Load brand fonts (Outfit) and logo synchronously from local disk
-    const fontExtraBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Outfit-ExtraBold.ttf');
-    const fontSemiBoldPath = path.join(process.cwd(), 'public', 'fonts', 'Outfit-SemiBold.ttf');
+    // Load the brand font (static TTFs: the OG renderer cannot read woff2) and logo from local disk
+    const fontExtraBoldPath = path.join(process.cwd(), 'public', 'fonts', 'OverusedGrotesk-ExtraBold.ttf');
+    const fontSemiBoldPath = path.join(process.cwd(), 'public', 'fonts', 'OverusedGrotesk-SemiBold.ttf');
     const logoPath = path.join(process.cwd(), 'public', 'logo-256.png');
 
     const [fontExtraBoldData, fontSemiBoldData, logoData] = await Promise.all([
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
             justifyContent: 'space-between',
             backgroundColor: '#FAFAFC',
             padding: '72px 80px',
-            fontFamily: 'Outfit, sans-serif',
+            fontFamily: "'Overused Grotesk', sans-serif",
             position: 'relative',
           }}
         >
@@ -230,13 +230,13 @@ export async function GET(req: NextRequest) {
         height: 630,
         fonts: [
           {
-            name: 'Outfit',
+            name: 'Overused Grotesk',
             data: fontExtraBoldData,
             style: 'normal',
             weight: 800,
           },
           {
-            name: 'Outfit',
+            name: 'Overused Grotesk',
             data: fontSemiBoldData,
             style: 'normal',
             weight: 600,

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import { PostHogProvider } from "./providers";
@@ -13,11 +13,23 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import NextTopLoader from "nextjs-toploader";
 import Script from "next/script";
 
-// 1. Load Outfit font for your headings
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
+// SurfBoard brand font, self-hosted so the strict CSP only needs font-src 'self'.
+// One variable file covers every weight; next/font hashes the URL, so a font change can never be served stale.
+const brandFont = localFont({
+  src: "./fonts/OverusedGrotesk-VF.woff2",
+  weight: "300 900",
+  display: "swap",
+  variable: "--font-brand-face",
+  adjustFontFallback: "Arial",
+});
+
+// Code font, only for the character counters on forms, so it is not preloaded.
+const codeFont = localFont({
+  src: "./fonts/GeistMono-VF.woff2",
+  weight: "100 900",
+  display: "swap",
+  variable: "--font-code-face",
+  preload: false,
 });
 
 // 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
@@ -69,17 +81,12 @@ export default function RootLayout({
   return (
     <html 
       lang="en" 
-      // 3. Inject the Outfit variable into the HTML so Tailwind v4 can use it
-      className={cn("h-full antialiased scroll-smooth", outfit.variable)}
+      // Expose the font variables on <html> so the Tailwind v4 theme tokens can use them
+      className={cn("h-full antialiased scroll-smooth", brandFont.variable, codeFont.variable)}
       data-scroll-behavior="smooth"
     >
       <head>
-        {/* LIGHTSPEED OPTIMIZATION: Preconnect to Fontshare CDN & R2 */}
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://api.fontshare.com" />
-        <link rel="preconnect" href="https://cdn.fontshare.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://cdn.fontshare.com" />
-        <link href="https://api.fontshare.com/v2/css?f[]=switzer@400,500,600,700&display=swap" rel="stylesheet" />
+        {/* LIGHTSPEED OPTIMIZATION: Preconnect to the R2 image CDN */}
         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://cdn.sbhub.in" />
         

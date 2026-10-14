@@ -343,7 +343,7 @@
                           style={{ 
                             fontSize: 'clamp(10px, 5vw, 20px)', 
                             lineHeight: 1.2, 
-                            fontFamily: "'Outfit', sans-serif",
+                            fontFamily: "var(--font-heading)",
                             color: config.dateColor,
                             wordBreak: 'break-word'
                           }}
@@ -358,13 +358,13 @@
                 <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
                   <span
                     className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "'Outfit', sans-serif" }}
+                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "var(--font-heading)" }}
                   >
                     {shortDateOverlay}
                   </span>
                   <span
                     className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "'Outfit', sans-serif" }}
+                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "var(--font-heading)" }}
                   >
                     EvenTime
                   </span>
@@ -405,7 +405,7 @@
                   <h3 
                     className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
                     style={{ 
-                      fontFamily: "'Outfit', sans-serif",
+                      fontFamily: "var(--font-heading)",
                       textTransform: 'capitalize' 
                     }}
                   >
@@ -415,7 +415,7 @@
 
                 <div 
                   className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
-                  style={{ fontFamily: "'Switzer', sans-serif" }}
+                  style={{ fontFamily: "var(--font-sans)" }}
                 >
                   {!hideOrganizer && <>Curated by {organizerUsername ? (
                     <Link

@@ -258,7 +258,7 @@ export function LeaderboardClient({ initialCohortData }: LeaderboardClientProps)
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveCohort(tab.id)}
-                className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold font-['Switzer',sans-serif] transition-all text-center ${
+                className={`flex-1 sm:flex-initial sm:px-6 py-2 rounded-xl text-xs sm:text-sm font-bold font-sans transition-all text-center ${
                   isActive
                     ? "bg-white text-slate-900 shadow-xs font-black"
                     : "text-slate-500 hover:text-slate-900"

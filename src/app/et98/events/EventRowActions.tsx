@@ -62,7 +62,7 @@ export function EventRowActions({
         value={category}
         onChange={(e) => setCategory(e.target.value)}
         placeholder="Category"
-        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-['Outfit']"
+        className="text-[12px] font-bold text-brand-primary bg-transparent border-b-2 border-dashed border-transparent hover:border-[#B29DFF] focus:border-[#6C47FF] px-2 py-1.5 uppercase tracking-wider w-36 outline-none transition-colors font-heading"
       />
 
       <select

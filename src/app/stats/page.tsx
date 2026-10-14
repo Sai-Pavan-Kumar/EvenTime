@@ -183,7 +183,7 @@ export default function PlatformStatsPage() {
 
             {/* Footer Note matching app */}
             <div className="text-center pt-4 pb-2">
-              <p className="text-xs text-slate-400 font-medium font-['Switzer']">
+              <p className="text-xs text-slate-400 font-medium font-sans">
                 Updated in real-time. Click refresh to view live figures.
               </p>
             </div>

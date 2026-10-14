@@ -23,15 +23,15 @@ export default function NotFound() {
           </div>
 
           {/* Badge */}
-          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-xs font-black font-['Outfit'] uppercase tracking-wider">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-[#6C47FF] text-xs font-black font-heading uppercase tracking-wider">
             404 • Not Found
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-black font-['Outfit'] text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 tracking-tight">
               Page not found
             </h1>
-            <p className="text-sm font-medium font-['Switzer',sans-serif] text-slate-500 leading-relaxed">
+            <p className="text-sm font-medium font-sans text-slate-500 leading-relaxed">
               The page, curator profile, or event you requested does not exist or may have moved.
             </p>
           </div>
@@ -40,7 +40,7 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
             <Link
               href="/"
-              className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-brand-primary text-white font-bold font-['Outfit'] text-sm hover:bg-[#5835E5] transition-all shadow-md shadow-brand-primary/20 active:scale-95"
+              className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-brand-primary text-white font-bold font-heading text-sm hover:bg-[#5835E5] transition-all shadow-md shadow-brand-primary/20 active:scale-95"
             >
               <Home className="w-4 h-4" />
               <span>Back to Home</span>
@@ -48,7 +48,7 @@ export default function NotFound() {
 
             <Link
               href="/cities"
-              className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-slate-100 text-slate-700 font-bold font-['Outfit'] text-sm hover:bg-slate-200 transition-all active:scale-95"
+              className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-full bg-slate-100 text-slate-700 font-bold font-heading text-sm hover:bg-slate-200 transition-all active:scale-95"
             >
               <Building2 className="w-4 h-4 text-slate-500" />
               <span>Explore Cities</span>
