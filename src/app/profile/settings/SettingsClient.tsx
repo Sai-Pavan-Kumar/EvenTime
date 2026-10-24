@@ -134,9 +134,8 @@ export default function SettingsClient({
     if (userType === "Student" && collegeId) formData.set("collegeId", collegeId);
     else formData.delete("collegeId");
     
-        formData.delete("yearOfStudying");
+    formData.delete("yearOfStudying");
 
-    
     if (userType === "Student" && year) formData.set("graduationYear", year);
     else formData.delete("graduationYear");
 
@@ -153,6 +152,26 @@ export default function SettingsClient({
     if (result.error) {
       toast.error(result.error);
     } else {
+      // Patch the local cache immediately so AuthContext doesn't serve a stale
+      // is_onboarded: false on the next render. Without this, the onboarding
+      // modal fires again on the homepage even though the DB is already correct.
+      try {
+        const cached = localStorage.getItem("et_cached_profile");
+        const parsed = cached ? JSON.parse(cached) : {};
+        localStorage.setItem(
+          "et_cached_profile",
+          JSON.stringify({
+            ...parsed,
+            is_onboarded: true,
+            full_name: fullName,
+            username: username,
+            preferred_cities: selectedCities,
+            goals: selectedGoals,
+            user_type: userType.toLowerCase(),
+            ...(userType === "Student" ? { college: college || collegeSearchQuery, branch, graduation_year: year } : {})
+          })
+        );
+      } catch {}
       toast.success("Profile updated successfully!");
       router.push("/profile");
     }
@@ -557,5 +576,5 @@ export default function SettingsClient({
       </div>
       </div>
     </main>
-    );
-  }
+  );
+}
