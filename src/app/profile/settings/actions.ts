@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export async function updateProfileSettings(formData: FormData) {
@@ -122,4 +123,38 @@ export async function updateProfileSettings(formData: FormData) {
   revalidatePath("/leaderboard");
 
   return { success: true };
+}
+
+export async function deleteAccountAction() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Please login to perform this action." };
+  }
+
+  try {
+    const adminClient = createAdminClient();
+
+    // Clean up user specific references to prevent any foreign key issues
+    await adminClient.from("saved_events").delete().eq("user_id", user.id);
+    await adminClient.from("interested_events").delete().eq("user_id", user.id);
+    await adminClient.from("registered_events").delete().eq("user_id", user.id);
+    await adminClient.from("platform_feedback").delete().eq("user_id", user.id);
+    await adminClient.from("events").update({ creator_id: null }).eq("creator_id", user.id);
+    await adminClient.from("profiles").delete().eq("id", user.id);
+
+    // Permanently remove from auth.users
+    const { error } = await adminClient.auth.admin.deleteUser(user.id);
+    if (error) {
+      console.error("Admin deleteUser error:", error);
+      return { error: error.message || "Failed to delete account." };
+    }
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  } catch (err: any) {
+    console.error("deleteAccountAction unexpected error:", err);
+    return { error: err?.message || "Failed to delete account." };
+  }
 }

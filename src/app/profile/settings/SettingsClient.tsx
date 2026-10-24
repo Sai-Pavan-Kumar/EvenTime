@@ -7,7 +7,7 @@ import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, Al
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { updateProfileSettings } from "./actions";
+import { updateProfileSettings, deleteAccountAction } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import type { ProfileRow, CollegeRow } from "@/types";
 import { categoriesList } from "@/features/create-event/constants";
@@ -29,6 +29,7 @@ export default function SettingsClient({
   userEmail?: string
 }) {
   const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   
@@ -495,28 +496,43 @@ export default function SettingsClient({
             <div className="ml-11">
               <button 
                 type="button"
+                disabled={isDeleting}
                 onClick={async () => {
                   if (window.confirm("WARNING: Once you delete your account, it cannot be recovered. It is gone forever. Are you absolutely sure you want to proceed?")) {
-                    const supabase = createClient();
-                    
-                    // Call the secure RPC function to delete the user
-                    const { error } = await supabase.rpc('delete_user');
-                    
-                    if (error) {
-                      toast.error("Failed to delete account. Please try again.");
-                      console.error("Delete user error:", error);
-                      return;
-                    }
+                    setIsDeleting(true);
+                    try {
+                      const result = await deleteAccountAction();
+                      if (result.error) {
+                        toast.error(result.error);
+                        setIsDeleting(false);
+                        return;
+                      }
 
-                    // Sign out and redirect
-                    await supabase.auth.signOut();
-                    toast.success("Your account has been permanently deleted.");
-                    router.push("/login");
+                      // Clear all local caches
+                      try {
+                        localStorage.removeItem("et_cached_profile");
+                        localStorage.removeItem("et_cached_campus_events");
+                        sessionStorage.clear();
+                      } catch {}
+
+                      toast.success("Your account has been permanently deleted.");
+                      window.location.href = "/login";
+                    } catch (err: any) {
+                      toast.error(err?.message || "Failed to delete account. Please try again.");
+                      setIsDeleting(false);
+                    }
                   }
                 }}
-                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 rounded-xl text-sm font-bold transition-colors shadow-sm"
+                className="px-6 py-3 bg-red-100 text-red-600 hover:bg-red-200 disabled:opacity-50 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center gap-2"
               >
-                Delete My Account
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    Deleting Account...
+                  </>
+                ) : (
+                  "Delete My Account"
+                )}
               </button>
             </div>
           </div>

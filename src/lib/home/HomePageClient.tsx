@@ -103,8 +103,9 @@ export function HomePageClient(props: HomePageClientProps) {
   const view = searchParams.get('view') || undefined;
 
   // Read directly from centralized AuthContext (0 network requests for guests)
-  const { user, profile: authProfile, isLoading: isAuthLoading } = useAuth();
-  const profile = (authProfile || getLocalProfile()) as (Partial<ProfileRow> & { city?: string }) | null;
+  const { user, profile: authProfile, isLoading: isAuthLoading, refreshProfile } = useAuth();
+  const [onboardedProfile, setOnboardedProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(null);
+  const profile = (onboardedProfile || authProfile || getLocalProfile()) as (Partial<ProfileRow> & { city?: string }) | null;
 
   // Local copies of events
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
@@ -336,6 +337,31 @@ export function HomePageClient(props: HomePageClientProps) {
     }
   }, [profile?.user_type, profile?.college_id, date]);
 
+  // Aggregated upcoming category counts for OnboardingModal (matches Profile Settings exactly)
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const upcoming = (liveAllEvents || []).filter(isUpcomingEvent);
+    upcoming.forEach(event => {
+      if (event.category) {
+        let cats: string[] = [];
+        if (Array.isArray(event.category)) {
+          cats = event.category;
+        } else if (typeof event.category === 'string') {
+          try {
+            const parsed = JSON.parse(event.category);
+            cats = Array.isArray(parsed) ? parsed : [event.category];
+          } catch {
+            cats = [event.category];
+          }
+        }
+        cats.forEach(c => {
+          counts[c] = (counts[c] || 0) + 1;
+        });
+      }
+    });
+    return counts;
+  }, [liveAllEvents]);
+
   // Smart cascading filters: options in each dropdown narrow down based on
   // the OTHER filter currently selected — computed from already-loaded
   // events (liveAllEvents), no extra database call.
@@ -501,7 +527,18 @@ export function HomePageClient(props: HomePageClientProps) {
       )}
       
       {/* Onboarding check: don't show until auth finishes checking */}
-      {!isAuthLoading && !profile?.is_onboarded && (<OnboardingModal user={user} profile={profile} />
+      {!isAuthLoading && !profile?.is_onboarded && (
+        <OnboardingModal
+          user={user}
+          profile={profile}
+          categoryCounts={categoryCounts}
+          onComplete={(updatedProfile) => {
+            setOnboardedProfile(updatedProfile as any);
+            setLocalProfile(updatedProfile as any);
+            refreshProfile();
+            handleSelectFeedPill('for_you');
+          }}
+        />
       )}
       <div className="flex flex-col">
         {/* Hide Hero and Stats when in Explore by City (Map) view */}

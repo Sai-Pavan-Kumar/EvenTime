@@ -17,10 +17,13 @@ import { useCollegeSearch } from "@/features/create-event/hooks/useCollegeSearch
 export interface OnboardingProps {
   user: AuthUser | null;
   profile: Partial<ProfileRow> | null;
+  categoryCounts?: Record<string, number>;
+  onComplete?: (updatedProfile: Partial<ProfileRow>) => void;
 }
 
-export function OnboardingModal({ user, profile }: OnboardingProps) {
+export function OnboardingModal({ user, profile, categoryCounts = {}, onComplete }: OnboardingProps) {
   const [step, setStep] = useState(1);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [cities, setCities] = useState<string[]>([]); // NEW: City state (max 3, same as profile settings)
 
   const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
@@ -70,7 +73,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
  
 
   // Hide everything if already onboarded
-  if (profile?.is_onboarded) return null;
+  if (profile?.is_onboarded || isCompleted) return null;
 
   // If modal is not manually opened yet, show the new isolated clean popup
   if (!isModalOpen) {
@@ -109,7 +112,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
     // Guest user try chesthe login page ki pampiddam
     if (!user) {
       toast.error("Please sign in to complete your profile!");
-      router.push("/login"); // Note: Change "/login" if your auth route is different
+      router.push("/login");
       return;
     }
 
@@ -145,10 +148,9 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       goals: categories.slice(0, 6),
       is_onboarded: true,
       username: finalUsername,
+      et_score: (profile?.et_score ?? 100) < 150 ? 150 : profile?.et_score,
     };
 
-
-    // FIXED: Changed `as unknown as Partial<ProfileRow>` to `as any` to prevent the Type 'never' compilation error
     const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
 
     if (error) {
@@ -161,10 +163,25 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
       await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
     } catch (rpcErr) {
       console.warn("increment_et_score error, falling back to direct update:", rpcErr);
-      await supabase.from("profiles").update({ et_score: 150 }).eq("id", user.id);
     }
 
-    window.location.reload();
+    const updatedProfile = {
+      ...profile,
+      ...updatePayload,
+      is_onboarded: true,
+    };
+
+    try {
+      localStorage.setItem("et_cached_profile", JSON.stringify(updatedProfile));
+    } catch {}
+
+    toast.success("Profile setup complete!");
+    setIsSaving(false);
+    setIsCompleted(true);
+
+    if (onComplete) {
+      onComplete(updatedProfile);
+    }
   };
 
   return (
@@ -401,6 +418,7 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                   <div className="flex flex-wrap gap-2 max-h-64 overflow-y-auto no-scrollbar">
                     {categoriesList.map(opt => {
                       const isSelected = categories.includes(opt);
+                      const count = categoryCounts[opt] || 0;
                       const isDisabled = !isSelected && !isAdmin && categories.length >= 6;
                       return (
                         <button
@@ -413,6 +431,9 @@ export function OnboardingModal({ user, profile }: OnboardingProps) {
                           className={`px-4 py-2 rounded-full text-xs font-bold transition-all border-2 ${isSelected ? "bg-text-primary text-white border-text-primary" : isDisabled ? "bg-white text-slate-300 border-slate-100 cursor-not-allowed" : "bg-white text-slate-600 border-slate-200 hover:border-slate-300"}`}
                         >
                           {opt}
+                          {count > 0 && (
+                            <span className="ml-1.5 opacity-60 font-semibold">({count})</span>
+                          )}
                         </button>
                       );
                     })}
