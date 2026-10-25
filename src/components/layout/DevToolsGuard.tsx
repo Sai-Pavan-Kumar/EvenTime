@@ -12,7 +12,7 @@ export function DevToolsGuard() {
     const blockRightClick = (e: MouseEvent) => e.preventDefault();
 
     const blockKeys = (e: KeyboardEvent) => {
-      const key = e.key.toUpperCase();
+      const key = e.key ? e.key.toUpperCase() : "";
       if (
         key === "F12" ||
         (e.ctrlKey && e.shiftKey && ["I", "J", "C"].includes(key)) ||

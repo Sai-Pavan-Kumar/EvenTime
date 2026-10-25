@@ -112,19 +112,23 @@ export function HomePageClient(props: HomePageClientProps) {
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
   const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>(() => getLocalCampusEvents());
 
-  // Determine initial active pill synchronously on Frame 1 (persisted in sessionStorage)
-  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = sessionStorage.getItem('et_active_feed_pill');
-        if (saved === 'for_you' || saved === 'around_you' || saved === 'campus') {
-          return saved;
-        }
-      } catch {}
-    }
+  // Safe SSR default ('around_you') ensures zero hydration mismatch on Frame 1.
+  // Persisted state from sessionStorage or profile goals is restored inside useEffect.
+  const [activeFeedPill, setActiveFeedPill] = useState<'for_you' | 'around_you' | 'campus'>('around_you');
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('et_active_feed_pill');
+      if (saved === 'for_you' || saved === 'around_you' || saved === 'campus') {
+        setActiveFeedPill(saved);
+        return;
+      }
+    } catch {}
     const cached = getLocalProfile();
-    return (cached?.goals && cached.goals.length > 0) ? 'for_you' : 'around_you';
-  });
+    if (cached?.goals && cached.goals.length > 0) {
+      setActiveFeedPill('for_you');
+    }
+  }, []);
 
   const handleSelectFeedPill = (pill: 'for_you' | 'around_you' | 'campus') => {
     setActiveFeedPill(pill);

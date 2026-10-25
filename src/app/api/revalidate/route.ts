@@ -38,8 +38,8 @@ export async function POST(request: Request) {
 
     if (shouldFullRevalidate) {
       lastRevalidatedAt = now;
-      // Invalidate global events collection and layout
-      (revalidateTag as any)('events', 'events');
+      // Invalidate global events collection and layout using Next.js 16 standard 'max' cache profile
+      (revalidateTag as any)('events', 'max');
       revalidatePath('/', 'layout');
       revalidatePath('/', 'page');
       revalidatePath('/search', 'page');
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     // If a specific event was updated/inserted, invalidate its granular tag as well
     const modifiedSlug = payload?.record?.slug || payload?.old_record?.slug || payload?.slug;
     if (modifiedSlug) {
-      (revalidateTag as any)(`event_${modifiedSlug}`, `event_${modifiedSlug}`);
+      (revalidateTag as any)(`event_${modifiedSlug}`, 'max');
       revalidatePath(`/events/${modifiedSlug}`, 'page');
     }
 
