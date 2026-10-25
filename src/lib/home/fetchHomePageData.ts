@@ -12,7 +12,7 @@ export async function fetchHomePageData() {
 
   const serverTime = new Date();
   const todayIST = new Date(serverTime.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username), interested_events(count)";
+  const PUBLIC_EVENT_FIELDS = "id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username), interested_events(count), created_at";
 
   // CACHED: Fetch all public active events. This runs once and serves 1M users without hitting DB.
   const getCachedGlobalData = unstable_cache(

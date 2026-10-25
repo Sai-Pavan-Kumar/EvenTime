@@ -11,6 +11,7 @@
   import { getCategoryConfig } from "@/lib/category-config";
   import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
   import { eventSync } from "@/lib/events/eventSync";
+  import { isEventNew, markEventAsSeen } from "@/lib/events/eventSeenTracker";
 
   interface EventCardProps {
     id: string;   // MUST be the exact UUID from database
@@ -41,6 +42,7 @@
     collegeName?: string; // NEW: college that hosts the event
     priority?: boolean; // NEW: For LCP image optimization
     from?: string; // Source context (e.g. 'curator' or 'admin')
+    createdAt?: string;
   }
 
   export function EventCard({
@@ -72,6 +74,7 @@
     collegeName,
     priority = false,
     from,
+    createdAt,
   }: EventCardProps) {
     const [savedState, setSavedState] = useState(isSaved);
     const [isRegisteredState, setIsRegisteredState] = useState(false);
@@ -81,6 +84,18 @@
     const [copied, setCopied] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [ownerNotice, setOwnerNotice] = useState(false);
+    const [isNewState, setIsNewState] = useState(false);
+
+    useEffect(() => {
+      setIsNewState(isEventNew(id, createdAt));
+      const handleSeen = (e: any) => {
+        if (e.detail?.eventId === id) {
+          setIsNewState(false);
+        }
+      };
+      window.addEventListener('eventime:event-seen', handleSeen);
+      return () => window.removeEventListener('eventime:event-seen', handleSeen);
+    }, [id, createdAt]);
 
     const eventHref = from ? `/events/${slug}?from=${from}` : `/events/${slug}`;
 
@@ -316,6 +331,8 @@
               exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
               animate={{}}
               transition={{ duration: 0.3 }}
+              onMouseEnter={() => { if (isNewState) markEventAsSeen(id); }}
+              onClick={() => { if (isNewState) markEventAsSeen(id); }}
               className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
             >
 
@@ -366,7 +383,17 @@
                     className="font-semibold uppercase tracking-widest text-right"
                     style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "var(--font-heading)" }}
                   >
-                    EvenTime
+                    {isNewState ? (
+                      <span
+                        className="font-black uppercase tracking-wider text-right px-1.5 py-0.5 rounded-md text-white bg-brand-primary shadow-sm flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200"
+                        style={{ fontSize: 'clamp(8px, 1.8vw, 10px)' }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 animate-pulse" />
+                        NEW
+                      </span>
+                    ) : (
+                      "EvenTime"
+                    )}
                   </span>
                 </div>
 

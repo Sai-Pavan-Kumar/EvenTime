@@ -19,6 +19,7 @@ import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
+import { isEventNew } from "@/lib/events/eventSeenTracker";
 
 // The props now ONLY receive the public static buffet from the server
 export interface HomePageClientProps {
@@ -435,6 +436,26 @@ export function HomePageClient(props: HomePageClientProps) {
   const upcomingForYouCount = livePersonalizedEvents.filter(isUpcomingEvent).length;
   const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcomingEvent).length;
   const upcomingCollegeCount = liveCollegeEvents.filter(isUpcomingEvent).length;
+
+  // Unread indicators: check if any event in the respective feed is new (< 24h & not seen)
+  const [seenTick, setSeenTick] = useState(0);
+  useEffect(() => {
+    const handleSeen = () => setSeenTick(t => t + 1);
+    window.addEventListener("eventime:event-seen", handleSeen);
+    return () => window.removeEventListener("eventime:event-seen", handleSeen);
+  }, []);
+
+  const hasUnreadForYou = useMemo(() => {
+    return livePersonalizedEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+  }, [livePersonalizedEvents, seenTick]);
+
+  const hasUnreadAroundYou = useMemo(() => {
+    return liveAroundYouEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+  }, [liveAroundYouEvents, seenTick]);
+
+  const hasUnreadCampus = useMemo(() => {
+    return liveCollegeEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+  }, [liveCollegeEvents, seenTick]);
   useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;
   let clientFallbackEvents: Partial<EventRow>[] = [];
@@ -487,6 +508,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       : 'text-[#64748B] hover:text-[#0F172A]'
                   }`}
                 >
+                  {hasUnreadForYou && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-primary shrink-0 animate-pulse" />
+                  )}
                   <span>For You</span>
                   <span className={`text-[11px] font-semibold ${activeFeedPill === 'for_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
                     ({upcomingForYouCount})
@@ -502,6 +526,9 @@ export function HomePageClient(props: HomePageClientProps) {
                       : 'text-[#64748B] hover:text-[#0F172A]'
                   }`}
                 >
+                  {hasUnreadAroundYou && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-primary shrink-0 animate-pulse" />
+                  )}
                   <span>Around You</span>
                   <span className={`text-[11px] font-semibold ${activeFeedPill === 'around_you' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
                     ({upcomingAroundYouCount})
@@ -518,7 +545,10 @@ export function HomePageClient(props: HomePageClientProps) {
                         : 'text-[#64748B] hover:text-[#0F172A]'
                     }`}
                   >
-                    <span>Your Campus</span>
+                    {hasUnreadCampus && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-brand-primary shrink-0 animate-pulse" />
+                  )}
+                  <span>Your Campus</span>
                     <span className={`text-[11px] font-semibold ${activeFeedPill === 'campus' ? 'text-brand-primary' : 'text-[#94A3B8]'}`}>
                       ({upcomingCollegeCount})
                     </span>
@@ -718,6 +748,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             }
                             interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
                             isGuest={!user && !profile}
+                            createdAt={event.created_at || (event as any).created_at}
                           />
                         </div>
                       ))}

@@ -72,6 +72,7 @@ export function EventGrid({
             layout={true}
             isPastDateView={isPastDateView}
             userRole={profile?.role as string | undefined}
+            createdAt={event.created_at || (event as any).created_at}
             priority={index < 4} // LIGHTSPEED: First 4 events load instantly
           />
         );
