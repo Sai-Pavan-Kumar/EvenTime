@@ -323,7 +323,7 @@
 
     const cardVariantClass = isFeatured
       ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
-      : "w-full aspect-square";
+      : "w-full";
 
     return (
       <>
