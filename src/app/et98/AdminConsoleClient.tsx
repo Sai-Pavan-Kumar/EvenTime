@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
+  Pencil,
   AlertTriangle,
   Building2,
   Plus,
@@ -817,6 +818,14 @@ export default function AdminConsoleClient({
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
+                        <Link
+                          href={`/events/${item.slug || item.id}/edit`}
+                          aria-label={`Edit ${item.title}`}
+                          className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-[#6C47FF] hover:bg-[#EDE8FF] transition-colors shrink-0"
+                          title="Edit Event"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
                       </div>
 
                       {item.registration_link && (
@@ -936,6 +945,14 @@ export default function AdminConsoleClient({
                           title="Preview Event"
                         >
                           <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/events/${item.slug || item.id}/edit`}
+                          aria-label={`Edit ${item.title}`}
+                          className="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-[#6C47FF] hover:bg-[#EDE8FF] transition-colors shrink-0"
+                          title="Edit Event"
+                        >
+                          <Pencil className="w-4 h-4" />
                         </Link>
                       </div>
                     </div>

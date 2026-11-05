@@ -287,10 +287,12 @@ export function HomePageClient(props: HomePageClientProps) {
   const preferredCities = useMemo(() => profile?.preferred_cities || [], [profile?.preferred_cities]);
   const cityMatch = useCallback(
     (e: Partial<EventRow>) =>
+      // Admins are responsible for every event, so their feed isn't limited to their own cities.
+      profile?.role === 'admin' ||
       Boolean(e.is_virtual) ||
       preferredCities.length === 0 ||
       (e.city ? preferredCities.includes(e.city) : false),
-    [preferredCities]
+    [preferredCities, profile?.role]
   );
 
   const nonCampusEvents = useMemo(() => {

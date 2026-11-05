@@ -132,6 +132,8 @@ export default function EventClientUI({
   const safeCreatorId = event.creator_id ?? "";
 
   const isOwner = Boolean(currentUser && safeCreatorId && currentUser.id === safeCreatorId);
+  // Only role: users can change their own user_type. The server repeats this check on save.
+  const canEdit = isOwner || authProfile?.role === "admin";
   const [sparkBurst, setSparkBurst] = useState(0);
   const isStudent = userProfile?.user_type === "student";
   const otherInterestCount = localInterestCount - 1;
@@ -616,10 +618,11 @@ export default function EventClientUI({
           </button>
 
           <div className="flex items-center gap-2">
-            {currentUser?.id === safeCreatorId && (
+            {canEdit && (
               <Link
                 href={`/events/${event.slug || safeId}/edit`}
-                className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 transition-colors"
+                // The owner's phone layout already has Edit in the action row, except on past events.
+                className={`${isOwner && !isPastEvent ? "hidden sm:flex" : "flex"} min-h-11 sm:min-h-0 items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 transition-colors`}
               >
                 Edit Event
               </Link>
@@ -830,7 +833,7 @@ export default function EventClientUI({
                 </div>
               )}
 
-              {currentUser?.id === safeCreatorId && (
+              {canEdit && (
                 <Link
                   href={`/events/${event.slug || safeId}/edit`}
                   className="px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 bg-purple-50 text-brand-primary border border-purple-200 hover:bg-purple-100 shrink-0"

@@ -149,7 +149,10 @@ export async function submitEventAction(
     if (isEditing) {
       if (!eventId) return { success: false, error: "Event not found." };
 
-      const { data: existing } = await supabase
+      // Row rules could make an admin's edit of someone else's event save nothing and still report success.
+      const eventsClient = isAdmin ? createAdminClient() : supabase;
+
+      const { data: existing } = await eventsClient
         .from("events")
         .select("status, registration_link, poster_url, creator_id")
         .eq("id", eventId)
@@ -172,12 +175,12 @@ export async function submitEventAction(
       if (isAdmin) updatePayload.is_featured = Boolean(payloadData.is_featured);
       if (payloadData.poster_url) updatePayload.poster_url = payloadData.poster_url;
 
-      const { error: updateErr } = await supabase.from("events").update(updatePayload).eq("id", eventId);
+      const { error: updateErr } = await eventsClient.from("events").update(updatePayload).eq("id", eventId);
       if (updateErr) throw updateErr;
 
       if (hasDefaultPriceOptions) {
         // An edit back to a plain rupee price must clear the old choice. PGRST204: columns not added yet.
-        const { error: priceErr } = await supabase.from("events").update({ price_currency: DEFAULT_CURRENCY, price_is_starting: false }).eq("id", eventId);
+        const { error: priceErr } = await eventsClient.from("events").update({ price_currency: DEFAULT_CURRENCY, price_is_starting: false }).eq("id", eventId);
         if (priceErr && priceErr.code !== "PGRST204") throw priceErr;
       }
 
@@ -191,7 +194,7 @@ export async function submitEventAction(
       }
 
       try {
-        await supabase
+        await eventsClient
           .from("event_reports")
           .update({ status: "resolved" })
           .eq("event_id", eventId)
