@@ -112,6 +112,8 @@ const getCachedAppBannerSetting = () =>
   )();
 
 export async function generateStaticParams() {
+  // CI proves the code builds without holding the service role key these pages read with.
+  if (process.env.SKIP_EVENT_PRERENDER) return [];
   try {
     const supabaseAnon = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
