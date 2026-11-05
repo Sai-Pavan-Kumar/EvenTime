@@ -28,9 +28,9 @@ export type ProfileEvent = {
   status: string;
   poster_url: string | null;
   is_featured: boolean;
-  interested_events: { count: number }[];
-  saved_events: { count: number }[];
-  registered_events?: { count: number }[];
+  interested_count: number;
+  saved_count: number;
+  registered_count: number;
 };
 
 export interface ProfileClientProps {

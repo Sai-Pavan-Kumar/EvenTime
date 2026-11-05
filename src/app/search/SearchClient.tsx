@@ -107,7 +107,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
       const { data, error } = await supabase
         .from("events")
         .select(
-          "id, slug, title, category, date_string, end_date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username, full_name), description, interested_events(count)"
+          "id, slug, title, category, date_string, end_date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username, full_name), description, interested_count"
         )
         .eq("status", "approved")
         .or("college_only.is.null,college_only.eq.false")
@@ -116,7 +116,8 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
       if (error) {
         console.error("[SearchClient] Fetch events error:", error);
       } else {
-        setAllEvents(data || []);
+        // interested_count is a database function, which the generated types don't know about.
+        setAllEvents((data || []) as unknown as typeof allEvents);
       }
     } catch (err) {
       console.error("[SearchClient] Unexpected fetch error:", err);

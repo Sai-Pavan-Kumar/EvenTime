@@ -37,22 +37,10 @@ export default async function ProfilePage() {
       .maybeSingle(),
     supabase
       .from("events")
-      .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count), registered_events(count)")
+      .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_count, interested_count, registered_count")
       .eq("creator_id", currentUser.id)
       .neq("status", "deleted")
-      .order("created_at", { ascending: false })
-      .then((res) => {
-        if (res.error) {
-          // Graceful fallback if registered_events table is not yet migrated in Supabase
-          return supabase
-            .from("events")
-            .select("id, slug, title, category, date_string, status, poster_url, is_featured, saved_events(count), interested_events(count)")
-            .eq("creator_id", currentUser.id)
-            .neq("status", "deleted")
-            .order("created_at", { ascending: false });
-        }
-        return res;
-      }),
+      .order("created_at", { ascending: false }),
     supabase
       .from("saved_events")
       .select("events(id, slug, title, category, date_string, location, city, poster_url, is_free, organizer_name, is_featured, target_audience)")

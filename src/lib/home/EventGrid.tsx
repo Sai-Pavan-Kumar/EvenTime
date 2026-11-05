@@ -68,7 +68,7 @@ export function EventGrid({
                 ? null 
                 : (event as any).colleges?.name
             }
-            interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
+            interestedCount={(event as any).interested_count ?? 0}
             isGuest={!user}
             layout={true}
             isPastDateView={isPastDateView}

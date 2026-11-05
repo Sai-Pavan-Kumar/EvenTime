@@ -783,7 +783,7 @@ export function HomePageClient(props: HomePageClientProps) {
                               ? null
                                 : (event as any).colleges?.name
                             }
-                            interestedCount={(event as any).interested_events?.[0]?.count ?? (event as any).interested_count ?? 0}
+                            interestedCount={(event as any).interested_count ?? 0}
                             isGuest={!user && !profile}
                             createdAt={event.created_at || (event as any).created_at}
                           />

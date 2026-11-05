@@ -133,14 +133,14 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     // 1a2. Lifetime saves — never filtered by date
     supabase
       .from("events")
-      .select("saved_events(count)")
+      .select("saved_count")
       .eq("creator_id", curator.id)
       .eq("status", "approved"),
 
     // 1b. Fetch Curator's Approved Events from the last 6 months only (for display)
     supabase
       .from("events")
-      .select("id, slug, title, category, date_string, end_date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
+      .select("id, slug, title, category, date_string, end_date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_count")
       .eq("creator_id", curator.id)
       .eq("status", "approved")
       .gte("date_string", sixMonthsAgoStr)
@@ -154,7 +154,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     supabase.from("leaderboard_view").select("et_score").eq("user_id", curator.id).maybeSingle()
   ]);
   // Dynamic ga events anni thirigi saves count ni sum chesthundi
-  const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
+  const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_count || 0), 0) || 0;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const etScore = leaderboardRow?.et_score ?? curator.et_score ?? 100;
   const completionPercentage = calculateCompletion(curator);

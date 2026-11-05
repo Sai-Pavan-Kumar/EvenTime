@@ -156,8 +156,8 @@ export function ProfileHeader({
             </div>
           )}
           <Stat value={myEvents.length} label="Events posted" />
-          <Stat value={sumCounts(myEvents, (event) => event.interested_events?.[0]?.count)} label="People interested" />
-          <Stat value={sumCounts(myEvents, (event) => event.registered_events?.[0]?.count)} label="People registered" />
+          <Stat value={sumCounts(myEvents, (event) => event.interested_count)} label="People interested" />
+          <Stat value={sumCounts(myEvents, (event) => event.registered_count)} label="People registered" />
         </div>
 
         <TierProgress eventCount={myEvents.length} />

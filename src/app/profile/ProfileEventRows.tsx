@@ -54,9 +54,9 @@ export function PostedEventRow({ event, deleteAction }: { event: ProfileEvent; d
           </div>
           <p className="mt-1 text-[13px] text-slate-500">{formatEventDate(event.date_string)}</p>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-500">
-            <Metric icon={Check} value={event.registered_events?.[0]?.count || 0} label="registered" />
-            <Metric icon={Users} value={event.interested_events?.[0]?.count || 0} label="interested" />
-            <Metric icon={Bookmark} value={event.saved_events?.[0]?.count || 0} label="saved" />
+            <Metric icon={Check} value={event.registered_count || 0} label="registered" />
+            <Metric icon={Users} value={event.interested_count || 0} label="interested" />
+            <Metric icon={Bookmark} value={event.saved_count || 0} label="saved" />
           </div>
         </div>
       </div>
