@@ -27,7 +27,7 @@ export function Footer() {
   const isSearchPage = pathname === "/search";
 
   return (
-    <footer className={`bg-[#0D0B1A] w-full mt-auto py-12 px-6 ${isSearchPage ? "hidden sm:block" : ""}`}>
+    <footer className={`bg-[#0D0B1A] w-full mt-auto pt-12 pb-28 sm:pb-12 px-6 ${isSearchPage ? "hidden sm:block" : ""}`}>
       <div className="w-full max-w-6xl mx-auto flex flex-col items-center gap-8">
 
         <div className="w-full flex flex-col items-center text-center gap-8 lg:flex-row lg:items-start lg:justify-between lg:text-left">

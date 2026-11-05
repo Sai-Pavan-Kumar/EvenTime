@@ -86,6 +86,10 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
+  if (type !== "bug" && type !== "feature") {
+    return { error: "Invalid feedback type." };
+  }
+
   const trimmedMessage = message?.trim() || "";
   if (!trimmedMessage) {
     return { error: "Message cannot be empty." };

@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { CitiesClient } from "./CitiesClient";
+import { PUBLIC_AUDIENCE_FILTER, localDateString, upcomingFilter } from "./cityEvents";
 
 export const metadata: Metadata = {
   title: "Explore Events by City | EvenTime",
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = false;
+// "Upcoming" changes with the date, so counts must expire even when no event is edited.
+export const revalidate = 600;
 
 const getCachedCityCounts = unstable_cache(
   async () => {
@@ -22,14 +24,16 @@ const getCachedCityCounts = unstable_cache(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const today = localDateString();
 
-    const { data } = await supabase
+    // Throwing keeps a failed read out of the cache
+    const { data, error } = await supabase
       .from("events")
-      .select("city, date_string")
+      .select("city")
       .eq("status", "approved")
-      .gte("date_string", todayStr);
+      .or(upcomingFilter(today))
+      .or(PUBLIC_AUDIENCE_FILTER);
+    if (error) throw error;
 
     const cityCounts: Record<string, number> = {};
     if (data) {
@@ -44,11 +48,14 @@ const getCachedCityCounts = unstable_cache(
     return cityCounts;
   },
   ["cities-page-counts"],
-  { revalidate: false, tags: ["events"] }
+  { revalidate: 600, tags: ["events"] }
 );
 
 export default async function CitiesPage() {
-  const cityCounts = await getCachedCityCounts();
+  const cityCounts = await getCachedCityCounts().catch((err) => {
+    console.warn("[CitiesPage] Could not load city counts:", err);
+    return null;
+  });
   return <CitiesClient initialCityCounts={cityCounts} />;
 }
 

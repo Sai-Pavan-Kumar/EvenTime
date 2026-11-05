@@ -15,6 +15,7 @@ interface DelayedPromptProps {
 
 const GUEST_PROMPT_KEY = "EvevnTime_guest_prompt_seen";
 const USER_PROMPT_KEY = "EvenTime_user_prompt_seen";
+const PROMPT_DELAY_MS = 10000;
 
 export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,8 +35,29 @@ export function DelayedPrompt({ user, profile, onOpen }: DelayedPromptProps) {
       if (localStorage.getItem(storageKey)) return;
     } catch (e) {}
 
-    const timer = setTimeout(() => setIsVisible(true), 10000);
-    return () => clearTimeout(timer);
+    let timer: ReturnType<typeof setTimeout>;
+    let heroWatcher: IntersectionObserver | undefined;
+
+    // A sign-in ask over the landing hero comes before the visitor has seen a single event,
+    // so the wait only counts once the hero is off screen.
+    const startCountdownOutsideHero = () => {
+      const hero = document.querySelector(".stage-track");
+      if (user || !hero) {
+        setIsVisible(true);
+        return;
+      }
+      heroWatcher = new IntersectionObserver(([entry]) => {
+        clearTimeout(timer);
+        if (!entry.isIntersecting) timer = setTimeout(() => setIsVisible(true), PROMPT_DELAY_MS);
+      });
+      heroWatcher.observe(hero);
+    };
+
+    timer = setTimeout(startCountdownOutsideHero, PROMPT_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+      heroWatcher?.disconnect();
+    };
   }, [profile, user]);
 
   if (!mounted || !isVisible || isClosed || profile?.is_onboarded) return null;

@@ -14,7 +14,8 @@ export async function updateProfileSettings(formData: FormData) {
 
   // Fetch profile to check if user is admin and current score
   const { data: profile } = await supabase.from('profiles').select('user_type, role, et_score, is_onboarded').eq('id', user.id).single();
-  const isAdmin = profile?.user_type === 'admin' || profile?.role === 'admin';
+  // Only role: users can edit their own user_type, and database triggers protect role alone.
+  const isAdmin = profile?.role === 'admin';
 
   const fullName = formData.get("fullName") as string;
   const username = (formData.get("username") as string).toLowerCase().trim();
@@ -148,13 +149,13 @@ export async function deleteAccountAction() {
     const { error } = await adminClient.auth.admin.deleteUser(user.id);
     if (error) {
       console.error("Admin deleteUser error:", error);
-      return { error: error.message || "Failed to delete account." };
+      return { error: "Failed to delete account." };
     }
 
     revalidatePath("/", "layout");
     return { success: true };
   } catch (err: any) {
     console.error("deleteAccountAction unexpected error:", err);
-    return { error: err?.message || "Failed to delete account." };
+    return { error: "Failed to delete account." };
   }
 }

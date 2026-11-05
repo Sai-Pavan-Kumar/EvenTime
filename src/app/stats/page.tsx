@@ -33,7 +33,7 @@ export default function PlatformStatsPage() {
           .eq("status", "approved"),
         supabase
           .from("profiles")
-          .select("*", { count: "exact", head: true }),
+          .select("id", { count: "exact", head: true }),
       ]);
 
       setStats({

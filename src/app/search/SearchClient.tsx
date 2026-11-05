@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useDeferredValue, useRef } from "react";
 import Image from "next/image";
-import { useSearchParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import {
   Search,
   X,
@@ -22,7 +23,7 @@ import type { EventRow, ProfileRow } from "@/types";
 
 export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<EventRow>[] } = {}) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const searchParams = useNonBlockingSearchParams();
   const [supabase] = useState(() => createClient());
 
   // URL query params initialization

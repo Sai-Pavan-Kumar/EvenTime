@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState, useCallback, useMemo } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -71,19 +71,23 @@ function hasAuthCookie(): boolean {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [supabase] = useState(() => createClient());
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<AuthProfile | null>(() => getCachedProfile());
-  const [isLoading, setIsLoading] = useState(() => {
-    // If no auth cookie at all, we know with 100% certainty this is a guest visitor.
-    // Zero network requests needed.
-    if (!hasAuthCookie()) return false;
-    return !getCachedProfile();
-  });
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Static pages are served as the guest version. Reading the cache in the first render made returning
+  // users' browsers disagree with that HTML, and React rebuilt the whole page on every repeat visit.
+  // A layout effect applies it right after hydration, before the browser paints.
+  useLayoutEffect(() => {
+    const cached = getCachedProfile();
+    if (cached) setProfile(cached);
+    else if (hasAuthCookie()) setIsLoading(true);
+  }, []);
 
   const fetchProfile = useCallback(async (userId: string): Promise<AuthProfile | null> => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, username, full_name, avatar_url, role, user_type, college, college_id, branch, graduation_year, goals, preferred_cities, is_onboarded, et_score")
+        .select("id, username, full_name, avatar_url, role, user_type, college, college_id, branch, graduation_year, goals, preferred_cities, is_onboarded, et_score")
         .eq("id", userId)
         .maybeSingle();
 
@@ -157,13 +161,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Subscribe to auth state changes for real-time login/logout
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
 
       const currentUser = session?.user ?? null;
       if (currentUser) {
         setUser(currentUser);
-        await fetchProfile(currentUser.id);
+        // Supabase holds its auth lock while this callback runs, and a query needs that same lock.
+        // Awaiting one here froze every Supabase call in the tab, so it runs after the lock is released.
+        // The initial session is already covered by getUser() above.
+        if (event !== "INITIAL_SESSION" && event !== "TOKEN_REFRESHED") {
+          setTimeout(() => {
+            if (mounted) void fetchProfile(currentUser.id);
+          }, 0);
+        }
       } else if (event === "SIGNED_OUT") {
         setUser(null);
         setProfile(null);

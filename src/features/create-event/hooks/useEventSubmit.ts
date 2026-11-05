@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { submitEventAction, type SubmitEventActionPayload } from "../actions";
+import { submitEventAction } from "../actions";
+import type { SubmitEventActionPayload } from "../utils/eventSubmission";
 
 type SubmitPayload = SubmitEventActionPayload & {
   imageFile?: File | null;
@@ -94,12 +95,6 @@ export function useEventSubmit() {
         router.push("/profile");
         return { success: true };
       }
-
-      toast.success(
-        res.status === "approved"
-          ? "Event posted! It's live now."
-          : "Event submitted! It'll go live once approved."
-      );
 
       return {
         success: true,

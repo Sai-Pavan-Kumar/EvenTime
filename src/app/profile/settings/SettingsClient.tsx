@@ -180,7 +180,6 @@ export default function SettingsClient({
   // NEW: What's missing checklist, mirrors the calculateCompletion formula used across the app
   const isStudentNow = userType === "Student";
   const missingItems: string[] = [];
-  if (!profile?.avatar_url) missingItems.push("Profile photo");
   if (!username) missingItems.push("Username");
   if (selectedCities.length === 0) missingItems.push("Preferred cities");
   if (selectedGoals.length === 0) missingItems.push("Interest categories");

@@ -1,6 +1,6 @@
 "use client"
 import { useRef, useEffect, useState, useMemo, useCallback, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
@@ -13,8 +13,7 @@ import { parseEventDateString } from "@/lib/utils/date";
 import { differenceInCalendarDays } from "date-fns";
 import type { User } from "@supabase/supabase-js";
 import { eventSync } from "@/lib/events/eventSync";
-import { HeroSection } from "./HeroSection";
-import { LandingIntro } from "./LandingIntro";
+import { GuestLanding } from "./landing/GuestLanding";
 import { EventGrid } from "./EventGrid";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
@@ -95,7 +94,7 @@ export function HomePageClient(props: HomePageClientProps) {
   } = props;
 
   // NEW: Read all filters instantly from the URL in the browser (Jet Speed)
-  const searchParams = useSearchParams();
+  const searchParams = useNonBlockingSearchParams();
   const branch = searchParams.get('branch') || undefined;
   const q = searchParams.get('q') || undefined;
   const category = searchParams.get('category') || undefined;
@@ -106,10 +105,12 @@ export function HomePageClient(props: HomePageClientProps) {
   // Read directly from centralized AuthContext (0 network requests for guests)
   const { user, profile: authProfile, isLoading: isAuthLoading, refreshProfile } = useAuth();
   const [onboardedProfile, setOnboardedProfile] = useState<(Partial<ProfileRow> & { city?: string }) | null>(null);
-  const profile = (onboardedProfile || authProfile || getLocalProfile()) as (Partial<ProfileRow> & { city?: string }) | null;
+  const profile = (onboardedProfile || authProfile) as (Partial<ProfileRow> & { city?: string }) | null;
 
   // Local copies of events
   const [liveAllEvents, setLiveAllEvents] = useState(allEvents);
+  // The first page carries upcoming events only; filters and past dates need the rest.
+  const [hasFullEventList, setHasFullEventList] = useState(false);
   const [liveFeaturedEvents, setLiveFeaturedEvents] = useState(featuredEvents);
   const [liveCollegeEvents, setLiveCollegeEvents] = useState<Partial<EventRow>[]>(() => getLocalCampusEvents());
 
@@ -208,7 +209,10 @@ export function HomePageClient(props: HomePageClientProps) {
   }, []);
 
   // Sync with server if the static buffet updates via ISR
-  useEffect(() => { setLiveAllEvents(allEvents); }, [allEvents]);
+  useEffect(() => {
+    setLiveAllEvents(allEvents);
+    setHasFullEventList(false);
+  }, [allEvents]);
   useEffect(() => { setLiveFeaturedEvents(featuredEvents); }, [featuredEvents]);
 
   // Reactive client-side deletion sync
@@ -232,9 +236,8 @@ export function HomePageClient(props: HomePageClientProps) {
       if (isFetching || now - lastSync < 4000) return;
       isFetching = true;
       try {
-        const res = await fetch(`/api/buffet?_t=${now}`, {
-          headers: { 'Cache-Control': 'no-cache, no-store' },
-        });
+        // No cache-busting param: a unique URL per call would bypass the CDN cache on /api/buffet.
+        const res = await fetch('/api/buffet');
         if (res.ok) {
           const data = await res.json();
           if (data?.allEvents && Array.isArray(data.allEvents) && data.allEvents.length > 0) {
@@ -270,11 +273,12 @@ export function HomePageClient(props: HomePageClientProps) {
     if (profile?.goals && profile.goals.length > 0) {
       try {
         const saved = sessionStorage.getItem('et_active_feed_pill');
+        // Not saved: only a tap counts as the user's own choice.
         if (!saved) {
-          handleSelectFeedPill('for_you');
+          setActiveFeedPill('for_you');
         }
       } catch {
-        handleSelectFeedPill('for_you');
+        setActiveFeedPill('for_you');
       }
     }
   }, [profile?.goals]);
@@ -395,6 +399,23 @@ export function HomePageClient(props: HomePageClientProps) {
   const hasGoals = (profile?.goals?.length ?? 0) > 0;
   const showFeedPills = Boolean((user || profile) && profile && noFiltersActive);
 
+  useEffect(() => {
+    if (noFiltersActive || hasFullEventList) return;
+    let cancelled = false;
+    fetch('/api/buffet')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && Array.isArray(data?.allEvents) && data.allEvents.length > 0) setLiveAllEvents(data.allEvents);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHasFullEventList(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [noFiltersActive, hasFullEventList]);
+
   let filteredAllEvents = liveAllEvents || [];
 
   if (!noFiltersActive) {
@@ -427,6 +448,14 @@ export function HomePageClient(props: HomePageClientProps) {
     return (liveAllEvents || []).filter(isUpcomingEvent);
   }, [liveAllEvents]);
 
+  // Logged-out visitors on the bare home page get the poster-style landing instead of the feed.
+  const showGuestLanding = view !== "cities" && !isAuthLoading && !user && !profile && !q && !date && !category && !location;
+  const guestLandingEvents = useMemo(
+    () => [...allUpcomingEvents].sort((a, b) =>
+      (parseEventDateString(a.date_string || "")?.getTime() ?? Infinity) - (parseEventDateString(b.date_string || "")?.getTime() ?? Infinity)),
+    [allUpcomingEvents]
+  );
+
   const gridSource = !noFiltersActive
     ? filteredAllEvents
     : (user || profile)
@@ -436,6 +465,16 @@ export function HomePageClient(props: HomePageClientProps) {
   const upcomingForYouCount = livePersonalizedEvents.filter(isUpcomingEvent).length;
   const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcomingEvent).length;
   const upcomingCollegeCount = liveCollegeEvents.filter(isUpcomingEvent).length;
+  const eventsInOtherCities = nonCampusEvents.filter((e) => isUpcomingEvent(e) && !cityMatch(e)).length;
+
+  // An empty For You must not be the first thing someone sees. A tab they picked themselves stays picked.
+  useEffect(() => {
+    if (activeFeedPill !== 'for_you' || !profile || upcomingForYouCount > 0 || upcomingAroundYouCount === 0) return;
+    try {
+      if (sessionStorage.getItem('et_active_feed_pill')) return;
+    } catch {}
+    setActiveFeedPill('around_you');
+  }, [activeFeedPill, profile, upcomingForYouCount, upcomingAroundYouCount]);
 
   // Unread indicators: check if any event in the respective feed is new (< 24h & not seen)
   const [seenTick, setSeenTick] = useState(0);
@@ -556,6 +595,16 @@ export function HomePageClient(props: HomePageClientProps) {
                 )}
               </div>
             )}
+
+            {/* Filtering by city is invisible otherwise, and events elsewhere look like they don't exist */}
+            {showFeedPills && activeFeedPill !== 'campus' && eventsInOtherCities > 0 && (
+              <p className="flex flex-wrap items-center gap-x-1.5 text-sm font-medium text-slate-600">
+                {eventsInOtherCities} more {eventsInOtherCities === 1 ? 'event' : 'events'} in other cities
+                <Link href="/cities" className="inline-flex min-h-11 items-center font-bold text-brand-primary underline underline-offset-4">
+                  See all cities
+                </Link>
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -574,6 +623,9 @@ export function HomePageClient(props: HomePageClientProps) {
           }}
         />
       )}
+      {showGuestLanding ? (
+        <GuestLanding events={guestLandingEvents} />
+      ) : (
       <div className="flex flex-col">
         {/* Hide Hero and Stats when in Explore by City (Map) view */}
         {view !== "cities" && (
@@ -584,21 +636,11 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             )}
 
-            {!isAuthLoading && !user && !profile && !q && !date && !category && !location && (
-              <div className="relative">
-                <HeroSection />
-              </div>
-            )}
 
-          {!isAuthLoading && !user && !profile && !q && !date && !category && !location && (
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-              <LandingIntro isLeaderboardEnabled={false} isSmartAlertsEnabled={false} />
-            </div>
-          )}
           </>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12 w-full">
+        <div id="events" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12 w-full scroll-mt-20">
           
           {view === "cities" ? (
             <div className="space-y-6">
@@ -627,7 +669,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         ? 'Around You'
                         : 'Your Campus'}
                     </h2>
-                    <span className="text-xs sm:text-sm font-bold text-slate-400">
+                    <span className="text-xs sm:text-sm font-bold text-slate-600">
                       {date
                         ? `${filteredAllEvents.length} ${filteredAllEvents.length === 1 ? 'event' : 'events'}`
                         : (!user && !profile)
@@ -824,7 +866,7 @@ export function HomePageClient(props: HomePageClientProps) {
                                 <button
                                   type="button"
                                   onClick={() => setFeedLoadStage(1)}
-                                  className="px-8 py-3.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl shadow-sm hover:shadow-md hover:border-purple-200 hover:text-brand-primary transition-all flex items-center gap-2 group cursor-pointer"
+                                  className="px-8 py-3.5 bg-brand-primary/10 text-brand-primary font-bold rounded-full hover:bg-brand-primary/15 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
                                 >
                                   <span>Show More</span>
                                   <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-brand-primary group-hover:translate-x-1 transition-all" />
@@ -832,7 +874,7 @@ export function HomePageClient(props: HomePageClientProps) {
                               </div>
                             ) : (
                               /* After clicking Show More (or if total events <= 4), show Sign In CTA card */
-                              <div className="mt-8 p-8 rounded-3xl bg-white border border-slate-200/80 shadow-sm text-center flex flex-col items-center justify-center gap-4">
+                              <div className="mt-8 p-8 rounded-3xl bg-slate-100 text-center flex flex-col items-center justify-center gap-4">
                                 <div className="max-w-md">
                                   <h3 className="text-xl font-bold font-heading text-slate-900">
                                     Want to explore all events across India?
@@ -843,7 +885,7 @@ export function HomePageClient(props: HomePageClientProps) {
                                 </div>
                                 <Link
                                   href="/login"
-                                  className="px-6 py-3 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-full shadow-md shadow-brand-primary/20 transition-all active:scale-95 flex items-center gap-2"
+                                  className="px-6 py-3 bg-brand-primary hover:bg-brand-hover text-white font-bold text-sm rounded-full transition-all active:scale-95 flex items-center gap-2"
                                 >
                                   <span>Sign In to view all</span>
                                   <ArrowRight className="w-4 h-4" />
@@ -870,6 +912,9 @@ export function HomePageClient(props: HomePageClientProps) {
                     const todayObj = new Date();
                     const todayStr = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
                     const isPastDate = date ? date < todayStr : false;
+                    if (isPastDate && !hasFullEventList) {
+                      return <p role="status" className="py-16 text-center text-sm font-medium text-slate-600">Loading past events...</p>;
+                    }
                     
                     const isCampusTab = activeFeedPill === 'campus';
                     const isForYouTab = activeFeedPill === 'for_you';
@@ -1019,6 +1064,7 @@ export function HomePageClient(props: HomePageClientProps) {
           )}
         </div>
       </div>
+      )}
     </main>
   );
 }

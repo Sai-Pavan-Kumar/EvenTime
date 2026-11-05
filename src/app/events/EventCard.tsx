@@ -5,6 +5,7 @@
   import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
   import { toast } from "sonner";
   import { useState, useEffect } from "react";
+  import { createPortal } from "react-dom";
   import { createClient } from "@/lib/supabase/client";
   import { format, differenceInCalendarDays } from "date-fns";
   import { motion, AnimatePresence } from "framer-motion";
@@ -374,8 +375,8 @@
                 {/* Date top-left  */}
                 <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
                   <span
-                    className="font-semibold uppercase tracking-wider"
-                    style={{ color: config.dateColor, fontSize: 'clamp(11px, 2.5vw, 11px)', fontFamily: "var(--font-heading)" }}
+                    className="rounded-md bg-white/90 px-2 py-0.5 text-[13px] font-bold uppercase tracking-wide text-slate-900"
+                    style={{ fontFamily: "var(--font-heading)" }}
                   >
                     {shortDateOverlay}
                   </span>
@@ -427,28 +428,25 @@
               </div>
 
               {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left relative overflow-hidden">
+              <div className="mt-3 pr-2 flex flex-col gap-0.5 flex-1 text-left relative overflow-hidden">
                 <Link href={eventHref} className="block transition-opacity hover:opacity-80">
                   <h3 
                     className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
-                    style={{ 
-                      fontFamily: "var(--font-heading)",
-                      textTransform: 'capitalize' 
-                    }}
+                    style={{ fontFamily: "var(--font-heading)" }}
                   >
-                    {title.toLowerCase()}
+                    {title}
                   </h3>
                 </Link>
 
                 <div 
-                  className="font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  className="min-h-6 font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
                   {!hideOrganizer && <>Curated by {organizerUsername ? (
                     <Link
                       href={`/${organizerUsername}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="hover:text-brand-primary hover:underline transition-colors"
+                      className="inline-block min-w-0 truncate leading-6 hover:text-brand-primary hover:underline transition-colors"
                     >
                       {organizerName}
                     </Link>
@@ -469,7 +467,7 @@
                 </div>
 
                 {city && (
-                <div className="flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
+                <div className="min-h-6 flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 {collegeName ? (
                <span className="truncate">{collegeName}, {city}</span>
@@ -477,7 +475,7 @@
              <Link
             href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
            onClick={(e) => e.stopPropagation()}
-           className="truncate hover:text-brand-primary hover:underline transition-colors"
+           className="block truncate leading-6 hover:text-brand-primary hover:underline transition-colors"
       >
         {city}
       </Link>
@@ -488,7 +486,7 @@
                 <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
                   <span className="flex items-center gap-1 shrink-0">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : (eventDate ? format(eventDate, "h:mm a") : "TBA")}
+                    {date.includes(" · ") ? date.split(" · ")[1] : "Time TBA"}
                   </span>
                   {dynamicInterestCount > 0 ? (
                     <>
@@ -503,7 +501,7 @@
               </div>
 
               {/* Save + Share — bottom-right of the main white card container */}
-              <div className="absolute bottom-3 right-3 flex gap-1 items-center z-20">
+              <div className="absolute bottom-1 right-1 flex items-center z-20">
                 {ownerNotice && (
                   <div className="bg-[#0F172A] text-[#F8FAFC] text-[10px] font-bold px-2 py-1 rounded-md shadow-md whitespace-nowrap pointer-events-none animate-in fade-in duration-150">
                     Your Event
@@ -521,7 +519,8 @@
                       ? "Remove from Saved"
                       : "Save Event"
                   }
-                  className={`w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center shrink-0 ${
+                  aria-label={savedState ? "Remove from saved" : "Save event"}
+                  className={`w-11 h-11 rounded-full active:scale-95 transition-colors flex items-center justify-center shrink-0 ${
                     isPast && !savedState
                       ? "cursor-not-allowed opacity-50"
                       : "disabled:opacity-70 hover:bg-slate-100"
@@ -534,7 +533,8 @@
                 </button>
                 <button 
                   onClick={(e) => { e.preventDefault(); handleShare(e); }}
-                  className="w-8 h-8 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
+                  aria-label="Share event"
+                  className="w-11 h-11 rounded-full active:scale-95 transition-colors flex items-center justify-center hover:bg-slate-100 shrink-0"
                 >
                   {copied
                     ? <Check className="w-4 h-4 text-emerald-500" />
@@ -546,8 +546,8 @@
           )}
         </AnimatePresence>
 
-          {/* NEW: Auth Modal Overlay */}
-          {showAuthModal && (
+          {/* Portalled: a card inside a transformed parent, like the hero row, would trap a fixed overlay. */}
+          {showAuthModal && createPortal(
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowAuthModal(false)} />
               <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-[0_24px_64px_rgba(0,0,0,0.12),0_0_0_1px_rgba(0,0,0,0.06)] flex flex-col p-8 text-center z-10">
@@ -568,7 +568,8 @@
                   </Link>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
       </>
     );

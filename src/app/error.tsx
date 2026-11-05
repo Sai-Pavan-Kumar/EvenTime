@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { RefreshCcw, Home } from "lucide-react";
-import * as Sentry from "@sentry/nextjs"; 
 
 export default function GlobalError({
   error,
@@ -15,7 +14,8 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("Global App Error:", error);
-    Sentry.captureException(error);
+    // Dynamic import keeps Sentry out of every page's bundle (see instrumentation-client.ts).
+    import(/* webpackExports: ["captureException"] */ "@sentry/nextjs").then((Sentry) => Sentry.captureException(error));
   }, [error]);
 
   return (

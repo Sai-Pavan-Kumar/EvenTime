@@ -3,9 +3,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+const MAX_REPORT_REASON_LENGTH = 500;
+
 export async function submitReportAction(formData: FormData) {
   const eventId = formData.get("eventId") as string;
-  const reason = formData.get("reason") as string;
+  const reason = ((formData.get("reason") as string) || "").trim();
+
+  // Admins read these, and this request can be sent by hand with any size of text.
+  if (!eventId || !reason || reason.length > MAX_REPORT_REASON_LENGTH) {
+    return { error: "Please give a reason of up to 500 characters." };
+  }
   
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

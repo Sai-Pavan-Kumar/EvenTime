@@ -7,8 +7,13 @@ import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
 import { getCityConfig } from "@/lib/city-config";
 import { CITIES } from "@/lib/constants/cities";
 import { MapPin } from "lucide-react";
+import { toJsonLd } from "@/lib/utils";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { ONLINE_CITY, PUBLIC_AUDIENCE_FILTER, cityLabel, localDateString, resolveCity, shortDate, upcomingFilter } from "../cityEvents";
+import { CityHero } from "./CityHero";
+
+const SOON_DAYS = 7;
 
 export async function generateMetadata({
   params,
@@ -16,16 +21,17 @@ export async function generateMetadata({
   params: Promise<{ city: string }>;
 }): Promise<Metadata> {
   const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const normalized = decodedCity.trim().toLowerCase();
-  const matchedCity = CITIES.find((c) => c.toLowerCase() === normalized);
-  if (!matchedCity && !getCityConfig(city)) {
+  const resolved = resolveCity(city);
+  if (!resolved) {
     return { title: "City Not Found | EvenTime" };
   }
+  const isOnline = resolved === ONLINE_CITY;
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
-  const title = `Events in ${matchedCity || decodedCity} | EvenTime`;
-  const description = `Discover the best events, hackathons, and meetups in ${matchedCity || decodedCity} on EvenTime.`;
+  const title = isOnline ? "Online Events | EvenTime" : `Events in ${resolved} | EvenTime`;
+  const description = isOnline
+    ? "Discover the best online events, hackathons, and meetups on EvenTime."
+    : `Discover the best events, hackathons, and meetups in ${resolved} on EvenTime.`;
 
   return {
     title,
@@ -51,15 +57,14 @@ export default async function CityPage({
   params: Promise<{ city: string }>;
 }) {
   const { city } = await params;
-  const decodedCity = decodeURIComponent(city).replace(/-/g, ' ');
-  const normalized = decodedCity.trim().toLowerCase();
-  const matchedCity = CITIES.find((c) => c.toLowerCase() === normalized);
-  if (!matchedCity && !getCityConfig(city)) {
+  const resolved = resolveCity(city);
+  if (!resolved) {
     notFound();
   }
-
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const isOnline = resolved === ONLINE_CITY;
+  const cityName = cityLabel(resolved);
+  const heading = isOnline ? "Online Events" : cityName;
+  const today = localDateString();
 
   const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
 
@@ -71,18 +76,20 @@ export default async function CityPage({
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         { auth: { persistSession: false } }
       );
-      const { data } = await supabaseAnon
+      // Throwing keeps a failed read out of the cache
+      const { data, error } = await supabaseAnon
         .from("events")
         .select(EVENT_FIELDS)
         .eq("status", "approved")
-        .ilike("city", matchedCity || decodedCity)
-        .gte("date_string", todayStr)
-        .or(`college_only.is.null,college_only.eq.false,target_audience.cs.{"Everyone"}`)
+        .ilike("city", resolved)
+        .or(upcomingFilter(today))
+        .or(PUBLIC_AUDIENCE_FILTER)
         .order("date_string", { ascending: true })
         .limit(50);
+      if (error) throw error;
       return data || [];
     },
-    [`city_events_${(matchedCity || decodedCity).toLowerCase()}`],
+    [`city_events_${resolved.toLowerCase()}`],
     { tags: ["events"], revalidate: 600 } // 10 minutes
   );
 
@@ -104,7 +111,12 @@ export default async function CityPage({
     }
   }
 
-  const publicEvents = await getCachedPublicCityEvents();
+  let loadFailed = false;
+  const publicEvents: any[] = await getCachedPublicCityEvents().catch((err) => {
+    console.warn("[CityPage] Could not load events:", err);
+    loadFailed = true;
+    return [];
+  });
 
   // 3. UNCACHED but tiny: only this user's own extra visible events
   let personalEvents: any[] = [];
@@ -117,8 +129,8 @@ export default async function CityPage({
       .from("events")
       .select(EVENT_FIELDS)
       .eq("status", "approved")
-      .ilike("city", matchedCity || decodedCity)
-      .gte("date_string", todayStr)
+      .ilike("city", resolved)
+      .or(upcomingFilter(today))
       .or(extraFilter)
       .order("date_string", { ascending: true })
       .limit(50);
@@ -128,9 +140,31 @@ export default async function CityPage({
   // 4. Merge, de-duplicate by id
   const eventMap = new Map();
   [...publicEvents, ...personalEvents].forEach((e: any) => eventMap.set(e.id, e));
-  const events = Array.from(eventMap.values());
+  const events = Array.from(eventMap.values()).sort((a, b) => a.date_string.localeCompare(b.date_string));
 
-  const cityConfig = getCityConfig(decodedCity);
+  // Running events started before today, so they naturally land in "soon"
+  const soonLimit = new Date();
+  soonLimit.setDate(soonLimit.getDate() + SOON_DAYS);
+  const soonDate = localDateString(soonLimit);
+  const soonEvents = events.filter((e) => e.date_string <= soonDate);
+  const laterEvents = events.filter((e) => e.date_string > soonDate);
+  const eventGroups = [
+    { title: `Next ${SOON_DAYS} days`, events: soonEvents },
+    { title: "Later", events: laterEvents },
+  ].filter((group) => group.events.length > 0);
+
+  const nextDate = events[0]?.date_string;
+  const heroStats = nextDate
+    ? {
+        upcoming: events.length,
+        next: nextDate < today ? "Now" : nextDate === today ? "Today" : shortDate(nextDate),
+        free: events.filter((e) => e.is_free).length,
+      }
+    : null;
+  const hostHref = `/events/new?city=${encodeURIComponent(resolved)}`;
+  const hostLabel = isOnline ? "Host an online event" : `Host An Event in ${cityName}`;
+
+  const cityConfig = getCityConfig(resolved);
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in";
   const jsonLd = {
@@ -143,13 +177,11 @@ export default async function CityPage({
         "@type": "Event",
         name: ev.title,
         startDate: ev.date_string || undefined,
-        eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
+        eventAttendanceMode: isOnline ? "https://schema.org/OnlineEventAttendanceMode" : "https://schema.org/OfflineEventAttendanceMode",
         eventStatus: "https://schema.org/EventScheduled",
-        location: {
-          "@type": "Place",
-          name: ev.location || decodedCity,
-          address: decodedCity,
-        },
+        location: isOnline
+          ? { "@type": "VirtualLocation", url: `${baseUrl}/events/${ev.slug}` }
+          : { "@type": "Place", name: ev.location || cityName, address: cityName },
         image: ev.poster_url ? [ev.poster_url] : undefined,
         organizer: ev.organizer_name ? { "@type": "Organization", name: ev.organizer_name } : undefined,
         isAccessibleForFree: ev.is_free ?? undefined,
@@ -162,35 +194,33 @@ export default async function CityPage({
     <main className="min-h-screen bg-surface-base pb-24">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
       />
       <Navbar />
       
-      {/* City Cover Hero — only shown if a real cover image exists for this city */}
-      {cityConfig.coverImage && (
-        <div className="w-full h-[35vh] md:h-[45vh] relative mt-4 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="w-full h-full rounded-[32px] overflow-hidden relative shadow-sm border border-slate-200/60">
-            <img 
-              src={cityConfig.coverImage} 
-              alt={decodedCity} 
-              className="w-full h-full object-cover object-bottom"
-            />
-          </div>
-        </div>
-      )}
+      <CityHero heading={heading} coverImage={cityConfig.coverImage} hostHref={hostHref} hostLabel={hostLabel} stats={heroStats} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-lg sm:text-2xl font-black text-slate-900 font-heading capitalize truncate">
-            Events happening in {matchedCity || decodedCity}
-          </h2>
-          <span className="text-sm font-bold text-slate-500 bg-slate-200/60 px-3 py-1.5 rounded-xl border border-slate-200 w-fit shrink-0">
-            {events?.length || 0} {events?.length === 1 ? 'Event' : 'Events'}
-          </span>
-        </div>
-
-        {events && events.length > 0 ? (
-          <LoadMoreGrid events={events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+        {loadFailed ? (
+          <div role="alert" className="py-20 flex flex-col items-center text-center bg-white rounded-[32px] border border-slate-200 shadow-sm">
+            <h3 className="text-slate-900 font-bold text-lg font-heading">Could not load events</h3>
+            <p className="text-slate-500 font-medium text-sm mt-2">Check your connection and try again.</p>
+            <a href={`/cities/${city}`} className="mt-6 inline-flex items-center min-h-11 px-6 bg-brand-primary text-white font-bold rounded-xl text-sm active:scale-95 transition-transform">
+              Try again
+            </a>
+          </div>
+        ) : events.length > 0 ? (
+          <div className="space-y-12">
+            {eventGroups.map((group) => (
+              <section key={group.title}>
+                <h2 className="mb-6 flex items-baseline gap-2 text-2xl md:text-3xl font-black text-slate-900 font-heading tracking-tight">
+                  {group.title}
+                  <span className="text-base font-bold text-slate-500">{group.events.length}</span>
+                </h2>
+                <LoadMoreGrid events={group.events} gridClass="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" />
+              </section>
+            ))}
+          </div>
         ) : (
           <div className="py-20 flex flex-col items-center justify-center text-center bg-white rounded-[32px] border border-dashed border-slate-200 shadow-sm">
             <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
@@ -198,13 +228,13 @@ export default async function CityPage({
             </div>
             <h3 className="text-slate-900 font-bold text-lg font-heading">No Upcoming Events</h3>
             <p className="text-slate-500 font-medium text-sm mt-2 max-w-sm">
-              There are no upcoming events scheduled in {matchedCity || decodedCity} right now. Check back soon or host the first one!
+              There are no upcoming {isOnline ? "online events" : `events in ${cityName}`} right now. Check back soon or host the first one!
             </p>
             <Link
-              href={`/events/new?city=${encodeURIComponent(matchedCity || decodedCity)}`}
-              className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-[#5835e5] transition-all text-sm shadow-sm active:scale-95 flex items-center gap-2"
+              href={hostHref}
+              className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-primary/90 transition-all text-sm shadow-sm active:scale-95 flex items-center gap-2"
             >
-              Host An Event in {matchedCity || decodedCity}
+              {hostLabel}
             </Link>
           </div>
         )}

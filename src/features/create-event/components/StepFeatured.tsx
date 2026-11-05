@@ -13,7 +13,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
     <motion.div key="stepFeatured" initial={{ x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 24, opacity: 0 }} className="space-y-8">
       {/* FEATURE TOGGLE - ONLY VISIBLE IF ENABLED GLOBALLY */}
       {isAdminFeatureEnabled && (
-        <div className="flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 p-5 rounded-2xl border border-amber-100 shadow-sm">
+        <div className="flex items-center justify-between bg-slate-50 p-5 rounded-md">
           <div>
             <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">Feature this Event</h4>
             <p className="text-xs text-slate-600 mt-1">Get prominent placement on the homescreen with a custom poster.</p>
@@ -21,7 +21,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
           <button
             type="button"
             onClick={() => updateData({ isFeatured: !data.isFeatured })}
-            className={"relative inline-flex h-6 w-11 items-center rounded-full transition-colors " + (data.isFeatured ? "bg-amber-500" : "bg-slate-300")}
+            className={"relative inline-flex h-6 w-11 items-center rounded-full transition-colors " + (data.isFeatured ? "bg-brand-primary" : "bg-slate-300")}
           >
             <span
               className={"inline-block h-4 w-4 transform rounded-full bg-white transition-transform " + (data.isFeatured ? "translate-x-6" : "translate-x-1")}
@@ -53,14 +53,14 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
               <button
                 type="button"
                 onClick={() => { crop.setIsCropping(false); crop.setRawImage(null); }}
-                className="flex-1 px-4 py-3 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="flex-1 min-h-11 px-4 py-3 rounded-md font-bold bg-slate-100 hover:bg-slate-200 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={crop.handleCropComplete}
-                className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-brand-primary flex justify-center items-center gap-2 hover:bg-brand-hover transition-colors"
+                className="flex-1 min-h-11 px-4 py-3 rounded-md font-bold text-white bg-brand-primary flex justify-center items-center gap-2 hover:bg-brand-hover transition-colors"
               >
                 <Crop className="w-4 h-4"/> Save
               </button>
@@ -77,7 +77,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
             <div className="w-full aspect-square border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center bg-white hover:border-[#6C47FF] hover:bg-brand-primary/5 transition-colors">
               <UploadCloud className="w-10 h-10 mb-3 text-slate-300 group-hover:text-brand-primary transition-colors" />
               <span className="text-sm font-bold text-slate-600">Upload Poster (1:1)</span>
-              <span className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</span>
+              <span className="text-xs text-slate-400 mt-1">PNG, JPG up to 10MB</span>
             </div>
           </div>
         ) : (
@@ -115,7 +115,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
             maxLength={80}
             onChange={(e) => updateData({ organizer: e.target.value })}
             placeholder="e.g. ACM Chapter, GDG, Student Club"
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
+            className="w-full bg-white border border-slate-200 rounded-md min-h-12 px-4 py-3 text-base sm:text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
           />
         </div>
 
@@ -128,7 +128,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
             maxLength={200}
             onChange={(e) => updateData({ website: e.target.value })}
             placeholder="https://myfest.com"
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
+            className="w-full bg-white border border-slate-200 rounded-md min-h-12 px-4 py-3 text-base sm:text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
           />
         </div>
 
@@ -136,7 +136,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Trophy className="w-3.5 h-3.5 text-amber-500" />
+              <Trophy className="w-3.5 h-3.5 text-slate-400" />
               Prizes / Cash Pool (Optional)
             </label>
             <span className={`text-xs font-mono ${(data.prizes || "").length >= 120 ? "text-red-500 font-bold" : "text-slate-400"}`}>
@@ -149,7 +149,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
             maxLength={120}
             onChange={(e) => updateData({ prizes: e.target.value })}
             placeholder="e.g. ₹50,000 Cash Pool, Goodies, Swag"
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
+            className="w-full bg-white border border-slate-200 rounded-md min-h-12 px-4 py-3 text-base sm:text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
           />
         </div>
 
@@ -163,7 +163,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
             type="date"
             value={data.registrationDeadline ? toLocalDateString(data.registrationDeadline) : ""}
             onChange={(e) => updateData({ registrationDeadline: e.target.value ? new Date(e.target.value) : undefined })}
-            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
+            className="w-full bg-white border border-slate-200 rounded-md min-h-12 px-4 py-2.5 text-base sm:text-sm text-slate-800 font-medium outline-none focus:border-brand-primary"
           />
         </div>
 
@@ -179,7 +179,7 @@ export function StepFeatured({ data, updateData, crop, onBack, onSubmit, isSubmi
                 key={opt}
                 type="button"
                 onClick={() => updateData({ teamSize: opt })}
-                className={"px-3.5 py-2 rounded-xl text-xs font-bold border transition-all " +
+                className={"px-3.5 min-h-11 rounded-md text-sm font-bold border transition-all " +
                   ((data.teamSize || "Solo") === opt
                     ? "bg-[#6C47FF] text-white border-[#6C47FF] shadow-sm shadow-[#6C47FF]/20"
                     : "bg-white text-slate-700 border-slate-200 hover:border-slate-300")}

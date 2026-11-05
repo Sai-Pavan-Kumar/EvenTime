@@ -1,9 +1,14 @@
 "use client";
 
-import { useState, useEffect, SetStateAction } from "react";
+import { useState, useEffect, useRef, SetStateAction } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { FieldStatus, CreateEventFormProps } from "./types";
-import { CATEGORY_TEMPLATES, categoriesList, teamOptions, hours, mins, ampms } from "./constants";
+import { EMPTY_EVENT_FORM } from "./constants";
+import { validateEventForm } from "./utils/validateEventForm";
+function collegeAudience(selected: string[]) {
+  const audience = selected.filter((group) => group !== "Everyone");
+  return audience.length > 0 ? audience : ["College Students"];
+}
 function toLocalDateString(d: Date) { 
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -18,6 +23,7 @@ import { StepFeatured } from "./components/StepFeatured";
 import { CuratorCelebrationModal, CelebrationEventData } from "./components/CuratorCelebrationModal";
 import { toast } from "sonner";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
+import { CITIES } from "@/lib/constants/cities";
 
 interface ExtendedFormProps extends CreateEventFormProps {
   isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
@@ -31,6 +37,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
   const [duplicateError, setDuplicateError] = useState("");
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [formError, setFormError] = useState("");
+  const submissionId = useRef(typeof crypto !== "undefined" ? crypto.randomUUID?.() : undefined);
   const DRAFT_STORAGE_KEY = "@eventime_create_event_draft_v1";
   const { user, profile } = useAuth();
 
@@ -43,8 +51,9 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     isCreatingNewCategory: false,
     selectedAudience: initialData?.target_audience || [],
     description: initialData?.description || "",
-    location: initialData?.location || "",
-    city: initialData?.city || "",
+    // The online placeholders would otherwise show up as a real city and venue if the event moves in person.
+    location: initialData?.is_virtual ? "" : initialData?.location || "",
+    city: initialData?.is_virtual ? "" : initialData?.city || "",
     selectedDate: (initialData?.date_string ? new Date(initialData.date_string) : undefined) as Date | undefined,
     collegeBranch: initialData?.college_branch || "",
     collegeYear: initialData?.college_year || "",
@@ -75,6 +84,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
 
   const updateData = (updates: Partial<typeof eventData>) => {
     setEventData((prev) => ({ ...prev, ...updates }));
+    setFormError("");
   };
 
   const isCollegeCategory = eventData.isCollegeEvent;
@@ -105,6 +115,17 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }
   }, [isEditing, initialData]);
 
+  // "Host an event in Kanpur" links here with the city. A saved draft wins, because that is the user's own work.
+  useEffect(() => {
+    if (isEditing) return;
+    const linkedCity = new URLSearchParams(window.location.search).get("city");
+    if (linkedCity !== "online" && !CITIES.some((c) => c === linkedCity)) return;
+    setEventData((prev) => {
+      if (prev.city || prev.isOnline) return prev;
+      return linkedCity === "online" ? { ...prev, isOnline: true } : { ...prev, city: linkedCity as string };
+    });
+  }, [isEditing]);
+
   // Auto-save draft to localStorage (debounced)
   useEffect(() => {
     if (isEditing) return;
@@ -128,49 +149,14 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     return () => clearTimeout(timer);
   }, [eventData, isEditing]);
 
-  const clearDraft = () => {
+  const clearDraft = (announce = false) => {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
       setHasRestoredDraft(false);
-      setEventData({
-        regLink: "",
-        isTrustedDomain: true,
-        title: "",
-        category: "",
-        isCreatingNewCategory: false,
-        selectedAudience: [],
-        description: "",
-        location: "",
-        city: "",
-        selectedDate: undefined,
-        collegeBranch: "",
-        collegeYear: "",
-        collegeOnly: false,
-        collegeId: null,
-        collegeName: "",
-        isCollegeEvent: false,
-        selectedHour: "",
-        selectedMin: "",
-        selectedAmPm: "AM",
-        hasEndTime: false,
-        hasEndDate: false,
-        endDate: undefined,
-        endHour: "08",
-        endMin: "00",
-        endAmPm: "PM",
-        isOnline: false,
-        isFree: true,
-        price: "",
-        isFeatured: false,
-        organizer: "",
-        prizes: "",
-        teamSize: "",
-        registrationDeadline: undefined,
-        website: "",
-      });
+      setEventData(EMPTY_EVENT_FORM as typeof eventData);
       setDuplicateError("");
       setIsCheckingDuplicate(false);
-      toast.success("Draft cleared");
+      if (announce) toast.success("Draft cleared");
     } catch (e) {
       console.error(e);
     }
@@ -188,8 +174,15 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }
   }, [profile]);
 
+  // Once per switch-on: refilling whenever the box is empty stopped students typing any other college.
+  const hasPrefilledCollege = useRef(false);
   useEffect(() => {
-    if (!initialData && isCollegeCategory && profileCollege && !eventData.collegeName) {
+    if (!isCollegeCategory) {
+      hasPrefilledCollege.current = false;
+      return;
+    }
+    if (!initialData && profileCollege && !eventData.collegeName && !hasPrefilledCollege.current) {
+      hasPrefilledCollege.current = true;
       updateData({
         collegeName: profileCollege.name,
         collegeId: profileCollege.id,
@@ -201,76 +194,18 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
   const { isSubmitting, submitEvent } = useEventSubmit();
 
   const validateMandatoryFields = () => {
-    if (!eventData.title?.trim()) {
-      toast.error("Please enter an Event Title");
-      document.getElementById("event-title-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-title-input")?.focus();
-      return false;
+    const problem = validateEventForm(eventData, { isEditing, isCollegeEvent: isCollegeCategory, duplicateError, isCheckingDuplicate });
+    setFormError(problem?.message ?? "");
+    if (!problem) return true;
+    toast.error(problem.message);
+    if (problem.fieldId) {
+      const field = document.getElementById(problem.fieldId);
+      field?.scrollIntoView({ behavior: "smooth", block: "center" });
+      field?.focus();
     }
-    if (!eventData.category) {
-      toast.error("Please select a Category for your event");
-      document.getElementById("event-category-select")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-category-select")?.focus();
-      return false;
-    }
-    if (!eventData.description?.trim()) {
-      toast.error("Please enter an Event Description");
-      document.getElementById("event-description-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-description-input")?.focus();
-      return false;
-    }
-    if (!eventData.selectedDate) {
-      toast.error("Please select an Event Date on the calendar");
-      document.getElementById("event-date-section")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return false;
-    }
-
-    // 1-year future window validation
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const maxAllowedDate = new Date(today);
-    maxAllowedDate.setFullYear(today.getFullYear() + 1);
-
-    if (eventData.selectedDate < today && !isEditing) {
-      toast.error("Event date cannot be in the past");
-      return false;
-    }
-    if (eventData.selectedDate > maxAllowedDate) {
-      toast.error("Event date cannot be more than 1 year in advance");
-      return false;
-    }
-
-    if (eventData.isOnline && !eventData.regLink?.trim()) {
-      toast.error("Registration link is required for Virtual Events");
-      document.getElementById("event-reg-link-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-reg-link-input")?.focus();
-      return false;
-    }
-    if (!eventData.isOnline && !eventData.city) {
-      toast.error("Please select a City for your in-person event");
-      document.getElementById("event-city-select")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-city-select")?.focus();
-      return false;
-    }
-    if (isCollegeCategory && eventData.collegeOnly && !eventData.collegeId) {
-      toast.error("Please select your college before restricting this event to it — or turn off 'College Only'.");
-      return false;
-    }
-
-    if (duplicateError) {
-      toast.error(duplicateError);
-      document.getElementById("event-reg-link-input")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      document.getElementById("event-reg-link-input")?.focus();
-      return false;
-    }
-
-    if (isCheckingDuplicate) {
-      toast.info("Verifying registration link...");
-      return false;
-    }
-
-    return true;
+    return false;
   };
+
 
   const handleNextStep = () => {
     if (!validateMandatoryFields()) return;
@@ -290,10 +225,11 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       category: eventData.category,
       organizer_name: eventData.organizer,
       description: eventData.description,
-      target_audience: isCollegeCategory ? eventData.selectedAudience : ["Everyone"],
+      // "Everyone" lets an event past the public feed filter, so a college event must never keep it from an earlier edit.
+      target_audience: isCollegeCategory ? collegeAudience(eventData.selectedAudience) : ["Everyone"],
       start_time: (eventData.selectedHour && eventData.selectedMin) ? `${eventData.selectedHour}:${eventData.selectedMin} ${eventData.selectedAmPm}` : null,
       end_time: eventData.hasEndTime ? `${eventData.endHour}:${eventData.endMin} ${eventData.endAmPm}` : null,
-      end_date_string: eventData.hasEndTime && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
+      end_date_string: eventData.hasEndDate && eventData.endDate ? toLocalDateString(eventData.endDate) : null,
       date_string: eventData.selectedDate ? toLocalDateString(eventData.selectedDate) : "",
       location: eventData.isOnline ? "Virtual Event" : eventData.location,
       city: eventData.isOnline ? "online" : eventData.city,
@@ -312,6 +248,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       college_year: isCollegeCategory && eventData.collegeYear && eventData.collegeYear !== "All Years" ? eventData.collegeYear : null,
       college_only: isCollegeCategory && eventData.collegeId ? eventData.collegeOnly : false,
       college_id: isCollegeCategory ? eventData.collegeId : null,
+      submission_id: submissionId.current,
       imageFile: crop.imageFile, 
       previewUrl: crop.previewUrl
     }, isEditing, initialData?.id);
@@ -324,41 +261,32 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     }
   };
 
-  const step0Valid =
-    eventData.title &&
-    eventData.description &&
-    eventData.category &&
-    eventData.selectedDate &&
-    (eventData.isOnline ? eventData.regLink : (eventData.location && eventData.city)) &&
-    !duplicateError &&
-    !isCheckingDuplicate;
-
   return (
     <div className="max-w-3xl mx-auto w-full">
       {hasRestoredDraft && (
-        <div className="flex items-center justify-between bg-purple-50 border border-purple-200/80 rounded-2xl px-4 py-2.5 mb-6 animate-in fade-in">
-          <span className="text-xs sm:text-sm font-semibold text-purple-900">
-            Draft restored from your last session.
+        <div className="flex items-center justify-between bg-slate-100 rounded-md px-4 py-2.5 mb-6 animate-in fade-in">
+          <span className="text-xs sm:text-sm font-medium text-slate-700">
+            We kept your draft.
           </span>
           <button
             type="button"
-            onClick={clearDraft}
-            className="text-xs font-bold text-red-600 hover:text-red-700 hover:underline ml-3"
+            onClick={() => clearDraft(true)}
+            className="min-h-11 text-sm font-semibold text-slate-900 hover:underline ml-3 shrink-0"
           >
-            Clear Draft
+            Start over
           </button>
         </div>
       )}
-      <div className="mb-10 text-center">
-        <h1 className="font-heading text-3xl font-bold text-slate-900 mb-2">
-          {step === 0 ? "Event Details" : "Feature & Advanced Setup"}
+      <div className="mb-8">
+        <h1 className="font-heading text-4xl font-bold tracking-[-0.03em] text-slate-900 mb-2">
+          {step === 1 ? "Feature this event" : isEditing ? "Edit event" : "Post an event"}
         </h1>
-        <p className="text-slate-500 text-sm">
-          {step === 0 ? "All the essential details for your event." : "Make your event stand out."}
+        <p className="text-slate-600 text-base">
+          {step === 1 ? "Add a poster and the extra details." : isEditing ? "Changing to an unverified link sends the event back for review." : "It takes about a minute."}
         </p>
       </div>
 
-      <div className="relative bg-[#F8F9FB] p-6 md:p-10 rounded-[32px] border border-slate-200 shadow-sm min-h-85">
+      <div className="relative">
         <AnimatePresence mode="wait">
           {step === 0 && (
             <StepMandatory profileCollege={profileCollege} 
@@ -366,7 +294,7 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
               updateData={updateData} 
               isCollegeCategory={isCollegeCategory}
               onNext={handleNextStep}
-              isValid={Boolean(step0Valid)}
+              formError={formError}
               isSubmitting={isSubmitting}
               onSubmit={handleSubmit}
               isAdminFeatureEnabled={isAdminFeatureEnabled}
@@ -402,7 +330,6 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
           window.location.href = "/";
         }}
         onViewEvent={(slug) => {
-          setIsCelebrationOpen(false);
           window.location.href = "/events/" + (slug || "");
         }}
       />

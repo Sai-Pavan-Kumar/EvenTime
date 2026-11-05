@@ -7,6 +7,7 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/permissions";
 import EventClientUI from "./EventClientUI";
+import { toJsonLd } from "@/lib/utils";
 
 // Helper function to check if the slug is a valid UUID
 const isValidUUID = (id: string) => {
@@ -66,7 +67,8 @@ const getCachedCityEvents = (city: string | null, isVirtual: boolean, currentId:
         .select(EVENT_DETAIL_FIELDS)
         .eq("status", "approved")
         .gte("date_string", todayStr)
-        .neq("id", currentId);
+        .neq("id", currentId)
+        .or("college_only.is.null,college_only.eq.false");
 
       const normalizedCity = city?.trim().toLowerCase();
       if (isVirtual || normalizedCity === "online") {
@@ -299,7 +301,7 @@ export default async function EventPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: toJsonLd(jsonLd) }}
       />
       <Suspense fallback={null}>
         <EventClientUI

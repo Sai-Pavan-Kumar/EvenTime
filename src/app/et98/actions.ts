@@ -167,7 +167,8 @@ export async function punishCuratorAction(formData: FormData) {
     return { success: true, note: "Marked resolved, but penalty needs 5+ trusted reporters (currently " + trustedReporterIds.size + ")." };
   }
 
-  await supabase.rpc('apply_leaderboard_penalty', {
+  // Service role, so the function's EXECUTE grant can later be removed from signed-in users entirely
+  await createAdminClient().rpc('apply_leaderboard_penalty', {
     p_user_id: report.curator_id,
     p_amount: 25
   });
@@ -212,13 +213,15 @@ export async function deleteUserAction(formData: FormData) {
 
   // Soft delete: mark the row, then ban login immediately.
   // Real removal happens after 30 days via the purge_old_deleted_users() DB job.
-  const { error } = await supabase
+  // Service client: row security lets a login edit only its own row, so the admin's session
+  // would change nothing here, and the 30-day purge would never see this user.
+  const adminClient = createAdminClient();
+  const { error } = await adminClient
     .from("profiles")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", userId);
   if (error) return { error: "Failed to delete user." };
 
-  const adminClient = createAdminClient();
   await adminClient.auth.admin.updateUserById(userId, { ban_duration: "876000h" }); // ~100 years, effectively until purge
 
   revalidatePath("/et98");

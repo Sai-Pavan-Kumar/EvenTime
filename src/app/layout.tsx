@@ -11,7 +11,8 @@ import { Footer } from "@/components/layout/Footer";
 import { DevToolsGuard } from "@/components/layout/DevToolsGuard";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import NextTopLoader from "nextjs-toploader";
-import Script from "next/script";
+import { Suspense } from "react";
+import { SearchParamsBridge } from "@/lib/navigation/searchParams";
 
 // SurfBoard brand font, self-hosted so the strict CSP only needs font-src 'self'.
 // One variable file covers every weight; next/font hashes the URL, so a font change can never be served stale.
@@ -89,34 +90,7 @@ export default function RootLayout({
         {/* LIGHTSPEED OPTIMIZATION: Preconnect to the R2 image CDN */}
         <link rel="preconnect" href="https://cdn.sbhub.in" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://cdn.sbhub.in" />
-        
-        {/* Microsoft Clarity */}
-        {process.env.NEXT_PUBLIC_CLARITY_ID && (
-          <Script id="microsoft-clarity" strategy="lazyOnload">
-            {`
-              (function(c,l,a,r,i,t,y){
-                  c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                  t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                  y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", "${process.env.NEXT_PUBLIC_CLARITY_ID}");
-            `}
-          </Script>
-        )}
 
-        {/* Google Analytics GA4 */}
-        {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`} strategy="lazyOnload" />
-            <Script id="google-analytics" strategy="lazyOnload">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
-        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -160,6 +134,10 @@ export default function RootLayout({
           shadow="0 0 10px #6C47FF,0 0 5px #6C47FF"
         />
         <LaunchScreen /> {/* Added LaunchScreen component here */}
+        {/* Isolated in its own Suspense so reading the URL never blocks server rendering of pages */}
+        <Suspense fallback={null}>
+          <SearchParamsBridge />
+        </Suspense>
         
         <AuthProvider>
           <DevToolsGuard />
@@ -174,8 +152,12 @@ export default function RootLayout({
         </AuthProvider>
         
         <Toaster richColors position="top-right" closeButton />
-        <Analytics />
-        <SpeedInsights />
+        {process.env.VERCEL && (
+          <>
+            <Analytics />
+            <SpeedInsights />
+          </>
+        )}
       </body>
     </html>
   );

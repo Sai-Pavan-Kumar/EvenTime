@@ -1,6 +1,5 @@
 "use client";
 
-import * as Sentry from "@sentry/nextjs";
 import NextError from "next/error";
 import { useEffect } from "react";
 
@@ -10,7 +9,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
 }) {
   useEffect(() => {
-    Sentry.captureException(error);
+    // Dynamic import keeps Sentry out of every page's bundle (see instrumentation-client.ts).
+    import(/* webpackExports: ["captureException"] */ "@sentry/nextjs").then((Sentry) => Sentry.captureException(error));
   }, [error]);
 
   return (

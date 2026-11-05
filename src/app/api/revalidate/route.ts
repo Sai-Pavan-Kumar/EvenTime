@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     });
   } catch (err: any) {
     console.error('[API/Revalidate] Error:', err);
-    return NextResponse.json({ message: 'Error revalidating', error: err?.message }, { status: 500 });
+    return NextResponse.json({ message: 'Error revalidating' }, { status: 500 });
   }
 }
 

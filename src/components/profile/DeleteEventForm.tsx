@@ -10,14 +10,14 @@ export function DeleteEventForm({
   deleteAction: (formData: FormData) => void 
 }) {
   return (
-    <form action={deleteAction} className="flex-1" onSubmit={(e) => {
+    <form action={deleteAction} onSubmit={(e) => {
       if (!window.confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
         e.preventDefault();
       }
     }}>
       <input type="hidden" name="eventId" value={eventId} />
-      <button type="submit" title="Delete Event" className="w-full flex items-center justify-center text-slate-400 hover:text-red-600 bg-slate-50 hover:bg-red-50 py-2 rounded-lg transition-colors">
-        <Trash2 className="w-4 h-4" />
+      <button type="submit" title="Delete" aria-label="Delete event" className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600">
+        <Trash2 className="h-[18px] w-[18px]" />
       </button>
     </form>
   );

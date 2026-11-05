@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { isIP } from "net";
 import dns from "dns/promises";
+import { extractEventDetails, removePlatformName, type EventDetails } from "./eventDetails";
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -17,7 +18,7 @@ interface ExtractedEvent {
   location: string;
 }
 
-interface ExtractionResult extends ExtractedEvent {
+interface ExtractionResult extends ExtractedEvent, EventDetails {
   confidence: number;
   isTrusted: boolean;
   finalDomain: string;
@@ -240,37 +241,60 @@ function getExtractor(hostname: string): ExtractorFn {
 // SAFE JSON-LD PARSER
 // ─────────────────────────────────────────────
 
-function parseJsonLd(html: string): Record<string, unknown> | null {
-  try {
-    // Load just the script tag from the full HTML
-    const $ = cheerio.load(html);
-    const raw = $('script[type="application/ld+json"]').first().html();
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // JSON-LD can be an array; unwrap if needed
-    return Array.isArray(parsed) ? parsed[0] : parsed;
-  } catch {
-    return null;
+// Pages often list a breadcrumb or organisation first, so the block holding the event dates wins.
+function parseJsonLd($: cheerio.CheerioAPI): Record<string, unknown> | null {
+  const nodes: Record<string, unknown>[] = [];
+  $('script[type="application/ld+json"]').each((_, script) => {
+    try {
+      const parsed = JSON.parse($(script).html() ?? "");
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      list.forEach((node) => nodes.push(node, ...(Array.isArray(node?.["@graph"]) ? node["@graph"] : [])));
+    } catch {
+      // One broken block should not cost us the others.
+    }
+  });
+  return nodes.find((node) => node?.["startDate"]) ?? nodes[0] ?? null;
+}
+
+const MAX_HTML_BYTES = 2 * 1024 * 1024;
+
+// Stops downloading at the cap, so a huge page cannot use up the time limit or the memory.
+async function readHtml(res: Response): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let html = "";
+  let bytes = 0;
+  while (bytes < MAX_HTML_BYTES) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.length;
+    html += decoder.decode(value, { stream: true });
   }
+  await reader.cancel();
+  return html;
 }
 
 // ─────────────────────────────────────────────
 // SSRF PROTECTION
 // ─────────────────────────────────────────────
 
-// Blocked IP ranges — loopback, private, link-local, metadata
+// Blocked IP ranges — "this host", loopback, private, carrier-grade NAT, link-local/metadata, IPv6 local
 const BLOCKED_IP_RANGES = [
-  /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
-  /^169\.254\./, /^::1$/, /^fc00:/, /^fe80:/,
+  /^0\./, /^127\./, /^10\./, /^192\.168\./, /^172\.(1[6-9]|2\d|3[01])\./,
+  /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, /^169\.254\./,
+  /^::1?$/, /^f[cd][0-9a-f]{2}:/i, /^fe[89ab][0-9a-f]:/i,
 ];
 
 function isBlockedIp(address: string): boolean {
-  return BLOCKED_IP_RANGES.some((re) => re.test(address));
+  // IPv4-mapped IPv6 (::ffff:127.0.0.1) would otherwise slip past the IPv4 patterns
+  const normalized = address.toLowerCase().replace(/^::ffff:/, "");
+  return BLOCKED_IP_RANGES.some((re) => re.test(normalized));
 }
 
-// Resolves hostname ourselves and returns the SAME ip we will connect to.
-// This closes the DNS-rebinding gap where a check-time lookup and the
-// actual fetch-time lookup could return two different IPs.
+// Checks the IP the hostname resolves to right now. fetch() resolves again on connect, so a
+// DNS-rebinding host can still swap IPs between the two lookups; the hop-by-hop re-check below
+// narrows that window but does not close it.
 async function resolveSafeIp(hostname: string): Promise<string | null> {
   try {
     const lookupPromise = dns.lookup(hostname);
@@ -309,7 +333,8 @@ async function isSafeUrl(rawUrl: string): Promise<{ safe: boolean; ip: string | 
 export async function POST(request: Request) {
   const EMPTY_RESULT: ExtractionResult = {
     title: "", description: "", image: "", date: "",
-    location: "", confidence: 0, isTrusted: false,
+    location: "", startDate: "", startTime: "", endDate: "", endTime: "",
+    city: "", isOnline: false, confidence: 0, isTrusted: false,
     finalDomain: "", finalUrl: "", message: "",
   };
 
@@ -332,6 +357,11 @@ export async function POST(request: Request) {
         const { data: authData } = await supabase.auth.getUser();
         user = authData?.user || null;
       } catch {}
+    }
+
+    // Fetching pages on request costs us bandwidth, and only a logged-in poster has a reason to ask.
+    if (!user) {
+      return NextResponse.json({ ...EMPTY_RESULT, message: "Please log in to continue." }, { status: 401 });
     }
 
     // Extract client IP for rate limiting
@@ -374,8 +404,9 @@ export async function POST(request: Request) {
 
     // Fetch manually hop-by-hop (max 3 redirects), re-checking SSRF safety
     // at every hop instead of letting fetch() silently follow redirects.
-    // Global fetch timeout for all redirects combined (10 seconds)
-    const TOTAL_FETCH_TIMEOUT_MS = 10000;
+    // Global fetch timeout for all redirects combined. The website gives up at 4 seconds, so this
+    // leaves room to answer first.
+    const TOTAL_FETCH_TIMEOUT_MS = 3500;
     const fetchController = new AbortController();
     const fetchTimeoutId = setTimeout(() => fetchController.abort(), TOTAL_FETCH_TIMEOUT_MS);
 
@@ -434,9 +465,7 @@ export async function POST(request: Request) {
       }
 
       finalUrl = res.url || currentUrl;
-      const rawText = await res.text();
-      // Cap body to 2MB to prevent memory bloat
-      html = rawText.length > 2 * 1024 * 1024 ? rawText.substring(0, 2 * 1024 * 1024) : rawText;
+      html = await readHtml(res);
     } catch (err) {
       const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
       return NextResponse.json({
@@ -465,7 +494,7 @@ export async function POST(request: Request) {
 
     // Parse HTML + JSON-LD
     const $ = cheerio.load(html);
-    const jsonLd = parseJsonLd(html);
+    const jsonLd = parseJsonLd($);
 
     // Pick and run the right extractor
     const extractor = getExtractor(hostname);
@@ -476,6 +505,8 @@ export async function POST(request: Request) {
 
     const result: ExtractionResult = {
       ...extracted,
+      ...extractEventDetails(jsonLd, extracted.date),
+      title: removePlatformName(extracted.title),
       confidence,
       isTrusted,
       finalDomain: hostname,

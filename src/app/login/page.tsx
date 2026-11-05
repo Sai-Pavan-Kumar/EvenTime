@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -27,10 +26,9 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen bg-surface-base flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:items-stretch"
+      {/* CSS entrance, not framer-motion: a JS fade kept the card invisible until all JS loaded (~9s on Slow 3G) */}
+      <div
+        className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-5 motion-safe:duration-500 w-full max-w-[1040px] bg-white rounded-[32px] sm:rounded-[40px] shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col md:flex-row md:items-stretch"
       >
         {/* LEFT SIDE: BRANDING (Takes exactly 60% on Desktop) */}
         <div className="hidden md:flex md:w-[60%] bg-brand-primary p-12 lg:p-16 flex-col justify-between relative overflow-hidden">
@@ -128,7 +126,7 @@ export default function LoginPage() {
             <span>Zero password risk • Instant encrypted session</span>
           </div>
         </div>
-      </motion.div>
+      </div>
     </main>
   );
 }

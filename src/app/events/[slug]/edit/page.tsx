@@ -21,15 +21,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ slug
 
   // Inside your EditEventPage return
 return (
-  <main className="min-h-screen bg-[#F8F9FB] py-12 px-6">
+  <main className="min-h-screen bg-slate-50/50">
     <Navbar />
-    {/* Clean Apple-style Header */}
-    <div className="max-w-2xl mx-auto mb-10">
-       <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
-       <p className="text-slate-500">Update your event details to keep your audience informed.</p>
+    <div className="py-12 px-4 sm:px-6">
+      <CreateEventForm initialData={event} isEditing={true} />
     </div>
-    
-    <CreateEventForm initialData={event} isEditing={true} />
   </main>
 );
 }

@@ -5,7 +5,8 @@ import { CuratorEventsTabs } from "@/components/shared/CuratorEventsTabs";
 import Image from "next/image";
 import type { ProfileRow } from "@/types";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import NotFound from "../not-found";
+import { BrandAvatar } from "@/components/ui/BrandAvatar";
 
 export async function generateMetadata({
   params,
@@ -18,13 +19,15 @@ export async function generateMetadata({
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isUuid = UUID_REGEX.test(decodedUsername);
 
-  const { data: curator } = await supabase
-    .from("profiles")
-    .select("id, full_name, username, avatar_url, et_score")
-    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
-    .maybeSingle();
+  const curatorQuery = supabase.from("profiles").select("id, full_name, username, avatar_url, et_score");
+  // Only a regex-checked UUID is spliced into the .or() string; free-text usernames go through
+  // .eq() so a URL like /x,role.eq.admin cannot add its own filter clauses.
+  const { data: curator } = await (isUuid
+    ? curatorQuery.or(`username.eq.${decodedUsername},id.eq.${decodedUsername}`)
+    : curatorQuery.eq("username", decodedUsername)
+  ).maybeSingle();
 
-  if (!curator) return { title: "Page Not Found | EvenTime" };
+  if (!curator) return { title: "Page Not Found | EvenTime", robots: { index: false, follow: true } };
 
   const { data: scoreRow } = await supabase
     .from("leaderboard_view")
@@ -93,14 +96,19 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const isUuid = UUID_REGEX.test(decodedUsername);
 
-  const { data: curator } = await supabase
-    .from("profiles")
-    .select(PROFILE_FIELDS)
-    .or(isUuid ? `username.eq.${decodedUsername},id.eq.${decodedUsername}` : `username.eq.${decodedUsername}`)
-    .maybeSingle();
+  const curatorQuery = supabase.from("profiles").select(PROFILE_FIELDS);
+  // Only a regex-checked UUID is spliced into the .or() string; free-text usernames go through
+  // .eq() so a URL like /x,role.eq.admin cannot add its own filter clauses.
+  const { data: curator } = await (isUuid
+    ? curatorQuery.or(`username.eq.${decodedUsername},id.eq.${decodedUsername}`)
+    : curatorQuery.eq("username", decodedUsername)
+  ).maybeSingle();
 
+  // notFound() here reached the browser as an empty shell that only drew the 404 after all JS
+  // loaded (~10s on Slow 3G). Rendering the same 404 UI directly keeps it server-rendered;
+  // generateMetadata marks it noindex so Google still drops the URL.
   if (!curator) {
-    notFound();
+    return <NotFound />;
   }
 
   // Fix: Running the remaining dependent queries in parallel using Promise.all
@@ -136,6 +144,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
       .eq("creator_id", curator.id)
       .eq("status", "approved")
       .gte("date_string", sixMonthsAgoStr)
+      .or("college_only.is.null,college_only.eq.false")
       .order("created_at", { ascending: true }),
 
     // 2. Check if leaderboard / ET Score is enabled platform-wide
@@ -148,7 +157,6 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
   const impactSaves = allTimeSavesData?.reduce((acc, ev) => acc + ((ev as any).saved_events?.[0]?.count || 0), 0) || 0;
   const leaderboardEnabled = appSettings?.leaderboard_enabled ?? true;
   const etScore = leaderboardRow?.et_score ?? curator.et_score ?? 100;
-  const avatarUrl = curator.avatar_url || "/window.svg";
   const completionPercentage = calculateCompletion(curator);
 
   // NEW: Dynamic Profile Tiers Logic
@@ -185,7 +193,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
               <circle cx="72" cy="72" r="68" fill="none" stroke={strokeColor} strokeWidth="4" strokeDasharray="427.25" strokeDashoffset={427.25 - (completionPercentage / 100) * 427.25} strokeLinecap="round" className="transition-all duration-1000 ease-out" />
             </svg>
             <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white bg-slate-100 shadow-inner">
-              <Image src={avatarUrl} alt={curator.full_name || "Curator"} fill unoptimized={true} sizes="128px" className="object-cover" />
+              <BrandAvatar seed={curator.username || curator.id} title={curator.full_name || "Curator"} className="h-full w-full" />
             </div>
           </div>
           <div className="flex-1 text-center md:text-left">

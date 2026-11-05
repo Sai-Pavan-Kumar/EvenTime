@@ -29,7 +29,7 @@ export function DrumColumn({ items, defaultIndex = 0, onSelect }: { items: strin
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const DAY_NAMES = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | undefined; onSelect: (d: Date) => void; }) {
+export function MiniCalendar({ selectedDate, onSelect, minDate }: { selectedDate: Date | undefined; onSelect: (d: Date) => void; minDate?: Date; }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -48,6 +48,13 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  // A date filled from a link can be months away, so the calendar has to open on it.
+  useEffect(() => {
+    if (!selectedDate) return;
+    setViewYear(selectedDate.getFullYear());
+    setViewMonth(selectedDate.getMonth());
+  }, [selectedDate]);
 
   const isMinMonth = viewYear <= today.getFullYear() && viewMonth <= today.getMonth();
   const isMaxMonth = viewYear > maxAllowedDate.getFullYear() || (viewYear === maxAllowedDate.getFullYear() && viewMonth >= maxAllowedDate.getMonth());
@@ -68,19 +75,19 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
   const isDateDisabled = (d: number) => {
     const target = new Date(viewYear, viewMonth, d);
     target.setHours(0, 0, 0, 0);
-    return target < today || target > maxAllowedDate;
+    return target < today || target > maxAllowedDate || Boolean(minDate && target < minDate);
   };
   
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/50">
-        <span className="text-base font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
+    <div className="bg-white border border-slate-200 rounded-md overflow-hidden">
+      <div className="flex items-center justify-between pl-4 pr-1 py-1 border-b border-slate-100">
+        <span className="text-sm font-bold text-slate-900">{MONTHS[viewMonth]} {viewYear}</span>
         <div className="flex gap-1">
-          <button type="button" disabled={isMinMonth} onClick={prevMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">‹</button>
-          <button type="button" disabled={isMaxMonth} onClick={nextMonth} className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">›</button>
+          <button type="button" disabled={isMinMonth} aria-label="Previous month" onClick={prevMonth} className="w-11 h-11 text-xl rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">‹</button>
+          <button type="button" disabled={isMaxMonth} aria-label="Next month" onClick={nextMonth} className="w-11 h-11 text-xl rounded-lg flex items-center justify-center text-brand-primary hover:bg-brand-primary/10 transition-colors disabled:text-slate-300 disabled:cursor-not-allowed">›</button>
         </div>
       </div>
-      <div className="px-4 py-3">
+      <div className="px-2 py-2">
         <div className="grid grid-cols-7 mb-1">
           {DAY_NAMES.map(d => <div key={d} className="text-center text-[10px] font-semibold text-slate-400 uppercase tracking-wide py-1">{d}</div>)}
         </div>
@@ -89,7 +96,7 @@ export function MiniCalendar({ selectedDate, onSelect }: { selectedDate: Date | 
           {Array.from({ length: daysInMonth }).map((_, i) => {
             const d = i + 1; const disabled = isDateDisabled(d); const selected = isSelected(d); const todayCell = isToday(d);
             return (
-              <button key={d} type="button" disabled={disabled} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", disabled ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold shadow-lg shadow-[#6C47FF]/30 scale-110 rounded-xl" : todayCell ? "font-bold text-brand-primary" : !disabled ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
+              <button key={d} type="button" disabled={disabled} onClick={() => onSelect(new Date(viewYear, viewMonth, d))} className={["aspect-square flex items-center justify-center text-[13px] rounded-lg transition-all", disabled ? "text-slate-300 cursor-not-allowed" : "cursor-pointer", selected ? "bg-brand-primary text-white font-bold" : todayCell ? "font-bold text-brand-primary" : !disabled ? "text-slate-700 hover:bg-brand-primary/10 hover:text-brand-primary hover:font-semibold" : ""].join(" ")}>{d}</button>
             );
           })}
         </div>

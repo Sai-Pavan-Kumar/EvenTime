@@ -9,12 +9,14 @@ import { CalendarStrip } from "./CalendarStrip";
 import { FilterChips } from "@/lib/home/FilterChips";
 import { EventGrid } from "@/lib/home/EventGrid";
 import { FeedbackModal } from "./FeedbackModal";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import type { AuthUser } from "@/types";
 import { CITIES } from "@/lib/constants/cities";
 import { categoriesList } from "@/features/create-event/constants";
 import { useAuth } from "@/context/AuthContext";
 import NProgress from "nprogress";
+import { BrandAvatar } from "@/components/ui/BrandAvatar";
 
 
 const calculateCompletion = (prof: any) => {
@@ -68,7 +70,6 @@ function NavbarInner({
       setInternalSearchQuery(val);
     }
   };
-  const [imgError, setImgError] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -80,7 +81,7 @@ function NavbarInner({
   const [mobileSearchResults, setMobileSearchResults] = useState<any[]>([]);
   const [isSearchingMobile, setIsSearchingMobile] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useNonBlockingSearchParams();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const categoryParam = searchParams.get("category") || undefined;
@@ -152,7 +153,8 @@ function NavbarInner({
         .from("events")
         .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
         .eq("status", "approved")
-        .gte("date_string", sixMonthsAgoStr);
+        .gte("date_string", sixMonthsAgoStr)
+        .or("college_only.is.null,college_only.eq.false");
       if (hasQuery) {
         query = query.or(`title.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%`);
       }
@@ -222,13 +224,17 @@ function NavbarInner({
     router.refresh();
   };
 
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || profileDetails?.avatar_url;
   const completionPercent = calculateCompletion(profileDetails);
 
   const selectedDate = searchParams.get("date");
-  const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const todayObj = new Date();
-  let mobileDateDisplay = `${todayObj.getDate()} ${monthNames[todayObj.getMonth()]}`;
+  // Set after mount: the page is cached across days, so a date rendered on the server goes stale
+  // and breaks hydration for every visitor until the next event change.
+  const [todayLabel, setTodayLabel] = useState("Today");
+  useEffect(() => {
+    const now = new Date();
+    setTodayLabel(`${now.getDate()} ${monthNames[now.getMonth()]}`);
+  }, []);
+  let mobileDateDisplay = todayLabel;
   if (selectedDate) {
     const [year, month, day] = selectedDate.split("-");
     const monthIndex = parseInt(month, 10) - 1;
@@ -237,7 +243,7 @@ function NavbarInner({
 
   return (
     <>
-    <nav className={`sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/5 shadow-[0_1px_0_rgba(0,0,0,0.03)] ${pathname === '/search' ? 'hidden sm:block' : ''}`}>
+    <nav data-site-nav className={`sticky top-0 z-50 bg-white/70 backdrop-blur-lg border-b border-black/5 shadow-[0_1px_0_rgba(0,0,0,0.03)] ${pathname === '/search' ? 'hidden sm:block' : ''}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 gap-4 relative">
           
@@ -255,7 +261,7 @@ function NavbarInner({
 
           {variant !== 'centered' && (
             <>
-              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 max-w-lg relative hidden sm:block mx-5">
+              <form ref={desktopSearchRef} onSubmit={handleSearch} className="flex-1 min-w-0 max-w-lg relative hidden sm:block lg:mx-5">
                 <button
                   type="submit"
                   aria-label="Search"
@@ -272,7 +278,7 @@ function NavbarInner({
                       router.push('/search');
                     }
                   }}
-                  placeholder="Search hackathons, meetups..."
+                  placeholder="Search events"
                   maxLength={100}
                   className="w-full bg-white border border-[rgba(0,0,0,0.08)] shadow-sm rounded-full pl-10 pr-9 py-2.5 text-sm font-sans text-text-primary focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/15 outline-none placeholder:text-text-secondary transition-all"
                 />
@@ -337,7 +343,7 @@ function NavbarInner({
                   : 'text-text-secondary hover:text-brand-primary font-bold'
               }`}
             >
-              <Building2 className="w-4 h-4 shrink-0" /> Cities
+              <Building2 className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Cities</span>
             </Link>
 
             {leaderboardEnabled && (
@@ -345,11 +351,11 @@ function NavbarInner({
                 href="/leaderboard" 
                 className={`flex items-center gap-2 text-sm font-heading transition-colors shrink-0 ${
                   pathname === '/leaderboard' 
-                    ? 'text-amber-500 font-black' 
-                    : 'text-text-secondary hover:text-amber-500 font-bold'
+                    ? 'text-brand-primary font-black' 
+                    : 'text-text-secondary hover:text-brand-primary font-bold'
                 }`}
               >
-                <Trophy className="w-4 h-4 shrink-0" /> Leaderboard
+                <Trophy className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Leaderboard</span>
               </Link>
             )}
 
@@ -362,18 +368,20 @@ function NavbarInner({
                     : 'text-red-500 hover:text-red-600 font-bold'
                 }`}
               >
-                <Settings className="w-4 h-4 shrink-0" /> Admin
+                <Settings className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Admin</span>
               </Link>
             )}
 
             <Link href="/events/new" onClick={handleProtectedAction} className="flex items-center gap-2 text-sm font-bold font-heading bg-brand-primary text-white px-5 py-2.5 rounded-full border border-transparent hover:bg-white hover:text-brand-primary hover:border-brand-primary shadow-[0_4px_16px_rgba(108,71,255,0.15)] transition-all shrink-0 group">
-              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" /> Post Event
+              <Plus className="w-4 h-4 shrink-0 text-white group-hover:text-brand-primary transition-colors" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Post Event</span>
             </Link>
 
             <div className="flex items-center gap-2 pl-2 lg:pl-3 border-l border-slate-200/80">
-              <button onClick={(e) => isAuthenticated ? setIsFeedbackOpen(true) : handleProtectedAction(e)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
-                <Bug className="w-4 h-4" />
-              </button>
+              {isAuthenticated && (
+                <button onClick={() => setIsFeedbackOpen(true)} className="flex items-center justify-center w-10 h-10 rounded-full bg-white border border-slate-100 hover:bg-brand-primary hover:border-brand-primary text-[#555570] hover:text-white shadow-sm transition-all shrink-0" title="Suggest Feature / Report Bug">
+                  <Bug className="w-4 h-4" />
+                </button>
+              )}
 
               {isLoading ? (
                 <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-full p-1 shadow-sm shrink-0 animate-pulse">
@@ -388,17 +396,7 @@ function NavbarInner({
                       <circle cx="20" cy="20" r="19" fill="none" className="stroke-brand-primary" strokeWidth="2" strokeDasharray="119.38" strokeDashoffset={119.38 - (completionPercent / 100) * 119.38} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
                     </svg>
                     <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white flex items-center justify-center bg-surface-elevated">
-                      {avatarUrl && !imgError ? (
-                        <img 
-                          src={avatarUrl} 
-                          alt="Profile" 
-                          className="object-cover w-full h-full"
-                          referrerPolicy="no-referrer"
-                          onError={() => setImgError(true)}
-                        />
-                      ) : (
-                        <User className="w-4 h-4 text-slate-400" />
-                      )}
+                      <BrandAvatar seed={profileDetails?.username || user?.email} className="h-full w-full" />
                     </div>
                   </Link>
                   <button onClick={handleLogout} className="flex items-center justify-center w-8 h-8 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors shrink-0 mr-1" title="Log Out">
@@ -533,19 +531,7 @@ function NavbarInner({
                 <circle cx="14" cy="14" r="12" fill="none" className="stroke-[#6C47FF]" strokeWidth="1.5" strokeDasharray="75.4" strokeDashoffset={75.4 - (completionPercent / 100) * 75.4} strokeLinecap="round" style={{ transition: 'all 1000ms ease-out' }} />
               </svg>
               <div className={`w-5 h-5 rounded-full overflow-hidden border flex items-center justify-center bg-surface-elevated ${pathname.startsWith('/profile') && !showMobileSearch ? 'border-[#6C47FF]' : 'border-white'}`}>
-                {avatarUrl && !imgError ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Profile"
-                    className="object-cover w-full h-full"
-                    referrerPolicy="no-referrer"
-                    onError={() => setImgError(true)}
-                  />
-                ) : (
-                  <span className="text-[9px] font-black text-slate-700">
-                    {((profileDetails?.username || user?.email || 'U')[0]).toUpperCase()}
-                  </span>
-                )}
+                <BrandAvatar seed={profileDetails?.username || user?.email} className="h-full w-full" />
               </div>
             </div>
             <span className="text-[11px] font-bold font-sans mt-1">
@@ -590,10 +576,12 @@ function NavbarInner({
       </div>
     )}
 
-    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+    <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
     </>
   );
 }
+
+const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 export function Navbar({ 
   variant = 'default', 

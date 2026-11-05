@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import AdminConsoleClient from "./AdminConsoleClient";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,9 @@ export default async function AdminDashboard(props: PageProps) {
 
   const isAdmin = await requireAdmin(supabase, user.id);
   if (!isAdmin) redirect("/");
+
+  // profiles.email is hidden from anon/authenticated roles, so admin-only reads of it use the service role
+  const adminClient = createAdminClient();
 
   // Prefetch all data in parallel
   const [
@@ -78,7 +82,7 @@ export default async function AdminDashboard(props: PageProps) {
       .order("created_at", { ascending: false })
       .limit(100),
 
-    supabase
+    adminClient
       .from("profiles")
       .select("id, full_name, username, email, role, et_score, avatar_url")
       .is("deleted_at", null)
@@ -92,7 +96,7 @@ export default async function AdminDashboard(props: PageProps) {
     .filter((id): id is string => typeof id === "string" && id.length > 0);
   let feedbackProfilesMap = new Map<string, { full_name: string; email: string }>();
   if (feedbackUserIds.length > 0) {
-    const { data: fbProfiles } = await supabase
+    const { data: fbProfiles } = await adminClient
       .from("profiles")
       .select("id, full_name, email")
       .in("id", feedbackUserIds);

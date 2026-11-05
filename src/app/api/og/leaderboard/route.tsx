@@ -122,6 +122,8 @@ export async function GET(req: NextRequest) {
       {
         width: 1200,
         height: 630,
+        // Signed query string fully defines the image, so each share URL renders once and the CDN serves the rest.
+        headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable' },
       }
     );
   } catch (error) {

@@ -9,7 +9,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: events } = await supabase
     .from("events")
     .select("slug, created_at, category, city")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .or("college_only.is.null,college_only.eq.false");
 
   const activeEvents = events || [];
 

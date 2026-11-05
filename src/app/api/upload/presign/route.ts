@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     // SECURITY FIX 3: File Size Limit (Max 5MB)
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    if (!fileSize || fileSize > MAX_SIZE) {
+    if (typeof fileSize !== "number" || !Number.isInteger(fileSize) || fileSize <= 0 || fileSize > MAX_SIZE) {
       return NextResponse.json(
         { error: "File size exceeds the 5MB limit or is missing." },
         { status: 400 }
@@ -74,6 +74,9 @@ export async function POST(request: Request) {
       Bucket: process.env.R2_BUCKET_NAME,
       Key: safeKey,
       ContentType: contentType,
+      // Signed into the URL, so R2 rejects a body of any other size; without it the 5MB check
+      // above only trusted what the client claimed and the free 10GB bucket could be filled.
+      ContentLength: fileSize,
       // CRITICAL FIX: This caches the image in the browser for 1 year, saving Class B Operations!
       CacheControl: "public, max-age=31536000, immutable", 
     });

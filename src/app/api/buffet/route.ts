@@ -8,16 +8,16 @@ export async function GET() {
     const data = await fetchHomePageData();
     return NextResponse.json(data, {
       headers: {
-        "Cache-Control": "public, s-maxage=0, must-revalidate",
+        // Every tab focus (web) and app open hits this. s-maxage=0 ran a function and shipped ~80 KB
+        // per hit; now the CDN answers. Freshness stays: the Supabase webhook purges /api/buffet on change.
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=600",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
       },
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: "Failed to fetch buffet", message: error?.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error("[API/Buffet] Error:", error);
+    return NextResponse.json({ error: "Failed to fetch buffet" }, { status: 500 });
   }
 }
 

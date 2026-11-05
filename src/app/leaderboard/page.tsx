@@ -13,9 +13,6 @@ export const metadata: Metadata = {
   description: "See the top-ranked event curators on EvenTime, ranked by trust, impact, and consistency across college, city, and all-time cohorts.",
 };
 
-const DEFAULT_EXCLUDED_EMAILS = ["p.pavansiri@gmail.com", "eventime.admin@gmail.com"];
-const DEFAULT_EXCLUDED_USERNAMES = ["eventime.admin", "eventimeadmin", "admin"];
-
 const getCachedLeaderboardData = unstable_cache(
   async () => {
     const supabaseAnon = createSupabaseClient(
@@ -24,10 +21,10 @@ const getCachedLeaderboardData = unstable_cache(
       { auth: { persistSession: false } }
     );
 
-    const [settingsRes, excludedEmailRes, excludedUserRes, allTimeRes, hydCityProfsRes] = await Promise.all([
+    const [settingsRes, excludedRes, allTimeRes, hydCityProfsRes] = await Promise.all([
       supabaseAnon.from("app_settings").select("leaderboard_enabled").eq("id", 1).maybeSingle(),
-      supabaseAnon.from("profiles").select("id").in("email", DEFAULT_EXCLUDED_EMAILS),
-      supabaseAnon.from("profiles").select("id").in("username", DEFAULT_EXCLUDED_USERNAMES),
+      // The admin/test account list lives in the database: emails are not readable from the API
+      supabaseAnon.rpc("leaderboard_excluded_ids"),
       supabaseAnon
         .from("leaderboard_view")
         .select("user_id, username, full_name, avatar_url, et_score, college, events_posted, impact_saves, base_score")
@@ -42,10 +39,7 @@ const getCachedLeaderboardData = unstable_cache(
 
     const leaderboardEnabled = settingsRes.data?.leaderboard_enabled ?? true;
 
-    const excludedIds = new Set<string>([
-      ...(excludedEmailRes.data || []).map((p) => p.id),
-      ...(excludedUserRes.data || []).map((p) => p.id)
-    ]);
+    const excludedIds = new Set<string>((excludedRes.data as string[] | null) || []);
 
     const allTimeCurators: LeaderboardCurator[] = (allTimeRes.data || [])
       .filter((r) => r.user_id && !excludedIds.has(r.user_id) && (r.et_score ?? 0) > 150)

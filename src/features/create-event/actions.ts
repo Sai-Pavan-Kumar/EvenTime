@@ -1,60 +1,21 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
-import { normalizeRegistrationLink } from "./utils/duplicateCheck";
+import { DUPLICATE_CANDIDATE_LIMIT, IGNORED_DUPLICATE_STATUSES, isSameRegistrationLink, normalizeRegistrationLink } from "./utils/duplicateCheck";
+import { isUuid, isValidWebLink, validateEventPayload } from "./utils/validateEventPayload";
+import { buildSlug, isOwnPosterUrl, withProtocol, type SubmitEventActionPayload, type SubmitEventActionResult } from "./utils/eventSubmission";
 import { revalidateTag, revalidatePath } from "next/cache";
 import type { TablesUpdate, TablesInsert } from "@/types/database";
 
-export interface SubmitEventActionPayload {
-  title: string;
-  category: string;
-  organizer_name?: string | null;
-  description?: string | null;
-  target_audience?: string[] | null;
-  start_time?: string | null;
-  end_time?: string | null;
-  end_date_string?: string | null;
-  date_string: string;
-  location?: string | null;
-  city?: string | null;
-  is_virtual?: boolean | null;
-  is_free?: boolean | null;
-  price?: number | null;
-  registration_link?: string | null;
-  prizes?: string | null;
-  team_size?: string | null;
-  website?: string | null;
-  is_featured?: boolean | null;
-  status?: string | null;
-  registration_deadline?: string | null;
-  branch_tags?: string[] | null;
-  college_branch?: string | null;
-  college_year?: string | null;
-  college_only?: boolean | null;
-  college_id?: string | null;
-  poster_url?: string | null;
-}
-
-export type SubmitEventActionResult =
-  | {
-      success: true;
-      id: string;
-      slug?: string;
-      status: "approved" | "pending";
-      title: string;
-      category: string;
-      dateString: string;
-      city: string;
-      location?: string;
-      posterUrl?: string | null;
-      isTrusted?: boolean;
-      isEditing?: boolean;
-    }
-  | {
-      success: false;
-      error: string;
-    };
+// High enough that a real organiser never meets it; it exists to stop scripts, not busy posters.
+const MAX_EVENTS_PER_DAY = 30;
+// Posting more is welcome, but points and city-wide pushes stop here, so there is nothing to farm.
+const REWARDED_EVENTS_PER_DAY = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const POINTS_PER_EVENT = 20;
+const UNIQUE_VIOLATION = "23505";
 
 export async function submitEventAction(
   payloadData: SubmitEventActionPayload,
@@ -72,20 +33,14 @@ export async function submitEventAction(
       return { success: false, error: "Please login to submit an event." };
     }
 
-    // Auto-sanitize URLs (auto-prefix https:// and nullify empty strings)
-    const cleanRegLink = payloadData.registration_link?.trim();
-    const finalRegLink = cleanRegLink
-      ? /^https?:\/\//i.test(cleanRegLink)
-        ? cleanRegLink
-        : `https://${cleanRegLink}`
-      : null;
+    const invalidReason = validateEventPayload(payloadData, isEditing);
+    if (invalidReason) return { success: false, error: invalidReason };
 
-    const cleanWebsite = payloadData.website?.trim();
-    const finalWebsite = cleanWebsite
-      ? /^https?:\/\//i.test(cleanWebsite)
-        ? cleanWebsite
-        : `https://${cleanWebsite}`
-      : null;
+    const finalRegLink = withProtocol(payloadData.registration_link);
+    const finalWebsite = withProtocol(payloadData.website);
+    if ((finalRegLink && !isValidWebLink(finalRegLink)) || (finalWebsite && !isValidWebLink(finalWebsite))) {
+      return { success: false, error: "Please enter a valid link." };
+    }
 
     // Fetch user profile to check admin status and curator name fallback
     let profile: {
@@ -112,25 +67,9 @@ export async function submitEventAction(
       }
     } catch {}
 
-    const isAdmin = profile?.user_type === "admin" || profile?.role === "admin";
+    // Only role: users can edit their own user_type, and database triggers protect role alone.
+    const isAdmin = profile?.role === "admin";
     const isTrustedLink = isVerifiedDomain(finalRegLink, dbDomains.length > 0 ? dbDomains : undefined);
-    const finalStatus: "approved" | "pending" = isAdmin || isTrustedLink ? "approved" : "pending";
-
-    // Auto-fetch and assign curator name if organizer_name is empty
-    let organizerName = payloadData.organizer_name?.trim();
-    if (!organizerName) {
-      const authName = (user.user_metadata?.full_name || user.user_metadata?.name) as string | undefined;
-      organizerName = profile?.full_name || authName || profile?.username || "Event Curator";
-    }
-
-    const eventCity = payloadData.is_virtual
-      ? "online"
-      : (payloadData.city || payloadData.location || "online");
-
-    const cleanCollegeId =
-      payloadData.college_id && payloadData.college_id.trim() !== ""
-        ? payloadData.college_id.trim()
-        : null;
 
     // Check for duplicate registration link to prevent multiple postings of the same event
     if (finalRegLink) {
@@ -138,15 +77,21 @@ export async function submitEventAction(
       if (parsed) {
         let dupQuery = supabase
           .from("events")
-          .select("id, title")
+          .select("id, title, registration_link")
           .ilike("registration_link", parsed.pattern)
-          .limit(1);
+          .not("status", "in", IGNORED_DUPLICATE_STATUSES)
+          .limit(DUPLICATE_CANDIDATE_LIMIT);
 
         if (isEditing && eventId) {
           dupQuery = dupQuery.neq("id", eventId);
         }
+        // A retry must not collide with the row its own lost first attempt saved.
+        if (!isEditing && payloadData.submission_id && isUuid(payloadData.submission_id)) {
+          dupQuery = dupQuery.neq("id", payloadData.submission_id);
+        }
 
-        const { data: duplicateEvent } = await dupQuery.maybeSingle();
+        const { data: candidates } = await dupQuery;
+        const duplicateEvent = candidates?.find((row) => isSameRegistrationLink(finalRegLink, row.registration_link));
         if (duplicateEvent) {
           return {
             success: false,
@@ -156,46 +101,81 @@ export async function submitEventAction(
       }
     }
 
-    if (isEditing && eventId) {
-      const updatePayload: TablesUpdate<"events"> = {
-        title: payloadData.title.trim(),
-        category: payloadData.category,
-        organizer_name: organizerName,
-        description: payloadData.description?.trim() || null,
-        target_audience: payloadData.target_audience || ["Everyone"],
-        start_time: payloadData.start_time || null,
-        end_time: payloadData.end_time || null,
-        end_date_string: payloadData.end_date_string || null,
-        date_string: payloadData.date_string,
-        location: payloadData.is_virtual ? "Virtual Event" : (payloadData.location || null),
-        city: eventCity,
-        is_virtual: Boolean(payloadData.is_virtual),
-        is_free: Boolean(payloadData.is_free),
-        price: payloadData.is_free ? 0 : Number(payloadData.price || 0),
-        registration_link: finalRegLink,
-        prizes: payloadData.prizes || null,
-        team_size: payloadData.team_size || null,
-        website: finalWebsite,
-        is_featured: Boolean(payloadData.is_featured),
-        registration_deadline: payloadData.registration_deadline || null,
-        branch_tags: payloadData.branch_tags || null,
-        college_branch: payloadData.college_branch || null,
-        college_year: payloadData.college_year || null,
-        college_only: Boolean(payloadData.college_only),
-        college_id: cleanCollegeId,
-      };
+    // Auto-fetch and assign curator name if organizer_name is empty
+    let organizerName = payloadData.organizer_name?.trim();
+    if (!organizerName) {
+      const authName = (user.user_metadata?.full_name || user.user_metadata?.name) as string | undefined;
+      organizerName = profile?.full_name || authName || profile?.username || "Event Curator";
+    }
 
-      if (payloadData.poster_url) {
-        updatePayload.poster_url = payloadData.poster_url;
+    const eventCity = payloadData.is_virtual ? "online" : (payloadData.city || payloadData.location || "online");
+    const title = payloadData.title.trim();
+    const location = payloadData.is_virtual ? "Virtual Event" : (payloadData.location || null);
+
+    const sharedFields = {
+      title,
+      category: payloadData.category,
+      organizer_name: organizerName,
+      description: payloadData.description?.trim() || null,
+      target_audience: payloadData.target_audience || ["Everyone"],
+      start_time: payloadData.start_time || null,
+      end_time: payloadData.end_time || null,
+      end_date_string: payloadData.end_date_string || null,
+      date_string: payloadData.date_string,
+      location,
+      city: eventCity,
+      is_virtual: Boolean(payloadData.is_virtual),
+      is_free: Boolean(payloadData.is_free),
+      price: payloadData.is_free ? 0 : Number(payloadData.price || 0),
+      registration_link: finalRegLink,
+      prizes: payloadData.prizes || null,
+      team_size: payloadData.team_size || null,
+      website: finalWebsite,
+      registration_deadline: payloadData.registration_deadline || null,
+      branch_tags: payloadData.branch_tags || null,
+      college_branch: payloadData.college_branch || null,
+      college_year: payloadData.college_year || null,
+      college_only: Boolean(payloadData.college_only),
+      college_id: payloadData.college_id?.trim() || null,
+    };
+
+    if (isEditing) {
+      if (!eventId) return { success: false, error: "Event not found." };
+
+      const { data: existing } = await supabase
+        .from("events")
+        .select("status, registration_link, poster_url, creator_id")
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (!existing || existing.status === "deleted" || (!isAdmin && existing.creator_id !== user.id)) {
+        return { success: false, error: "You can't edit this event." };
+      }
+      if (payloadData.poster_url && payloadData.poster_url !== existing.poster_url && !isOwnPosterUrl(payloadData.poster_url)) {
+        return { success: false, error: "Invalid poster image." };
       }
 
-      let query = supabase.from("events").update(updatePayload).eq("id", eventId);
-      if (!isAdmin) {
-        query = query.eq("creator_id", user.id);
-      }
+      // Approval was earned by the old link, so swapping in an unverified one sends the event back to review.
+      const linkChanged = finalRegLink !== existing.registration_link;
+      const needsReview = !isAdmin && existing.status === "approved" && linkChanged && !isTrustedLink;
+      const finalStatus = (needsReview ? "pending" : existing.status) as "approved" | "pending";
 
-      const { error: updateErr } = await query;
+      const updatePayload: TablesUpdate<"events"> = { ...sharedFields };
+      // Featured placement is an admin decision, and this request can be forged from the browser.
+      if (isAdmin) updatePayload.is_featured = Boolean(payloadData.is_featured);
+      if (payloadData.poster_url) updatePayload.poster_url = payloadData.poster_url;
+
+      const { error: updateErr } = await supabase.from("events").update(updatePayload).eq("id", eventId);
       if (updateErr) throw updateErr;
+
+      if (needsReview) {
+        // A database guard silently ignores status changes from normal users, so this needs the service client.
+        const { error: reviewErr } = await createAdminClient()
+          .from("events")
+          .update({ status: "pending", approved_at: null })
+          .eq("id", eventId);
+        if (reviewErr) throw reviewErr;
+      }
 
       try {
         await supabase
@@ -216,61 +196,56 @@ export async function submitEventAction(
         id: eventId,
         isEditing: true,
         status: finalStatus,
-        title: payloadData.title.trim(),
+        title,
         category: payloadData.category,
         dateString: payloadData.date_string,
         city: eventCity,
-        location: payloadData.is_virtual ? "Virtual Event" : (payloadData.location || ""),
+        location: location || "",
         posterUrl: payloadData.poster_url || null,
       };
     }
 
-    // Generate unique slug
-    const slugTitle = (payloadData.title || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-    const citySlug = eventCity
-      ? eventCity.split(",")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-      : "online";
-    const eventDate = payloadData.date_string ? new Date(payloadData.date_string) : undefined;
-    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
-    const month = eventDate && !isNaN(eventDate.getTime()) ? monthNames[eventDate.getMonth()] : "";
-    const year = eventDate && !isNaN(eventDate.getTime()) ? eventDate.getFullYear().toString() : "";
-    const randomSuffix = crypto.randomUUID().split("-")[0].substring(0, 4);
-    const uniqueSlug = [slugTitle, citySlug, month, year, randomSuffix].filter(Boolean).join("-");
+    if (payloadData.poster_url && !isOwnPosterUrl(payloadData.poster_url)) {
+      return { success: false, error: "Invalid poster image." };
+    }
+
+    let postedToday = 0;
+    if (!isAdmin) {
+      const { count } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .eq("creator_id", user.id)
+        .gte("created_at", new Date(Date.now() - DAY_MS).toISOString());
+      postedToday = count ?? 0;
+      if (postedToday >= MAX_EVENTS_PER_DAY) {
+        return { success: false, error: "You've reached today's posting limit. Please try again tomorrow." };
+      }
+    }
+
+    const finalStatus: "approved" | "pending" = isAdmin || isTrustedLink ? "approved" : "pending";
+    const uniqueSlug = buildSlug(title, eventCity, payloadData.date_string);
+    const submissionId = payloadData.submission_id && isUuid(payloadData.submission_id) ? payloadData.submission_id : undefined;
 
     const insertPayload: TablesInsert<"events"> = {
-      title: payloadData.title.trim(),
-      category: payloadData.category,
-      organizer_name: organizerName,
-      description: payloadData.description?.trim() || null,
-      target_audience: payloadData.target_audience || ["Everyone"],
-      start_time: payloadData.start_time || null,
-      end_time: payloadData.end_time || null,
-      end_date_string: payloadData.end_date_string || null,
-      date_string: payloadData.date_string,
-      location: payloadData.is_virtual ? "Virtual Event" : (payloadData.location || null),
-      city: eventCity,
-      is_virtual: Boolean(payloadData.is_virtual),
-      is_free: Boolean(payloadData.is_free),
-      price: payloadData.is_free ? 0 : Number(payloadData.price || 0),
-      registration_link: finalRegLink,
-      prizes: payloadData.prizes || null,
-      team_size: payloadData.team_size || null,
-      website: finalWebsite,
-      is_featured: Boolean(payloadData.is_featured),
+      ...sharedFields,
+      ...(submissionId ? { id: submissionId } : {}),
+      is_featured: isAdmin && Boolean(payloadData.is_featured),
       status: finalStatus,
       approved_at: finalStatus === "approved" ? new Date().toISOString() : null,
-      registration_deadline: payloadData.registration_deadline || null,
-      branch_tags: payloadData.branch_tags || null,
-      college_branch: payloadData.college_branch || null,
-      college_year: payloadData.college_year || null,
-      college_only: Boolean(payloadData.college_only),
-      college_id: cleanCollegeId,
       poster_url: payloadData.poster_url || null,
       slug: uniqueSlug,
       creator_id: user.id,
+    };
+
+    const baseResult = {
+      success: true as const,
+      title,
+      category: payloadData.category,
+      dateString: payloadData.date_string,
+      city: eventCity,
+      location: location || "",
+      posterUrl: insertPayload.poster_url,
+      isTrusted: isTrustedLink || isAdmin,
     };
 
     const { data: insertedEvent, error: insertErr } = await supabase
@@ -279,33 +254,48 @@ export async function submitEventAction(
       .select("id")
       .single();
 
-    if (insertErr) throw insertErr;
-
-    // Award +20 ET points if approved live
-    if (finalStatus === "approved") {
-      try {
-        await supabase.rpc("increment_et_score", {
-          user_id: user.id,
-          delta: 20,
-        });
-      } catch {}
-
-      // Broadcast push notifications to mobile app users in that city
-      try {
-        if (insertPayload.city && insertPayload.city !== "online") {
-          void supabase.functions.invoke("send-push-notification", {
-            body: {
-              city: insertPayload.city,
-              category: insertPayload.category,
-              notification_type: "city_updates",
-              title: `New in ${insertPayload.city} · ${insertPayload.category}`,
-              body: `"${insertPayload.title}" opened for registration.`,
-              data: { eventId: insertedEvent?.id, id: insertedEvent?.id },
-              channel_id: "city-updates",
-            },
-          }).catch(() => {});
+    if (insertErr) {
+      // The first attempt did save and only its response was lost, so report that event as the success.
+      if (insertErr.code === UNIQUE_VIOLATION && submissionId) {
+        const { data: alreadySaved } = await supabase
+          .from("events")
+          .select("id, slug, status")
+          .eq("id", submissionId)
+          .eq("creator_id", user.id)
+          .maybeSingle();
+        if (alreadySaved) {
+          return { ...baseResult, id: alreadySaved.id, slug: alreadySaved.slug ?? undefined, status: alreadySaved.status as "approved" | "pending" };
         }
-      } catch {}
+      }
+      throw insertErr;
+    }
+
+    if (finalStatus === "approved") {
+      if (postedToday < REWARDED_EVENTS_PER_DAY) {
+        try {
+          await supabase.rpc("increment_et_score", {
+            user_id: user.id,
+            delta: POINTS_PER_EVENT,
+          });
+        } catch {}
+
+        // Broadcast push notifications to mobile app users in that city
+        try {
+          if (eventCity !== "online") {
+            void supabase.functions.invoke("send-push-notification", {
+              body: {
+                city: eventCity,
+                category: insertPayload.category,
+                notification_type: "city_updates",
+                title: `New in ${eventCity} · ${insertPayload.category}`,
+                body: `"${title}" opened for registration.`,
+                data: { eventId: insertedEvent?.id, id: insertedEvent?.id },
+                channel_id: "city-updates",
+              },
+            }).catch(() => {});
+          }
+        } catch {}
+      }
 
       try {
         revalidateTag("events", "events");
@@ -317,23 +307,11 @@ export async function submitEventAction(
       } catch {}
     }
 
-    return {
-      success: true,
-      id: insertedEvent?.id || "",
-      slug: uniqueSlug,
-      status: finalStatus,
-      title: insertPayload.title,
-      category: insertPayload.category,
-      dateString: insertPayload.date_string,
-      city: insertPayload.city || eventCity,
-      location: insertPayload.location || "",
-      posterUrl: insertPayload.poster_url,
-      isTrusted: isTrustedLink || isAdmin,
-    };
+    return { ...baseResult, id: insertedEvent?.id || "", slug: uniqueSlug, status: finalStatus };
   } catch (err: any) {
     console.error("[submitEventAction] Error:", err);
     const isDuplicateLink =
-      err?.code === "23505" &&
+      err?.code === UNIQUE_VIOLATION &&
       (err?.message?.includes("unique_registration_link") ||
         err?.details?.includes("registration_link"));
 
@@ -341,7 +319,7 @@ export async function submitEventAction(
       success: false,
       error: isDuplicateLink
         ? "This event link has already been posted by someone else."
-        : (err?.message || "Failed to submit event. Please try again."),
+        : "We couldn't save your event. Please try again.",
     };
   }
 }

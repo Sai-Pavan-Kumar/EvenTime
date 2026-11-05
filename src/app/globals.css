@@ -75,3 +75,109 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+/* Landing page entrances: driven by scroll position, no JavaScript, so content is never left hidden
+   if a script fails. Browsers without scroll timelines simply show everything in place. */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ticker-track { animation: ticker-slide 45s linear infinite; }
+  .rise-word { display: inline-block; animation: rise-word 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @supports (animation-timeline: view()) {
+    /* Finishes while the words are still low on screen, so they are never read half faded. */
+    .rise-in { animation: rise-in linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+    .grow-in { transform-origin: left center; animation: grow-in linear both; animation-timeline: view(); animation-range: entry 10% cover 40%; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker { overflow-x: auto; }
+}
+/* SurfBoard stage hero. Scroll code writes the custom properties; CSS only maps them. */
+/* :has() hides the navbar from the first paint, before any script runs, so it never flashes over the poster. */
+html:has(.stage-track:not(.is-static)) [data-site-nav] {
+  /* Out of the page flow, so the poster starts at the very top with no strip above it. */
+  position: fixed;
+  inset: 0 0 auto 0;
+  opacity: var(--stage-nav, 0);
+  pointer-events: none;
+}
+html.stage-nav-live:has(.stage-track:not(.is-static)) [data-site-nav],
+html:has(.stage-track:not(.is-static)) [data-site-nav]:focus-within {
+  pointer-events: auto;
+  opacity: 1;
+}
+html:has(.stage-track:not(.is-static)) #mobile-bottom-nav {
+  /* The extra distance clears the round Post button, which sits above the bar. */
+  translate: 0 calc(100% + 32px);
+  transition: translate 300ms ease;
+}
+html.stage-nav-live:has(.stage-track:not(.is-static)) #mobile-bottom-nav { translate: 0 0; }
+.stage-ink { color: #0D0B1A; transition: color 300ms ease; }
+.stage-track.is-lit .stage-ink { color: #fff; }
+.stage-beat1 { opacity: var(--beat1-opacity, 1); transform: translateY(var(--beat1-shift, 0)); }
+.stage-beat2 { opacity: var(--beat2-opacity, 0); transform: translateY(calc(var(--beat2-shift, 20px) - var(--words-lift, 0px) * var(--words-up, 0))); }
+.stage-cta { opacity: var(--cta-opacity, 0); transform: translateY(var(--cta-shift, 24px)); }
+.stage-exit { opacity: var(--exit-opacity, 0); }
+.stage-cards {
+  position: absolute;
+  top: var(--cards-top, 0);
+  left: 50%;
+  display: grid;
+  grid-template-columns: repeat(var(--card-columns, 4), 300px);
+  gap: 20px;
+  transform: translateX(-50%) scale(var(--card-scale, 1));
+  transform-origin: top center;
+  pointer-events: auto;
+}
+/* The translate property, not transform: the card's own motion and hover keep transform.
+   !important because the card's motion wrapper writes an inline opacity of 1. */
+.stage-cards > * { opacity: var(--card) !important; translate: 0 calc((1 - var(--card)) * 48px); }
+.stage-cards > :nth-child(1) { --card: var(--card-0, 0); }
+.stage-cards > :nth-child(2) { --card: var(--card-1, 0); }
+.stage-cards > :nth-child(3) { --card: var(--card-2, 0); }
+.stage-cards > :nth-child(4) { --card: var(--card-3, 0); }
+@media (max-width: 1099px) { .stage-cards > :nth-child(4) { display: none; } }
+.stage-track.is-static .stage-cards, .stage-track.no-cards .stage-cards { display: none; }
+.stage-track.is-static .stage-safe { position: relative; height: auto; }
+.stage-fallback { display: none; background: #6C47FF; opacity: var(--reveal, 0); }
+.stage-track.no-webgl .stage-canvas { display: none; }
+.stage-track.no-webgl .stage-fallback { display: block; }
+.stage-track.is-static { height: auto; }
+.stage-track.is-static + #events { margin-top: 0; }
+.stage-track.is-static .stage-pin { position: relative; height: auto; min-height: 100svh; padding: 8rem 0 5rem; }
+.stage-track.is-static .stage-ink { gap: 3rem; }
+.stage-track.is-static .stage-beat2 { grid-row-start: 2; }
+.stage-track.is-static .stage-beat2, .stage-track.is-static .stage-cta { opacity: 1; transform: none; }
+.closing-ink { color: #0D0B1A; }
+.closing-accent { color: #6C47FF; }
+/* A CSS spring: about 6% overshoot, settled by mid-duration. Cheap enough for low-end phones
+   because only transform properties move, and it needs no JavaScript. */
+:root { --spring: linear(0, 0.425 5%, 0.747 10%, 0.943 15%, 1.037 20%, 1.066 25%, 1.061 30%, 1.024 40%, 1.002 50%, 0.997 60%, 1); }
+.spring-press { transition-property: transform, translate, scale; transition-duration: 150ms; }
+@media (prefers-reduced-motion: no-preference) {
+  .spring-press { transition-duration: 600ms; transition-timing-function: var(--spring); }
+  /* Press-down must answer the finger at once; only the release gets the bounce. */
+  .spring-press:active { transition-duration: 90ms; transition-timing-function: ease-out; }
+  .spring-grid > * { animation: spring-rise 800ms var(--spring) backwards; }
+  /* Each load-more batch is 4 cards, so the stagger restarts per batch. */
+  .spring-grid > :nth-child(4n + 2) { animation-delay: 50ms; }
+  .spring-grid > :nth-child(4n + 3) { animation-delay: 100ms; }
+  .spring-grid > :nth-child(4n + 4) { animation-delay: 150ms; }
+  .spring-pop { animation: spring-pop 800ms var(--spring) backwards; }
+}
+@keyframes spring-rise { from { translate: 0 20px; scale: 0.98; } }
+@keyframes spring-pop { from { translate: 0 12px; scale: 0.96; } }
+@keyframes ticker-slide { to { transform: translateX(-50%); } }
+@keyframes rise-word { from { opacity: 0; transform: translateY(60%) rotate(3deg); } to { opacity: 1; transform: none; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(30%); } to { opacity: 1; transform: none; } }
+@keyframes grow-in { from { opacity: 0.3; transform: scaleX(0.15); } to { opacity: 1; transform: none; } }
+@keyframes reveal-rise {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: none; }
+}

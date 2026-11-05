@@ -64,7 +64,12 @@ export async function GET(req: NextRequest) {
           </div>
         </div>
       ),
-      { width: 1080, height: 1920 }
+      {
+        width: 1080,
+        height: 1920,
+        // The query string fully defines the image, so each share URL renders once and the CDN serves the rest.
+        headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable' },
+      }
     );
   } catch (e: unknown) {
   const errorMessage = e instanceof Error ? e.message : 'Unknown error';

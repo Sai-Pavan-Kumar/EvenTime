@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -44,6 +45,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { toast } from "sonner";
+import { BrandAvatar } from "@/components/ui/BrandAvatar";
 
 export interface EventUIProps {
   event: any;
@@ -64,7 +66,7 @@ export default function EventClientUI({
   isAppBannerEnabled = false,
 }: EventUIProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useNonBlockingSearchParams();
   const fromParam = searchParams.get("from");
 
   const handleBackNavigation = () => {
@@ -128,7 +130,7 @@ export default function EventClientUI({
   const isOwner = Boolean(currentUser && safeCreatorId && currentUser.id === safeCreatorId);
   const isStudent = userProfile?.user_type === "student";
 
-  const fallbackImage = getCategoryConfig(safeCategory)?.backgroundImage || "/card-backgrounds/default-event.webp";
+  const fallbackImage = getCategoryConfig(safeCategory)?.backgroundImage || "/card-backgrounds/sm/default-event.webp";
   const isCustomPoster = Boolean(event.is_featured && event.poster_url && event.poster_url.startsWith('http'));
   const imageUrl = isCustomPoster ? event.poster_url! : fallbackImage;
   const [currentImageSrc, setCurrentImageSrc] = useState(imageUrl);
@@ -1092,19 +1094,7 @@ export default function EventClientUI({
                           key={i}
                           className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 overflow-hidden shrink-0"
                         >
-                          {u.avatar_url ? (
-                            <Image
-                              src={u.avatar_url}
-                              alt={u.username || ""}
-                              width={32}
-                              height={32}
-                              className="object-cover w-full h-full"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-brand-primary/20 flex items-center justify-center text-[10px] font-bold text-brand-primary">
-                              {(u.username || "?")[0].toUpperCase()}
-                            </div>
-                          )}
+                          <BrandAvatar seed={u.username} className="h-full w-full" />
                         </div>
                       ))}
                     </div>

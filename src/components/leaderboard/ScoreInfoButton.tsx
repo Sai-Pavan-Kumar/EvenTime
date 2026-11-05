@@ -11,7 +11,7 @@ export function ScoreInfoButton() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-1 text-xs bg-brand-primary/10 hover:bg-brand-primary/20 px-2 py-1 rounded-full text-brand-primary transition-colors"
+        className="relative inline-flex items-center gap-1 after:absolute after:inset-x-0 after:-inset-y-2.5 text-xs bg-brand-primary/10 hover:bg-brand-primary/20 px-2 py-1 rounded-full text-brand-primary transition-colors"
       >
         <Info className="w-3 h-3" /> How ET Score works
       </button>
@@ -22,7 +22,8 @@ export function ScoreInfoButton() {
           <div className="relative w-full max-w-sm bg-white rounded-[28px] shadow-2xl p-6 text-left">
             <button
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
+              aria-label="Close"
+              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-full transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

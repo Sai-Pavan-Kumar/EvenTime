@@ -631,6 +631,24 @@ export type Database = {
         Args: { delta: number; user_id: string }
         Returns: undefined
       }
+      leaderboard_excluded_ids: { Args: never; Returns: string[] }
+      admin_profile_emails: {
+        Args: { profile_ids: string[] }
+        Returns: { id: string; email: string | null }[]
+      }
+      admin_search_users: {
+        Args: { search_text?: string | null }
+        Returns: {
+          id: string
+          full_name: string | null
+          username: string | null
+          email: string | null
+          role: string | null
+          et_score: number | null
+          avatar_url: string | null
+          updated_at: string | null
+        }[]
+      }
       purge_old_deleted_users: { Args: never; Returns: undefined }
       search_colleges: {
         Args: { search_term: string }
