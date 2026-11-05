@@ -1,27 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Award, ChevronRight, GraduationCap, Pencil } from "lucide-react";
+import { ChevronRight, GraduationCap, Pencil } from "lucide-react";
 import type { ProfileRow } from "@/types";
 import type { ProfileEvent } from "./ProfileClient";
 import { BrandAvatar } from "@/components/ui/BrandAvatar";
-import { createBrandAvatar } from "@/lib/profile/brandAvatar";
+import { CuratorLevelBadge } from "@/components/ui/CuratorLevelBadge";
+import { getCuratorLevel, getNextCuratorLevel } from "@/lib/profile/curatorLevel";
 
-const SILVER_CURATOR_EVENTS = 30;
-const GOLD_CURATOR_EVENTS = 69;
 const VISIBLE_GOALS = 3;
-
-function getTierLabel(eventCount: number) {
-  if (eventCount >= GOLD_CURATOR_EVENTS) return "Gold Curator";
-  if (eventCount >= SILVER_CURATOR_EVENTS) return "Silver Curator";
-  return "Curator";
-}
-
-function getNextTier(eventCount: number) {
-  if (eventCount >= GOLD_CURATOR_EVENTS) return null;
-  if (eventCount >= SILVER_CURATOR_EVENTS) return { label: "Gold Curator", target: GOLD_CURATOR_EVENTS };
-  return { label: "Silver Curator", target: SILVER_CURATOR_EVENTS };
-}
 
 function getMissingSteps(profile: Partial<ProfileRow>) {
   const isStudent = profile.user_type === "student";
@@ -47,16 +34,17 @@ function Stat({ value, label }: { value: number; label: string }) {
 }
 
 function TierProgress({ eventCount }: { eventCount: number }) {
-  const nextTier = getNextTier(eventCount);
-  if (!nextTier) return null;
-  const remaining = nextTier.target - eventCount;
+  const nextLevel = getNextCuratorLevel(eventCount);
+  if (!nextLevel) return null;
+  const remaining = nextLevel.minEvents - eventCount;
   return (
     <div className="border-t border-slate-100 py-4">
       <p className="text-[13px] text-slate-600">
-        {remaining} more {remaining === 1 ? "event" : "events"} to {nextTier.label}
+        {remaining} more {remaining === 1 ? "event" : "events"} to {nextLevel.label}
       </p>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-full rounded-full bg-brand-primary" style={{ width: `${(eventCount / nextTier.target) * 100}%` }} />
+        {/* Filled in the colour being worked towards, so the next level is visible before it is earned. */}
+        <div className={`h-full rounded-full ${nextLevel.progressClass}`} style={{ width: `${(eventCount / nextLevel.minEvents) * 100}%` }} />
       </div>
     </div>
   );
@@ -80,15 +68,18 @@ export function ProfileHeader({
   // Some accounts hold the literal placeholder "User"; their username says more about them.
   const realName = profile.full_name === "User" ? null : profile.full_name;
   const avatarSeed = profile.username || user?.email;
+  // Pending and rejected events stay out, so this always matches what visitors see on the public profile.
+  const approvedEventCount = myEvents.filter((event) => event.status === "approved").length;
+  const level = getCuratorLevel(approvedEventCount);
 
   return (
     <header className="overflow-hidden rounded-3xl border border-slate-200/70 bg-white">
-      {/* The band takes the avatar's colour, so every profile looks like its owner's without an upload. */}
-      <div className="h-20 sm:h-28" style={{ backgroundColor: createBrandAvatar(avatarSeed).background }} />
+      {/* The band shows the level, so standing is readable before any text. */}
+      <div className={`h-20 sm:h-28 ${level.bandClass}`} />
 
       <div className="px-4 sm:px-6">
         <div className="flex items-start justify-between gap-4">
-          <BrandAvatar seed={avatarSeed} className="-mt-10 h-20 w-20 shrink-0 rounded-full ring-4 ring-white sm:-mt-12 sm:h-24 sm:w-24" />
+          <BrandAvatar seed={avatarSeed} className={`-mt-10 h-20 w-20 shrink-0 rounded-full ring-4 ring-offset-2 ring-offset-white sm:-mt-12 sm:h-24 sm:w-24 ${level.ringClass}`} />
           <Link
             href="/profile/settings"
             aria-label="Edit profile"
@@ -104,10 +95,7 @@ export function ProfileHeader({
         </h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
           <p className="min-w-0 truncate text-sm text-slate-500">{profile.username ? `@${profile.username}` : user?.email}</p>
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand-primary/10 px-2.5 py-1 text-xs font-medium text-brand-primary">
-            <Award className="h-3.5 w-3.5" aria-hidden="true" />
-            {getTierLabel(myEvents.length)}
-          </span>
+          <CuratorLevelBadge level={level} />
         </div>
 
         {profile.user_type === "student" && profile.college && (
@@ -151,7 +139,7 @@ export function ProfileHeader({
         <div className={`mt-5 grid divide-x divide-slate-100 border-t border-slate-100 ${leaderboardEnabled ? "grid-cols-4" : "grid-cols-3"}`}>
           {leaderboardEnabled && (
             <div className="py-4 pr-3 sm:pr-6">
-              <div className="font-heading text-2xl font-bold tabular-nums text-brand-primary">{score}</div>
+              <div className={`font-heading text-2xl font-bold tabular-nums ${level.scoreClass}`}>{score}</div>
               <div className="mt-0.5 text-[13px] text-slate-500">ET score</div>
             </div>
           )}
@@ -160,7 +148,7 @@ export function ProfileHeader({
           <Stat value={sumCounts(myEvents, (event) => event.registered_count)} label="People registered" />
         </div>
 
-        <TierProgress eventCount={myEvents.length} />
+        <TierProgress eventCount={approvedEventCount} />
       </div>
     </header>
   );
