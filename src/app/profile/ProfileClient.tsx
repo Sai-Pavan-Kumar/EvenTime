@@ -77,7 +77,7 @@ export default function ProfileClient({
   };
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-surface-base">
       <Navbar />
 
       <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-16 lg:pt-12">
@@ -85,7 +85,7 @@ export default function ProfileClient({
           <ProfileHeader user={initialUser} profile={initialProfile} myEvents={myEvents} leaderboardEnabled={leaderboardEnabled} />
         </div>
 
-        <div className="mt-6 grid gap-12 lg:mt-10 lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="mt-4 grid gap-4 lg:mt-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-6">
           <div className={`lg:sticky lg:top-24 lg:self-start ${isMobileMenu ? "block" : "hidden lg:block"}`}>
             <ProfileNav
               activeTab={activeTab}

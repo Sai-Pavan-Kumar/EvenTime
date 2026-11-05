@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY, isSupportedCurrency } from "@/lib/eventPrice";
 import type { SubmitEventActionPayload } from "./eventSubmission";
 
 const MAX_LENGTHS = { title: 100, category: 60, description: 3000, location: 150, organizer_name: 80, prizes: 120, team_size: 40, college_branch: 100, college_year: 20 } as const;
@@ -79,6 +80,7 @@ export function validateEventPayload(payload: SubmitEventActionPayload, isEditin
   if (!payload.is_free) {
     const price = Number(payload.price);
     if (!Number.isInteger(price) || price <= 0 || price > MAX_PRICE) return "Please enter a valid ticket price.";
+    if (!isSupportedCurrency(payload.price_currency || DEFAULT_CURRENCY)) return "Please pick a valid currency.";
   }
 
   if (payload.college_id && !isUuid(payload.college_id)) return "Please pick your college from the list.";

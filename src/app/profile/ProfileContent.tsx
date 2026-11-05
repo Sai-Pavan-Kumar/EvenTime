@@ -99,7 +99,7 @@ export function ProfileContent({
   const heading = TAB_HEADINGS[activeTab] ?? TAB_HEADINGS.posted;
 
   return (
-    <section>
+    <section className="rounded-3xl border border-slate-200/70 bg-white p-4 sm:p-6">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h2 className="font-heading text-xl font-bold tracking-tight text-slate-900">{heading.title}</h2>

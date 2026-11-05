@@ -162,6 +162,8 @@ export type Database = {
           organizer_name: string
           poster_url: string | null
           price: number | null
+          price_currency: string
+          price_is_starting: boolean
           prizes: string | null
           registration_deadline: string | null
           registration_link: string | null
@@ -203,6 +205,8 @@ export type Database = {
           organizer_name: string
           poster_url?: string | null
           price?: number | null
+          price_currency?: string
+          price_is_starting?: boolean
           prizes?: string | null
           registration_deadline?: string | null
           registration_link?: string | null
@@ -244,6 +248,8 @@ export type Database = {
           organizer_name?: string
           poster_url?: string | null
           price?: number | null
+          price_currency?: string
+          price_is_starting?: boolean
           prizes?: string | null
           registration_deadline?: string | null
           registration_link?: string | null

@@ -181,3 +181,12 @@ html.stage-nav-live:has(.stage-track:not(.is-static)) #mobile-bottom-nav { trans
   from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: none; }
 }
+
+@keyframes scene-drive { from { transform: translateX(var(--from)); } to { transform: translateX(var(--to)); } }
+@keyframes scene-drift { from { transform: translateX(calc(var(--drift) * -1)); } to { transform: translateX(var(--drift)); } }
+@keyframes scene-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scene-hazard { 0% { opacity: 1; } 50% { opacity: 0.15; } }
+@keyframes scene-incident { 0% { opacity: 0; } 2% { opacity: 1; } 96% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes scene-ambulance { 0%, 20% { transform: translateX(var(--from)); } 32%, 72% { transform: translateX(var(--stop)); } 86%, 100% { transform: translateX(var(--to)); } }
+@keyframes scene-rain { from { transform: translateY(0); } to { transform: translateY(120px); } }
+.scene-paused * { animation-play-state: paused !important; }

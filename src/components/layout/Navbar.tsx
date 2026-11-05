@@ -151,7 +151,7 @@ function NavbarInner({
 
       let query = supabase
         .from("events")
-        .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
+        .select("id, slug, title, category, date_string, end_date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience")
         .eq("status", "approved")
         .gte("date_string", sixMonthsAgoStr)
         .or("college_only.is.null,college_only.eq.false");

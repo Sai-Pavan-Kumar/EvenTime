@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CityRanking } from "./CityRanking";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug, Shield } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +31,7 @@ export default function SettingsClient({
   userEmail?: string
 }) {
   const router = useRouter();
+  const { refreshProfile } = useAuth();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -172,6 +175,8 @@ export default function SettingsClient({
           })
         );
       } catch {}
+      // The app keeps one live profile, so without this the homepage shows the old city order until a reload.
+      void refreshProfile();
       toast.success("Profile updated successfully!");
       router.push("/profile");
     }
@@ -307,11 +312,13 @@ export default function SettingsClient({
                             : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
                         }`}
                       >
+                        {isSelected && <span className="mr-1 opacity-60">{selectedCities.indexOf(loc) + 1}</span>}
                         {loc}
                       </button>
                     );
                   })}
                 </div>
+                {selectedCities.length > 1 && <CityRanking cities={selectedCities} onChange={setSelectedCities} />}
               </div>
 
               <div className="relative px-4 py-3.5 bg-[#F8F9FB]">

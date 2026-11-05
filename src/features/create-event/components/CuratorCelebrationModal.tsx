@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { format, parseISO, isValid } from "date-fns";
 import { motion, useReducedMotion } from "framer-motion";
-import { Calendar, Check, Copy, MapPin, Share2, X } from "lucide-react";
+import { Calendar, Check, Copy, MapPin, Plus, Share2, X } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
+import { getCategoryConfig } from "@/lib/category-config";
 
 export interface CelebrationEventData {
   id?: string;
@@ -25,6 +27,7 @@ interface CuratorCelebrationModalProps {
   event: CelebrationEventData | null;
   onClose: () => void;
   onViewEvent?: (slug?: string) => void;
+  onPostAnother?: () => void;
 }
 
 const CONFETTI_COUNT = 36;
@@ -33,6 +36,12 @@ const TICKET_LAND_DELAY_S = 0.32;
 const STAMP_DELAY_S = 0.62;
 const COPIED_RESET_MS = 2500;
 const STAMP_HAPTIC_MS = 18;
+
+function ordinal(count: number) {
+  const lastTwo = count % 100;
+  const suffix = lastTwo >= 11 && lastTwo <= 13 ? "th" : ["th", "st", "nd", "rd"][count % 10] ?? "th";
+  return `${count}${suffix}`;
+}
 
 function readableDate(dateString: string) {
   const parsed = parseISO(dateString);
@@ -66,8 +75,9 @@ function ConfettiBurst() {
   );
 }
 
-export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }: CuratorCelebrationModalProps) {
+export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent, onPostAnother }: CuratorCelebrationModalProps) {
   const [copied, setCopied] = useState(false);
+  const [postedCount, setPostedCount] = useState<number | null>(null);
   const reduceMotion = useReducedMotion();
   const viewButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -84,6 +94,21 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
       clearTimeout(stampHaptic);
     };
   }, [isOpen, onClose, reduceMotion]);
+
+  // Seeing the number climb is the nudge to post again. It's only decoration, so a failed count just hides it.
+  useEffect(() => {
+    if (!isOpen) return;
+    let isCurrent = true;
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { count } = await supabase.from("events").select("id", { count: "exact", head: true }).eq("creator_id", user.id).neq("status", "deleted");
+      if (isCurrent && count) setPostedCount(count);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, [isOpen]);
 
   if (!isOpen || !event) return null;
 
@@ -115,7 +140,7 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-[#0D0B1A]/90 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center overflow-y-auto bg-[#1A1040] p-4"
     >
       {isLive && !reduceMotion && <ConfettiBurst />}
 
@@ -138,7 +163,7 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
           transition={{ delay: 0.2, duration: 0.3 }}
           className="mb-6 text-center text-sm text-white/70"
         >
-          {isLive ? "People can find your event right now." : "We'll publish it as soon as an admin approves it."}
+          {isLive ? "People can find your event right now. Send it to one group and get your first interested people." : "We'll publish it as soon as an admin approves it."}
         </motion.p>
 
         {/* The ticket is the reward: the thing the poster just made, handed back to them and stamped. */}
@@ -149,11 +174,7 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
           className="relative rounded-lg bg-white"
         >
           <div className="relative aspect-[16/9] overflow-hidden rounded-t-lg bg-brand-primary">
-            {event.posterUrl ? (
-              <Image src={event.posterUrl} alt="" fill sizes="384px" className="object-cover" />
-            ) : (
-              <p className="flex h-full items-end p-4 font-heading text-2xl font-bold leading-tight tracking-[-0.02em] text-white">{event.category || "Event"}</p>
-            )}
+            <Image src={event.posterUrl || getCategoryConfig(event.category).backgroundImage} alt="" fill sizes="384px" className="object-cover" />
             <motion.span
               initial={reduceMotion ? false : { scale: 2.6, rotate: 6, opacity: 0 }}
               animate={{ scale: 1, rotate: -8, opacity: 1 }}
@@ -166,13 +187,18 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
 
           <div className="relative border-t-2 border-dashed border-slate-200 p-4">
             {/* Punched notches sit on the tear line, in the colour of the scrim behind the ticket. */}
-            <span className="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full bg-[#1a1727]" aria-hidden />
-            <span className="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full bg-[#1a1727]" aria-hidden />
+            <span className="absolute -left-2.5 -top-2.5 h-5 w-5 rounded-full bg-[#1A1040]" aria-hidden />
+            <span className="absolute -right-2.5 -top-2.5 h-5 w-5 rounded-full bg-[#1A1040]" aria-hidden />
             <h3 className="line-clamp-2 font-heading text-lg font-bold leading-snug text-slate-900">{event.title}</h3>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-600">
               <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-slate-400" />{dateLabel}</span>
               <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-slate-400" />{place}</span>
             </div>
+            {postedCount !== null && (
+              <p className="mt-3 border-t border-slate-100 pt-3 text-sm font-bold text-brand-primary">
+                {postedCount === 1 ? "Your first event on EvenTime" : `Your ${ordinal(postedCount)} event on EvenTime`}
+              </p>
+            )}
           </div>
         </motion.div>
 
@@ -182,18 +208,21 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent }:
           transition={{ delay: reduceMotion ? 0 : STAMP_DELAY_S + 0.25, duration: 0.3 }}
           className="mt-5 space-y-2"
         >
-          <button ref={viewButtonRef} type="button" onClick={() => onViewEvent?.(event.slug || event.id)} className="flex min-h-12 w-full items-center justify-center rounded-full bg-white text-sm font-bold text-slate-900 transition-transform active:scale-[0.98]">
-            View event
+          <button ref={viewButtonRef} type="button" onClick={handleWhatsAppShare} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-bold text-slate-900 transition-transform active:scale-[0.98]">
+            <Share2 className="h-4 w-4" /> Share on WhatsApp
           </button>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={handleWhatsAppShare} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15">
-              <Share2 className="h-4 w-4" /> WhatsApp
+            <button type="button" onClick={() => onViewEvent?.(event.slug || event.id)} className="flex min-h-12 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15">
+              View event
             </button>
             <button type="button" onClick={handleCopyLink} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy link"}
             </button>
           </div>
+          <button type="button" onClick={onPostAnother} className="flex min-h-12 w-full items-center justify-center gap-2 text-sm font-semibold text-white/80 transition-colors hover:text-white">
+            <Plus className="h-4 w-4" /> Post another event
+          </button>
         </motion.div>
       </div>
     </motion.div>

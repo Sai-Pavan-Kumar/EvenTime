@@ -37,7 +37,7 @@ function Metric({ icon: Icon, value, label }: { icon: typeof Users; value: numbe
     <span title={label} className="inline-flex items-center gap-1 tabular-nums">
       <Icon className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
       {value}
-      <span className="sr-only"> {label}</span>
+      <span> {label}</span>
     </span>
   );
 }
@@ -53,7 +53,7 @@ export function PostedEventRow({ event, deleteAction }: { event: ProfileEvent; d
             <ReviewStatus status={event.status} />
           </div>
           <p className="mt-1 text-[13px] text-slate-500">{formatEventDate(event.date_string)}</p>
-          <div className="mt-1 flex items-center gap-3 text-[13px] text-slate-500">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-slate-500">
             <Metric icon={Check} value={event.registered_events?.[0]?.count || 0} label="registered" />
             <Metric icon={Users} value={event.interested_events?.[0]?.count || 0} label="interested" />
             <Metric icon={Bookmark} value={event.saved_events?.[0]?.count || 0} label="saved" />

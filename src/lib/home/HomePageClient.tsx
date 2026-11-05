@@ -15,6 +15,7 @@ import type { User } from "@supabase/supabase-js";
 import { eventSync } from "@/lib/events/eventSync";
 import { GuestLanding } from "./landing/GuestLanding";
 import { EventGrid } from "./EventGrid";
+import { GreetingScene } from "./GreetingScene";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
@@ -322,7 +323,7 @@ export function HomePageClient(props: HomePageClientProps) {
         const todayStr = new Date().toISOString().substring(0, 10);
         let query = supabase
           .from("events")
-          .select("id, slug, title, category, date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, college_branch, college_year, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)")
+          .select("id, slug, title, category, date_string, end_date_string, start_time, end_time, location, city, poster_url, organizer_name, is_free, is_featured, goal_tags, branch_tags, college_branch, college_year, target_audience, is_virtual, college_only, college_id, colleges(name), profiles(username)")
           .eq("status", "approved")
           .eq("college_id", profile.college_id!);
 
@@ -465,7 +466,6 @@ export function HomePageClient(props: HomePageClientProps) {
   const upcomingForYouCount = livePersonalizedEvents.filter(isUpcomingEvent).length;
   const upcomingAroundYouCount = liveAroundYouEvents.filter(isUpcomingEvent).length;
   const upcomingCollegeCount = liveCollegeEvents.filter(isUpcomingEvent).length;
-  const eventsInOtherCities = nonCampusEvents.filter((e) => isUpcomingEvent(e) && !cityMatch(e)).length;
 
   // An empty For You must not be the first thing someone sees. A tab they picked themselves stays picked.
   useEffect(() => {
@@ -517,7 +517,7 @@ export function HomePageClient(props: HomePageClientProps) {
       {Boolean((user || profile) && profile) && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pt-3 pb-1">
           <div className="flex flex-col gap-2.5">
-            <h1 className="text-[22px] sm:text-2xl font-heading font-black text-[#0F172A] tracking-[-0.4px] truncate">
+            <GreetingScene city={profile?.preferred_cities?.[0]}>
               {(() => {
                 const h = new Date().getHours();
                 const rawName = profile?.username?.trim() || profile?.full_name?.split(" ")[0]?.trim();
@@ -534,7 +534,7 @@ export function HomePageClient(props: HomePageClientProps) {
                 if (h >= 0 && h < 4) return `Still up, ${name}?`;
                 return `Up early, ${name}?`;
               })()}
-            </h1>
+            </GreetingScene>
 
             {showFeedPills && (
               <div className="w-full max-w-md bg-[#F1F5F9] rounded-[14px] p-[3px] flex items-center h-11 relative">
@@ -596,15 +596,6 @@ export function HomePageClient(props: HomePageClientProps) {
               </div>
             )}
 
-            {/* Filtering by city is invisible otherwise, and events elsewhere look like they don't exist */}
-            {showFeedPills && activeFeedPill !== 'campus' && eventsInOtherCities > 0 && (
-              <p className="flex flex-wrap items-center gap-x-1.5 text-sm font-medium text-slate-600">
-                {eventsInOtherCities} more {eventsInOtherCities === 1 ? 'event' : 'events'} in other cities
-                <Link href="/cities" className="inline-flex min-h-11 items-center font-bold text-brand-primary underline underline-offset-4">
-                  See all cities
-                </Link>
-              </p>
-            )}
           </div>
         </div>
       )}
@@ -640,7 +631,7 @@ export function HomePageClient(props: HomePageClientProps) {
           </>
         )}
 
-        <div id="events" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12 w-full scroll-mt-20">
+        <div id="events" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-12 w-full scroll-mt-20">
           
           {view === "cities" ? (
             <div className="space-y-6">
@@ -652,6 +643,8 @@ export function HomePageClient(props: HomePageClientProps) {
           ) : (
             <>
             <div className="space-y-6 pt-2">
+              {/* The tabs above already name this feed and count it; a heading only earns its place when a filter is on. */}
+              {!(showFeedPills && !date && !category && !location && !branch) && (
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="w-full">
                   <div className="flex items-center justify-between gap-4">
@@ -685,6 +678,7 @@ export function HomePageClient(props: HomePageClientProps) {
                   {location && <p className="text-slate-500 text-sm font-medium mt-1">Showing events in: {location}</p>}
                 </div>
               </div>
+              )}
 
                             {/* Active Calendar Date Banner */}
               {date && (
@@ -773,6 +767,7 @@ export function HomePageClient(props: HomePageClientProps) {
                             title={event.title!}
                             category={event.category!}
                             date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string!}
+                            endDateString={event.end_date_string}
                             startTime={event.start_time}
                             endTime={event.end_time}
                             city={event.is_virtual ? "Online" : (event.city || event.location || "India")}

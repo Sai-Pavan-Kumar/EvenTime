@@ -49,7 +49,7 @@ export default async function CategoryPage({
     notFound();
   }
 
-  const CATEGORY_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
+  const CATEGORY_FIELDS = "id, slug, title, category, date_string, end_date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id";
 
   // CACHED: public events for this category (same for every anonymous/non-student visitor)
   const getCachedPublicCategoryEvents = unstable_cache(

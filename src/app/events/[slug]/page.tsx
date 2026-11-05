@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchPriceOptions } from "@/lib/eventPrice";
+import { getCachedInterestCount, getCachedInterestedAvatars } from "@/lib/events/interestedAvatars";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/permissions";
@@ -84,25 +86,6 @@ const getCachedCityEvents = (city: string | null, isVirtual: boolean, currentId:
     },
     ["city_events", city || "virtual", String(isVirtual), currentId],
     { tags: ["events"], revalidate: false }
-  )();
-
-const getCachedInterestedAvatars = (eventId: string) =>
-  unstable_cache(
-    async () => {
-      const supabaseAnon = createSupabaseClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        { auth: { persistSession: false } }
-      );
-      const { data } = await supabaseAnon
-        .from("interested_events")
-        .select("profiles(username, avatar_url)")
-        .eq("event_id", eventId)
-        .limit(3);
-      return (data || []).map((row: any) => row.profiles).filter(Boolean);
-    },
-    ["interested_avatars", eventId],
-    { tags: [`event_interested_${eventId}`], revalidate: false }
   )();
 
 const getCachedAppBannerSetting = () =>
@@ -242,6 +225,8 @@ export default async function EventPage({
   }
 
   // Removed redundant N+1 query. Username is directly mapped from the joined profiles data.
+  const priceOptions = finalEvent.is_free ? null : await fetchPriceOptions(createAdminClient(), finalEvent.id);
+
   const profileData = finalEvent?.profiles as { username: string | null }[] | { username: string | null } | null;
   const curatorUsername = (Array.isArray(profileData) ? profileData[0]?.username : profileData?.username) || "event-curator";
 
@@ -277,7 +262,7 @@ export default async function EventPage({
       "@type": "Offer",
       url: finalEvent.registration_link || eventUrl,
       price: finalEvent.is_free ? "0" : (finalEvent.price?.toString() || "0"),
-      priceCurrency: "INR", 
+      priceCurrency: priceOptions?.price_currency ?? "INR",
       availability: "https://schema.org/InStock"
     },
     organizer: {
@@ -294,6 +279,7 @@ export default async function EventPage({
   );
 
   const interestedAvatars = await getCachedInterestedAvatars(finalEvent.id);
+  const interestCount = await getCachedInterestCount(finalEvent.id);
   const isAppBannerEnabled = await getCachedAppBannerSetting();
 
   // Pass the data cleanly to the client UI
@@ -305,7 +291,7 @@ export default async function EventPage({
       />
       <Suspense fallback={null}>
         <EventClientUI
-          event={finalEvent}
+          event={{ ...finalEvent, ...priceOptions, interested_events: [{ count: interestCount }] } as typeof finalEvent}
           similarEvents={similarEvents}
           curatorUsername={curatorUsername}
           interestedAvatars={interestedAvatars}

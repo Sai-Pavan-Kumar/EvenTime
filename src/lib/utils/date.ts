@@ -1,4 +1,4 @@
-import { parseISO } from "date-fns";
+import { format, isSameMonth, parseISO } from "date-fns";
 
 export function parseEventDateString(dateStr: string): Date | null {
   try {
@@ -29,6 +29,16 @@ export function parseEventDateString(dateStr: string): Date | null {
   } catch {
     return null;
   }
+}
+
+// A multi-day event shows its whole span: a start date alone looks finished from day two.
+export function formatEventDateRange(dateString: string, endDateString?: string | null): string | null {
+  const start = parseEventDateString(dateString);
+  if (!start) return null;
+  const end = endDateString ? parseEventDateString(endDateString) : null;
+  if (!end || end <= start) return format(start, "d MMM");
+  if (isSameMonth(start, end)) return `${format(start, "d")}–${format(end, "d MMM")}`;
+  return `${format(start, "d MMM")}–${format(end, "d MMM")}`;
 }
 
 /**

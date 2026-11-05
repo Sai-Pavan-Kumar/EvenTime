@@ -1,3 +1,4 @@
+import { fetchPriceOptions } from "@/lib/eventPrice";
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
@@ -24,7 +25,7 @@ return (
   <main className="min-h-screen bg-slate-50/50">
     <Navbar />
     <div className="py-12 px-4 sm:px-6">
-      <CreateEventForm initialData={event} isEditing={true} />
+      <CreateEventForm initialData={{ ...event, ...(await fetchPriceOptions(supabase, event.id)) }} isEditing={true} />
     </div>
   </main>
 );

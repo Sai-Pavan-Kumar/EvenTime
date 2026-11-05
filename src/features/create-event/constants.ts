@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from "@/lib/eventPrice";
 export const CATEGORY_TEMPLATES: Record<string, string> = {
   "AI Event": `About the Event:\n\nWho Should Attend:`,
 
@@ -122,6 +123,8 @@ export const EMPTY_EVENT_FORM = {
   isOnline: false,
   isFree: true,
   price: "",
+  priceCurrency: DEFAULT_CURRENCY,
+  priceIsStarting: false,
   isFeatured: false,
   organizer: "",
   prizes: "",

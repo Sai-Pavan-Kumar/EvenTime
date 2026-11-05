@@ -24,6 +24,7 @@ import { CuratorCelebrationModal, CelebrationEventData } from "./components/Cura
 import { toast } from "sonner";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { CITIES } from "@/lib/constants/cities";
+import { DEFAULT_CURRENCY } from "@/lib/eventPrice";
 
 interface ExtendedFormProps extends CreateEventFormProps {
   isAdminFeatureEnabled?: boolean; // Controls if the Featured section is visible
@@ -73,6 +74,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
     isOnline: initialData?.is_virtual || false,
     isFree: initialData?.is_free ?? true,
     price: initialData?.price?.toString() || "",
+    priceCurrency: initialData?.price_currency || DEFAULT_CURRENCY,
+    priceIsStarting: initialData?.price_is_starting || false,
     // Step 2 Adv/Featured
     isFeatured: initialData?.is_featured || false,
     organizer: initialData?.organizer_name || "",
@@ -236,6 +239,8 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
       is_virtual: eventData.isOnline,
       is_free: eventData.isFree,
       price: eventData.isFree ? 0 : Number(eventData.price),
+      price_currency: eventData.isFree ? DEFAULT_CURRENCY : eventData.priceCurrency || DEFAULT_CURRENCY,
+      price_is_starting: !eventData.isFree && Boolean(eventData.priceIsStarting),
       registration_link: eventData.regLink,
       prizes: eventData.isFeatured ? (eventData.prizes?.trim() || null) : null,
       team_size: eventData.isFeatured ? (eventData.teamSize?.trim() || null) : null,
@@ -328,6 +333,9 @@ export function CreateEventForm({ initialData, isEditing = false, isAdminFeature
         onClose={() => {
           setIsCelebrationOpen(false);
           window.location.href = "/";
+        }}
+        onPostAnother={() => {
+          window.location.href = "/events/new";
         }}
         onViewEvent={(slug) => {
           window.location.href = "/events/" + (slug || "");

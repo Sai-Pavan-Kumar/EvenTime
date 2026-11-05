@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import { formatEventPrice } from "@/lib/eventPrice";
+import { EventKeyFacts } from "./EventKeyFacts";
 import { useRouter } from "next/navigation";
 import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -45,6 +47,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { toast } from "sonner";
+import { InterestedStack, InterestButton } from "./InterestedStack";
+import { refreshEventInterest } from "../interest-actions";
 import { BrandAvatar } from "@/components/ui/BrandAvatar";
 
 export interface EventUIProps {
@@ -128,7 +132,16 @@ export default function EventClientUI({
   const safeCreatorId = event.creator_id ?? "";
 
   const isOwner = Boolean(currentUser && safeCreatorId && currentUser.id === safeCreatorId);
+  const [sparkBurst, setSparkBurst] = useState(0);
   const isStudent = userProfile?.user_type === "student";
+  const otherInterestCount = localInterestCount - 1;
+  let interestHeadline = "Be the first to show interest";
+  if (localInterestCount > 0 && isInterested) {
+    interestHeadline = otherInterestCount > 0 ? `You & ${otherInterestCount} ${otherInterestCount === 1 ? "other" : "others"} are interested` : "You're interested";
+  } else if (localInterestCount > 0) {
+    const noun = isStudent ? (localInterestCount === 1 ? "student is" : "students are") : localInterestCount === 1 ? "person is" : "people are";
+    interestHeadline = `${localInterestCount} ${noun} interested`;
+  }
 
   const fallbackImage = getCategoryConfig(safeCategory)?.backgroundImage || "/card-backgrounds/sm/default-event.webp";
   const isCustomPoster = Boolean(event.is_featured && event.poster_url && event.poster_url.startsWith('http'));
@@ -449,6 +462,7 @@ export default function EventClientUI({
     setIsInterested(nextState);
     const newCount = nextState ? localInterestCount + 1 : Math.max(0, localInterestCount - 1);
     setLocalInterestCount(newCount);
+    if (nextState) setSparkBurst((burst) => burst + 1);
 
     // Broadcast 0ms instant sync across all cards & screens
     eventSync.emit({
@@ -483,6 +497,8 @@ export default function EventClientUI({
         if (error) throw new Error(error.message || JSON.stringify(error));
         toast.info("Removed from interested.");
       }
+      // Best effort: the tap is already saved, and the cache corrects itself within a minute anyway.
+      refreshEventInterest(safeId).catch(() => {});
     } catch (error: any) {
       console.error("Failed to update interest status:", error.message || error);
       setIsInterested(previousState);
@@ -542,7 +558,7 @@ export default function EventClientUI({
   }
 
   return (
-    <main className="min-h-screen bg-white pb-24 md:pb-12 overflow-x-hidden">
+    <main className="min-h-screen bg-white pb-24 md:pb-12 overflow-x-clip">
       <Navbar />
 
       {event.status === "pending" && (
@@ -665,14 +681,20 @@ export default function EventClientUI({
         </div>
 
         {/* Full-width Title & Goal Tags */}
-        <div className="text-center space-y-3">
-          <h1 className="text-3xl md:text-5xl font-extrabold text-brand-primary font-heading leading-[1.15] max-w-4xl mx-auto">
+        <div className="space-y-4">
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 font-heading leading-[1.1] tracking-[-0.02em] max-w-4xl [overflow-wrap:anywhere]">
             {safeTitle}
           </h1>
+          <EventKeyFacts
+            date={displayDateRange}
+            time={displayTimeRange}
+            place={event.is_virtual ? "Online" : event.city}
+            price={event.is_free === false || event.price ? (event.price ? formatEventPrice(event.price, event.price_currency, event.price_is_starting) : "Paid") : "Free"}
+          />
 
           {/* Goal Tags */}
           {event.goal_tags && event.goal_tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 justify-center pt-1">
+            <div className="flex flex-wrap gap-2 pt-1">
               {event.goal_tags.map((tag: string, idx: number) => (
                 <span
                   key={idx}
@@ -688,7 +710,7 @@ export default function EventClientUI({
         {/* TWO-COLUMN LAYOUT */}
         <div className="space-y-10 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start">
           {/* LEFT COLUMN — Media & Action Buttons */}
-          <div className="lg:sticky lg:top-8 space-y-6">
+          <div className="lg:sticky lg:top-24 space-y-6">
             {currentImageSrc ? (
               <div className="relative w-full rounded-3xl overflow-hidden shadow-sm border border-slate-100">
                 <Image
@@ -696,7 +718,7 @@ export default function EventClientUI({
                   alt={safeTitle}
                   width={1200}
                   height={675}
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover lg:max-h-[42vh]"
                   priority
                   unoptimized={true}
                   onError={() => {
@@ -720,69 +742,45 @@ export default function EventClientUI({
                     : "bg-slate-50/80 border-slate-200 shadow-sm"
                 }`}
               >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        isOwner
-                          ? "bg-slate-100 text-slate-400"
-                          : isInterested
-                          ? "bg-purple-100 text-brand-primary"
-                          : "bg-white text-slate-600 shadow-xs border border-slate-100"
-                      }`}
-                    >
-                      {isOwner ? (
-                        <Users className="w-5 h-5 text-slate-400" />
-                      ) : isStudent ? (
-                        <GraduationCap
-                          className={`w-5 h-5 ${isInterested ? "text-brand-primary" : "text-slate-600"}`}
-                        />
-                      ) : (
-                        <Users
-                          className={`w-5 h-5 ${isInterested ? "text-brand-primary" : "text-slate-600"}`}
-                        />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 leading-tight">
-                        {isStudent
-                          ? localInterestCount > 0
-                            ? isInterested
-                              ? localInterestCount === 1
-                                ? "You're going"
-                                : `You & ${localInterestCount - 1} ${localInterestCount - 1 === 1 ? "other" : "others"} are going`
-                              : `${localInterestCount} ${localInterestCount === 1 ? "student is" : "students are"} going`
-                            : "Be the first to show interest"
-                          : localInterestCount > 0
-                          ? isInterested
-                            ? localInterestCount === 1
-                              ? "You're going"
-                              : `You & ${localInterestCount - 1} ${localInterestCount - 1 === 1 ? "other" : "others"} are going`
-                            : `${localInterestCount} ${localInterestCount === 1 ? "person is" : "people are"} interested`
-                          : "Be the first to show interest"}
-                      </p>
+                {/* Stacks on narrow phones, so faces, text and button never squeeze each other. */}
+                <div className="flex flex-col gap-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {!isOwner && (isInterested || interestedAvatars.length > 0) ? (
+                      <InterestedStack avatars={interestedAvatars} selfSeed={authProfile?.username || currentUser?.email} isInterested={isInterested} />
+                    ) : (
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isOwner ? "bg-slate-100" : "bg-white shadow-xs border border-slate-100"}`}>
+                        {isStudent && !isOwner ? (
+                          <GraduationCap className="w-5 h-5 text-slate-600" />
+                        ) : (
+                          <Users className={`w-5 h-5 ${isOwner ? "text-slate-400" : "text-slate-600"}`} />
+                        )}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 leading-tight">{interestHeadline}</p>
                       <p className="text-xs text-slate-500 font-medium">
                         {isOwner
                           ? "You are the creator of this event"
                           : isInterested
-                          ? "You are marked as interested · Click to remove"
-                          : "Click to show you're interested"}
+                          ? "Tap the button to remove"
+                          : "Tap to show you're interested"}
                       </p>
                     </div>
                   </div>
-                  <button
+                  <InterestButton
+                    isOwner={isOwner}
+                    isInterested={isInterested}
+                    burstCount={sparkBurst}
                     onClick={handleInterestedClick}
                     disabled={isLoadingInterest || isCuratorOrAdmin}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                    className={`min-h-11 w-full px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-1.5 shrink-0 transition-colors min-[420px]:w-auto ${
                       isOwner
                         ? "bg-slate-100 text-slate-400 cursor-default"
                         : isInterested
                         ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
                         : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
                     }`}
-                  >
-                    {isOwner ? "Host" : isInterested ? "✓ Interested" : "I'm Interested"}
-                  </button>
+                  />
                 </div>
               </div>
             )}
@@ -871,14 +869,14 @@ export default function EventClientUI({
             </div>
 
             {/* Event Details Card */}
-            <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100 space-y-4">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 space-y-4">
               {/* Curated by with profile link */}
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                   <UserCheck className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                  <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                     Curated by
                   </p>
                   <Link
@@ -892,11 +890,11 @@ export default function EventClientUI({
 
               {/* Date */}
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                   <CalendarDays className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                  <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                     Date
                   </p>
                   <p className="text-[14px] font-bold text-slate-900">{displayDateRange}</p>
@@ -905,11 +903,11 @@ export default function EventClientUI({
 
               {/* Time */}
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                   <Clock className="w-5 h-5 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                  <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                     Time
                   </p>
                   <p className="text-[14px] font-bold text-slate-900">{displayTimeRange}</p>
@@ -919,11 +917,11 @@ export default function EventClientUI({
               {/* Venue Location (If distinct) */}
               {venueLocation && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                     <MapPin className="w-5 h-5 text-slate-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Venue / Landmark
                     </p>
                     <p className="text-[14px] font-bold text-slate-900">{venueLocation}</p>
@@ -934,11 +932,11 @@ export default function EventClientUI({
               {/* Mode or City */}
               {event.is_virtual ? (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                     <Globe className="w-5 h-5 text-slate-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Event Mode
                     </p>
                     <p className="text-[14px] font-bold text-slate-900">Virtual / Online Event</p>
@@ -947,11 +945,11 @@ export default function EventClientUI({
               ) : (
                 event.city && (
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                       <Building className="w-5 h-5 text-slate-400" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                      <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                         City
                       </p>
                       <Link
@@ -968,15 +966,15 @@ export default function EventClientUI({
               {/* Registration Fee / Price */}
               {(event.is_free === false || Boolean(event.price)) && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                    <Tag className="w-5 h-5 text-amber-500" />
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Tag className="w-5 h-5 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Registration Fee
                     </p>
-                    <p className="text-[14px] font-extrabold text-amber-700">
-                      {event.price ? `₹${event.price}` : "Paid Event"}
+                    <p className="text-[14px] font-bold text-slate-900">
+                      {event.price ? formatEventPrice(event.price, event.price_currency, event.price_is_starting) : "Paid Event"}
                     </p>
                   </div>
                 </div>
@@ -985,14 +983,14 @@ export default function EventClientUI({
               {/* Registration Deadline */}
               {event.registration_deadline && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                    <Hourglass className="w-5 h-5 text-rose-500" />
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Hourglass className="w-5 h-5 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Registration Deadline
                     </p>
-                    <p className="text-[14px] font-bold text-rose-700">{event.registration_deadline}</p>
+                    <p className="text-[14px] font-bold text-slate-900">{event.registration_deadline}</p>
                   </div>
                 </div>
               )}
@@ -1000,11 +998,11 @@ export default function EventClientUI({
               {/* Prizes / Pool */}
               {event.prizes && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                    <Award className="w-5 h-5 text-amber-500" />
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Prizes / Rewards
                     </p>
                     <p className="text-[14px] font-bold text-slate-900">{event.prizes}</p>
@@ -1015,11 +1013,11 @@ export default function EventClientUI({
               {/* Team Size (Featured Events Only) */}
               {event.is_featured && event.team_size && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                     <Users className="w-5 h-5 text-slate-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Team Size
                     </p>
                     <p className="text-[14px] font-bold text-slate-900">{event.team_size}</p>
@@ -1030,11 +1028,11 @@ export default function EventClientUI({
               {/* College Specific */}
               {(collegeName || event.colleges?.name || event.college_only) && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                     <Building className="w-5 h-5 text-slate-400" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       College Hosted
                     </p>
                     <p className="text-[14px] font-bold text-slate-900">
@@ -1048,14 +1046,14 @@ export default function EventClientUI({
               {/* Eligible Branches */}
               {(event.college_branch || (event.branch_tags && event.branch_tags.length > 0)) && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
-                    <GraduationCap className="w-5 h-5 text-indigo-500" />
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                    <GraduationCap className="w-5 h-5 text-slate-500" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Eligible Branches
                     </p>
-                    <p className="text-[14px] font-bold text-indigo-950">
+                    <p className="text-[14px] font-bold text-slate-900">
                       {event.college_branch || event.branch_tags?.join(", ")}
                     </p>
                   </div>
@@ -1065,11 +1063,11 @@ export default function EventClientUI({
               {/* Add to Calendar (Upcoming only) */}
               {!isPastEvent && googleCalendarUrl && (
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white shadow-xs border border-slate-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
                     <CalendarDays className="w-5 h-5 text-slate-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-0.5">
+                    <p className="text-xs font-medium text-slate-500 leading-none mb-1">
                       Add to Calendar
                     </p>
                     <a
@@ -1084,8 +1082,8 @@ export default function EventClientUI({
                 </div>
               )}
 
-              {/* Interested community avatars */}
-              {localInterestCount > 0 && (
+              {/* Upcoming events show this in the interest card above. */}
+              {isPastEvent && localInterestCount > 0 && (
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
                   {interestedAvatars.length > 0 && (
                     <div className="flex -space-x-2">
@@ -1120,23 +1118,20 @@ export default function EventClientUI({
                   </Link>
                 ) : (
                   <>
-                    <button
+                    <InterestButton
+                      isOwner={isOwner}
+                      isInterested={isInterested}
+                      burstCount={sparkBurst}
                       onClick={handleInterestedClick}
                       disabled={isLoadingInterest || isCuratorOrAdmin}
-                      className={`flex-1 py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
+                      className={`flex-1 py-3.5 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 text-sm ${
                         isOwner
                           ? "bg-slate-100 text-slate-400 cursor-default"
                           : isInterested
                           ? "bg-brand-primary text-white shadow-sm hover:bg-[#5835e5]"
                           : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-200"
                       }`}
-                    >
-                      {isOwner
-                        ? "Host"
-                        : isInterested
-                        ? "✓ Interested"
-                        : "I'm Interested"}
-                    </button>
+                    />
                     {hasRegistrationLink ? (
                       <Link
                         href={`/redirect?to=${encodeURIComponent(safeRegistrationLink)}`}
@@ -1213,6 +1208,7 @@ export default function EventClientUI({
                         }`
                       : simEvent.date_string
                   }
+                  endDateString={simEvent.end_date_string}
                   startTime={simEvent.start_time}
                   endTime={simEvent.end_time}
                   city={simEvent.is_virtual ? "Online" : (simEvent.city || simEvent.location || "Venue TBA")}

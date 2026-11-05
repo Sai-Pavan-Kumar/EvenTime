@@ -94,7 +94,7 @@ export function Footer() {
 
         {/* Copyright */}
         <p className="text-xs font-medium text-white/30 -mt-2">
-          © {new Date().getFullYear()} EvenTime. All rights reserved.
+          © {new Date().getFullYear()} EvenTime. All rights reserved. Weather data: <a href="https://api.met.no/doc/License" target="_blank" rel="noopener noreferrer" className="underline">MET Norway, CC BY 4.0</a>.
         </p>
 
       </div>

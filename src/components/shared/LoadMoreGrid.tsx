@@ -33,6 +33,7 @@ export function LoadMoreGrid({
             title={event.title || "Untitled Event"}
             category={event.category || "General"}
             date={event.start_time ? `${event.date_string} · ${event.start_time}${event.end_time ? ` - ${event.end_time}` : ''}` : event.date_string || "TBA"}
+            endDateString={event.end_date_string}
             startTime={event.start_time}
             endTime={event.end_time}
             city={event.is_virtual ? "Online" : (event.city || event.location || "India")}

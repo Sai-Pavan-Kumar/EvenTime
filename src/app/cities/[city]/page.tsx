@@ -66,7 +66,7 @@ export default async function CityPage({
   const heading = isOnline ? "Online Events" : cityName;
   const today = localDateString();
 
-  const EVENT_FIELDS = "id, slug, title, category, date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
+  const EVENT_FIELDS = "id, slug, title, category, date_string, end_date_string, start_time, location, city, poster_url, organizer_name, is_free, is_featured, target_audience, college_id, creator_id, profiles(username)";
 
   // CACHED: public events for this city (same for every anonymous/non-student visitor)
   const getCachedPublicCityEvents = unstable_cache(

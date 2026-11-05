@@ -140,7 +140,7 @@ export default async function CuratorPage({ params }: { params: Promise<{ userna
     // 1b. Fetch Curator's Approved Events from the last 6 months only (for display)
     supabase
       .from("events")
-      .select("id, slug, title, category, date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
+      .select("id, slug, title, category, date_string, end_date_string, location, city, poster_url, organizer_name, is_free, target_audience, saved_events(count)")
       .eq("creator_id", curator.id)
       .eq("status", "approved")
       .gte("date_string", sixMonthsAgoStr)

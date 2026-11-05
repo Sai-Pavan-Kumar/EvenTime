@@ -2,9 +2,10 @@
 
 import { useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { IndianRupee, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { categoriesList } from "../constants";
+import { CurrencySelect } from "./CurrencySelect";
 import { CollegeFields } from "./CollegeFields";
 import { FIELD_CLASS, FieldLabel, Segmented, Select, Switch } from "./FormControls";
 import { RegistrationLinkField } from "./RegistrationLinkField";
@@ -14,6 +15,10 @@ import { WhereSection } from "./WhereSection";
 const PRICE_OPTIONS = [
   { value: "free", label: "Free" },
   { value: "paid", label: "Paid" },
+];
+const PRICE_TYPE_OPTIONS = [
+  { value: "fixed", label: "Fixed price" },
+  { value: "starting", label: "Starting price" },
 ];
 const SUBMIT_BUTTON_CLASS =
   "flex min-h-[52px] w-full items-center justify-center gap-2 rounded-full px-10 text-base font-bold text-white transition-colors active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto";
@@ -136,8 +141,8 @@ export function StepMandatory({
             {!data.isFree && (
               <div>
                 <FieldLabel htmlFor="event-price-input">Ticket price</FieldLabel>
-                <div className="relative">
-                  <IndianRupee className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <div className="flex gap-2">
+                  <CurrencySelect value={data.priceCurrency} onChange={(priceCurrency) => updateData({ priceCurrency })} />
                   <input
                     id="event-price-input"
                     type="text"
@@ -145,12 +150,20 @@ export function StepMandatory({
                     value={data.price}
                     onChange={(e) => updateData({ price: e.target.value.replace(/[^0-9]/g, "").slice(0, 7) })}
                     placeholder="499"
-                    className={`${FIELD_CLASS} pl-10`}
+                    className={FIELD_CLASS}
                   />
                 </div>
               </div>
             )}
           </div>
+          {!data.isFree && (
+            <Segmented
+              label="Price type"
+              value={data.priceIsStarting ? "starting" : "fixed"}
+              options={PRICE_TYPE_OPTIONS}
+              onChange={(type) => updateData({ priceIsStarting: type === "starting" })}
+            />
+          )}
           {isAdmin && isAdminFeatureEnabled && (
             <Switch checked={data.isFeatured} onChange={() => updateData({ isFeatured: !data.isFeatured })} label="Feature this event" hint="Add a poster and advanced details." />
           )}

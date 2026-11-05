@@ -78,15 +78,15 @@ export function ProfileNav({
   isAdmin: boolean;
 }) {
   return (
-    <nav aria-label="Profile" className="flex flex-col gap-6">
-      <div className="flex flex-col gap-0.5">
+    <nav aria-label="Profile" className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5 rounded-2xl border border-slate-200/70 bg-white p-1.5">
         <NavLink href="?tab=posted" icon={LayoutGrid} label="My events" count={postedCount} isActive={activeTab === "posted"} />
         <NavLink href="?tab=registered" icon={CheckCircle2} label="Registrations" count={registeredCount} isActive={activeTab === "registered"} />
         <NavLink href="?tab=saved" icon={Bookmark} label="Saved" count={savedCount} isActive={activeTab === "saved"} />
         <NavLink href="?tab=alerts" icon={AlertTriangle} label="Alerts" count={alertCount} isActive={activeTab === "alerts"} isUrgent />
       </div>
 
-      <div className="flex flex-col gap-0.5 border-t border-slate-100 pt-6">
+      <div className="flex flex-col gap-0.5 rounded-2xl border border-slate-200/70 bg-white p-1.5">
         {leaderboardEnabled && <NavLink href="/leaderboard" icon={Trophy} label="Leaderboard" />}
         <NavLink href="/stats" icon={BarChart2} label="Live platform stats" />
         <NavLink href="/about" icon={Info} label="About EvenTime" />
@@ -94,7 +94,7 @@ export function ProfileNav({
         {isAdmin && <NavLink href="/et98" icon={Shield} label="Admin console" />}
       </div>
 
-      <div className="flex flex-col gap-0.5 border-t border-slate-100 pt-6">
+      <div className="flex flex-col gap-0.5 rounded-2xl border border-slate-200/70 bg-white p-1.5">
         <MobileFeedbackWrapper />
         <MobileSignOutButton />
       </div>

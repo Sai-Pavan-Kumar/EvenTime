@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
+import { DEFAULT_CURRENCY } from "@/lib/eventPrice";
 import { DUPLICATE_CANDIDATE_LIMIT, IGNORED_DUPLICATE_STATUSES, isSameRegistrationLink, normalizeRegistrationLink } from "./utils/duplicateCheck";
 import { isUuid, isValidWebLink, validateEventPayload } from "./utils/validateEventPayload";
 import { buildSlug, isOwnPosterUrl, withProtocol, type SubmitEventActionPayload, type SubmitEventActionResult } from "./utils/eventSubmission";
@@ -112,6 +113,10 @@ export async function submitEventAction(
     const title = payloadData.title.trim();
     const location = payloadData.is_virtual ? "Virtual Event" : (payloadData.location || null);
 
+    const priceCurrency = (!payloadData.is_free && payloadData.price_currency) || DEFAULT_CURRENCY;
+    const priceIsStarting = !payloadData.is_free && Boolean(payloadData.price_is_starting);
+    const hasDefaultPriceOptions = priceCurrency === DEFAULT_CURRENCY && !priceIsStarting;
+
     const sharedFields = {
       title,
       category: payloadData.category,
@@ -127,6 +132,8 @@ export async function submitEventAction(
       is_virtual: Boolean(payloadData.is_virtual),
       is_free: Boolean(payloadData.is_free),
       price: payloadData.is_free ? 0 : Number(payloadData.price || 0),
+      // Left out for a plain rupee price, so posting keeps working until the price columns exist.
+      ...(hasDefaultPriceOptions ? {} : { price_currency: priceCurrency, price_is_starting: priceIsStarting }),
       registration_link: finalRegLink,
       prizes: payloadData.prizes || null,
       team_size: payloadData.team_size || null,
@@ -167,6 +174,12 @@ export async function submitEventAction(
 
       const { error: updateErr } = await supabase.from("events").update(updatePayload).eq("id", eventId);
       if (updateErr) throw updateErr;
+
+      if (hasDefaultPriceOptions) {
+        // An edit back to a plain rupee price must clear the old choice. PGRST204: columns not added yet.
+        const { error: priceErr } = await supabase.from("events").update({ price_currency: DEFAULT_CURRENCY, price_is_starting: false }).eq("id", eventId);
+        if (priceErr && priceErr.code !== "PGRST204") throw priceErr;
+      }
 
       if (needsReview) {
         // A database guard silently ignores status changes from normal users, so this needs the service client.

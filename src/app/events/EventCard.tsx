@@ -2,7 +2,8 @@
 
   import Image from "next/image";
   import Link from "next/link";
-  import { Bookmark, Share2, Check, X, Clock, Users, IndianRupee, MapPin } from "lucide-react";
+  import { Bookmark, Calendar, Share2, Check, X, IndianRupee, MapPin } from "lucide-react";
+  import { CardInterestFaces, useInterestSummary } from "./CardInterestFaces";
   import { toast } from "sonner";
   import { useState, useEffect } from "react";
   import { createPortal } from "react-dom";
@@ -10,7 +11,7 @@
   import { format, differenceInCalendarDays } from "date-fns";
   import { motion, AnimatePresence } from "framer-motion";
   import { getCategoryConfig } from "@/lib/category-config";
-  import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
+  import { parseEventDateString, checkIsEventPast, formatEventDateRange } from "@/lib/utils/date";
   import { eventSync } from "@/lib/events/eventSync";
   import { isEventNew, markEventAsSeen } from "@/lib/events/eventSeenTracker";
 
@@ -20,6 +21,7 @@
     title: string;
     category: string;
     date: string;
+    endDateString?: string | null;
     startTime?: string | null;
     endTime?: string | null;
     city: string;
@@ -52,6 +54,7 @@
     title,
     category,
     date,
+    endDateString,
     startTime,
     endTime,
     city,
@@ -104,6 +107,12 @@
     useEffect(() => {
       setDynamicInterestCount(interestedCount ?? 0);
     }, [interestedCount]);
+
+    // The prop comes from a page cache that interest taps never refresh, so the live count wins once it arrives.
+    const interestSummary = useInterestSummary(id);
+    useEffect(() => {
+      if (interestSummary) setDynamicInterestCount(interestSummary.count);
+    }, [interestSummary]);
 
     // Reactive subscription to global Client Event Bus (0ms sync across all cards & screens)
     useEffect(() => {
@@ -250,13 +259,14 @@
     const eventDate = parseEventDateString(date);
     if (eventDate) {
       const today = new Date();
-      diffDays = differenceInCalendarDays(eventDate, today);
-      isPastTime = checkIsEventPast(date, null, endTime, startTime);
+      // Counted to the last day, so a multi-day event stays live on its later days.
+      diffDays = differenceInCalendarDays(parseEventDateString(endDateString || "") ?? eventDate, today);
+      isPastTime = checkIsEventPast(date, endDateString, endTime, startTime);
 
       if (diffDays < 0 || isPastTime) {
         statusLabel = "Past Event";
         statusColor = "bg-slate-800 text-white border border-slate-700";
-      } else if (diffDays === 0 && !isPastTime) {
+      } else if (differenceInCalendarDays(eventDate, today) <= 0) {
         statusLabel = "Live Today";
         statusColor = "bg-emerald-600 text-white shadow-md shadow-emerald-600/30";
       }  
@@ -267,7 +277,7 @@
       // Skip auto-hide if: user is viewing a specific past date, or user is admin/curator
       const isTrustedRole = userRole === 'admin' || userRole === 'curator';
       if (layout && !isPastDateView && !isTrustedRole) {
-        const checkDate = parseEventDateString(date);
+        const checkDate = parseEventDateString(endDateString || date);
         if (checkDate) {
           const today = new Date();
           const pastDate = differenceInCalendarDays(checkDate, today) < 0;
@@ -279,7 +289,7 @@
           }
         }
       }
-    }, [date, layout, isPastDateView, userRole]);
+    }, [date, endDateString, layout, isPastDateView, userRole]);
     
     // --- NEW: TEMPLATE ENGINE LOGIC ---
     // Added a fallback to prevent crashes if the category is not found
@@ -288,14 +298,7 @@
     const isCustomUpload = imageUrl && imageUrl.startsWith('http');
     const finalImageSrc = (isFeatured && isCustomUpload) ? imageUrl : config.backgroundImage;
 
-    // Format short date (e.g., "22 MAY") for the overlay
-    const shortDateOverlay = (() => {
-      const parsedDate = parseEventDateString(date);
-      if (parsedDate) {
-        return format(parsedDate, "d MMM").toUpperCase();
-      }
-      return "SOON";
-    })();
+    const dateLabel = formatEventDateRange(date, endDateString);
 
     const handleShare = async (e: React.MouseEvent) => {
       e.preventDefault();
@@ -318,7 +321,7 @@
       }
     };
 
-    const cardVariantClass = isFeatured 
+    const cardVariantClass = isFeatured
       ? "w-[280px] sm:w-[320px] shrink-0 snap-start" 
       : "w-full aspect-square";
 
@@ -372,31 +375,15 @@
                     )}              
                     </Link>
 
-                {/* Date top-left  */}
-                <div className="absolute top-3 left-3 right-4 flex items-center justify-between z-10">
+                {isNewState && (
                   <span
-                    className="rounded-md bg-white/90 px-2 py-0.5 text-[13px] font-bold uppercase tracking-wide text-slate-900"
-                    style={{ fontFamily: "var(--font-heading)" }}
+                    className="absolute top-3 right-3 z-10 font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md text-white bg-brand-primary shadow-sm flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200"
+                    style={{ fontSize: 'clamp(8px, 1.8vw, 10px)', fontFamily: "var(--font-heading)" }}
                   >
-                    {shortDateOverlay}
+                    <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 animate-pulse" />
+                    NEW
                   </span>
-                  <span
-                    className="font-semibold uppercase tracking-widest text-right"
-                    style={{ color: config.dateColor, fontSize: 'clamp(9px, 2vw, 11px)', opacity: 0.75, fontFamily: "var(--font-heading)" }}
-                  >
-                    {isNewState ? (
-                      <span
-                        className="font-black uppercase tracking-wider text-right px-1.5 py-0.5 rounded-md text-white bg-brand-primary shadow-sm flex items-center gap-1 animate-in fade-in zoom-in-95 duration-200"
-                        style={{ fontSize: 'clamp(8px, 1.8vw, 10px)' }}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-white shrink-0 animate-pulse" />
-                        NEW
-                      </span>
-                    ) : (
-                      "EvenTime"
-                    )}
-                  </span>
-                </div>
+                )}
 
                 {/* Badges Overlay (FOMO & Status) — below the top row */}
                 <div className="absolute bottom-3 left-3 flex flex-col gap-1.5 items-start z-10">
@@ -428,7 +415,7 @@
               </div>
 
               {/* Typography strip — mt-3 gap, left-aligned, right padding to prevent button overlap */}
-              <div className="mt-3 pr-2 flex flex-col gap-0.5 flex-1 text-left relative overflow-hidden">
+              <div className="mt-3 flex min-w-0 flex-col gap-0.5 flex-1 text-left relative">
                 <Link href={eventHref} className="block transition-opacity hover:opacity-80">
                   <h3 
                     className="font-bold text-[18px] leading-snug truncate text-left text-slate-900"
@@ -439,7 +426,7 @@
                 </Link>
 
                 <div 
-                  className="min-h-6 font-medium text-[14px] text-slate-500 truncate text-left flex items-center gap-1.5"
+                  className="min-h-6 font-medium text-[13px] text-slate-500 truncate text-left flex items-center gap-1.5"
                   style={{ fontFamily: "var(--font-sans)" }}
                 >
                   {!hideOrganizer && <>Curated by {organizerUsername ? (
@@ -466,36 +453,39 @@
                   )}
                 </div>
 
-                {city && (
-                <div className="min-h-6 flex items-center gap-1 text-[12px] text-slate-500 font-medium truncate text-left">
-                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                {collegeName ? (
-               <span className="truncate">{collegeName}, {city}</span>
-              ) : (
-             <Link
-            href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-           onClick={(e) => e.stopPropagation()}
-           className="block truncate leading-6 hover:text-brand-primary hover:underline transition-colors"
-      >
-        {city}
-      </Link>
-    )}
-  </div>
-)}
-
-                <div className="flex flex-row items-center gap-2 text-[12px] text-slate-500 font-medium mt-0.5 w-full overflow-hidden">
-                  <span className="flex items-center gap-1 shrink-0">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {date.includes(" · ") ? date.split(" · ")[1] : "Time TBA"}
-                  </span>
-                  {dynamicInterestCount > 0 ? (
+                <div className="min-h-6 flex items-center gap-1.5 text-[12px] text-slate-500 font-medium text-left">
+                  {dateLabel && (
                     <>
-                      <span className="text-slate-300 shrink-0">|</span>
-                      <span className="flex items-center gap-1 shrink-0">
-                        <Users className="w-3.5 h-3.5 text-slate-400" />
-                        {dynamicInterestCount}
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
+                      <span className="shrink-0 font-semibold text-slate-700">{dateLabel}</span>
+                    </>
+                  )}
+                  {dynamicInterestCount > 0 && (
+                    <>
+                      {dateLabel && <span className="mx-0.5 text-slate-300 shrink-0" aria-hidden="true">|</span>}
+                      <CardInterestFaces faces={interestSummary?.faces ?? []} />
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <span className="font-bold tabular-nums text-slate-700">{dynamicInterestCount}</span>
+                        <span>interested</span>
                       </span>
                     </>
+                  )}
+                </div>
+
+                {/* The place sits beside the actions so this row is never empty. 28px high centres it on the
+                    44px save and share buttons, and the right padding keeps it clear of them. */}
+                <div className="mt-auto flex h-7 min-w-0 items-center gap-1.5 pr-20 text-[12px] text-slate-500 font-medium">
+                  {city && <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />}
+                  {collegeName ? (
+                    <span className="truncate">{collegeName}, {city}</span>
+                  ) : city ? (
+                    <Link
+                      href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="block truncate leading-6 hover:text-brand-primary hover:underline transition-colors"
+                    >
+                      {city}
+                    </Link>
                   ) : null}
                 </div>
               </div>

@@ -13,6 +13,8 @@ export interface SubmitEventActionPayload {
   is_virtual?: boolean | null;
   is_free?: boolean | null;
   price?: number | null;
+  price_currency?: string | null;
+  price_is_starting?: boolean | null;
   registration_link?: string | null;
   prizes?: string | null;
   team_size?: string | null;
