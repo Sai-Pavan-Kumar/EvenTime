@@ -162,6 +162,12 @@ export const CATEGORY_CONFIG: Record<string, {
   dateColor: '#10B981',
 },
 
+'meetup': {
+  backgroundImage: '/card-backgrounds/sm/meetup.webp',
+  accentColor: '#3F6B47',
+  dateColor: '#3F6B47',
+},
+
 'music-festival': {
   backgroundImage: '/card-backgrounds/sm/music-festival.webp',
   accentColor: '#8B5CF6',
