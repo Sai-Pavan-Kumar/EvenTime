@@ -228,6 +228,108 @@ export const CATEGORY_CONFIG: Record<string, {
   dateColor: '#EC4899',
 },
 
+'art-event': {
+  backgroundImage: '/card-backgrounds/sm/art-event.webp',
+  accentColor: '#5B3A91',
+  dateColor: '#5B3A91',
+},
+
+'blood-donation-drive': {
+  backgroundImage: '/card-backgrounds/sm/blood-donation-drive.webp',
+  accentColor: '#B3151B',
+  dateColor: '#B3151B',
+},
+
+'book-fair': {
+  backgroundImage: '/card-backgrounds/sm/book-fair.webp',
+  accentColor: '#14523A',
+  dateColor: '#14523A',
+},
+
+'cultural-event': {
+  backgroundImage: '/card-backgrounds/sm/cultural-event.webp',
+  accentColor: '#96203F',
+  dateColor: '#96203F',
+},
+
+'job-fair': {
+  backgroundImage: '/card-backgrounds/sm/job-fair.webp',
+  accentColor: '#1F4E8C',
+  dateColor: '#1F4E8C',
+},
+
+'medical-conference': {
+  backgroundImage: '/card-backgrounds/sm/medical-conference.webp',
+  accentColor: '#0F6675',
+  dateColor: '#0F6675',
+},
+
+'product-launch': {
+  backgroundImage: '/card-backgrounds/sm/product-launch.webp',
+  accentColor: '#1B4A85',
+  dateColor: '#1B4A85',
+},
+
+'science-fair': {
+  backgroundImage: '/card-backgrounds/sm/science-fair.webp',
+  accentColor: '#0A47C9',
+  dateColor: '#0A47C9',
+},
+
+'volunteer-event': {
+  backgroundImage: '/card-backgrounds/sm/volunteer-event.webp',
+  accentColor: '#0B6B2D',
+  dateColor: '#0B6B2D',
+},
+
+'adventure-event': {
+  backgroundImage: '/card-backgrounds/sm/adventure-event.webp',
+  accentColor: '#B85405',
+  dateColor: '#B85405',
+},
+
+'fashion-show': {
+  backgroundImage: '/card-backgrounds/sm/fashion-show.webp',
+  accentColor: '#BC1558',
+  dateColor: '#BC1558',
+},
+
+'group-tour': {
+  backgroundImage: '/card-backgrounds/sm/group-tour.webp',
+  accentColor: '#0A7490',
+  dateColor: '#0A7490',
+},
+
+'health-camp': {
+  backgroundImage: '/card-backgrounds/sm/health-camp.webp',
+  accentColor: '#0B7A6E',
+  dateColor: '#0B7A6E',
+},
+
+'real-estate-expo': {
+  backgroundImage: '/card-backgrounds/sm/real-estate-expo.webp',
+  accentColor: '#1266E0',
+  dateColor: '#1266E0',
+},
+
+'space-and-astronomy': {
+  backgroundImage: '/card-backgrounds/sm/space-and-astronomy.webp',
+  accentColor: '#4F46D8',
+  dateColor: '#4F46D8',
+},
+
+'star-gazing': {
+  backgroundImage: '/card-backgrounds/sm/star-gazing.webp',
+  accentColor: '#3A2FD0',
+  dateColor: '#3A2FD0',
+},
+
+'travel-meetup': {
+  backgroundImage: '/card-backgrounds/sm/travel-meetup.webp',
+  accentColor: '#C94F0A',
+  dateColor: '#C94F0A',
+},
+
 'workshop': {
   backgroundImage: '/card-backgrounds/sm/workshop.webp',
   accentColor: '#F59E0B',

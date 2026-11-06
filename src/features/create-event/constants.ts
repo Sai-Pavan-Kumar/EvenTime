@@ -70,13 +70,47 @@ export const CATEGORY_TEMPLATES: Record<string, string> = {
 
   "Women Event": `About the Event:\n\nWho Should Attend:`,
 
-  "Workshop": `About the Workshop:\n\nWho Should Attend:`
+  "Workshop": `About the Workshop:\n\nWho Should Attend:`,
+
+  "Art Event": `About the Event:\n\nWho Should Attend:`,
+
+  "Blood Donation Drive": `About the Drive:\n\nWho Can Donate:`,
+
+  "Book Fair": `About the Fair:\n\nWho Should Attend:`,
+
+  "Cultural Event": `About the Event:\n\nWho Should Attend:`,
+
+  "Job Fair": `About the Fair:\n\nWho Should Attend:`,
+
+  "Medical Conference": `About the Conference:\n\nWho Should Attend:`,
+
+  "Product Launch": `About the Launch:\n\nWho Should Attend:`,
+
+  "Science Fair": `About the Fair:\n\nWho Should Attend:`,
+
+  "Volunteer Event": `About the Initiative:\n\nWho Should Attend:`,
+
+  "Adventure Event": `About the Adventure:\n\nWho Should Attend:`,
+
+  "Fashion Show": `About the Show:\n\nWho Should Attend:`,
+
+  "Group Tour": `About the Tour:\n\nWho Should Attend:`,
+
+  "Health Camp": `About the Camp:\n\nWho Should Attend:`,
+
+  "Real Estate Expo": `About the Expo:\n\nWho Should Attend:`,
+
+  "Travel Meetup": `About the Meetup:\n\nWho Should Attend:`,
+
+  "Space and Astronomy": `About the Event:\n\nWho Should Attend:`,
+
+  "Star Gazing": `About the Event:\n\nWho Should Attend:`
 };
 
 export const audienceOptions = ["Everyone", "Students Only", "Professionals Only","Selected Audience Only","16+ Only", "18+ Only"];
 
 export const categoriesList = [
-  "AI Event", "Alumni Event", "Auto & EV Expo", "Awards Night", "Career Event","Charity Event", "Comedy Show", "Community Event", "Concert", "Conference","Creator Meetup", "Developer Event", "Educational Fair", "Exhibition", "Expo", "Film Festival","Fitness Event", "Food Festival", "Founder Meetup", "Gaming & Esports", "Hackathon","Investor Event", "Meetup", "Music Festival", "Networking Event", "Open Mic", "Pet Event", "Running Event","Sports Tournament", "Startup Event", "Summit", "Tech Event", "Wellness Event","Women Event", "Workshop"
+  "Adventure Event", "AI Event", "Alumni Event", "Art Event", "Auto & EV Expo", "Awards Night", "Blood Donation Drive", "Book Fair", "Career Event","Charity Event", "Comedy Show", "Community Event", "Concert", "Conference","Creator Meetup", "Cultural Event", "Developer Event", "Educational Fair", "Exhibition", "Expo", "Fashion Show", "Film Festival","Fitness Event", "Food Festival", "Founder Meetup", "Gaming & Esports", "Group Tour", "Hackathon", "Health Camp","Investor Event", "Job Fair", "Medical Conference", "Meetup", "Music Festival", "Networking Event", "Open Mic", "Pet Event", "Product Launch", "Real Estate Expo", "Running Event","Science Fair", "Space and Astronomy", "Sports Tournament", "Star Gazing", "Startup Event", "Summit", "Tech Event", "Travel Meetup", "Volunteer Event", "Wellness Event","Women Event", "Workshop"
 ];
 
 export const teamOptions = ["Solo", "Teams of 2-4", "Teams of 4+", "Both Solo & Team"];

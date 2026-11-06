@@ -159,8 +159,33 @@ export const CITY_CONFIG: Record<string, {
     accentColor: '#6366F1',
   },
   'warangal': {
-    backgroundImage: '/cities/warangal1.webp', 
+    backgroundImage: '/cities/warangal1.webp',
     coverImage: '/cities/covers/warangal1.webp',
+    accentColor: '#6366F1',
+  },
+  'surat': {
+    backgroundImage: '/cities/surat.webp',
+    coverImage: '/cities/covers/surat.webp',
+    accentColor: '#6366F1',
+  },
+  'goa': {
+    backgroundImage: '/cities/goa1.webp',
+    coverImage: '/cities/covers/goa1.webp',
+    accentColor: '#6366F1',
+  },
+  'bhubaneswar': {
+    backgroundImage: '/cities/bhubaneswar1.webp',
+    coverImage: '/cities/covers/bhubaneswar1.webp',
+    accentColor: '#6366F1',
+  },
+  'patna': {
+    backgroundImage: '/cities/patna1.webp',
+    coverImage: '/cities/covers/patna1.webp',
+    accentColor: '#6366F1',
+  },
+  'chandigarh': {
+    backgroundImage: '/cities/chandigarh1.webp',
+    coverImage: '/cities/covers/chandigarh1.webp',
     accentColor: '#6366F1',
   },
 };
