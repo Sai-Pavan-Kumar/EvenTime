@@ -7,9 +7,9 @@ export default function CityPageLoading() {
       <Navbar />
 
       {/* Same shape as the real page, so nothing jumps when it arrives */}
-      <Skeleton className="w-full h-44 md:h-64 rounded-none" />
-      <div className="relative z-10 -mt-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-20 md:h-24 bg-white rounded-2xl border border-slate-200/80 shadow-sm" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 md:pt-6">
+        <Skeleton className="w-24 h-5 my-3 rounded-md" />
+        <Skeleton className="mt-1 w-full h-32 md:h-[168px] rounded-[16px] md:rounded-[20px]" />
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

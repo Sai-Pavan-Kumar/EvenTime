@@ -32,7 +32,8 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
       new Set([...CITIES, ...Object.keys(cityCounts)])
     );
 
-    return allKnownCities
+    const cities = allKnownCities
+      .filter((name) => name.toLowerCase() !== ONLINE_CITY)
       .map((name) => ({
         name,
         count: cityCounts[name] || 0,
@@ -43,14 +44,16 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
         const mineOrder = Number(myCities.has(b.name.toLowerCase())) - Number(myCities.has(a.name.toLowerCase()));
         if (mineOrder !== 0) return mineOrder;
 
-        // Then Online, since it is open to everyone
-        if (a.name.toLowerCase() === ONLINE_CITY) return -1;
-        if (b.name.toLowerCase() === ONLINE_CITY) return 1;
-
         // Higher count first
         if (b.count !== a.count) return b.count - a.count;
         return a.name.localeCompare(b.name);
       });
+
+    // Online is open to everyone wherever they live, so it leads whenever it has events.
+    const onlineCount = Object.entries(cityCounts)
+      .filter(([name]) => name.toLowerCase() === ONLINE_CITY)
+      .reduce((sum, [, count]) => sum + count, 0);
+    return onlineCount > 0 ? [{ name: ONLINE_CITY, count: onlineCount }, ...cities] : cities;
   }, [cityCounts, myCities]);
 
   const filteredCities = useMemo(() => {
@@ -61,6 +64,12 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
   }, [activeCityList, searchQuery]);
 
   const totalEvents = activeCityList.reduce((sum, city) => sum + city.count, 0);
+  const cityCount = activeCityList.filter((city) => city.name !== ONLINE_CITY).length;
+  const searchTerm = searchQuery.trim();
+  // The post form only accepts listed cities, so the empty state must not promise more than that.
+  const supportedCity = searchTerm
+    ? CITIES.find((city) => city.toLowerCase().includes(searchTerm.toLowerCase()))
+    : undefined;
 
   return (
     <main className="min-h-screen bg-surface-base pb-24 md:pb-16">
@@ -70,12 +79,12 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="space-y-2">
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 font-heading tracking-tight">
-              Pick a city
+              Cities with events right now
             </h1>
+            {/* People read a missing city as "not covered", so the rule for appearing here is stated up front. */}
             <p className="text-slate-600 font-medium text-sm md:text-base">
-              {totalEvents > 0
-                ? `${totalEvents} upcoming ${totalEvents === 1 ? "event" : "events"} across ${activeCityList.length} ${activeCityList.length === 1 ? "city" : "cities"}`
-                : "Conferences, hackathons and meetups near you"}
+              A city shows up here once it has an upcoming event.
+              {totalEvents > 0 && ` Now: ${totalEvents} ${totalEvents === 1 ? "event" : "events"} in ${cityCount} ${cityCount === 1 ? "city" : "cities"}.`}
             </p>
           </div>
 
@@ -83,8 +92,8 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              aria-label="Search active city"
-              placeholder="Search active city..."
+              aria-label="Search cities"
+              placeholder="Search your city"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               maxLength={50}
@@ -103,50 +112,61 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
             </button>
           </div>
         ) : filteredCities.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
             {filteredCities.map((item, index) => {
               const config = getCityConfig(item.name);
-              // Grid tiles are ~200px wide on phones, so they use the 640px /covers/sm/ copies;
-              // the full 1600px covers stay for the city page banner.
-              const imageSrc = (config.coverImage || config.backgroundImage || "/cities/covers/default1.webp")
-                .replace("/cities/covers/", "/cities/covers/sm/");
 
               return (
                 <Link
                   key={item.name}
                   href={`/cities/${encodeURIComponent(item.name.toLowerCase().replace(/\s+/g, "-"))}`}
-                  className="group relative aspect-4/3 overflow-hidden rounded-2xl bg-slate-800 active:scale-[0.98] transition-transform"
+                  className="group flex flex-col bg-white p-2 md:p-3 rounded-[16px] md:rounded-[20px] shadow-sm active:scale-[0.98] transition-transform"
                 >
-                  <Image
-                    src={imageSrc}
-                    alt=""
-                    fill
-                    className="object-cover motion-safe:group-hover:scale-105 transition-transform duration-500"
-                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                    // The first row is what people see first; the rest wait so they don't steal bandwidth.
-                    priority={index < ABOVE_FOLD_TILES}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-                  {myCities.has(item.name.toLowerCase()) && (
-                    <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full bg-brand-primary text-white text-xs font-bold">
-                      Your city
-                    </span>
-                  )}
+                  {/* Image curve = card curve minus padding, so both corners stay parallel. */}
+                  <div className="relative w-full aspect-video overflow-hidden rounded-[8px] bg-slate-100">
+                    <Image
+                      src={config.backgroundImage}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      // The first row is what people see first; the rest wait so they don't steal bandwidth.
+                      priority={index < ABOVE_FOLD_TILES}
+                    />
+                    {myCities.has(item.name.toLowerCase()) && (
+                      <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-primary text-white text-xs font-bold">
+                        Your city
+                      </span>
+                    )}
+                  </div>
 
-                  <div className="absolute inset-x-0 bottom-0 p-3.5 md:p-4">
-                    <h2 className="text-white font-black font-heading tracking-tight truncate text-lg md:text-xl">
+                  <div className="px-1 pt-3 pb-1">
+                    <h2 className="text-slate-900 font-black font-heading tracking-tight truncate text-lg md:text-xl">
                       {cityLabel(item.name)}
                     </h2>
-                    <p className="text-white/90 text-xs md:text-sm font-bold mt-0.5">
+                    <p className="text-slate-500 text-xs md:text-sm font-bold mt-0.5">
                       {item.count} upcoming {item.count === 1 ? "event" : "events"}
                     </p>
                   </div>
                 </Link>
               );
             })}
+            <Link
+              href="/events/new"
+              className="flex flex-col justify-center gap-2 bg-brand-primary/10 p-3 md:p-5 rounded-[16px] md:rounded-[20px] active:scale-[0.98] transition-transform"
+            >
+              <h2 className="text-slate-900 font-black font-heading tracking-tight text-lg md:text-xl">
+                Don&apos;t see your city?
+              </h2>
+              <p className="text-slate-600 text-xs md:text-sm font-medium leading-snug">
+                It just has no upcoming events yet. Post the first one and it shows up here.
+              </p>
+              <span className="inline-flex items-center gap-1.5 min-h-11 text-brand-primary text-sm font-bold">
+                <Plus className="w-4 h-4" /> Post an event
+              </span>
+            </Link>
           </div>
         ) : (
-          /* Empty State matching mobile app verbatim */
           <div className="py-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
             <div className="relative w-48 h-48 mb-4">
               <Image
@@ -157,18 +177,22 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
               />
             </div>
             <h3 className="text-slate-900 font-bold text-xl font-heading">
-              No active events in this city
+              {supportedCity
+                ? `No upcoming events in ${supportedCity} yet`
+                : searchTerm
+                  ? `We don't have "${searchTerm}" yet`
+                  : "No upcoming events right now"}
             </h3>
             <p className="text-slate-500 font-medium text-sm mt-2 leading-relaxed">
-              {searchQuery
-                ? `No upcoming events found for "${searchQuery}". Check upcoming events on the home page.`
-                : "No cities currently have upcoming events scheduled. Be the first to host one!"}
+              {searchTerm && !supportedCity
+                ? "Events can only be posted for the cities we list, or as online events."
+                : "Post the first one and it shows up here."}
             </p>
             <Link
               href="/events/new"
               className="mt-6 px-6 py-3 bg-brand-primary text-white font-bold rounded-xl hover:bg-brand-primary/90 transition-all text-sm shadow-sm active:scale-95 flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" /> Host An Event in Your City
+              <Plus className="w-4 h-4" /> Post an event
             </Link>
           </div>
         )}

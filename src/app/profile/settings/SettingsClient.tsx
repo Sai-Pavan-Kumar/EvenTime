@@ -42,7 +42,10 @@ export default function SettingsClient({
   // States for Context/Identity Logic (Converted uncontrolled inputs to controlled for reliable submission)
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [username, setUsername] = useState(profile?.username || "");
-  const [selectedCities, setSelectedCities] = useState<string[]>(profile?.preferred_cities || []);
+  // Older profiles may have Online saved as a city. It isn't one, so it is dropped here and on the next save.
+  const [selectedCities, setSelectedCities] = useState<string[]>(
+    (profile?.preferred_cities || []).filter((city) => city.toLowerCase() !== "online")
+  );
   const [userType, setUserType] = useState(() => {
     if (!profile?.user_type) return "";
     const ut = profile.user_type;

@@ -34,7 +34,7 @@ export function CityGrid({ events }: CityGridProps) {
 
   // Sort cities: most events first, then alphabetically
   // "online" is pulled out and always pinned first, regardless of count
-  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online"? "Online" : city);
+  const onlineEntry = Array.from(cityMap.entries()).find(([city]) => city.toLowerCase() === "online");
   const cities = Array.from(cityMap.entries())
     .filter(([city]) => city.toLowerCase() !== "online")
     .sort((a, b) => {
@@ -66,7 +66,7 @@ export function CityGrid({ events }: CityGridProps) {
             <img
               src={getCityConfig(city).backgroundImage}
               alt={city}
-              className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+              className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
             />
           </div>
