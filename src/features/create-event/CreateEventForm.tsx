@@ -5,12 +5,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FieldStatus, CreateEventFormProps } from "./types";
 import { EMPTY_EVENT_FORM } from "./constants";
 import { validateEventForm } from "./utils/validateEventForm";
+import { toLocalDateString } from "./utils/eventSubmission";
 function collegeAudience(selected: string[]) {
   const audience = selected.filter((group) => group !== "Everyone");
   return audience.length > 0 ? audience : ["College Students"];
-}
-function toLocalDateString(d: Date) { 
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 // Hooks
 import { useAuth } from "@/context/AuthContext";

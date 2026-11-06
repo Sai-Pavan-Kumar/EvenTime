@@ -2,9 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { findSimilarEvent } from "@/features/create-event/utils/similarEvents";
 import AdminConsoleClient from "./AdminConsoleClient";
 
 export const dynamic = "force-dynamic";
+
+const DUPLICATE_LOOKUP_LIMIT = 500;
 
 type PageProps = {
   searchParams: Promise<{ tab?: string }>;
@@ -90,6 +93,21 @@ export default async function AdminDashboard(props: PageProps) {
       .limit(100),
   ]);
 
+  // Worked out on each load rather than stored, so a label can't go stale after the other event is rejected.
+  const pendingDates = [...new Set((pendingEventsData || []).map((e) => e.date_string).filter(Boolean))] as string[];
+  const { data: lookalikeCandidates } = pendingDates.length
+    ? await supabase
+        .from("events")
+        .select("id, slug, title, city, date_string")
+        .in("status", ["approved", "pending"])
+        .in("date_string", pendingDates)
+        .limit(DUPLICATE_LOOKUP_LIMIT)
+    : { data: [] };
+  const pendingEventsWithLookalikes = (pendingEventsData || []).map((event) => ({
+    ...event,
+    possibleDuplicate: findSimilarEvent(event, lookalikeCandidates ?? []),
+  }));
+
   // Fetch feedback user profiles
   const feedbackUserIds = (feedbackData || [])
     .map((f) => f.user_id)
@@ -130,7 +148,7 @@ export default async function AdminDashboard(props: PageProps) {
       initialStats={initialStats}
       initialSettings={initialSettings}
       initialTab={initialTab}
-      initialPendingEvents={pendingEventsData || []}
+      initialPendingEvents={pendingEventsWithLookalikes}
       initialEvents={allEventsData || []}
       initialFeedbacks={enrichedFeedback}
       initialUsers={usersData || []}

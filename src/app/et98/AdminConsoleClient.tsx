@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { PossibleDuplicateLabel } from "./PossibleDuplicateLabel";
 import {
   ArrowLeft,
   Shield,
@@ -833,6 +834,7 @@ export default function AdminConsoleClient({
                           {item.registration_link}
                         </p>
                       )}
+                      {item.possibleDuplicate && <PossibleDuplicateLabel event={item.possibleDuplicate} />}
                     </div>
 
                     <div className="flex items-center gap-2 pt-3 border-t border-slate-100 mt-2">

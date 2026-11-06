@@ -9,6 +9,9 @@ import { CurrencySelect } from "./CurrencySelect";
 import { CollegeFields } from "./CollegeFields";
 import { FIELD_CLASS, FieldLabel, Segmented, Select, Switch } from "./FormControls";
 import { RegistrationLinkField } from "./RegistrationLinkField";
+import { SimilarEventNotice } from "./SimilarEventNotice";
+import { useSimilarEvent } from "../hooks/useSimilarEvent";
+import { toLocalDateString } from "../utils/eventSubmission";
 import { WhenSection } from "./WhenSection";
 import { WhereSection } from "./WhereSection";
 
@@ -53,6 +56,12 @@ export function StepMandatory({
   const isAdmin = isCurrentUserAdmin;
   const isLinkVerified = !data.regLink || isVerifiedDomain(data.regLink);
   const isBlocked = isSubmitting || isCheckingDuplicate || Boolean(duplicateError);
+  const similarEvent = useSimilarEvent({
+    title: data.title,
+    city: data.isOnline ? "online" : data.city,
+    dateString: data.selectedDate ? toLocalDateString(data.selectedDate) : "",
+    currentEventId: initialEventId,
+  });
 
   // College events default their audience, so the poster never has to pick one.
   useEffect(() => {
@@ -171,6 +180,7 @@ export function StepMandatory({
       </Section>
 
       <div className="border-t border-slate-200 pt-6">
+        {similarEvent && <SimilarEventNotice event={similarEvent} />}
         {formError && <p role="alert" className="mb-4 text-sm font-medium text-red-600">{formError}</p>}
         {isAdmin && isAdminFeatureEnabled && data.isFeatured ? (
           <button type="button" onClick={onNext} disabled={isBlocked} className={`${SUBMIT_BUTTON_CLASS} bg-slate-900 hover:bg-black`}>
