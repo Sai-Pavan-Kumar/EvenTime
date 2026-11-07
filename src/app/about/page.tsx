@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 
 export const metadata: Metadata = {
-  title: "About EvenTime | The dictionary for events",
+  title: "About EvenTime | The directory for events",
   description: "EvenTime brings events from across the internet and offline notice boards into one single timeline.",
 };
 
@@ -32,7 +32,7 @@ export default function AboutPage() {
             EvenTime
           </h1>
           <p className="text-slate-500 font-medium text-base mb-6">
-            The dictionary for events.
+            The directory for events.
           </p>
 
           <div className="h-px bg-slate-100 mb-6" />

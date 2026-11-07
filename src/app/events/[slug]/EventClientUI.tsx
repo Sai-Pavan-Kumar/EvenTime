@@ -1237,7 +1237,7 @@ export default function EventClientUI({
       )}
 
       {/* Mobile Sticky Bottom Action Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-4 flex items-center gap-2.5 shadow-lg">
+      <div data-page-action-bar className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 px-4 flex items-center gap-2.5 shadow-lg">
         {!isPastEvent ? (
           hasRegistrationLink ? (
             <>

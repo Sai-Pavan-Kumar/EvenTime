@@ -170,7 +170,7 @@ export function StageHero({ events }: { events: Partial<EventRow>[] }) {
         {/* The bottom padding keeps the words clear of the phone's tab bar. */}
         <div ref={inkRef} className="stage-ink relative z-20 grid h-full place-items-center px-4 pb-16 sm:px-6 sm:pb-0 text-center">
           <h1 className="col-start-1 row-start-1 stage-beat1 font-heading font-black tracking-[-0.04em] leading-[0.88] text-[clamp(52px,min(11vw,17svh),168px)]">
-            The dictionary
+            The directory
             <span className="block">for events.</span>
           </h1>
 
