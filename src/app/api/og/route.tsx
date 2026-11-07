@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     const formattedDate = formatDisplayDate(dateParam);
     const metaParts = [formattedDate, cityParam].filter(Boolean);
     const subtitle = isHomepage
-      ? "India's cleanest directory for hackathons, meetups, and workshops."
+      ? "The directory for events: hackathons, meetups, and workshops."
       : metaParts.length > 0
       ? metaParts.join('   ·   ')
       : 'Curated on EvenTime';

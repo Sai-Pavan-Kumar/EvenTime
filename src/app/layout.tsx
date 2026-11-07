@@ -36,7 +36,7 @@ const codeFont = localFont({
 // 2. Update the SEO metadata for EvenTime (With OpenGraph & Twitter tags)
 export const metadata: Metadata = {
   title: "EvenTime | Discover Tech, Startup & Career Events",
-  description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+  description: "The directory for events: hackathons, startup meetups, professional workshops, technical events and many more.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon-192.webp",
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    description: "The directory for events: hackathons, startup meetups, professional workshops, technical events and many more.",
     url: process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in",
     siteName: "EvenTime",
     images: [
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "EvenTime | Discover Tech, Startup & Career Events",
-    description: "India's cleanest directory for hackathons, startup meetups, professional workshops, technical events and many more.",
+    description: "The directory for events: hackathons, startup meetups, professional workshops, technical events and many more.",
     images: [`${process.env.NEXT_PUBLIC_APP_URL || "https://eventime.thesurfboard.in"}/api/og`],
   },
   verification: {

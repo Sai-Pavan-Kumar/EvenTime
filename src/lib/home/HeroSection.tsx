@@ -23,7 +23,7 @@ export function HeroSection() {
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col lg:flex-row lg:items-start lg:min-h-[540px]">
         <div className="w-full px-4 sm:px-8 pt-10 lg:pt-12 lg:w-1/2 text-left motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700">
           <h1 className="text-4xl leading-[1.05] sm:text-5xl lg:text-6xl xl:text-7xl font-heading font-extrabold text-text-primary tracking-[-0.03em]">
-            The Dictionary for <span className="text-brand-primary">Events.</span>
+            The directory for <span className="text-brand-primary">events.</span>
           </h1>
           <p className="mt-5 max-w-xl text-base sm:text-lg leading-relaxed text-slate-700 font-medium">
             Hackathons, meetups, conferences and college fests in your city, all in one place. Free to browse, no sign-up needed.
