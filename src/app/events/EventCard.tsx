@@ -337,7 +337,7 @@
               transition={{ duration: 0.3 }}
               onMouseEnter={() => { if (isNewState) markEventAsSeen(id); }}
               onClick={() => { if (isNewState) markEventAsSeen(id); }}
-              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500 ${cardVariantClass}`}
+              className={`group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm transition-shadow duration-200 ease-out motion-reduce:transition-none hover:shadow-md hover:ring-1 hover:ring-brand-primary/20 focus-within:ring-2 focus-within:ring-brand-primary/40 ${cardVariantClass}`}
             >
 
               
@@ -353,12 +353,12 @@
                     unoptimized={true}
                     priority={priority}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
+                    className="object-cover"
                   />
                   
                     {/* NEW: Dynamic Category Text for Fallback/Custom Categories */}
                     {finalImageSrc.includes('default.webp') && (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10 transition-transform duration-700 ease-out group-hover:scale-[1.03]">
+                      <div className="absolute inset-0 flex items-center justify-center p-4 z-10">
                         <span 
                           className="font-black text-center uppercase tracking-tight w-full px-2 -mt-8"
                           style={{ 

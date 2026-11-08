@@ -13,7 +13,7 @@ const formatEventDate = (dateString: string | null) => (dateString ? format(pars
 
 function EventThumbnail({ event }: { event: { title: string; category: string; poster_url: string | null } }) {
   return (
-    <div className="relative aspect-[16/10] w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:w-32">
+    <div className="relative aspect-[16/10] w-24 shrink-0 overflow-hidden rounded-lg border border-slate-200/70 bg-slate-100 sm:w-32">
       <Image
         src={event.poster_url || getCategoryConfig(event.category).backgroundImage}
         alt=""

@@ -60,7 +60,7 @@ export function CityGrid({ events }: CityGridProps) {
         <Link
           key={city}
           href={`/cities/${city.toLowerCase().replace(/\s+/g, '-')}`}
-          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
+          className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm transition-shadow duration-200 ease-out motion-reduce:transition-none hover:shadow-md hover:ring-1 hover:ring-brand-primary/20 focus-within:ring-2 focus-within:ring-brand-primary/40"
         >
           <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
             {getCityConfig(city) && (
