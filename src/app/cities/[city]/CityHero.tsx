@@ -4,7 +4,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 
 interface CityHeroProps {
   heading: string;
-  cityImage: string;
+  cityImage?: string;
   hostHref: string;
   hostLabel: string;
   // Null while there is nothing true to report: a failed load or an empty city
@@ -30,7 +30,7 @@ export function CityHero({ heading, cityImage, hostHref, hostLabel, stats }: Cit
       {/* Same card language as the /cities tile, so opening a city feels like that tile growing. */}
       <div className="mt-1 grid grid-cols-[96px_minmax(0,1fr)] md:grid-cols-[256px_minmax(0,1fr)_auto] items-center gap-x-3 md:gap-x-8 bg-white p-2 md:p-3 rounded-[16px] md:rounded-[20px] shadow-sm">
         <div className={`relative aspect-video overflow-hidden rounded-[8px] bg-slate-100 ${statItems ? "md:row-span-2" : ""}`}>
-          <Image src={cityImage} alt="" fill priority className="object-cover" sizes="(min-width: 768px) 256px, 96px" />
+          {cityImage && <Image src={cityImage} alt="" fill priority className="object-cover" sizes="(min-width: 768px) 256px, 96px" />}
         </div>
 
         <h1 className={`text-2xl md:text-5xl font-heading font-black text-slate-900 tracking-tight break-words ${statItems ? "md:self-end" : ""}`}>

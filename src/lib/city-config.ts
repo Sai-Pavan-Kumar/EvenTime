@@ -152,19 +152,11 @@ export const CITY_CONFIG: Record<string, {
   },
 };
 
+// Unknown cities get no art on purpose: a generic stock image looked like a bug, a plain tile does not.
 export const getCityConfig = (city: string) => {
-  const fallback = { 
-    backgroundImage: '/cities/default1.webp', 
-    accentColor: '#6C47FF' 
-  };
-  
-  if (!city) return fallback;
-  
+  if (!city) return null;
   const key = city.toLowerCase().trim().replace(/\s+/g, '-');
-  const config = CITY_CONFIG[key];
-  
-if (!config) return fallback;
-return config;
+  return CITY_CONFIG[key] ?? null;
 };
 
 
