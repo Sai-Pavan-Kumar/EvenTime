@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, CheckCircle, AlertTriangle } from "lucide-react";
-import { FieldStatus, GeoResult } from "../types";
+import { CheckCircle, AlertTriangle } from "lucide-react";
+import { FieldStatus } from "../types";
 
 export function DrumColumn({ items, defaultIndex = 0, onSelect }: { items: string[]; defaultIndex?: number; onSelect: (val: string) => void; }) {
   const colRef = useRef<HTMLDivElement>(null);
@@ -101,64 +100,6 @@ export function MiniCalendar({ selectedDate, onSelect, minDate }: { selectedDate
           })}
         </div>
       </div>
-    </div>
-  );
-}
-
-export function LocationSearch({ value, onChange }: { value: string; onChange: (val: string, lat?: number, lon?: number) => void; }) {
-  const [query, setQuery] = useState(value);
-  const [results, setResults] = useState<GeoResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setShowDropdown(false); };
-    document.addEventListener("mousedown", handler); return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  useEffect(() => {
-    if (query.trim().length < 3) { setResults([]); setShowDropdown(false); return; }
-    const timeout = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`, { headers: { "Accept-Language": "en" } });
-        const data: GeoResult[] = await res.json(); setResults(data); setShowDropdown(data.length > 0);
-      } catch { setResults([]); } finally { setIsLoading(false); }
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [query]);
-
-  const handleSelect = (result: GeoResult) => {
-    const parts = [result.address.city || result.address.town || result.address.village, result.address.state, result.address.country].filter(Boolean);
-    const shortName = parts.join(", ") || result.display_name.split(",").slice(0, 3).join(",");
-    setQuery(shortName);
-    onChange(shortName, parseFloat(result.lat), parseFloat(result.lon));
-    setShowDropdown(false); setResults([]);
-  };
-
-  return (
-    <div ref={wrapperRef} className="relative">
-      <div className="relative">
-        <input type="text" placeholder="Search city or venue..." maxLength={100} value={query} onChange={e => { setQuery(e.target.value); onChange(e.target.value); }} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 pr-10 focus:ring-4 focus:ring-[#6C47FF]/10 focus:border-[#6C47FF] outline-none transition-all placeholder:text-slate-400" />
-        {isLoading ? <Search className="absolute right-4 top-4 w-4 h-4 text-slate-400 animate-spin" /> : <MapPin className="absolute right-4 top-4 w-4 h-4 text-slate-400" />}
-      </div>
-      <AnimatePresence>
-        {showDropdown && results.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-            {results.map((r, i) => {
-              const parts = [r.address.city || r.address.town || r.address.village, r.address.state, r.address.country].filter(Boolean);
-              const label = parts.join(", ") || r.display_name.split(",").slice(0, 3).join(",");
-              return (
-                <button key={i} type="button" onClick={() => handleSelect(r)} className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-primary/5 transition-colors text-left border-b border-slate-100 last:border-0">
-                  <MapPin className="w-4 h-4 text-brand-primary mt-0.5 shrink-0" />
-                  <div><div className="text-sm font-semibold text-slate-800 truncate">{label}</div></div>
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+// The database keeps its own copy of this list (migration 20261110). Change both together.
 
 export const CITIES = [
   "Ahmedabad","Anantapur","Bengaluru","Bhopal","Bhubaneswar","Chandigarh","Chennai","Coimbatore","Goa","Guntur","Gurugram",

@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
+import { CITIES } from "@/lib/constants/cities";
 
 export async function updateProfileSettings(formData: FormData) {
   const supabase = await createClient();
@@ -45,7 +46,7 @@ export async function updateProfileSettings(formData: FormData) {
     try {
       const parsed = JSON.parse(citiesString);
       if (!Array.isArray(parsed)) throw new Error();
-      preferred_cities = parsed.filter((c): c is string => typeof c === "string" && c.length > 0);
+      preferred_cities = parsed.filter((c): c is string => typeof c === "string" && CITIES.some((city) => city === c));
       
       if (!isAdmin) {
         preferred_cities = preferred_cities.slice(0, 3);
