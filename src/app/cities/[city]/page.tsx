@@ -198,7 +198,7 @@ export default async function CityPage({
       />
       <Navbar />
       
-      <CityHero heading={heading} cityImage={cityConfig.backgroundImage} hostHref={hostHref} hostLabel={hostLabel} stats={heroStats} />
+      <CityHero heading={heading} cityImage={cityConfig?.backgroundImage} hostHref={hostHref} hostLabel={hostLabel} stats={heroStats} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {loadFailed ? (

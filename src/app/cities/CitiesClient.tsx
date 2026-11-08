@@ -124,7 +124,7 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
                 >
                   {/* Image curve = card curve minus padding, so both corners stay parallel. */}
                   <div className="relative w-full aspect-video overflow-hidden rounded-[8px] bg-slate-100">
-                    <Image
+                    {config && <Image
                       src={config.backgroundImage}
                       alt=""
                       fill
@@ -132,7 +132,7 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                       // The first row is what people see first; the rest wait so they don't steal bandwidth.
                       priority={index < ABOVE_FOLD_TILES}
-                    />
+                    />}
                     {myCities.has(item.name.toLowerCase()) && (
                       <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-primary text-white text-xs font-bold">
                         Your city

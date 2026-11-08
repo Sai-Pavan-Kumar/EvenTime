@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { DEFAULT_CURRENCY } from "@/lib/eventPrice";
+import { CITIES } from "@/lib/constants/cities";
 import { DUPLICATE_CANDIDATE_LIMIT, IGNORED_DUPLICATE_STATUSES, isSameRegistrationLink, normalizeRegistrationLink } from "./utils/duplicateCheck";
 import { isUuid, isValidWebLink, validateEventPayload } from "./utils/validateEventPayload";
 import { buildSlug, isOwnPosterUrl, withProtocol, type SubmitEventActionPayload, type SubmitEventActionResult } from "./utils/eventSubmission";
@@ -109,7 +110,11 @@ export async function submitEventAction(
       organizerName = profile?.full_name || authName || profile?.username || "Event Curator";
     }
 
-    const eventCity = payloadData.is_virtual ? "online" : (payloadData.city || payloadData.location || "online");
+    // Cities are curated (each needs its own art and page), so a request can never invent one.
+    const eventCity = payloadData.is_virtual ? "online" : (payloadData.city ?? "");
+    if (eventCity !== "online" && !CITIES.some((c) => c === eventCity)) {
+      return { success: false, error: "Please pick a city from the list." };
+    }
     const title = payloadData.title.trim();
     const location = payloadData.is_virtual ? "Virtual Event" : (payloadData.location || null);
 

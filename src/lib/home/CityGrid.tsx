@@ -63,12 +63,13 @@ export function CityGrid({ events }: CityGridProps) {
           className="group relative flex flex-col bg-white p-3 rounded-[24px] border-[0.2px] border-transparent shadow-sm hover:-translate-y-1 transition-transform duration-500"
         >
           <div className="relative w-full aspect-video rounded-[16px] overflow-hidden bg-slate-100 shrink-0">
-            <img
-              src={getCityConfig(city).backgroundImage}
-              alt={city}
-              className="w-full h-full object-cover"
-              onError={(e) => { (e.target as HTMLImageElement).src = '/cities/default.webp'; }}
-            />
+            {getCityConfig(city) && (
+              <img
+                src={getCityConfig(city)!.backgroundImage}
+                alt={city}
+                className="w-full h-full object-cover"
+              />
+            )}
           </div>
 
           <div className="mt-3 pr-2 flex flex-col gap-1.5 flex-1 text-left">
