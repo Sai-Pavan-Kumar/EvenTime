@@ -234,6 +234,8 @@ function NavbarInner({
     const now = new Date();
     setTodayLabel(`${now.getDate()} ${monthNames[now.getMonth()]}`);
   }, []);
+  // The calendar counts as active while its picker is open or a date filter is applied.
+  const isCalendarActive = showMobileCalendar || Boolean(selectedDate);
   let mobileDateDisplay = todayLabel;
   if (selectedDate) {
     const [year, month, day] = selectedDate.split("-");
@@ -301,7 +303,7 @@ function NavbarInner({
                     onClick={() => setShowMobileCalendar((v) => !v)}
                     className="flex items-center gap-1.5 text-xs font-bold text-[#555570] active:scale-95 transition-all"
                   >
-                    <CalendarDays className="w-4 h-4 text-brand-primary" />
+                    <CalendarDays className="w-4 h-4 text-brand-primary" weight={isCalendarActive ? "duotone" : "regular"} />
                     {mobileDateDisplay}
                   </button>
                   {leaderboardEnabled && (
@@ -311,7 +313,7 @@ function NavbarInner({
                         href="/leaderboard"
                         className="flex items-center justify-center w-6 h-6 rounded-full text-[#6C47FF] active:scale-95 transition-all"
                       >
-                        <Trophy className="w-4 h-4" />
+                        <Trophy className="w-4 h-4" weight={pathname === "/leaderboard" ? "duotone" : "regular"} />
                       </Link>
                     </>
                   )}
@@ -321,7 +323,7 @@ function NavbarInner({
                   onClick={() => setShowMobileCalendar((v) => !v)}
                   className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold text-[#555570] hover:text-brand-primary hover:bg-slate-50 transition-all"
                 >
-                  <CalendarDays className="w-4 h-4 text-brand-primary" />
+                  <CalendarDays className="w-4 h-4 text-brand-primary" weight={isCalendarActive ? "duotone" : "regular"} />
                   {mobileDateDisplay}
                 </button>
 
@@ -343,7 +345,7 @@ function NavbarInner({
                   : 'text-text-secondary hover:text-brand-primary font-bold'
               }`}
             >
-              <Building2 className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Cities</span>
+              <Building2 className="w-4 h-4 shrink-0" aria-hidden="true" weight={pathname === '/cities' || pathname.startsWith('/cities/') ? "duotone" : "regular"} /><span className="sr-only lg:not-sr-only">Cities</span>
             </Link>
 
             {leaderboardEnabled && (
@@ -355,7 +357,7 @@ function NavbarInner({
                     : 'text-text-secondary hover:text-brand-primary font-bold'
                 }`}
               >
-                <Trophy className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Leaderboard</span>
+                <Trophy className="w-4 h-4 shrink-0" aria-hidden="true" weight={pathname === "/leaderboard" ? "duotone" : "regular"} /><span className="sr-only lg:not-sr-only">Leaderboard</span>
               </Link>
             )}
 
@@ -368,7 +370,7 @@ function NavbarInner({
                     : 'text-red-500 hover:text-red-600 font-bold'
                 }`}
               >
-                <Settings className="w-4 h-4 shrink-0" aria-hidden="true" /><span className="sr-only lg:not-sr-only">Admin</span>
+                <Settings className="w-4 h-4 shrink-0" aria-hidden="true" weight={pathname.startsWith('/et98') ? "duotone" : "regular"} /><span className="sr-only lg:not-sr-only">Admin</span>
               </Link>
             )}
 
