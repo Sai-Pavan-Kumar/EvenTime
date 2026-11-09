@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Crown, ArrowRight, MapPin } from "lucide-react";
+import { Crown, ArrowRight, MapPin } from "@/components/icons";
 import { motion, useReducedMotion } from "framer-motion";
 import { ScoreInfoButton } from "@/components/leaderboard/ScoreInfoButton";
 import { CITIES } from "@/lib/constants/cities";

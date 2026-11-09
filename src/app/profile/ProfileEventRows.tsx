@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Bookmark, Check, Eye, Pencil, Users } from "lucide-react";
+import { Bookmark, Check, Eye, Pencil, Users } from "@/components/icons";
 import { format, parseISO } from "date-fns";
 import { DeleteEventForm } from "@/components/profile/DeleteEventForm";
 import { getCategoryConfig } from "@/lib/category-config";

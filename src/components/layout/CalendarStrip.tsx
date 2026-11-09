@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import { useState, useMemo, useEffect, useTransition } from "react";
 import { format,isSameDay, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, addMonths, subMonths, isSameMonth,parseISO, differenceInCalendarDays} from "date-fns";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "@/components/icons";
 import NProgress from "nprogress";
 
 

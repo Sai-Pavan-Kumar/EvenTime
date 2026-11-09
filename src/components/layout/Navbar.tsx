@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
-import { Search, Plus, User, LogOut, Trophy, Settings, SquarePlus, Building2, Home, X, Bug, CalendarDays, BarChart2, ChevronDown } from "lucide-react";
+import { Search, Plus, User, LogOut, Trophy, Settings, SquarePlus, Building2, Home, X, Bug, CalendarDays, BarChart2, ChevronDown } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarStrip } from "./CalendarStrip";
 import { FilterChips } from "@/lib/home/FilterChips";
@@ -479,7 +479,7 @@ function NavbarInner({
           onClick={() => setShowMobileSearch(false)} 
           className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
         >
-          <Home className="w-5 h-5" strokeWidth={pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 2.5 : 2} />
+          <Home className="w-5 h-5" weight={pathname === '/' && !searchParams.get('view') && !showMobileSearch ? 'duotone' : 'regular'} />
           <span className="text-[11px] font-bold font-sans mt-1">Home</span>
         </Link>
 
@@ -488,7 +488,7 @@ function NavbarInner({
           onClick={() => setShowMobileSearch(false)}
           className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === "/search" ? "text-brand-primary" : "text-[#94A3B8] hover:text-brand-primary"}`}
         >
-          <Search className="w-5 h-5" strokeWidth={pathname === "/search" ? 2.5 : 2} />
+          <Search className="w-5 h-5" weight={pathname === "/search" ? "duotone" : "regular"} />
           <span className="text-[11px] font-bold font-sans mt-1">Search</span>
         </Link>
 
@@ -498,7 +498,7 @@ function NavbarInner({
           className="flex flex-col items-center justify-center w-full h-full relative group"
         >
           <div className="w-12 h-12 rounded-full bg-brand-primary flex items-center justify-center shadow-[0_8px_20px_rgba(108,71,255,0.35)] -mt-6 border-4 border-white active:scale-95 transition-transform">
-            <Plus className="w-6 h-6 text-white stroke-[2.5]" />
+            <Plus className="w-6 h-6 text-white" weight="bold" />
           </div>
           <span className="text-[11px] font-bold font-sans text-brand-primary mt-0.5">Post</span>
         </Link>
@@ -509,7 +509,7 @@ function NavbarInner({
           className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/cities' && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
         >
           <div className="w-5 h-5 flex items-center justify-center">
-            <Building2 className="w-[19px] h-[19px]" strokeWidth={pathname === '/cities' ? 2.5 : 2} />
+            <Building2 className="w-5 h-5" weight={pathname === '/cities' && !showMobileSearch ? 'duotone' : 'regular'} />
           </div>
           <span className="text-[11px] font-bold font-sans mt-1">Cities</span>
         </Link>
@@ -544,7 +544,7 @@ function NavbarInner({
             onClick={() => setShowMobileSearch(false)} 
             className={`flex flex-col items-center justify-center w-full h-full active:scale-95 transition-transform ${pathname === '/login' && !showMobileSearch ? 'text-brand-primary' : 'text-[#94A3B8] hover:text-brand-primary'}`}
           >
-            <User className="w-5 h-5" strokeWidth={pathname === '/login' ? 2.5 : 2} />
+            <User className="w-5 h-5" weight={pathname === '/login' && !showMobileSearch ? 'duotone' : 'regular'} />
             <span className="text-[11px] font-bold font-sans mt-1">Sign In</span>
           </Link>
         )}

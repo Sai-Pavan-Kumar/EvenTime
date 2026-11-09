@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Info, X } from "lucide-react";
+import { Info, X } from "@/components/icons";
 
 export function ScoreInfoButton() {
   const [isOpen, setIsOpen] = useState(false);

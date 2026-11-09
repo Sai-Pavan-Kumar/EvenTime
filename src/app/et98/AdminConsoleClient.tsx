@@ -25,7 +25,7 @@ import {
   Eye,
   Loader2,
   LogOut,
-} from "lucide-react";
+} from "@/components/icons";
 import { toast } from "sonner";
 import {
   approveEventAction,
@@ -972,7 +972,7 @@ export default function AdminConsoleClient({
                       >
                         <Star
                           className="w-3.5 h-3.5"
-                          fill={item.is_featured ? "#D97706" : "none"}
+                          weight={item.is_featured ? "fill" : "regular"}
                         />
                         <span>{item.is_featured ? "Featured" : "Feature"}</span>
                       </button>

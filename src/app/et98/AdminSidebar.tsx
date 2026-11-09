@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "lucide-react";
+import { LayoutDashboard, Users, CalendarDays, ShieldAlert, MessageSquareWarning, Building2, Settings } from "@/components/icons";
 
 export function AdminSidebar() {
   const pathname = usePathname();

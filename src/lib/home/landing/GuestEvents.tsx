@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 import type { EventRow } from "@/types";
 import { EventGrid } from "@/lib/home/EventGrid";
 

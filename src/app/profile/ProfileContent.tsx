@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Plus } from "@/components/icons";
 import { LinkedEventRow, PostedEventRow } from "./ProfileEventRows";
 import type { ProfileEvent, ReportWithEventSlug } from "./ProfileClient";
 

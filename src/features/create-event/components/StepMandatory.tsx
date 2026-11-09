@@ -2,7 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { categoriesList } from "../constants";
 import { CurrencySelect } from "./CurrencySelect";

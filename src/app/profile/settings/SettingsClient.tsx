@@ -5,7 +5,7 @@ import { CityRanking } from "./CityRanking";
 import { CITIES } from "@/lib/constants/cities";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug, Shield } from "lucide-react";
+import { ArrowLeft, User, GraduationCap, Target, Save, CheckCircle2, Lock, X, AlertTriangle, Bug, Shield } from "@/components/icons";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";

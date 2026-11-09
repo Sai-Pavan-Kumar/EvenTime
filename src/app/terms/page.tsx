@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText } from "@/components/icons";
 import Link from "next/link";
 
 export const metadata: Metadata = {

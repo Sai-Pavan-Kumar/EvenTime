@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare } from "@/components/icons";
 import { FeedbackModal } from "@/components/layout/FeedbackModal";
 
 export function MobileFeedbackWrapper() {

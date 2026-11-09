@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, UserPlus, Settings } from "lucide-react";
+import { X, ArrowRight, UserPlus, Settings } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow } from "@/types";
 

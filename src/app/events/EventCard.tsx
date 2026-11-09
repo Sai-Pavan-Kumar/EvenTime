@@ -2,7 +2,7 @@
 
   import Image from "next/image";
   import Link from "next/link";
-  import { Bookmark, Calendar, Share2, Check, X, IndianRupee, MapPin } from "lucide-react";
+  import { Bookmark, Calendar, Share2, Check, X, IndianRupee, MapPin } from "@/components/icons";
   import { CardInterestFaces, useInterestSummary } from "./CardInterestFaces";
   import { toast } from "sonner";
   import { useState, useEffect } from "react";
@@ -389,7 +389,7 @@
                 <div className="absolute bottom-3 left-3 flex flex-col gap-1.5 items-start z-10">
                   {isRegisteredState && (
                     <span className="bg-emerald-600/95 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shadow-sm flex items-center gap-1 backdrop-blur-md">
-                      <Check className="w-2.5 h-2.5 stroke-[2.5]" /> Registered
+                      <Check className="w-2.5 h-2.5" weight="bold" /> Registered
                     </span>
                   )}
 

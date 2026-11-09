@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@/components/icons";
 import { Navbar } from "@/components/layout/Navbar";
 import type { ProfileRow } from "@/types";
 import { deleteEventAction } from "./action";

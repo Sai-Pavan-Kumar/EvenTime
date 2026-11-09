@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, X, ArrowLeft } from "lucide-react";
+import { ArrowRight, CheckCircle2, X, ArrowLeft } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { AuthUser, ProfileRow, CollegeRow } from "@/types";

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
-import { Building2, Home, Search } from "lucide-react";
+import { Building2, Home, Search } from "@/components/icons";
 
 export default function NotFound() {
   return (

@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import Cropper from "react-easy-crop";
-import { X, Crop, UploadCloud, IndianRupee, Tag, ChevronUp, ChevronDown, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { X, Crop, UploadCloud, IndianRupee, Tag, ChevronUp, ChevronDown, ArrowLeft, CheckCircle2 } from "@/components/icons";
 import { MiniCalendar } from "./SharedUI";
 import { getCategoryConfig } from "@/lib/category-config";
 

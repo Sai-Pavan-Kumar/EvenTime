@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, GraduationCap, Pencil } from "lucide-react";
+import { ChevronRight, GraduationCap, Pencil } from "@/components/icons";
 import type { ProfileRow } from "@/types";
 import type { ProfileEvent } from "./ProfileClient";
 import { BrandAvatar } from "@/components/ui/BrandAvatar";

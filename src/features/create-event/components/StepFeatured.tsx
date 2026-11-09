@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, UploadCloud, Crop, Trophy, Users, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, UploadCloud, Crop, Trophy, Users, Clock } from "@/components/icons";
 import Cropper from "react-easy-crop";
 
 function toLocalDateString(d: Date) {

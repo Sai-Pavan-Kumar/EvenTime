@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { LoadMoreGrid } from "@/components/shared/LoadMoreGrid";
 import { getCityConfig } from "@/lib/city-config";
 import { CITIES } from "@/lib/constants/cities";
-import { MapPin } from "lucide-react";
+import { MapPin } from "@/components/icons";
 import { toJsonLd } from "@/lib/utils";
 import { unstable_cache } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";

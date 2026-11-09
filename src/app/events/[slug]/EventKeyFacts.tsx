@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Ticket } from "@/components/icons";
 
 // When, where and how much decide whether someone reads further, so they sit right under the title.
 export function EventKeyFacts({ date, time, place, price }: { date: string; time: string; place?: string | null; price: string }) {
