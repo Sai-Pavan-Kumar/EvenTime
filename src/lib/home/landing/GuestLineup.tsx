@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 import type { EventRow } from "@/types";
 import { parseEventDateString } from "@/lib/utils/date";
 import { EventTicket } from "./EventTicket";

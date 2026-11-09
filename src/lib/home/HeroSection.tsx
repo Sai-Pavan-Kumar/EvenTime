@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 
 // A first-time visitor decides in a few seconds. The brand line stays, but the sentence under it
 // says plainly what this is, and the first action scrolls straight to real events below the fold.

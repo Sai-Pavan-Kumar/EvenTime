@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AlertCircle, CheckCircle2, Info, Link2, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, Link2, Loader2 } from "@/components/icons";
 import { useDuplicateCheck } from "@/features/create-event/hooks/useDuplicateCheck";
 import { useLinkAutofill, type AutofillStatus } from "@/features/create-event/hooks/useLinkAutofill";
 import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";

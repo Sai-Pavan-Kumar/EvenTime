@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
-import { Calendar, MapPin, Grid, Users, ArrowLeft, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, Grid, Users, ArrowLeft, RefreshCw } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { CITIES } from "@/lib/constants/cities";
 import { categoriesList } from "@/features/create-event/constants";

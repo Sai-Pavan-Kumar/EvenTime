@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/icons";
 import { toast } from "sonner";
 import type { CollegeRow } from "@/types";
 import { INDIAN_COLLEGE_BRANCHES } from "@/lib/constants/branches";

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "@/components/icons";
 import { CURRENCIES } from "@/lib/eventPrice";
 
 function SymbolBadge({ symbol, isActive }: { symbol: string; isActive?: boolean }) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Award, Medal, Trophy } from "lucide-react";
+import { Award, Medal, Trophy } from "@/components/icons";
 import { motion, useReducedMotion } from "framer-motion";
 import { BrandAvatar } from "@/components/ui/BrandAvatar";
 import type { LeaderboardCurator } from "./LeaderboardClient";

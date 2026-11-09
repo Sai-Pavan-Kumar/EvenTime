@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Crown } from "lucide-react";
+import { ArrowRight, Crown } from "@/components/icons";
 import { animate, motion, useReducedMotion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { MIN_RANKED_SCORE } from "./useLeaderboardCohorts";

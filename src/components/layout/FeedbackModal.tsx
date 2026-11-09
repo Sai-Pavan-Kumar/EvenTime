@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Bug, Lightbulb, Loader2 } from "lucide-react";
+import { X, Bug, Lightbulb, Loader2 } from "@/components/icons";
 import { submitFeedbackAction } from "@/app/profile/action";
 
 interface FeedbackModalProps {

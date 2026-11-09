@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 import { EventCard } from "@/app/events/EventCard";
 
 const PAGE_SIZE = 8;

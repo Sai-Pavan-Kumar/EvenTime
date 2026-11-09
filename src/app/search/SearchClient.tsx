@@ -11,7 +11,7 @@ import {
   ChevronDown,
   Check,
   RotateCcw,
-} from "lucide-react";
+} from "@/components/icons";
 import { Navbar } from "@/components/layout/Navbar";
 import { EventGrid } from "@/lib/home/EventGrid";
 import { createClient } from "@/lib/supabase/client";

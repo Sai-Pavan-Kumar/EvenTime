@@ -39,3 +39,31 @@ export function isEventNew(eventId?: string | null, createdAt?: string | null): 
   const seenIds = getSeenEventIds();
   return !seenIds.includes(eventId);
 }
+
+// Looking at a feed tab counts as having seen what was in it. Without this, a tab keeps its dot
+// for a whole day unless the person opens every single new event, which trains them to ignore it.
+const FEED_VISITS_STORAGE_KEY = "eventime_feed_visited_at";
+
+function getFeedVisits(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(FEED_VISITS_STORAGE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function markFeedVisited(feed: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    const visits = getFeedVisits();
+    visits[feed] = Date.now();
+    localStorage.setItem(FEED_VISITS_STORAGE_KEY, JSON.stringify(visits));
+    window.dispatchEvent(new CustomEvent("eventime:event-seen", { detail: { feed } }));
+  } catch {}
+}
+
+export function isEventNewInFeed(feed: string, eventId?: string | null, createdAt?: string | null): boolean {
+  if (typeof window === "undefined" || !isEventNew(eventId, createdAt)) return false;
+  const lastVisitMs = getFeedVisits()[feed] ?? 0;
+  return new Date(createdAt as string).getTime() > lastVisitMs;
+}

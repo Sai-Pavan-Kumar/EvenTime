@@ -1,4 +1,4 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink } from "@/components/icons";
 import type { SimilarEventCandidate } from "../utils/similarEvents";
 
 // Opens in a new tab so checking the other event never costs the poster their half-filled form.

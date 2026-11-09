@@ -34,7 +34,7 @@ import {
   MessageCircle,
   UserCheck,
   Check,
-} from "lucide-react";
+} from "@/components/icons";
 import { format, parseISO, isValid } from "date-fns";
 import { parseEventDateString, checkIsEventPast } from "@/lib/utils/date";
 import { submitReportAction } from "../report-actions";
@@ -813,7 +813,7 @@ export default function EventClientUI({
                     >
                       {isRegistered ? (
                         <>
-                          <Check className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                          <Check className="w-4 h-4 text-emerald-600" weight="bold" />
                           <span>Registered</span>
                         </>
                       ) : (
@@ -1261,7 +1261,7 @@ export default function EventClientUI({
               >
                 {isRegistered ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600" weight="bold" />
                     <span>Registered</span>
                   </>
                 ) : (

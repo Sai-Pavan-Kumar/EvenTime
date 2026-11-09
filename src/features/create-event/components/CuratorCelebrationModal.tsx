@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { format, parseISO, isValid } from "date-fns";
 import { motion, useReducedMotion } from "framer-motion";
-import { Calendar, Check, Copy, MapPin, Plus, Share2, X } from "lucide-react";
+import { Calendar, Check, Copy, MapPin, Plus, Share2, X } from "@/components/icons";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getCategoryConfig } from "@/lib/category-config";

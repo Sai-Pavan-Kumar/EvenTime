@@ -1,5 +1,5 @@
 "use client";
-import { Bell } from "lucide-react";
+import { Bell } from "@/components/icons";
 import { usePathname } from "next/navigation";
 
 export function AdminHeader() {

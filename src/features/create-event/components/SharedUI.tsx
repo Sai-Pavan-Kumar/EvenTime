@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CheckCircle, AlertTriangle } from "lucide-react";
+import { CheckCircle, AlertTriangle } from "@/components/icons";
 import { FieldStatus } from "../types";
 
 export function DrumColumn({ items, defaultIndex = 0, onSelect }: { items: string[]; defaultIndex?: number; onSelect: (val: string) => void; }) {

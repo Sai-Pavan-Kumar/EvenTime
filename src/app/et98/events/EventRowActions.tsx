@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { CheckCircle, Trash2, Loader2 } from "lucide-react";
+import { CheckCircle, Trash2, Loader2 } from "@/components/icons";
 import { updateEventDetailsAction, deleteEventAction } from "../actions";
 
 const colorClasses = {

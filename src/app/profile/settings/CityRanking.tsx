@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "@/components/icons";
 
 export function CityRanking({ cities, onChange }: { cities: string[]; onChange: (cities: string[]) => void }) {
   const swapWithNext = (index: number) => {

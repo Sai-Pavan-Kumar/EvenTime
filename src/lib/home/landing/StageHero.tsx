@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/icons";
 import { createStageLight } from "./stage-light";
 import type { EventRow } from "@/types";
 import { EventGrid } from "@/lib/home/EventGrid";

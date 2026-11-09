@@ -6,7 +6,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { EventCard } from "@/app/events/EventCard";
 import { OnboardingModal } from "@/components/profile/OnboardingModal";
 import Link from "next/link";
-import { CalendarDays, Search, Building2, SearchX, ArrowRight, X } from "lucide-react";
+import { CalendarDays, Search, Building2, SearchX, ArrowRight, X } from "@/components/icons";
 import type { ProfileRow, EventRow } from "@/types";
 import { getMatchLabel } from "@/lib/events/match";
 import { parseEventDateString } from "@/lib/utils/date";
@@ -19,7 +19,7 @@ import { GreetingScene } from "./GreetingScene";
 import { EmptyState } from "./EmptyState";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
-import { isEventNew } from "@/lib/events/eventSeenTracker";
+import { isEventNewInFeed, markFeedVisited } from "@/lib/events/eventSeenTracker";
 
 // The props now ONLY receive the public static buffet from the server
 export interface HomePageClientProps {
@@ -478,7 +478,7 @@ export function HomePageClient(props: HomePageClientProps) {
     setActiveFeedPill('around_you');
   }, [activeFeedPill, profile, upcomingForYouCount, upcomingAroundYouCount]);
 
-  // Unread indicators: check if any event in the respective feed is new (< 24h & not seen)
+  // A tab gets a dot only for events posted in the last 24h, after the person last looked at that tab.
   const [seenTick, setSeenTick] = useState(0);
   useEffect(() => {
     const handleSeen = () => setSeenTick(t => t + 1);
@@ -486,16 +486,18 @@ export function HomePageClient(props: HomePageClientProps) {
     return () => window.removeEventListener("eventime:event-seen", handleSeen);
   }, []);
 
+  useEffect(() => { markFeedVisited(activeFeedPill); }, [activeFeedPill]);
+
   const hasUnreadForYou = useMemo(() => {
-    return livePersonalizedEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+    return livePersonalizedEvents.some(e => isEventNewInFeed('for_you', e.id, e.created_at));
   }, [livePersonalizedEvents, seenTick]);
 
   const hasUnreadAroundYou = useMemo(() => {
-    return liveAroundYouEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+    return liveAroundYouEvents.some(e => isEventNewInFeed('around_you', e.id, e.created_at));
   }, [liveAroundYouEvents, seenTick]);
 
   const hasUnreadCampus = useMemo(() => {
-    return liveCollegeEvents.some(e => isEventNew(e.id, e.created_at || (e as any).created_at));
+    return liveCollegeEvents.some(e => isEventNewInFeed('campus', e.id, e.created_at));
   }, [liveCollegeEvents, seenTick]);
   useEffect(() => { setFeedLoadStage(0); }, [activeFeedPill, q, category, location, date]);
   let clientIsFallback = false;

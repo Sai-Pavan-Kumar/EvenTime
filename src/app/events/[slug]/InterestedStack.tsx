@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check } from "@/components/icons";
 import { BrandAvatar } from "@/components/ui/BrandAvatar";
 
 const MAX_FACES = 3;
@@ -112,7 +112,7 @@ export function InterestButton({
           exit={reduceMotion ? { opacity: 0 } : { y: -10, opacity: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
-          {isOwner ? "Host" : isInterested ? <><Check className="h-4 w-4" strokeWidth={3} /> Interested</> : "I'm Interested"}
+          {isOwner ? "Host" : isInterested ? <><Check className="h-4 w-4" weight="bold" /> Interested</> : "I'm Interested"}
         </motion.span>
       </AnimatePresence>
       {burstCount > 0 && !reduceMotion && <InterestBurst key={burstCount} />}

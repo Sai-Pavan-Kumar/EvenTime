@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Plus, MapPin } from "lucide-react";
+import { Search, Plus, MapPin } from "@/components/icons";
 import { Navbar } from "@/components/layout/Navbar";
 import { CITIES } from "@/lib/constants/cities";
 import { getCityConfig } from "@/lib/city-config";

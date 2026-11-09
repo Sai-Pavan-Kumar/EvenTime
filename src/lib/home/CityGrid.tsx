@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays } from "@/components/icons";
 import type { EventRow } from "@/types";
 import { getCityConfig } from "@/lib/city-config";
 import { parseEventDateString } from "@/lib/utils/date";

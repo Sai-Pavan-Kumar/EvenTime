@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ExternalLink, ShieldAlert } from "lucide-react";
+import { ExternalLink, ShieldAlert } from "@/components/icons";
 
 function RedirectContent() {
   const searchParams = useSearchParams();

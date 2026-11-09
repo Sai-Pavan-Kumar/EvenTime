@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { format } from "date-fns";
-import { Plus, X } from "lucide-react";
+import { Plus, X } from "@/components/icons";
 import { ampms, hours, mins } from "../constants";
 import { MiniCalendar } from "./SharedUI";
 import { FieldLabel, RequiredMark, Segmented, Select, Switch } from "./FormControls";

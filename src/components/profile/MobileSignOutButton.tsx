@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut } from "@/components/icons";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Video } from "lucide-react";
+import { MapPin, Video } from "@/components/icons";
 import { CITIES } from "@/lib/constants/cities";
 import { FIELD_CLASS, FieldLabel, Segmented, Select } from "./FormControls";
 

@@ -1,4 +1,4 @@
-import { Award } from "lucide-react";
+import { Award } from "@/components/icons";
 import type { CuratorLevel } from "@/lib/profile/curatorLevel";
 
 // The name sits beside the colour because a new visitor cannot know what a colour means on its own.

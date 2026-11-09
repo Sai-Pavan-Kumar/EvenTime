@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2, Copy, Check } from "lucide-react";
+import { Share2, Copy, Check } from "@/components/icons";
 
 export function ShareMenu({
   ogImageUrl,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { MouseEvent } from "react";
-import type { LucideIcon } from "lucide-react";
+import type { AppIcon } from "@/components/icons";
 import {
   AlertTriangle,
   BarChart2,
@@ -14,7 +14,7 @@ import {
   Settings,
   Shield,
   Trophy,
-} from "lucide-react";
+} from "@/components/icons";
 import { MobileSignOutButton } from "@/components/profile/MobileSignOutButton";
 import { MobileFeedbackWrapper } from "./MobileFeedbackWrapper";
 
@@ -36,7 +36,7 @@ function NavLink({
   isUrgent = false,
 }: {
   href: string;
-  icon: LucideIcon;
+  icon: AppIcon;
   label: string;
   count?: number;
   isActive?: boolean;
