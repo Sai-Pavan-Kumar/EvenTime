@@ -148,7 +148,6 @@ export function OnboardingModal({ user, profile, categoryCounts = {}, onComplete
       goals: categories.slice(0, 6),
       is_onboarded: true,
       username: finalUsername,
-      et_score: (profile?.et_score ?? 100) < 150 ? 150 : profile?.et_score,
     };
 
     const { error } = await supabase.from("profiles").update(updatePayload).eq("id", user.id);
@@ -157,12 +156,6 @@ export function OnboardingModal({ user, profile, categoryCounts = {}, onComplete
       toast.error("Failed to save. Please try again.");
       setIsSaving(false);
       return;
-    }
-
-    try {
-      await supabase.rpc("increment_et_score", { user_id: user.id, delta: 50 });
-    } catch (rpcErr) {
-      console.warn("increment_et_score error, falling back to direct update:", rpcErr);
     }
 
     const updatedProfile = {

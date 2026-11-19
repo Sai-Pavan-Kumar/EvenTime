@@ -32,7 +32,7 @@ export default async function ProfilePage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("full_name, username, avatar_url, et_score, college, branch, goals, preferred_cities, user_type, graduation_year, role")
+      .select("full_name, username, avatar_url, college, branch, goals, preferred_cities, user_type, graduation_year, role")
       .eq("id", currentUser.id)
       .maybeSingle(),
     supabase
@@ -74,24 +74,8 @@ export default async function ProfilePage() {
     redirect("/profile/settings");
   }
 
-  // Sync with leaderboard_view if curator has earned event/save points
-  if (leaderboardRow?.et_score && leaderboardRow.et_score > (profileData.et_score ?? 100)) {
-    profileData.et_score = leaderboardRow.et_score;
-  }
-
-  // Auto-heal: Award +50 ET Complete Profile bonus if user has set up preferences but score is stuck at <= 100
-  const hasCompletedPreferences =
-    (profileData.preferred_cities?.length ?? 0) > 0 && (profileData.goals?.length ?? 0) > 0;
-  if (hasCompletedPreferences && (profileData.et_score == null || profileData.et_score <= 100)) {
-    const bonusScore = Math.max((profileData.et_score ?? 100) + 50, 150);
-    try {
-      await supabase.rpc("increment_et_score", { user_id: currentUser.id, delta: 50 });
-      profileData.et_score = bonusScore;
-    } catch {
-      await supabase.from("profiles").update({ et_score: bonusScore }).eq("id", currentUser.id);
-      profileData.et_score = bonusScore;
-    }
-  }
+  // leaderboard_view is the only place the score is worked out, so the profile can never disagree with the board.
+  const profileWithScore = { ...profileData, et_score: leaderboardRow?.et_score ?? 100 };
 
   const formattedSavedEvents =
     savedEventsData?.flatMap((item) => (item.events ? [item.events] : [])) ?? [];
@@ -105,7 +89,7 @@ export default async function ProfilePage() {
     <Suspense fallback={<ProfileLoading />}>
       <ProfileClient
         initialUser={currentUser}
-        initialProfile={profileData}
+        initialProfile={profileWithScore}
         initialMyEvents={(myEventsRaw as any[]) || []}
         initialSavedEvents={formattedSavedEvents}
         initialRegisteredEvents={formattedRegisteredEvents}

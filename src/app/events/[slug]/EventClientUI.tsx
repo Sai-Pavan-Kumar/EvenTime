@@ -477,18 +477,13 @@ export default function EventClientUI({
 
     try {
       if (nextState) {
-        const { data: inserted, error } = await supabase
+        const { error } = await supabase
           .from("interested_events")
           .upsert(
             { event_id: safeId, user_id: currentUser.id },
             { onConflict: "event_id,user_id", ignoreDuplicates: true }
-          )
-          .select();
+          );
         if (error) throw new Error(error.message || JSON.stringify(error));
-
-        if (safeCreatorId && inserted && inserted.length > 0) {
-          await supabase.rpc("increment_et_score", { user_id: safeCreatorId, delta: 10 });
-        }
         toast.success("Marked as interested!");
       } else {
         const { error } = await supabase

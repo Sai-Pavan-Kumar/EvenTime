@@ -13,10 +13,9 @@ import type { TablesUpdate, TablesInsert } from "@/types/database";
 
 // High enough that a real organiser never meets it; it exists to stop scripts, not busy posters.
 const MAX_EVENTS_PER_DAY = 30;
-// Posting more is welcome, but points and city-wide pushes stop here, so there is nothing to farm.
+// Posting more is welcome, but city-wide pushes stop here, so nobody can spam a city.
 const REWARDED_EVENTS_PER_DAY = 5;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const POINTS_PER_EVENT = 20;
 const UNIQUE_VIOLATION = "23505";
 
 export async function submitEventAction(
@@ -293,13 +292,6 @@ export async function submitEventAction(
 
     if (finalStatus === "approved") {
       if (postedToday < REWARDED_EVENTS_PER_DAY) {
-        try {
-          await supabase.rpc("increment_et_score", {
-            user_id: user.id,
-            delta: POINTS_PER_EVENT,
-          });
-        } catch {}
-
         // Broadcast push notifications to mobile app users in that city
         try {
           if (eventCity !== "online") {
