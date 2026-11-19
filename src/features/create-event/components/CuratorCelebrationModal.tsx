@@ -117,12 +117,18 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent, o
   const place = event.city === "online" ? "Online" : event.city || "Online";
   const dateLabel = readableDate(event.dateString);
 
+  // A pending link shows "not found" to whoever opens it, so sharing waits for approval.
+  const notifyAwaitingApproval = () => toast("Your event is waiting for approval. You can share it once it's live.");
+  const lockedShareClass = isLive ? "" : "cursor-not-allowed opacity-50";
+
   const handleWhatsAppShare = () => {
+    if (!isLive) return notifyAwaitingApproval();
     const message = `Check out "${event.title}" on EvenTime!\n\n${dateLabel}\n${place}\n\nView details & register here:\n${eventUrl}`;
     window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(message), "_blank", "noopener,noreferrer");
   };
 
   const handleCopyLink = async () => {
+    if (!isLive) return notifyAwaitingApproval();
     try {
       await navigator.clipboard.writeText(eventUrl);
       setCopied(true);
@@ -208,14 +214,14 @@ export function CuratorCelebrationModal({ isOpen, event, onClose, onViewEvent, o
           transition={{ delay: reduceMotion ? 0 : STAMP_DELAY_S + 0.25, duration: 0.3 }}
           className="mt-5 space-y-2"
         >
-          <button ref={viewButtonRef} type="button" onClick={handleWhatsAppShare} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-bold text-slate-900 transition-transform active:scale-[0.98]">
+          <button ref={viewButtonRef} type="button" onClick={handleWhatsAppShare} aria-disabled={!isLive} className={`flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-sm font-bold text-slate-900 transition-transform active:scale-[0.98] ${lockedShareClass}`}>
             <Share2 className="h-4 w-4" /> Share on WhatsApp
           </button>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => onViewEvent?.(event.slug || event.id)} className="flex min-h-12 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15">
               View event
             </button>
-            <button type="button" onClick={handleCopyLink} className="flex min-h-12 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15">
+            <button type="button" onClick={handleCopyLink} aria-disabled={!isLive} className={`flex min-h-12 items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15 ${lockedShareClass}`}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? "Copied" : "Copy link"}
             </button>
