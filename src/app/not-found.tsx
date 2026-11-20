@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SearchIllustration } from "@/lib/home/illustrations/SearchIllustration";
 import { Navbar } from "@/components/layout/Navbar";
 import { Building2, Home, Search } from "@/components/icons";
 
@@ -11,15 +11,8 @@ export default function NotFound() {
       <div className="flex-1 flex items-center justify-center px-4 py-12 sm:py-20">
         <div className="max-w-md w-full text-center space-y-5 bg-white p-8 sm:p-10 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-900/5">
           {/* 404 Illustration */}
-          <div className="flex justify-center -mt-2">
-            <Image
-              src="/illustrations/404_State.webp"
-              alt="404 Page Not Found"
-              width={240}
-              height={240}
-              priority
-              className="w-48 sm:w-56 h-auto object-contain select-none pointer-events-none"
-            />
+          <div className="-mx-8 -mt-2 h-48 sm:-mx-10">
+            <SearchIllustration scene="not-found" />
           </div>
 
           {/* Badge */}

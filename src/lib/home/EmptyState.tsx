@@ -1,10 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 export interface EmptyStateProps {
   title: string;
   message: string;
   imageSrc?: string;
+  /** Animated SVG scene; when set it replaces imageSrc. */
+  illustration?: ReactNode;
   buttonText?: string;
   showButton?: boolean;
   variant?: "default" | "foryou";
@@ -15,7 +18,8 @@ export interface EmptyStateProps {
 export function EmptyState({ 
   title, 
   message, 
-  imageSrc = "/illustrations/Empty_state.webp", 
+  imageSrc = "/illustrations/Empty_state.webp",
+  illustration,
   buttonText = "Host an Event", 
   showButton = true, 
   variant = "default",
@@ -30,18 +34,27 @@ export function EmptyState({
       <div className="absolute top-[-50%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-brand-primary/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 md:w-96 md:h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col items-center w-full max-w-xl mx-auto animate-in zoom-in-95 fade-in duration-700">
-        
-        {/* 3:2 LANDSCAPE ILLUSTRATION CONTAINER - PRECISE 1536x1024 RATIO */}
-        <div className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px] aspect-[3/2] relative mb-6 mx-auto">
-          <Image 
-            src={imageSrc} 
-            alt={title} 
-            fill 
-            className="object-contain" 
-            priority
-          />
+      {/* Scenes run edge to edge across the card: wide screens see the whole street, phones crop to its centre. */}
+      {illustration && (
+        <div className={`relative z-10 -mx-4 sm:-mx-8 ${isForYou ? '-mt-14 sm:-mt-16' : '-mt-16 sm:-mt-20'} mb-6 aspect-[10/3] min-h-48 max-h-80 w-[calc(100%+2rem)] sm:w-[calc(100%+4rem)]`}>
+          {illustration}
         </div>
+      )}
+
+      <div className="relative z-10 flex flex-col items-center w-full max-w-xl mx-auto animate-in zoom-in-95 fade-in duration-700">
+
+        {!illustration && (
+          /* 3:2 LANDSCAPE ILLUSTRATION CONTAINER - PRECISE 1536x1024 RATIO */
+          <div className="w-full max-w-[280px] sm:max-w-[340px] md:max-w-[400px] aspect-[3/2] relative mb-6 mx-auto">
+            <Image
+              src={imageSrc}
+              alt={title}
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+        )}
 
         {/* TITLE & DESCRIPTION - CLEAN SEPARATION, ZERO OVERLAPPING */}
         <h3 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 font-heading mb-3 tracking-[-0.02em]">

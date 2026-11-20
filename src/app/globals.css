@@ -232,3 +232,60 @@ html.footer-nav-hidden [data-page-action-bar]:not(:focus-within) { translate: 0 
 @keyframes scene-ambulance { 0%, 20% { transform: translateX(var(--from)); } 32%, 72% { transform: translateX(var(--stop)); } 86%, 100% { transform: translateX(var(--to)); } }
 @keyframes scene-rain { from { transform: translateY(0); } to { transform: translateY(120px); } }
 .scene-paused * { animation-play-state: paused !important; }
+/* Empty-state illustrations. fill-box makes SVG parts move around their own centre, not the canvas corner. */
+@media (prefers-reduced-motion: no-preference) {
+  .empty-float { animation: empty-float 4.8s ease-in-out infinite; }
+  .empty-pulse { animation: empty-pulse 3.2s ease-in-out infinite; }
+  .empty-flip { transform-box: fill-box; transform-origin: top center; animation: empty-flip 6s ease-in-out infinite; }
+  .empty-sweep { animation: empty-sweep 3s ease-in-out infinite alternate; }
+  .empty-pop { transform-box: fill-box; transform-origin: center; animation: empty-pop 6s ease-out infinite; }
+  .empty-drift { animation: empty-drift 8s ease-in-out infinite alternate; }
+  .empty-ripple { transform-box: fill-box; transform-origin: center; animation: empty-ripple 2.8s ease-out infinite; }
+  .empty-bounce { transform-box: fill-box; transform-origin: bottom center; animation: empty-bounce 1.4s ease-in-out infinite; }
+  .empty-shadow { transform-box: fill-box; transform-origin: center; animation: empty-shadow 1.4s ease-in-out infinite; }
+  .empty-drive { animation: empty-drive 12s linear infinite; }
+  .empty-peek { transform-box: fill-box; transform-origin: top center; animation: empty-peek 10s ease-in-out infinite; }
+  .empty-sway { transform-box: fill-box; transform-origin: top center; animation: empty-sway 2.4s ease-in-out infinite alternate; }
+  .empty-wander { animation: empty-wander 14s ease-in-out infinite alternate; }
+  .empty-wander-sm { animation: empty-wander-sm 10s ease-in-out infinite alternate; }
+  .empty-drive-back { animation: empty-drive-back 14s linear infinite; }
+  .empty-spin { transform-box: view-box; animation: empty-spin 10s linear infinite; }
+  .empty-write { animation: empty-write 0.7s ease-in-out infinite alternate; }
+  .empty-tease { transform-box: fill-box; transform-origin: center; animation: empty-tease 4s ease-in-out infinite; }
+  .empty-rock { transform-box: fill-box; transform-origin: top center; animation: empty-rock 5s ease-in-out infinite alternate; }
+  .empty-zzz { opacity: 0; animation: empty-zzz 3s ease-out infinite; }
+  .empty-beam { transform-box: view-box; animation: empty-beam 4s ease-in-out infinite alternate; }
+  .empty-blink { animation: empty-blink 1.1s steps(1) infinite; }
+  .empty-twinkle { transform-box: fill-box; transform-origin: center; animation: empty-twinkle 3.6s ease-in-out infinite; }
+}
+@keyframes empty-float { 50% { transform: translateY(-6px); } }
+@keyframes empty-pulse { 50% { opacity: 0.45; } }
+@keyframes empty-twinkle { 0%, 100% { opacity: 0.2; transform: scale(0.5); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes empty-spin { to { transform: rotate(360deg); } }
+@keyframes empty-write { from { translate: -3px 0; } to { translate: 3px 0; } }
+@keyframes empty-beam { from { transform: rotate(-38deg); } to { transform: rotate(38deg); } }
+@keyframes empty-blink { 50% { opacity: 0; } }
+/* Profile scenes: ticket hover, sleeping bell, snore. */
+@keyframes empty-tease { 0%, 100% { transform: translateY(-14px) rotate(-6deg); } 45%, 55% { transform: translateY(40px) rotate(0deg); } }
+@keyframes empty-rock { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes empty-zzz { 0% { opacity: 0; transform: translate(0, 10px); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-10px, -20px); } }
+/* Reduced motion keeps the flip sheet hidden, so the date is never covered. */
+.empty-flip { opacity: 0; }
+@keyframes empty-flip { 0% { opacity: 1; transform: scaleY(1); } 16% { opacity: 1; transform: scaleY(0); } 17%, 88% { opacity: 0; transform: scaleY(0); } 89% { opacity: 0; transform: scaleY(1); } 100% { opacity: 1; transform: scaleY(1); } }
+@keyframes empty-sweep { from { transform: translateX(-46px); } to { transform: translateX(6px); } }
+@keyframes empty-pop { 0%, 20% { transform: scale(0); } 28% { transform: scale(1.25); } 34%, 86% { transform: scale(1); } 94%, 100% { transform: scale(0); } }
+/* Without motion the ripples would sit as flat discs; hide them so the still scene stays clean. */
+.empty-ripple { opacity: 0; }
+.empty-drive { transform: translateX(240px); }
+@keyframes empty-drift { from { transform: translateX(-8px); } to { transform: translateX(8px); } }
+@keyframes empty-ripple { from { opacity: 1; transform: scale(0.15); } to { opacity: 0; transform: scale(1); } }
+@keyframes empty-bounce { 0%, 100% { transform: translateY(0) scale(1.04, 0.96); } 50% { transform: translateY(-12px) scale(1); } }
+@keyframes empty-shadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.6); opacity: 0.5; } }
+@keyframes empty-drive { from { transform: translateX(-50px); } to { transform: translateX(820px); } }
+/* Wander and the back-lane car use a CSS translate on top of their SVG position, so the still frame stays centred. */
+.empty-drive-back { transform: translateX(560px); }
+@keyframes empty-peek { 0%, 8%, 22%, 100% { transform: scaleY(1); } 13%, 17% { transform: scaleY(0.55); } }
+@keyframes empty-sway { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+@keyframes empty-wander { from { translate: -170px 0; } to { translate: 170px 0; } }
+@keyframes empty-wander-sm { from { translate: -60px 0; } to { translate: 60px 0; } }
+@keyframes empty-drive-back { from { transform: translateX(840px); } to { transform: translateX(-40px); } }

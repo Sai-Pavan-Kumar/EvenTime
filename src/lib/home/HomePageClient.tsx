@@ -17,6 +17,10 @@ import { GuestLanding } from "./landing/GuestLanding";
 import { EventGrid } from "./EventGrid";
 import { GreetingScene } from "./GreetingScene";
 import { EmptyState } from "./EmptyState";
+import { ForYouIllustration } from "./illustrations/ForYouIllustration";
+import { CampusAllIllustration, CampusEligibleIllustration } from "./illustrations/CampusIllustration";
+import { EmptyDateIllustration } from "./illustrations/EmptyDateIllustration";
+import { AroundYouIllustration } from "./illustrations/AroundYouIllustration";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
 import { isEventNewInFeed, markFeedVisited } from "@/lib/events/eventSeenTracker";
@@ -946,7 +950,7 @@ export function HomePageClient(props: HomePageClientProps) {
                       : isForYouTab
                       ? (liveAroundYouEvents.length > 0
                           ? "No Events In Your Categories"
-                          : "No Events in " + (preferredCities.length ? preferredCities.join(', ') : 'Your City'))
+                          : "Nothing Picked For You Yet")
                       : isAroundYouTab
                       ? (livePersonalizedEvents.length > 0
                           ? "All caught up in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + "!"
@@ -959,19 +963,19 @@ export function HomePageClient(props: HomePageClientProps) {
                     const message = isPastDate
                       ? "There were no events hosted on this date."
                       : date
-                      ? `There are no events scheduled for ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}. Be the first to host one!`
+                      ? `Nothing on ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} yet. Host the first one!`
                       : isCampusEligibleTab
-                      ? "No events are currently restricted to your branch or graduation year. Switch to All Events to explore everything happening on campus!"
+                      ? "Nothing just for your branch or year yet. See all campus events instead."
                       : isCampusAllTab
-                      ? "There are no private events currently listed for your campus. Host one for your college!"
+                      ? "Your campus has no events yet. Post the first one!"
                       : isForYouTab
                       ? (liveAroundYouEvents.length > 0
-                        ? "Events are happening in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ", but none currently match your selected interest categories. Explore 'Around You' to discover them, or update your preferences in Profile!"
-                        : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community buzzing!")
+                        ? "Your cities have events, just not in the categories you follow. Check Around You."
+                        : "Nothing in the categories you follow yet. Try other categories, or host the first one.")
                       : isAroundYouTab
                       ? (livePersonalizedEvents.length > 0
-                        ? "All scheduled events in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + " currently match your selected interests and are waiting in 'For You'. Check back soon as new categories are added!"
-                        : "No upcoming events found in " + (preferredCities.length ? preferredCities.join(', ') : 'your city') + ". Add more cities in your Profile or host an event yourself to get the community started!")
+                        ? "Everything here already matches your interests. You will find it in For You."
+                        : "Your cities are quiet right now. Swap a city, or host the first event.")
                       : isGuest && upcomingEvents.length === 0
                       ? "Stay tuned! New hackathons, workshops, and tech events across India are added regularly."
                       : q ? `We couldn't find any events for "${q}". But the stage is never empty.`
@@ -1028,6 +1032,7 @@ export function HomePageClient(props: HomePageClientProps) {
                           title={title}
                           message={message}
                           imageSrc={emptyImageSrc}
+                          illustration={date ? <EmptyDateIllustration date={date} /> : isForYouTab ? <ForYouIllustration /> : isAroundYouTab ? <AroundYouIllustration /> : isCampusEligibleTab ? <CampusEligibleIllustration /> : isCampusAllTab ? <CampusAllIllustration /> : undefined}
                           variant="default"
                           showButton={showBtn}
                           buttonText={btnText}

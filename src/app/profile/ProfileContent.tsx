@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { ProfileIllustration, type ProfileEmptyScene } from "@/lib/home/illustrations/ProfileIllustration";
 import { AlertTriangle, Plus } from "@/components/icons";
 import { LinkedEventRow, PostedEventRow } from "./ProfileEventRows";
 import type { ProfileEvent, ReportWithEventSlug } from "./ProfileClient";
@@ -14,11 +14,12 @@ const TAB_HEADINGS: Record<string, { title: string; text: string }> = {
   alerts: { title: "Alerts", text: "Reports on your events that need a fix." },
 };
 
-function EmptyState({ image, title, text, action }: { image: string; title: string; text: string; action?: ReactNode }) {
+function EmptyState({ scene, title, text, action }: { scene: ProfileEmptyScene; title: string; text: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center py-12 text-center">
-      <div className="relative mb-6 aspect-video w-full max-w-[240px]">
-        <Image src={image} alt="" fill sizes="240px" className="object-contain" />
+    <div className="flex flex-col items-center pb-12 pt-4 text-center">
+      {/* Runs edge to edge across the section card, cancelling its p-4 / sm:p-6 padding. */}
+      <div className="-mx-4 mb-6 aspect-[10/3] max-h-72 min-h-48 w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)]">
+        <ProfileIllustration scene={scene} />
       </div>
       <h3 className="font-heading text-lg font-bold text-slate-900">{title}</h3>
       <p className="mt-1.5 max-w-sm text-[15px] leading-relaxed text-slate-500">{text}</p>
@@ -122,7 +123,7 @@ export function ProfileContent({
           <PagedList items={myEvents} renderItem={(event) => <PostedEventRow key={event.id} event={event} deleteAction={deleteAction} />} />
         ) : (
           <EmptyState
-            image="/empty-profile.webp"
+            scene="posted"
             title="No events yet"
             text="Post your first event and you'll track its saves and registrations here."
             action={<PrimaryLink href="/events/new"><Plus className="h-4 w-4" /> Post an event</PrimaryLink>}
@@ -134,7 +135,7 @@ export function ProfileContent({
           <PagedList items={registeredEvents} renderItem={(event) => <LinkedEventRow key={event.id} event={event} isRegistered />} />
         ) : (
           <EmptyState
-            image="/Empty_saved.webp"
+            scene="registered"
             title="No registrations yet"
             text='Tap "Mark as Registered" on an event you applied to, and it stays here so you never lose track.'
             action={<PrimaryLink href="/">Find events</PrimaryLink>}
@@ -146,7 +147,7 @@ export function ProfileContent({
           <PagedList items={savedEvents} renderItem={(event) => <LinkedEventRow key={event.id} event={event} />} />
         ) : (
           <EmptyState
-            image="/Empty_saved.webp"
+            scene="saved"
             title="Nothing saved yet"
             text="Tap the bookmark on any event to keep it here."
             action={<PrimaryLink href="/">Find events</PrimaryLink>}
@@ -159,7 +160,7 @@ export function ProfileContent({
             {reports.map((report) => <AlertRow key={report.id} report={report} />)}
           </ul>
         ) : (
-          <EmptyState image="/Empty_alerts.webp" title="No alerts" text="Nobody has reported a problem with your events." />
+          <EmptyState scene="alerts" title="No alerts" text="Nobody has reported a problem with your events." />
         ))}
     </section>
   );

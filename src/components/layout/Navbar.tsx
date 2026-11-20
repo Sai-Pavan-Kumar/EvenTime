@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, Suspense, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image"; 
+import { SearchIllustration } from "@/lib/home/illustrations/SearchIllustration";
 import { Search, Plus, User, LogOut, Trophy, Settings, SquarePlus, Building2, Home, X, Bug, CalendarDays, BarChart2, ChevronDown } from "@/components/icons";
 import { createClient } from "@/lib/supabase/client";
 import { CalendarStrip } from "./CalendarStrip";
@@ -458,8 +459,8 @@ function NavbarInner({
         <div className="flex-1 overflow-y-auto px-4 py-5 pb-28 bg-white">
         {!searchQuery.trim() && !categoryParam && !locationParam ? (
           <div className="flex flex-col items-center justify-center mt-4">
-            <div className="relative w-64 h-64 mb-4">
-                  <Image src="/illustrations/search_state.webp" alt="Search events" fill className="object-contain" />
+            <div className="mb-4 h-52 w-full">
+                  <SearchIllustration scene="search-idle" />
                 </div>
                 <p className="text-sm text-slate-400 font-medium text-center">Start typing or pick a filter to see events...</p>
               </div>
