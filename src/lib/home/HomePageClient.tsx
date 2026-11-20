@@ -21,6 +21,7 @@ import { ForYouIllustration } from "./illustrations/ForYouIllustration";
 import { CampusAllIllustration, CampusEligibleIllustration } from "./illustrations/CampusIllustration";
 import { EmptyDateIllustration } from "./illustrations/EmptyDateIllustration";
 import { AroundYouIllustration } from "./illustrations/AroundYouIllustration";
+import { SearchIllustration } from "./illustrations/SearchIllustration";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
 import { isEventNewInFeed, markFeedVisited } from "@/lib/events/eventSeenTracker";
@@ -927,17 +928,6 @@ export function HomePageClient(props: HomePageClientProps) {
                     const isCampusEligibleTab = isCampusTab && campusFilterMode === 'eligible';
                     const isCampusAllTab = isCampusTab && campusFilterMode === 'all';
 
-                    // 1. Direct, Unconditional Image Selection by Active Feed Tab
-                    const emptyImageSrc = isCampusTab
-                      ? (isCampusEligibleTab ? "/eligible_for_me.webp" : "/no_college_events.webp")
-                      : isForYouTab
-                      ? "/For_you.webp"
-                      : isAroundYouTab
-                      ? "/Around_you.webp"
-                      : q
-                      ? "/illustrations/search_state.webp"
-                      : "/illustrations/Empty_state.webp";
-
                     // 2. Clear, Dedicated Title per Tab
                     const title = isPastDate
                       ? "No past events"
@@ -1031,8 +1021,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         <EmptyState 
                           title={title}
                           message={message}
-                          imageSrc={emptyImageSrc}
-                          illustration={date ? <EmptyDateIllustration date={date} /> : isForYouTab ? <ForYouIllustration /> : isAroundYouTab ? <AroundYouIllustration /> : isCampusEligibleTab ? <CampusEligibleIllustration /> : isCampusAllTab ? <CampusAllIllustration /> : undefined}
+                          illustration={date ? <EmptyDateIllustration date={date} /> : isForYouTab ? <ForYouIllustration /> : isAroundYouTab ? <AroundYouIllustration /> : isCampusEligibleTab ? <CampusEligibleIllustration /> : isCampusAllTab ? <CampusAllIllustration /> : q ? <SearchIllustration scene="no-results" /> : <SearchIllustration scene="quiet-city" />}
                           variant="default"
                           showButton={showBtn}
                           buttonText={btnText}

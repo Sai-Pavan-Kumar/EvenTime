@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import { SearchIllustration } from "./illustrations/SearchIllustration";
 import { ArrowLeft } from "@/components/icons";
 
 export default function NotFound() {
@@ -7,15 +7,8 @@ export default function NotFound() {
     <div className="min-h-screen bg-surface-base flex flex-col items-center justify-center px-4 py-12 text-center">
       <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
-        {/* PREMIUM ILLUSTRATION PLACEHOLDER */}
-        <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 transition-transform duration-500 hover:scale-105">
-          <Image 
-            src="/illustrations/404_State.webp" 
-            alt="404 Not Found Illustration" 
-            fill 
-            className="object-contain"
-            priority 
-          />
+        <div className="mb-8 h-56 w-[calc(100vw-2rem)] max-w-4xl shrink-0 md:h-64">
+          <SearchIllustration scene="not-found" />
         </div>
         
         <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">
