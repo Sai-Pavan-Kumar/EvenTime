@@ -4,9 +4,21 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, ShieldAlert } from "@/components/icons";
 
+// The target comes from the URL, so anyone can craft this link. Only real web addresses may pass:
+// a "javascript:" or "data:" target would run attacker code on our domain with the visitor's session.
+function toSafeWebUrl(rawTarget: string | null): string {
+  if (!rawTarget) return "/";
+  try {
+    const parsed = new URL(rawTarget.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : "/";
+  } catch {
+    return "/";
+  }
+}
+
 function RedirectContent() {
   const searchParams = useSearchParams();
-  const to = searchParams.get("to") || "/";
+  const to = toSafeWebUrl(searchParams.get("to"));
   const [seconds, setSeconds] = useState(3);
 
   useEffect(() => {

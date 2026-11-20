@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getClientIp, isWithinRateLimit } from "@/lib/rateLimit";
 import { revalidatePath, revalidateTag } from "next/cache"; // NEW: Imported for cache revalidation
 
 export async function deleteEventAction(formData: FormData) {
@@ -114,19 +115,9 @@ export async function submitFeedbackAction(type: 'bug' | 'feature', message: str
     // Anonymous users have no user_id — rate limit by IP using the
     // same rate_limits table the /api/extract route already uses.
     const { headers } = await import("next/headers");
-    const headersList = await headers();
-    const clientIp = headersList.get("x-forwarded-for")?.split(",")[0].trim() || headersList.get("x-real-ip") || "unknown-ip";
+    const clientIp = getClientIp(await headers());
 
-    const { data: allowed, error: rlError } = await supabase.rpc("check_and_increment_rate_limit", {
-      p_ip_address: clientIp,
-      p_endpoint: "/profile/feedback",
-      p_max_requests: 3,
-      p_window_seconds: 60
-    });
-
-    if (rlError) {
-      console.error("Rate limit check failed:", rlError);
-    } else if (!allowed) {
+    if (!(await isWithinRateLimit(clientIp, "/profile/feedback", 3, 60))) {
       return { error: "Please wait a minute before submitting again." };
     }
   }

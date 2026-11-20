@@ -7,11 +7,18 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const rawNext = requestUrl.searchParams.get("next") ?? "/";
-  const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+  // Prefix checks miss tricks like "/\t/evil.com", which the URL parser turns into another host.
+  // Resolving first and comparing origins is the only check that matches what the browser will do.
+  let redirectUrl = new URL("/", requestUrl.origin);
+  try {
+    const resolvedNext = new URL(rawNext, requestUrl.origin);
+    if (resolvedNext.origin === requestUrl.origin) redirectUrl = resolvedNext;
+  } catch {
+    // Malformed target: fall back to the homepage instead of failing the login.
+  }
 
   if (code) {
     const cookieStore = await cookies();
-    const redirectUrl = new URL(next, requestUrl.origin);
     const response = NextResponse.redirect(redirectUrl);
 
     const supabase = createServerClient(
