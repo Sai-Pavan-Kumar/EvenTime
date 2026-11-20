@@ -226,7 +226,7 @@ export default function AdminConsoleClient({
       toast.error(res.error);
       router.refresh();
     } else {
-      toast.success(`"${eventItem.title}" approved! (+100 ET points)`);
+      toast.success(`"${eventItem.title}" approved! (+20 ET points)`);
     }
   };
 
@@ -853,7 +853,7 @@ export default function AdminConsoleClient({
                         className="flex-1 py-2.5 px-3 rounded-xl bg-[#10B981] text-white text-xs font-bold font-heading hover:bg-[#059669] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
                       >
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Approve (+100 ET)</span>
+                        <span>Approve (+20 ET)</span>
                       </button>
                     </div>
                   </div>

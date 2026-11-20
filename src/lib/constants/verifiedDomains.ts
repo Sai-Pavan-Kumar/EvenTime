@@ -87,7 +87,7 @@ export function isVerifiedDomain(rawUrl: string | null | undefined, customList?:
 
     if (cleanEntry.includes("/")) {
       // Path-specific rule, e.g. "docs.google.com/forms" or "zoho.com/backstage"
-      return fullPath === cleanEntry || fullPath.startsWith(`${cleanEntry}/`) || fullPath.startsWith(cleanEntry);
+      return fullPath === cleanEntry || fullPath.startsWith(`${cleanEntry}/`);
     }
     // Hostname or subdomain rule, e.g. "luma.com", "lu.ma", "devfolio.co"
     return hostname === cleanEntry || hostname.endsWith(`.${cleanEntry}`);

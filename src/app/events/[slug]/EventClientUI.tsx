@@ -477,18 +477,13 @@ export default function EventClientUI({
 
     try {
       if (nextState) {
-        const { data: inserted, error } = await supabase
+        const { error } = await supabase
           .from("interested_events")
           .upsert(
             { event_id: safeId, user_id: currentUser.id },
             { onConflict: "event_id,user_id", ignoreDuplicates: true }
-          )
-          .select();
+          );
         if (error) throw new Error(error.message || JSON.stringify(error));
-
-        if (safeCreatorId && inserted && inserted.length > 0) {
-          await supabase.rpc("increment_et_score", { user_id: safeCreatorId, delta: 10 });
-        }
         toast.success("Marked as interested!");
       } else {
         const { error } = await supabase
@@ -673,10 +668,22 @@ export default function EventClientUI({
             )}
 
             {/* Share Event */}
+            {/* An unapproved link opens "not found" for everyone else, so sharing waits for approval. */}
             <button
-              onClick={() => setIsShareModalOpen(true)}
-              title="Share Event"
-              className="p-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-full border border-slate-200 transition-colors"
+              onClick={() => {
+                if (event.status !== "approved") {
+                  toast("Your event is waiting for approval. You can share it once it's live.");
+                  return;
+                }
+                setIsShareModalOpen(true);
+              }}
+              title={event.status === "approved" ? "Share Event" : "Waiting for approval"}
+              aria-disabled={event.status !== "approved"}
+              className={`p-2.5 rounded-full border border-slate-200 transition-colors ${
+                event.status === "approved"
+                  ? "bg-slate-50 hover:bg-slate-100 text-slate-700"
+                  : "bg-slate-100 text-slate-400 cursor-not-allowed opacity-60"
+              }`}
             >
               <Share2 className="w-4 h-4" />
             </button>

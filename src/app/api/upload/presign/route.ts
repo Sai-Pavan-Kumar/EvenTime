@@ -3,6 +3,9 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
 import { randomUUID } from "crypto";
+import { isWithinRateLimit } from "@/lib/rateLimit";
+
+const UPLOADS_PER_HOUR = 30;
 
 const s3Client = new S3Client({
   region: "auto",
@@ -34,6 +37,12 @@ export async function POST(request: Request) {
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Each URL lets 5MB into the bucket, so without a cap one account could fill the free 10GB tier.
+    // Posting is capped at 30 events a day; this leaves room for retries and poster swaps.
+    if (!(await isWithinRateLimit(`user:${user.id}`, "/api/upload/presign", UPLOADS_PER_HOUR, 3600))) {
+      return NextResponse.json({ error: "Too many uploads. Please try again later." }, { status: 429 });
     }
 
     // Extract the required variables from the request body

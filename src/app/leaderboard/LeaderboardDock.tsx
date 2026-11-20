@@ -23,7 +23,7 @@ interface DockProps {
   onJump: () => void;
 }
 
-// The view has no row until a first approved event, so that score is worked out the same way the view does.
+// Every profile has a view row; the fallback only covers a profile created moments ago.
 function useOwnScore(userId: string, isOnboarded: boolean) {
   const [score, setScore] = useState<number | null>(null);
   useEffect(() => {

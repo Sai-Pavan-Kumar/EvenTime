@@ -5,6 +5,7 @@ import { isVerifiedDomain } from "@/lib/constants/verifiedDomains";
 import { isIP } from "net";
 import dns from "dns/promises";
 import { extractEventDetails, removePlatformName, type EventDetails } from "./eventDetails";
+import { isWithinRateLimit } from "@/lib/rateLimit";
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -364,20 +365,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "Please log in to continue." }, { status: 401 });
     }
 
-    // Extract client IP for rate limiting
-    const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown-ip";
-    
-    // Atomic rate limit check (row-locked in DB: 20/min for logged in users, 10/min for guest links)
-    const { data: allowed, error: rlError } = await supabase.rpc("check_and_increment_rate_limit", {
-      p_ip_address: clientIp,
-      p_endpoint: "/api/extract",
-      p_max_requests: user ? 20 : 10,
-      p_window_seconds: 60
-    });
-
-    if (rlError) {
-      console.error("Rate limit check failed:", rlError);
-    } else if (!allowed) {
+    // Keyed by account, not IP: a whole college shares one IP, while one abuser can rotate many.
+    if (!(await isWithinRateLimit(`user:${user.id}`, "/api/extract", 20, 60))) {
       return NextResponse.json({ ...EMPTY_RESULT, message: "Rate limit exceeded. Please wait a minute." }, { status: 429 });
     }
 

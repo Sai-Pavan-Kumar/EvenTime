@@ -7,6 +7,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import { requireAdmin } from "@/lib/auth/permissions";
 
+const TRUSTED_REPORTER_MIN_SCORE = 150;
+
 async function verifyAdmin(supabase: SupabaseClient<Database>) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
@@ -47,23 +49,14 @@ export async function approveEventAction(formData: FormData) {
 
   const { error: eventError } = await adminClient
     .from("events")
-    .update({ status: "approved" })
+    .update({ status: "approved", approved_at: new Date().toISOString() })
     .eq("id", eventId);
 
   if (eventError) {
     console.error("Event update failed:", eventError);
     return { error: "Event update failed" };
   }
-
-  const { error: profileError } = await adminClient.rpc('award_event_approval_score', {
-    p_user_id: event.creator_id,
-    p_event_id: eventId
-  });
-
-  if (profileError) {
-    console.error("Score update failed:", profileError);
-    return { error: "Score update failed" };
-  }
+  // No score write: leaderboard_view counts approved events live, so the +20 shows up by itself.
 
  revalidatePath("/", "layout"); 
   revalidatePath("/et98");
@@ -149,17 +142,22 @@ export async function punishCuratorAction(formData: FormData) {
     return { success: true, note: "Marked resolved. Penalty already applied earlier for this event." };
   }
 
-  // PLAN RULE: -150 penalty only fires if 5+ DIFFERENT reporters (each with
-  // et_score >= 150, so new/fake accounts can't trigger it) reported this event.
+  // The -25 penalty only fires when 5+ different reporters with an ET Score of
+  // 150 or more reported this event, so fresh throwaway accounts can't trigger it.
   const { data: allReports } = await supabase
     .from("event_reports")
-    .select("reporter_id, reporter:profiles!event_reports_reporter_id_fkey(et_score)")
+    .select("reporter_id")
     .eq("event_id", report.event_id);
 
+  const reporterIds = [...new Set((allReports || []).map((r) => r.reporter_id).filter((id): id is string => Boolean(id)))];
+  const { data: reporterScores } = reporterIds.length
+    ? await supabase.from("leaderboard_view").select("user_id, et_score").in("user_id", reporterIds)
+    : { data: [] };
+
   const trustedReporterIds = new Set(
-    (allReports || [])
-      .filter((r: any) => (r.reporter?.et_score ?? 0) >= 150 && r.reporter_id)
-      .map((r: any) => r.reporter_id)
+    (reporterScores || [])
+      .filter((r) => (r.et_score ?? 0) >= TRUSTED_REPORTER_MIN_SCORE && r.user_id)
+      .map((r) => r.user_id)
   );
 
   if (trustedReporterIds.size < 5) {

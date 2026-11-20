@@ -93,6 +93,14 @@ export default async function AdminDashboard(props: PageProps) {
       .limit(100),
   ]);
 
+  // profiles.et_score is retired; the admin list shows the same live score as the leaderboard.
+  const userIds = (usersData || []).map((u) => u.id);
+  const { data: liveScores } = userIds.length
+    ? await adminClient.from("leaderboard_view").select("user_id, et_score").in("user_id", userIds)
+    : { data: [] };
+  const scoreByUser = new Map((liveScores || []).map((s) => [s.user_id, s.et_score]));
+  const usersWithScores = (usersData || []).map((u) => ({ ...u, et_score: scoreByUser.get(u.id) ?? 100 }));
+
   // Worked out on each load rather than stored, so a label can't go stale after the other event is rejected.
   const pendingDates = [...new Set((pendingEventsData || []).map((e) => e.date_string).filter(Boolean))] as string[];
   const { data: lookalikeCandidates } = pendingDates.length
@@ -151,7 +159,7 @@ export default async function AdminDashboard(props: PageProps) {
       initialPendingEvents={pendingEventsWithLookalikes}
       initialEvents={allEventsData || []}
       initialFeedbacks={enrichedFeedback}
-      initialUsers={usersData || []}
+      initialUsers={usersWithScores}
       initialReports={reportsData || []}
       initialColleges={collegesData || []}
       currentUserId={user.id}
