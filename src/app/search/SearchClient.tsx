@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useDeferredValue, useRef } from "react";
-import { SearchIllustration } from "@/lib/home/illustrations/SearchIllustration";
+import { StateImage } from "@/lib/home/illustrations/StateImage";
 import { usePathname } from "next/navigation";
 import { useNonBlockingSearchParams } from "@/lib/navigation/searchParams";
 import {
@@ -706,7 +706,7 @@ export function SearchClient({ initialEvents = [] }: { initialEvents?: Partial<E
         ) : filteredEvents.length === 0 ? (
           <div className="text-center py-14 sm:py-20 px-4">
             <div className="mx-auto mb-4 aspect-[10/3] max-h-72 min-h-48 w-full">
-              <SearchIllustration scene="no-results" />
+              <StateImage name="no-results" />
             </div>
             <h3 className="font-heading font-bold text-xl text-slate-900 mb-2">
               No matching events found

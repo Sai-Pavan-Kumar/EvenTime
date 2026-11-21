@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { LeaderboardIllustration } from "@/lib/home/illustrations/LeaderboardIllustration";
+import { StateImage } from "@/lib/home/illustrations/StateImage";
 import Link from "next/link";
 import { Crown, ArrowRight, MapPin } from "@/components/icons";
 import { motion, useReducedMotion } from "framer-motion";
@@ -234,7 +234,7 @@ export function LeaderboardClient({ initialCohortData }: LeaderboardClientProps)
         <div className="flex flex-col items-center justify-center bg-white rounded-3xl p-10 md:p-16 border border-slate-200 shadow-sm max-w-xl mx-auto text-center mb-16">
           {/* Bleeds to the card edges by cancelling its p-10 / md:p-16 padding. */}
           <div className="-mx-10 -mt-10 mb-4 aspect-[10/3] min-h-48 w-[calc(100%+5rem)] md:-mx-16 md:-mt-16 md:w-[calc(100%+8rem)]">
-            <LeaderboardIllustration />
+            <StateImage name="leaderboard" />
           </div>
           <h3 className="text-2xl font-black text-slate-900 font-heading mb-2">
             {activeCohort === "campus"

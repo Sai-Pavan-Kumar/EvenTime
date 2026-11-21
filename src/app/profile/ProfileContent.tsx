@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ProfileIllustration, type ProfileEmptyScene } from "@/lib/home/illustrations/ProfileIllustration";
+import { StateImage, type StateImageName } from "@/lib/home/illustrations/StateImage";
 import { AlertTriangle, Plus } from "@/components/icons";
 import { LinkedEventRow, PostedEventRow } from "./ProfileEventRows";
 import type { ProfileEvent, ReportWithEventSlug } from "./ProfileClient";
@@ -14,12 +14,12 @@ const TAB_HEADINGS: Record<string, { title: string; text: string }> = {
   alerts: { title: "Alerts", text: "Reports on your events that need a fix." },
 };
 
-function EmptyState({ scene, title, text, action }: { scene: ProfileEmptyScene; title: string; text: string; action?: ReactNode }) {
+function EmptyState({ scene, title, text, action }: { scene: StateImageName; title: string; text: string; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center pb-12 pt-4 text-center">
       {/* Runs edge to edge across the section card, cancelling its p-4 / sm:p-6 padding. */}
       <div className="-mx-4 mb-6 aspect-[10/3] max-h-72 min-h-48 w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)]">
-        <ProfileIllustration scene={scene} />
+        <StateImage name={scene} />
       </div>
       <h3 className="font-heading text-lg font-bold text-slate-900">{title}</h3>
       <p className="mt-1.5 max-w-sm text-[15px] leading-relaxed text-slate-500">{text}</p>

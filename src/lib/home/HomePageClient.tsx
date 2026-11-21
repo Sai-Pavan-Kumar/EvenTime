@@ -17,11 +17,7 @@ import { GuestLanding } from "./landing/GuestLanding";
 import { EventGrid } from "./EventGrid";
 import { GreetingScene } from "./GreetingScene";
 import { EmptyState } from "./EmptyState";
-import { ForYouIllustration } from "./illustrations/ForYouIllustration";
-import { CampusAllIllustration, CampusEligibleIllustration } from "./illustrations/CampusIllustration";
-import { EmptyDateIllustration } from "./illustrations/EmptyDateIllustration";
-import { AroundYouIllustration } from "./illustrations/AroundYouIllustration";
-import { SearchIllustration } from "./illustrations/SearchIllustration";
+import { StateImage } from "./illustrations/StateImage";
 import { CityGrid } from "./CityGrid";
 import { useAuth } from "@/context/AuthContext";
 import { isEventNewInFeed, markFeedVisited } from "@/lib/events/eventSeenTracker";
@@ -932,7 +928,8 @@ export function HomePageClient(props: HomePageClientProps) {
                     const title = isPastDate
                       ? "No past events"
                       : date
-                      ? "No Events Scheduled"
+                      // The calendar art can't show the picked day, so the title says it. UTC keeps "2026-11-29" on the 29th in every timezone.
+                      ? `No Events on ${new Date(`${date}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", timeZone: "UTC" })}`
                       : isCampusEligibleTab
                       ? "No Specific Batch Events"
                       : isCampusAllTab
@@ -1021,7 +1018,7 @@ export function HomePageClient(props: HomePageClientProps) {
                         <EmptyState 
                           title={title}
                           message={message}
-                          illustration={date ? <EmptyDateIllustration date={date} /> : isForYouTab ? <ForYouIllustration /> : isAroundYouTab ? <AroundYouIllustration /> : isCampusEligibleTab ? <CampusEligibleIllustration /> : isCampusAllTab ? <CampusAllIllustration /> : q ? <SearchIllustration scene="no-results" /> : <SearchIllustration scene="quiet-city" />}
+                          illustration={<StateImage name={date ? "empty-date" : isForYouTab ? "for-you" : isAroundYouTab ? "around-you" : isCampusEligibleTab ? "campus-eligible" : isCampusAllTab ? "campus-all" : q ? "no-results" : "quiet-city"} />}
                           variant="default"
                           showButton={showBtn}
                           buttonText={btnText}

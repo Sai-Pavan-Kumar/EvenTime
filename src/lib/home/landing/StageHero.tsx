@@ -75,6 +75,8 @@ export function StageHero({ events }: { events: Partial<EventRow>[] }) {
 
   useEffect(() => {
     const track = trackRef.current!;
+    // Held like track: React nulls refs on unmount before this effect's cleanup drops the scroll listener.
+    const pin = pinRef.current!;
     const root = document.documentElement;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -133,7 +135,7 @@ export function StageHero({ events }: { events: Partial<EventRow>[] }) {
       lenis.raf(time);
       raf = requestAnimationFrame(loop);
     });
-    const update = () => frameAt(heroProgress(track, pinRef.current!));
+    const update = () => frameAt(heroProgress(track, pin));
     // A returning user's feed replaces this hero right after hydration, so a queued call can outlive it.
     const fit = () => {
       if (inkRef.current && wordsRef.current) fitCards(track, inkRef.current, wordsRef.current);

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { SearchIllustration } from "@/lib/home/illustrations/SearchIllustration";
+import { StateImage } from "@/lib/home/illustrations/StateImage";
 import { RefreshCcw, Home } from "@/components/icons";
 
 export default function GlobalError({
@@ -23,7 +23,7 @@ export default function GlobalError({
       <div className="max-w-lg w-full flex flex-col items-center animate-in fade-in zoom-in-95 duration-700">
         
         <div className="mb-8 h-56 w-[calc(100vw-2rem)] max-w-4xl shrink-0 md:h-64">
-          <SearchIllustration scene="error" />
+          <StateImage name="error" />
         </div>
         
         <h1 className="text-3xl md:text-4xl font-heading font-black text-slate-900 mb-4 tracking-tight">

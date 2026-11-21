@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { SearchIllustration } from "@/lib/home/illustrations/SearchIllustration";
+import { StateImage } from "@/lib/home/illustrations/StateImage";
 import Link from "next/link";
 import { Search, Plus, MapPin } from "@/components/icons";
 import { Navbar } from "@/components/layout/Navbar";
@@ -170,7 +170,7 @@ export function CitiesClient({ initialCityCounts }: CitiesClientProps) {
         ) : (
           <div className="py-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
             <div className="mb-4 aspect-[10/3] min-h-48 w-[calc(100vw-2rem)] max-w-4xl shrink-0">
-              <SearchIllustration scene="quiet-city" />
+              <StateImage name="quiet-city" />
             </div>
             <h3 className="text-slate-900 font-bold text-xl font-heading">
               {supportedCity
